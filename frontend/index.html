@@ -726,6 +726,86 @@
             font-weight: 600;
             color: #92400E;
         }
+        
+        .ai-models-section {
+            background: linear-gradient(135deg, #F0F7FF 0%, #FFFFFF 100%);
+            border: 1px solid #D6E8FF;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .ai-models-section h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0066FF;
+            margin-bottom: 8px;
+        }
+        
+        .ai-models-section p {
+            color: #6B7280;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        
+        .ai-models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .ai-model-card {
+            background: #FFFFFF;
+            border: 1px solid #E8EBED;
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .ai-model-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.1);
+            border-color: #0066FF;
+        }
+        
+        .ai-model-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .ai-model-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 8px;
+        }
+        
+        .ai-model-description {
+            font-size: 14px;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .ai-model-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #ECFDF5;
+            color: #065F46;
+        }
+        
+        .ai-model-status.production {
+            background: #DEF7EC;
+            color: #047857;
+        }
+        
+        .ai-model-status.development {
+            background: #FEF3C7;
+            color: #92400E;
+        }
     </style>
 </head>
 <body>
@@ -1320,6 +1400,51 @@
                                 All portfolio data is processed in memory only and is <strong>NOT saved or stored anywhere</strong>. 
                                 Please consult with a qualified financial advisor before making any investment decisions.
                             </p>
+                        </div>
+                    )}
+                    
+                    {/* AI Models Overview Section - Show on homepage */}
+                    {step === 1 && (
+                        <div className="ai-models-section">
+                            <h3>Powered by EdgeAI's Advanced AI Models</h3>
+                            <p>
+                                Our portfolio analyzer is built on a proprietary suite of specialized AI models, 
+                                each optimized for different aspects of investment analysis and financial intelligence.
+                            </p>
+                            <div className="ai-models-grid">
+                                <div className="ai-model-card">
+                                    <div className="ai-model-icon">🧠</div>
+                                    <div className="ai-model-name">Investment Intelligence Engine</div>
+                                    <div className="ai-model-description">
+                                        Advanced deep learning model trained on millions of portfolio configurations, 
+                                        market patterns, and investment outcomes. Delivers institutional-grade analysis 
+                                        with real-time risk assessment and optimization recommendations.
+                                    </div>
+                                    <span className="ai-model-status production">In Production</span>
+                                </div>
+                                
+                                <div className="ai-model-card">
+                                    <div className="ai-model-icon">🎯</div>
+                                    <div className="ai-model-name">Behavioral Finance Advisor</div>
+                                    <div className="ai-model-description">
+                                        Specialized AI model combining behavioral economics, investor psychology, 
+                                        and portfolio theory to provide personalized coaching, prevent costly 
+                                        emotional decisions, and guide investors toward long-term success.
+                                    </div>
+                                    <span className="ai-model-status production">In Production</span>
+                                </div>
+                                
+                                <div className="ai-model-card">
+                                    <div className="ai-model-icon">💼</div>
+                                    <div className="ai-model-name">CIM</div>
+                                    <div className="ai-model-description">
+                                        Comprehensive Investment Model delivering holistic portfolio analysis, 
+                                        multi-dimensional risk assessment, and strategic allocation recommendations 
+                                        for institutional-grade investment management.
+                                    </div>
+                                    <span className="ai-model-status production">In Production</span>
+                                </div>
+                            </div>
                         </div>
                     )}
                     

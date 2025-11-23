@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field, validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from openai import OpenAI
+from anthropic import Anthropic
 import logging
 import pandas as pd
 import io
@@ -56,12 +56,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize OpenAI client
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
+# Initialize Anthropic client
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")  # Fallback for compatibility
+if not ANTHROPIC_API_KEY:
+    raise ValueError("ANTHROPIC_API_KEY environment variable is required")
 
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 # Pydantic models for request/response validation
@@ -666,10 +666,10 @@ def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
         # Create the prompt for OpenAI
         prompt = create_analysis_prompt(payload.client, payload.holdings)
         
-        # Call OpenAI API
+        # Call Anthropic API
         try:
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",  # Using GPT-4o-mini for fast, cost-effective analysis
+            response = anthropic_client.messages.create(
+                model="claude-3-5-haiku-20241022",  # Using Claude 3.5 Haiku for fast, cost-effective analysis
                 max_tokens=4000,
                 messages=[
                     {
@@ -680,8 +680,8 @@ def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
                 temperature=0.7
             )
             
-            # Extract text from OpenAI's response
-            response_text = response.choices[0].message.content
+            # Extract text from Anthropic's response
+            response_text = response.content[0].text
             
             # Parse the JSON response
             analysis_data = parse_openai_response(response_text)
@@ -693,7 +693,7 @@ def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
             return response
             
         except Exception as e:
-            logger.error(f"OpenAI API error: {str(e)}", exc_info=True)
+            logger.error(f"Anthropic API error: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"AI service temporarily unavailable: {str(e)}"
