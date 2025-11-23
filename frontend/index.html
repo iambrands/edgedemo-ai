@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -514,6 +515,217 @@
         .progress-step.active {
             background: #0066FF;
         }
+        
+        .file-upload-zone {
+            border: 2px dashed #D1D5DB;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            background: #F9FAFB;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .file-upload-zone:hover {
+            border-color: #0066FF;
+            background: #F0F7FF;
+        }
+        
+        .file-upload-zone.dragover {
+            border-color: #0066FF;
+            background: #F0F7FF;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+        
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .file-upload-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .file-upload-hint {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 16px;
+        }
+        
+        .file-upload-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #0066FF;
+            color: white;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .file-upload-btn:hover {
+            background: #0052CC;
+        }
+        
+        .file-upload-input {
+            display: none;
+        }
+        
+        .uploaded-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #F0FDF4;
+            border: 1px solid #10B981;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .uploaded-file-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #065F46;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .uploaded-file-remove {
+            background: transparent;
+            border: none;
+            color: #DC2626;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .uploaded-file-remove:hover {
+            background: #FEE2E2;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: #9CA3AF;
+            font-size: 14px;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E8EBED;
+        }
+        
+        .divider::before {
+            margin-right: 12px;
+        }
+        
+        .divider::after {
+            margin-left: 12px;
+        }
+        
+        .upload-loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #F3F4F6;
+            border-top: 2px solid #0066FF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+        
+        .paste-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px 16px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #374151;
+            background: #FFFFFF;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        
+        .paste-textarea:focus {
+            outline: none;
+            border-color: #0066FF;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+        
+        .paste-textarea::placeholder {
+            color: #9CA3AF;
+        }
+        
+        .paste-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .paste-toggle-btn {
+            background: transparent;
+            border: none;
+            color: #0066FF;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 0;
+            text-decoration: underline;
+        }
+        
+        .paste-toggle-btn:hover {
+            color: #0052CC;
+        }
+        
+        .disclaimer-banner {
+            background: linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%);
+            border-left: 4px solid #F59E0B;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        
+        .disclaimer-banner h4 {
+            color: #92400E;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .disclaimer-banner p {
+            color: #78350F;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        .disclaimer-banner strong {
+            font-weight: 600;
+            color: #92400E;
+        }
     </style>
 </head>
 <body>
@@ -527,10 +739,14 @@
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useRef } = React;
         
         // Get API base URL from environment or default to current origin
-        const API_BASE_URL = window.location.origin;
+        // In production, this should point to your GCP Cloud Run backend
+        const API_BASE_URL = window.EDGEAI_CONFIG?.API_BASE_URL || 
+          (window.location.hostname === 'demo.edgeadvisors.ai' 
+            ? window.location.origin  // Same domain if backend served from same origin
+            : window.location.origin); // Local development or fallback
         
         function EdgeAIDemo() {
             const [step, setStep] = useState(1);
@@ -551,6 +767,14 @@
                 { ticker: '', amount: '' }
             ]);
             
+            const [uploadedFile, setUploadedFile] = useState(null);
+            const [isDragging, setIsDragging] = useState(false);
+            const [isUploading, setIsUploading] = useState(false);
+            const [showPasteOption, setShowPasteOption] = useState(false);
+            const [pastedText, setPastedText] = useState('');
+            const [isParsing, setIsParsing] = useState(false);
+            const fileInputRef = React.useRef(null);
+            
             const addHolding = () => {
                 setHoldings([...holdings, { ticker: '', amount: '' }]);
             };
@@ -564,6 +788,310 @@
                 const newHoldings = [...holdings];
                 newHoldings[index][field] = value;
                 setHoldings(newHoldings);
+            };
+            
+            const handleFileUpload = async (file) => {
+                if (!file) return;
+                
+                // Validate file type
+                const validTypes = ['text/csv', 'application/vnd.ms-excel', 
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.ms-excel.sheet.macroEnabled.12'];
+                const validExts = ['csv', 'xlsx', 'xls'];
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                
+                if (!validExts.includes(fileExt) && !validTypes.includes(file.type)) {
+                    setError(`Invalid file type. Please upload CSV or XLSX file.`);
+                    return;
+                }
+                
+                setIsUploading(true);
+                setError(null);
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/parse-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                        throw new Error(errorData.detail || 'Failed to parse file');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.holdings && data.holdings.length > 0) {
+                        // Populate holdings with parsed data
+                        const parsedHoldings = data.holdings.map(h => ({
+                            ticker: h.ticker,
+                            amount: h.amount.toString()
+                        }));
+                        
+                        // Ensure at least 3 rows, fill remaining with empty
+                        while (parsedHoldings.length < 3) {
+                            parsedHoldings.push({ ticker: '', amount: '' });
+                        }
+                        
+                        setHoldings(parsedHoldings);
+                        setUploadedFile(file.name);
+                    } else {
+                        throw new Error('No holdings found in file');
+                    }
+                    
+                } catch (err) {
+                    console.error('File upload error:', err);
+                    setError(`Could not parse file: ${err.message}. Please check format or enter manually.`);
+                    setUploadedFile(null);
+                } finally {
+                    setIsUploading(false);
+                }
+            };
+            
+            const handleFileSelect = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            };
+            
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+            };
+            
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+            };
+            
+            const handleDrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            };
+            
+            const clearUploadedFile = () => {
+                setUploadedFile(null);
+                setHoldings([
+                    { ticker: '', amount: '' },
+                    { ticker: '', amount: '' },
+                    { ticker: '', amount: '' }
+                ]);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            };
+            
+            const parsePastedAnalysis = (text) => {
+                // Parse portfolio analysis text to extract holdings
+                // Handles formats like:
+                // - "Apple (AAPL)" followed by "Market Value: $89,296" on next line
+                // - "AAPL - Market Value: $89,296"
+                // - "AAPL" - "$89,296"
+                
+                try {
+                    const holdings = [];
+                    const lines = text.split('\n');
+                    
+                    // Process in chunks - track ticker across multiple lines
+                    let currentTicker = null;
+                    let currentAmount = null;
+                    let linesSinceTicker = 0;
+                    
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        
+                        // If we found a ticker recently (within 5 lines), keep looking for its value
+                        if (currentTicker && linesSinceTicker < 5) {
+                            linesSinceTicker++;
+                            
+                            // Look for dollar amounts on this line
+                            // Pattern 1: "Market Value: $89,296"
+                            const valueMatch1 = line.match(/(?:market value|current value|total value|value|amount)[:\s]+\$?([\d,]+\.?\d*)/i);
+                            if (valueMatch1 && valueMatch1[1]) {
+                                const amountStr = valueMatch1[1].replace(/[^0-9.]/g, '').replace(/,/g, '');
+                                const amount = parseFloat(amountStr);
+                                if (!isNaN(amount) && amount > 0 && amount < 5000000) {
+                                    currentAmount = amount;
+                                    holdings.push({
+                                        ticker: currentTicker,
+                                        amount: Math.round(currentAmount * 100) / 100
+                                    });
+                                    currentTicker = null;
+                                    currentAmount = null;
+                                    linesSinceTicker = 0;
+                                    continue; // Move to next line
+                                }
+                            }
+                            
+                            // Pattern 2: Find all dollar amounts on the line
+                            const dollarMatches = line.match(/\$([\d,]+\.?\d*)/g);
+                            if (dollarMatches && dollarMatches.length > 0) {
+                                const amounts = dollarMatches.map(m => {
+                                    const numStr = m.replace(/[^0-9.]/g, '').replace(/,/g, '');
+                                    return parseFloat(numStr);
+                                }).filter(n => !isNaN(n) && n > 0 && n < 5000000);
+                                
+                                if (amounts.length > 0) {
+                                    currentAmount = Math.max(...amounts);
+                                    holdings.push({
+                                        ticker: currentTicker,
+                                        amount: Math.round(currentAmount * 100) / 100
+                                    });
+                                    currentTicker = null;
+                                    currentAmount = null;
+                                    linesSinceTicker = 0;
+                                    continue;
+                                }
+                            }
+                            
+                            // Try quantity * price if we have ticker but no amount yet
+                            if (!currentAmount) {
+                                const qtyMatch = line.match(/(?:quantity|qty|shares)[:\s]+([\d,]+)/i);
+                                const priceMatch = line.match(/(?:price|last price|current price|avg price)[:\s]+\$?([\d,]+\.?\d*)/i);
+                                if (qtyMatch && priceMatch) {
+                                    const qty = parseFloat(qtyMatch[1].replace(/,/g, ''));
+                                    const price = parseFloat((priceMatch[1] || priceMatch[0]).replace(/[^0-9.]/g, '').replace(/,/g, ''));
+                                    if (!isNaN(qty) && !isNaN(price) && qty > 0 && price > 0) {
+                                        currentAmount = qty * price;
+                                        holdings.push({
+                                            ticker: currentTicker,
+                                            amount: Math.round(currentAmount * 100) / 100
+                                        });
+                                        currentTicker = null;
+                                        currentAmount = null;
+                                        linesSinceTicker = 0;
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (!line) continue;
+                        
+                        // Reset if we've gone too far without finding a value
+                        if (currentTicker && linesSinceTicker >= 5) {
+                            currentTicker = null;
+                            linesSinceTicker = 0;
+                        }
+                        
+                        // Look for ticker patterns
+                        const tickerPatterns = [
+                            /\(([A-Z0-9]{1,10})\)/,  // In parentheses: "Apple (AAPL)"
+                            /^([A-Z0-9]{1,10})(?:\s|$|,)/,  // At start: "AAPL "
+                            /\b([A-Z0-9]{1,10})\s*[-\–]\s*(?:market|value|quantity)/i  // Before keywords
+                        ];
+                        
+                        for (const pattern of tickerPatterns) {
+                            const match = line.match(pattern);
+                            if (match && match[1]) {
+                                const ticker = match[1].toUpperCase().trim();
+                                if (ticker && ticker.length >= 1 && ticker.length <= 10 && /^[A-Z0-9]+$/.test(ticker)) {
+                                    currentTicker = ticker;
+                                    linesSinceTicker = 0;
+                                    
+                                    // Check if value is on same line
+                                    const sameLineValue = line.match(/(?:market value|current value|value|amount)[:\s]+\$?([\d,]+\.?\d*)/i);
+                                    if (sameLineValue) {
+                                        const amountStr = (sameLineValue[1] || '').replace(/[^0-9.]/g, '').replace(/,/g, '');
+                                        const amount = parseFloat(amountStr);
+                                        if (!isNaN(amount) && amount > 0 && amount < 5000000) {
+                                            holdings.push({
+                                                ticker: currentTicker,
+                                                amount: Math.round(amount * 100) / 100
+                                            });
+                                            currentTicker = null;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Also try single-line patterns like "AAPL - $89,296"
+                        const singleLineMatch = line.match(/([A-Z0-9]{1,10})[:\s\-–]+\$?([\d,]+\.?\d*)/i);
+                        if (singleLineMatch && singleLineMatch[1] && singleLineMatch[2]) {
+                            const ticker = singleLineMatch[1].toUpperCase().trim();
+                            const amountStr = singleLineMatch[2].replace(/[^0-9.]/g, '').replace(/,/g, '');
+                            const amount = parseFloat(amountStr);
+                            if (ticker && /^[A-Z0-9]+$/.test(ticker) && !isNaN(amount) && amount > 0 && amount < 5000000) {
+                                holdings.push({
+                                    ticker: ticker,
+                                    amount: Math.round(amount * 100) / 100
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Remove duplicates, sum amounts if same ticker
+                    const holdingsMap = {};
+                    holdings.forEach(h => {
+                        if (h.ticker && h.amount) {
+                            if (holdingsMap[h.ticker]) {
+                                holdingsMap[h.ticker].amount += h.amount;
+                            } else {
+                                holdingsMap[h.ticker] = { ticker: h.ticker, amount: h.amount };
+                            }
+                        }
+                    });
+                    
+                    return Object.values(holdingsMap);
+                    
+                } catch (error) {
+                    console.error('Parse error details:', error);
+                    throw new Error(`Parsing failed: ${error.message}`);
+                }
+            };
+            
+            const handlePasteAnalysis = () => {
+                if (!pastedText.trim()) {
+                    setError("Please paste your previous analysis text");
+                    return;
+                }
+                
+                setIsParsing(true);
+                setError(null);
+                
+                try {
+                    const parsedHoldings = parsePastedAnalysis(pastedText);
+                    
+                    console.log('Parsed holdings:', parsedHoldings);
+                    
+                    if (parsedHoldings.length === 0) {
+                        setError("Could not extract holdings from pasted text. The parser looks for ticker symbols (like AAPL) and dollar amounts (like $89,296). Please check the format or enter manually.");
+                        setIsParsing(false);
+                        return;
+                    }
+                    
+                    // Pad to at least 3 rows
+                    while (parsedHoldings.length < 3) {
+                        parsedHoldings.push({ ticker: '', amount: '' });
+                    }
+                    
+                    setHoldings(parsedHoldings);
+                    setShowPasteOption(false);
+                    setPastedText('');
+                    setError(null); // Clear any previous errors
+                    
+                } catch (err) {
+                    console.error('Parse error:', err);
+                    console.error('Error stack:', err.stack);
+                    console.error('Pasted text:', pastedText.substring(0, 500));
+                    setError(`Error parsing pasted text: ${err.message}. Please check the format or enter manually.`);
+                } finally {
+                    setIsParsing(false);
+                }
             };
             
             const analyzePortfolio = async () => {
@@ -645,8 +1173,156 @@
                     .reduce((sum, h) => sum + parseFloat(h.amount || 0), 0);
             };
             
+            // Chart rendering effect
+            useEffect(() => {
+                if (step === 3 && results && typeof Chart !== 'undefined') {
+                    // Clean up existing charts
+                    const destroyChart = (id) => {
+                        const canvas = document.getElementById(id);
+                        if (canvas && canvas.chartInstance) {
+                            canvas.chartInstance.destroy();
+                            canvas.chartInstance = null;
+                        }
+                    };
+                    
+                    destroyChart('assetAllocationChart');
+                    destroyChart('sectorChart');
+                    destroyChart('geographicChart');
+                    
+                    // Asset Allocation Pie Chart
+                    if (results.assetAllocation) {
+                        const ctx = document.getElementById('assetAllocationChart');
+                        if (ctx) {
+                            const data = [
+                                results.assetAllocation.equities,
+                                results.assetAllocation.fixedIncome,
+                                results.assetAllocation.cash,
+                                results.assetAllocation.alternatives || 0
+                            ].filter(v => v > 0);
+                            const labels = [];
+                            if (results.assetAllocation.equities > 0) labels.push('Equities');
+                            if (results.assetAllocation.fixedIncome > 0) labels.push('Fixed Income');
+                            if (results.assetAllocation.cash > 0) labels.push('Cash');
+                            if (results.assetAllocation.alternatives > 0) labels.push('Alternatives');
+                            
+                            ctx.chartInstance = new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        data: data,
+                                        backgroundColor: ['#0066FF', '#10B981', '#F59E0B', '#8B5CF6'],
+                                        borderColor: '#FFFFFF',
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Sector Allocation Chart
+                    if (results.performanceMetrics && results.performanceMetrics.sectorAllocation) {
+                        const ctx = document.getElementById('sectorChart');
+                        if (ctx) {
+                            const sectors = Object.entries(results.performanceMetrics.sectorAllocation)
+                                .filter(([_, v]) => v > 0)
+                                .sort(([_, a], [__, b]) => b - a)
+                                .slice(0, 8); // Top 8 sectors
+                            
+                            ctx.chartInstance = new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: sectors.map(([s]) => s),
+                                    datasets: [{
+                                        data: sectors.map(([_, v]) => v),
+                                        backgroundColor: [
+                                            '#0066FF', '#10B981', '#F59E0B', '#8B5CF6',
+                                            '#EF4444', '#06B6D4', '#84CC16', '#F97316'
+                                        ]
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Geographic Exposure Chart
+                    if (results.performanceMetrics && results.performanceMetrics.geographicExposure) {
+                        const ctx = document.getElementById('geographicChart');
+                        if (ctx) {
+                            const regions = Object.entries(results.performanceMetrics.geographicExposure)
+                                .filter(([_, v]) => v > 0)
+                                .sort(([_, a], [__, b]) => b - a);
+                            
+                            ctx.chartInstance = new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: regions.map(([r]) => r),
+                                    datasets: [{
+                                        data: regions.map(([_, v]) => v),
+                                        backgroundColor: ['#0066FF', '#10B981', '#F59E0B']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                // Cleanup function
+                return () => {
+                    ['assetAllocationChart', 'sectorChart', 'geographicChart'].forEach(id => {
+                        const canvas = document.getElementById(id);
+                        if (canvas && canvas.chartInstance) {
+                            canvas.chartInstance.destroy();
+                        }
+                    });
+                };
+            }, [step, results]);
+            
             return (
                 <div className="container">
+                    {/* Disclaimer Banner - Show on homepage (step 1) */}
+                    {step === 1 && (
+                        <div className="disclaimer-banner">
+                            <h4>
+                                <span>⚠️</span>
+                                Important Disclaimer
+                            </h4>
+                            <p>
+                                <strong>This is a DEMO for demonstration purposes only.</strong> The analysis provided is 
+                                <strong> NOT financial advice</strong> and should not be used as the sole basis for investment decisions. 
+                                All portfolio data is processed in memory only and is <strong>NOT saved or stored anywhere</strong>. 
+                                Please consult with a qualified financial advisor before making any investment decisions.
+                            </p>
+                        </div>
+                    )}
+                    
                     {step < 3 && (
                         <>
                             <h1 className="page-title">Portfolio Analysis</h1>
@@ -756,9 +1432,113 @@
                                 <h2>Portfolio Holdings</h2>
                             </div>
                             
-                            <p style={{color: '#6B7280', marginBottom: '20px', fontSize: '14px'}}>
-                                Enter ticker symbols and dollar amounts for each holding in the portfolio
+                            {/* File Upload Section */}
+                            <div>
+                            <p style={{color: '#6B7280', marginBottom: '16px', fontSize: '14px'}}>
+                                Upload a portfolio file from your brokerage (Robinhood, Fidelity, Schwab, etc.) or enter holdings manually below
                             </p>
+                                
+                                {!showPasteOption ? (
+                                    <button
+                                        className="paste-toggle-btn"
+                                        onClick={() => setShowPasteOption(true)}
+                                        style={{marginBottom: '16px'}}
+                                    >
+                                        Or paste previous analysis text
+                                    </button>
+                                ) : (
+                                    <div style={{marginBottom: '20px'}}>
+                                        <label style={{display: 'block', marginBottom: '8px', color: '#374151', fontWeight: '500', fontSize: '14px'}}>
+                                            Paste Previous Analysis
+                                        </label>
+                                        <textarea
+                                            className="paste-textarea"
+                                            placeholder="Paste your previous portfolio analysis text here. The parser will extract holdings automatically.
+
+Example format:
+Apple (AAPL)
+Quantity: 400
+Market Value: $89,296
+
+Or:
+AAPL - Market Value: $89,296"
+                                            value={pastedText}
+                                            onChange={(e) => setPastedText(e.target.value)}
+                                        />
+                                        <div className="paste-actions">
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={handlePasteAnalysis}
+                                                disabled={!pastedText.trim() || isParsing}
+                                                style={{padding: '10px 24px', fontSize: '14px'}}
+                                            >
+                                                {isParsing ? 'Parsing...' : 'Extract Holdings'}
+                                            </button>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => {
+                                                    setShowPasteOption(false);
+                                                    setPastedText('');
+                                                }}
+                                                style={{padding: '10px 24px', fontSize: '14px'}}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {!uploadedFile && !showPasteOption && (
+                                    <>
+                                        <div
+                                            className={`file-upload-zone ${isDragging ? 'dragover' : ''}`}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <div className="file-upload-icon">📁</div>
+                                            <div className="file-upload-text">
+                                                Upload Portfolio File
+                                                {isUploading && <span className="upload-loading"></span>}
+                                            </div>
+                                            <div className="file-upload-hint">
+                                                Drag & drop a file here, or click to browse
+                                            </div>
+                                            <div style={{fontSize: '12px', color: '#9CA3AF', marginTop: '8px'}}>
+                                                Supports CSV/XLSX from: Robinhood, Fidelity, Schwab, TD Ameritrade, Vanguard, E*TRADE, Interactive Brokers, Merrill Edge, Ally Invest, Webull, M1, SoFi, Betterment, Wealthfront, and more
+                                            </div>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                className="file-upload-input"
+                                                accept=".csv,.xlsx,.xls"
+                                                onChange={handleFileSelect}
+                                            />
+                                        </div>
+                                        <div className="divider">Or enter manually</div>
+                                    </>
+                                )}
+                                
+                                {uploadedFile && (
+                                    <>
+                                        <div className="uploaded-file">
+                                            <div className="uploaded-file-name">
+                                                <span>✓</span>
+                                                <span>{uploadedFile}</span>
+                                            </div>
+                                            <button
+                                                className="uploaded-file-remove"
+                                                onClick={clearUploadedFile}
+                                                title="Remove file"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="divider">Or enter manually</div>
+                                    </>
+                                )}
+                            </div>
                             
                             {holdings.map((holding, index) => (
                                 <div key={index} className="holding-row">
@@ -865,6 +1645,176 @@
                                     </div>
                                 ))}
                             </div>
+                            
+                            {/* Performance Metrics Dashboard */}
+                            {results.performanceMetrics && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        <div className="card-icon">📈</div>
+                                        <h2>Performance Metrics</h2>
+                                    </div>
+                                    <div className="result-content">
+                                        <div className="metric-grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px'}}>
+                                            {results.performanceMetrics.portfolioBeta !== null && results.performanceMetrics.portfolioBeta !== undefined && (
+                                                <div className="metric-card" style={{padding: '20px'}}>
+                                                    <div className="metric-label" style={{marginBottom: '8px'}}>Portfolio Beta</div>
+                                                    <div className="metric-value" style={{fontSize: '28px', marginBottom: '8px'}}>{results.performanceMetrics.portfolioBeta.toFixed(2)}</div>
+                                                    <div style={{fontSize: '13px', color: '#6B7280', lineHeight: '1.5'}}>
+                                                        {results.performanceMetrics.portfolioBeta > 1.2 ? (
+                                                            <>Your portfolio moves <strong>more</strong> than the market. Higher growth potential, but also higher volatility.</>
+                                                        ) : results.performanceMetrics.portfolioBeta > 0.8 ? (
+                                                            <>Your portfolio moves <strong>similarly</strong> to the market. Balanced risk and return.</>
+                                                        ) : (
+                                                            <>Your portfolio moves <strong>less</strong> than the market. More stable, but potentially lower returns.</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {results.performanceMetrics.sharpeRatio !== null && results.performanceMetrics.sharpeRatio !== undefined && (
+                                                <div className="metric-card" style={{padding: '20px'}}>
+                                                    <div className="metric-label" style={{marginBottom: '8px'}}>Sharpe Ratio</div>
+                                                    <div className="metric-value" style={{fontSize: '28px', marginBottom: '8px'}}>{results.performanceMetrics.sharpeRatio.toFixed(2)}</div>
+                                                    <div style={{fontSize: '13px', color: '#6B7280', lineHeight: '1.5'}}>
+                                                        {results.performanceMetrics.sharpeRatio > 1.5 ? (
+                                                            <>Excellent risk-adjusted returns. Your portfolio delivers strong returns relative to the risk taken.</>
+                                                        ) : results.performanceMetrics.sharpeRatio > 1.0 ? (
+                                                            <>Good risk-adjusted returns. Your returns are solid compared to the risk level.</>
+                                                        ) : results.performanceMetrics.sharpeRatio > 0.5 ? (
+                                                            <>Moderate risk-adjusted returns. Returns are reasonable for the amount of risk.</>
+                                                        ) : (
+                                                            <>Lower risk-adjusted returns. Consider optimizing for better risk-reward balance.</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {results.performanceMetrics.dividendYield !== null && results.performanceMetrics.dividendYield !== undefined && (
+                                                <div className="metric-card" style={{padding: '20px'}}>
+                                                    <div className="metric-label" style={{marginBottom: '8px'}}>Dividend Yield</div>
+                                                    <div className="metric-value" style={{fontSize: '28px', marginBottom: '8px'}}>{results.performanceMetrics.dividendYield.toFixed(2)}%</div>
+                                                    <div style={{fontSize: '13px', color: '#6B7280', lineHeight: '1.5'}}>
+                                                        Your portfolio pays approximately <strong>{results.performanceMetrics.dividendYield.toFixed(2)}%</strong> in annual dividends. 
+                                                        {results.performanceMetrics.dividendYield > 3 ? (
+                                                            <> This is a strong income-generating portfolio.</>
+                                                        ) : results.performanceMetrics.dividendYield > 1 ? (
+                                                            <> Provides some income while maintaining growth potential.</>
+                                                        ) : (
+                                                            <> Focus is on growth rather than income.</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {results.performanceMetrics.concentrationRisk !== null && results.performanceMetrics.concentrationRisk !== undefined && (
+                                                <div className="metric-card" style={{padding: '20px'}}>
+                                                    <div className="metric-label" style={{marginBottom: '8px'}}>Concentration Risk</div>
+                                                    <div className="metric-value" style={{fontSize: '28px', marginBottom: '8px', color: results.performanceMetrics.concentrationRisk > 60 ? '#DC2626' : results.performanceMetrics.concentrationRisk > 40 ? '#F59E0B' : '#10B981'}}>
+                                                        {results.performanceMetrics.concentrationRisk.toFixed(1)}%
+                                                    </div>
+                                                    <div style={{fontSize: '13px', color: '#6B7280', lineHeight: '1.5'}}>
+                                                        {results.performanceMetrics.concentrationRisk > 60 ? (
+                                                            <>High concentration - your top holdings make up <strong>{results.performanceMetrics.concentrationRisk.toFixed(0)}%</strong> of your portfolio. Consider diversifying to reduce risk.</>
+                                                        ) : results.performanceMetrics.concentrationRisk > 40 ? (
+                                                            <>Moderate concentration - your top holdings represent <strong>{results.performanceMetrics.concentrationRisk.toFixed(0)}%</strong> of your portfolio. Some diversification may help.</>
+                                                        ) : (
+                                                            <>Well-diversified - your portfolio is spread across many holdings, reducing single-stock risk.</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Asset Allocation & Diversification Charts */}
+                            {(results.assetAllocation || results.performanceMetrics) && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        <div className="card-icon">📊</div>
+                                        <h2>Portfolio Visualization</h2>
+                                    </div>
+                                    <div className="result-content">
+                                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '16px'}}>
+                                            {/* Asset Allocation Chart */}
+                                            {results.assetAllocation && (
+                                                <div>
+                                                    <h4 style={{marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#374151'}}>Asset Allocation</h4>
+                                                    <div style={{position: 'relative', height: '300px'}}>
+                                                        <canvas id="assetAllocationChart"></canvas>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* Sector Allocation Chart */}
+                                            {results.performanceMetrics && results.performanceMetrics.sectorAllocation && (
+                                                <div>
+                                                    <h4 style={{marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#374151'}}>Sector Diversification</h4>
+                                                    <div style={{position: 'relative', height: '300px'}}>
+                                                        <canvas id="sectorChart"></canvas>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* Geographic Exposure Chart */}
+                                            {results.performanceMetrics && results.performanceMetrics.geographicExposure && (
+                                                <div>
+                                                    <h4 style={{marginBottom: '16px', fontSize: '16px', fontWeight: '600', color: '#374151'}}>Geographic Exposure</h4>
+                                                    <div style={{position: 'relative', height: '300px'}}>
+                                                        <canvas id="geographicChart"></canvas>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Sector & Geographic Breakdown */}
+                            {results.performanceMetrics && (results.performanceMetrics.sectorAllocation || results.performanceMetrics.geographicExposure) && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        <div className="card-icon">🌍</div>
+                                        <h2>Diversification Analysis</h2>
+                                    </div>
+                                    <div className="result-content">
+                                        {results.performanceMetrics.sectorAllocation && (
+                                            <div style={{marginBottom: '24px'}}>
+                                                <h4 style={{marginBottom: '12px', fontSize: '16px', fontWeight: '600', color: '#374151'}}>Sector Allocation</h4>
+                                                <div style={{display: 'grid', gap: '8px'}}>
+                                                    {Object.entries(results.performanceMetrics.sectorAllocation)
+                                                        .filter(([_, value]) => value > 0)
+                                                        .sort(([_, a], [__, b]) => b - a)
+                                                        .map(([sector, percentage]) => (
+                                                            <div key={sector} style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                                <div style={{flex: '1', background: '#E8EBED', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
+                                                                    <div style={{background: '#0066FF', height: '100%', width: `${percentage}%`, transition: 'width 0.3s'}}></div>
+                                                                </div>
+                                                                <div style={{minWidth: '120px', fontSize: '14px', color: '#374151', fontWeight: '500'}}>{sector}</div>
+                                                                <div style={{minWidth: '50px', textAlign: 'right', fontSize: '14px', color: '#0066FF', fontWeight: '600'}}>{percentage.toFixed(1)}%</div>
+                                                            </div>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {results.performanceMetrics.geographicExposure && (
+                                            <div>
+                                                <h4 style={{marginBottom: '12px', fontSize: '16px', fontWeight: '600', color: '#374151'}}>Geographic Exposure</h4>
+                                                <div style={{display: 'grid', gap: '8px'}}>
+                                                    {Object.entries(results.performanceMetrics.geographicExposure)
+                                                        .filter(([_, value]) => value > 0)
+                                                        .sort(([_, a], [__, b]) => b - a)
+                                                        .map(([region, percentage]) => (
+                                                            <div key={region} style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                                                                <div style={{flex: '1', background: '#E8EBED', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
+                                                                    <div style={{background: '#0066FF', height: '100%', width: `${percentage}%`, transition: 'width 0.3s'}}></div>
+                                                                </div>
+                                                                <div style={{minWidth: '120px', fontSize: '14px', color: '#374151', fontWeight: '500'}}>{region}</div>
+                                                                <div style={{minWidth: '50px', textAlign: 'right', fontSize: '14px', color: '#0066FF', fontWeight: '600'}}>{percentage.toFixed(1)}%</div>
+                                                            </div>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                             
                             <div className="card">
                                 <div className="feature-badges">

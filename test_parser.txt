@@ -1,0 +1,11 @@
+Apple (AAPL)
+
+Quantity: 400
+
+Market Value: $89,296
+
+AbbVie (ABBV)
+
+Quantity: 300
+
+Market Value: $51,297
