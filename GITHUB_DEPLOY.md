@@ -38,7 +38,7 @@ git push -u origin main
 3. Click **"New Variable"** and add:
 
 ```
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 4. Add another variable:
