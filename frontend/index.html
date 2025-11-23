@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdgeAI Portfolio Analyzer</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background: #FAFBFC;
+            color: #1A1A1A;
+            min-height: 100vh;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #FFFFFF;
+            padding: 24px 40px;
+            border-bottom: 1px solid #E8EBED;
+            margin-bottom: 32px;
+        }
+        
+        .header-content {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0066FF;
+            letter-spacing: -0.5px;
+        }
+        
+        .header-badge {
+            background: #F0F7FF;
+            color: #0066FF;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #D6E8FF;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .page-subtitle {
+            font-size: 16px;
+            color: #6B7280;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+        
+        .card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            border: 1px solid #E8EBED;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: #F0F7FF;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #0066FF;
+        }
+        
+        .card h2 {
+            color: #1A1A1A;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #FFFFFF;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            color: #1A1A1A;
+            font-size: 15px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0066FF;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: #9CA3AF;
+        }
+        
+        .holding-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: end;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: #0066FF;
+            color: white;
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #0052CC;
+            box-shadow: 0 2px 8px rgba(0, 102, 255, 0.25);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #FFFFFF;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+        }
+        
+        .btn-secondary:hover {
+            background: #F9FAFB;
+            border-color: #9CA3AF;
+        }
+        
+        .btn-add {
+            padding: 10px;
+            background: #FFFFFF;
+            color: #0066FF;
+            border: 1px dashed #0066FF;
+            width: 100%;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .btn-add:hover {
+            background: #F0F7FF;
+        }
+        
+        .btn-remove {
+            background: #FEF2F2;
+            color: #DC2626;
+            border: 1px solid #FEE2E2;
+            padding: 12px 16px;
+        }
+        
+        .btn-remove:hover {
+            background: #FEE2E2;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 40px;
+        }
+        
+        .spinner {
+            border: 3px solid #F3F4F6;
+            border-top: 3px solid #0066FF;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading h3 {
+            color: #1A1A1A;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .loading p {
+            color: #6B7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .result-section {
+            margin-bottom: 32px;
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .result-icon {
+            width: 36px;
+            height: 36px;
+            background: #F0F7FF;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #0066FF;
+        }
+        
+        .result-section h3 {
+            color: #1A1A1A;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .result-content {
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #E8EBED;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .metric-card {
+            background: #FFFFFF;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #E8EBED;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0066FF;
+        }
+        
+        .feature-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-badge {
+            background: #F0F7FF;
+            color: #0066FF;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #D6E8FF;
+        }
+        
+        .alert-box {
+            background: #F0FDF4;
+            border-left: 3px solid #10B981;
+            padding: 14px 16px;
+            border-radius: 6px;
+            margin-top: 12px;
+            color: #065F46;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .alert-box.warning {
+            background: #FFF7ED;
+            border-left-color: #F59E0B;
+            color: #92400E;
+        }
+        
+        .alert-box.info {
+            background: #F0F7FF;
+            border-left-color: #0066FF;
+            color: #1E40AF;
+        }
+        
+        .alert-box.error {
+            background: #FEF2F2;
+            border-left-color: #DC2626;
+            color: #991B1B;
+        }
+        
+        .portfolio-summary {
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #E8EBED;
+        }
+        
+        .portfolio-summary h4 {
+            color: #1A1A1A;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .summary-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .summary-item {
+            font-size: 14px;
+            color: #6B7280;
+        }
+        
+        .summary-item strong {
+            color: #374151;
+            font-weight: 600;
+        }
+        
+        .holding-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: #FFFFFF;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border: 1px solid #E8EBED;
+            font-size: 14px;
+        }
+        
+        .holding-item span:first-child {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .holding-item span:last-child {
+            color: #6B7280;
+        }
+        
+        .total-value {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #FFFFFF;
+            border-radius: 6px;
+            border: 1px solid #D6E8FF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .total-value strong {
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .total-value span {
+            color: #0066FF;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .info-banner {
+            background: linear-gradient(135deg, #F0F7FF 0%, #E0F2FE 100%);
+            border: 1px solid #BAE6FD;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+            text-align: center;
+        }
+        
+        .info-banner h4 {
+            color: #0066FF;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .info-banner p {
+            color: #374151;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        
+        .info-banner .value-prop {
+            margin-top: 12px;
+            font-weight: 600;
+            color: #0066FF;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .holding-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        
+        .progress-step {
+            width: 32px;
+            height: 4px;
+            background: #E8EBED;
+            border-radius: 2px;
+        }
+        
+        .progress-step.active {
+            background: #0066FF;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">EdgeAI</div>
+            <div class="header-badge">Portfolio Analyzer Demo</div>
+        </div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        
+        // Get API base URL from environment or default to current origin
+        const API_BASE_URL = window.location.origin;
+        
+        function EdgeAIDemo() {
+            const [step, setStep] = useState(1);
+            const [loading, setLoading] = useState(false);
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState(null);
+            
+            const [clientInfo, setClientInfo] = useState({
+                name: '',
+                age: '',
+                riskTolerance: 'Medium',
+                primaryGoal: 'Retirement'
+            });
+            
+            const [holdings, setHoldings] = useState([
+                { ticker: '', amount: '' },
+                { ticker: '', amount: '' },
+                { ticker: '', amount: '' }
+            ]);
+            
+            const addHolding = () => {
+                setHoldings([...holdings, { ticker: '', amount: '' }]);
+            };
+            
+            const removeHolding = (index) => {
+                const newHoldings = holdings.filter((_, i) => i !== index);
+                setHoldings(newHoldings);
+            };
+            
+            const updateHolding = (index, field, value) => {
+                const newHoldings = [...holdings];
+                newHoldings[index][field] = value;
+                setHoldings(newHoldings);
+            };
+            
+            const analyzePortfolio = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    // Validate and prepare request data
+                    const validHoldings = holdings
+                        .filter(h => h.ticker && h.amount)
+                        .map(h => ({
+                            ticker: h.ticker.toUpperCase().trim(),
+                            amount: parseFloat(h.amount)
+                        }));
+                    
+                    if (validHoldings.length === 0) {
+                        throw new Error("Please add at least one portfolio holding");
+                    }
+                    
+                    const requestPayload = {
+                        client: {
+                            name: clientInfo.name.trim(),
+                            age: parseInt(clientInfo.age),
+                            riskTolerance: clientInfo.riskTolerance,
+                            primaryGoal: clientInfo.primaryGoal
+                        },
+                        holdings: validHoldings
+                    };
+                    
+                    // Call backend API
+                    const response = await fetch(`${API_BASE_URL}/api/analyze-portfolio`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestPayload)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                        
+                        if (response.status === 429) {
+                            throw new Error("Rate limit exceeded. Please try again in an hour.");
+                        } else if (response.status === 422) {
+                            throw new Error(errorData.detail || "Invalid input data. Please check your entries.");
+                        } else if (response.status === 503) {
+                            throw new Error("Service temporarily unavailable. Please try again in a few moments.");
+                        } else {
+                            throw new Error(errorData.detail || `Server error: ${response.status}`);
+                        }
+                    }
+                    
+                    const analysisData = await response.json();
+                    setResults(analysisData);
+                    setStep(3);
+                    
+                } catch (err) {
+                    console.error("Analysis error:", err);
+                    setError(err.message || "An unexpected error occurred. Please try again.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const canProceed = () => {
+                if (step === 1) {
+                    return clientInfo.name && clientInfo.age && parseInt(clientInfo.age) >= 18;
+                }
+                if (step === 2) {
+                    const validHoldings = holdings.filter(h => h.ticker && h.amount);
+                    return validHoldings.length >= 1;
+                }
+                return false;
+            };
+            
+            const getTotalPortfolioValue = () => {
+                return holdings
+                    .filter(h => h.amount)
+                    .reduce((sum, h) => sum + parseFloat(h.amount || 0), 0);
+            };
+            
+            return (
+                <div className="container">
+                    {step < 3 && (
+                        <>
+                            <h1 className="page-title">Portfolio Analysis</h1>
+                            <p className="page-subtitle">
+                                Get institutional-grade analysis powered by EdgeAI's specialized investment intelligence models
+                            </p>
+                            
+                            <div className="progress-steps">
+                                <div className={`progress-step ${step >= 1 ? 'active' : ''}`}></div>
+                                <div className={`progress-step ${step >= 2 ? 'active' : ''}`}></div>
+                                <div className={`progress-step ${step >= 3 ? 'active' : ''}`}></div>
+                            </div>
+                        </>
+                    )}
+                    
+                    {error && (
+                        <div className="card">
+                            <div className="alert-box error">
+                                <strong>Error:</strong> {error}
+                                <button 
+                                    onClick={() => setError(null)}
+                                    style={{
+                                        float: 'right',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#991B1B',
+                                        cursor: 'pointer',
+                                        fontSize: '18px',
+                                        fontWeight: 'bold'
+                                    }}
+                                >×</button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {step === 1 && (
+                        <div className="card">
+                            <div className="card-header">
+                                <div className="card-icon">📋</div>
+                                <h2>Client Information</h2>
+                            </div>
+                            
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Full Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="John Smith"
+                                        value={clientInfo.name}
+                                        onChange={(e) => setClientInfo({...clientInfo, name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Age</label>
+                                    <input
+                                        type="number"
+                                        placeholder="45"
+                                        min="18"
+                                        max="120"
+                                        value={clientInfo.age}
+                                        onChange={(e) => setClientInfo({...clientInfo, age: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Risk Tolerance</label>
+                                    <select
+                                        value={clientInfo.riskTolerance}
+                                        onChange={(e) => setClientInfo({...clientInfo, riskTolerance: e.target.value})}
+                                    >
+                                        <option>Conservative</option>
+                                        <option>Moderate</option>
+                                        <option>Medium</option>
+                                        <option>Aggressive</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Primary Investment Goal</label>
+                                    <select
+                                        value={clientInfo.primaryGoal}
+                                        onChange={(e) => setClientInfo({...clientInfo, primaryGoal: e.target.value})}
+                                    >
+                                        <option>Retirement</option>
+                                        <option>Growth</option>
+                                        <option>Income</option>
+                                        <option>Wealth Preservation</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button
+                                className="btn btn-primary"
+                                disabled={!canProceed()}
+                                onClick={() => setStep(2)}
+                            >
+                                Continue to Portfolio Details
+                            </button>
+                        </div>
+                    )}
+                    
+                    {step === 2 && (
+                        <div className="card">
+                            <div className="card-header">
+                                <div className="card-icon">💼</div>
+                                <h2>Portfolio Holdings</h2>
+                            </div>
+                            
+                            <p style={{color: '#6B7280', marginBottom: '20px', fontSize: '14px'}}>
+                                Enter ticker symbols and dollar amounts for each holding in the portfolio
+                            </p>
+                            
+                            {holdings.map((holding, index) => (
+                                <div key={index} className="holding-row">
+                                    <div className="form-group" style={{marginBottom: 0}}>
+                                        <label>Ticker Symbol</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., AAPL, VTI, BND"
+                                            value={holding.ticker}
+                                            onChange={(e) => updateHolding(index, 'ticker', e.target.value.toUpperCase())}
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{marginBottom: 0}}>
+                                        <label>Dollar Amount</label>
+                                        <input
+                                            type="number"
+                                            placeholder="50,000"
+                                            step="0.01"
+                                            min="0.01"
+                                            value={holding.amount}
+                                            onChange={(e) => updateHolding(index, 'amount', e.target.value)}
+                                        />
+                                    </div>
+                                    {holdings.length > 1 && (
+                                        <button
+                                            className="btn btn-remove"
+                                            onClick={() => removeHolding(index)}
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            
+                            <button className="btn btn-add" onClick={addHolding}>
+                                + Add Another Holding
+                            </button>
+                            
+                            {getTotalPortfolioValue() > 0 && (
+                                <div className="total-value">
+                                    <strong>Total Portfolio Value</strong>
+                                    <span>${getTotalPortfolioValue().toLocaleString()}</span>
+                                </div>
+                            )}
+                            
+                            <div style={{marginTop: '24px', display: 'flex', gap: '12px'}}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setStep(1)}
+                                    style={{flex: 1}}
+                                >
+                                    Back
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    disabled={!canProceed() || loading}
+                                    onClick={analyzePortfolio}
+                                    style={{flex: 2}}
+                                >
+                                    Analyze Portfolio
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {loading && (
+                        <div className="card loading">
+                            <div className="spinner"></div>
+                            <h3>Analyzing Portfolio</h3>
+                            <p>
+                                Our AI models are working together to provide comprehensive analysis:<br/>
+                                Investment Intelligence • Compliance Validation • Behavioral Insights
+                            </p>
+                        </div>
+                    )}
+                    
+                    {step === 3 && results && (
+                        <>
+                            <h1 className="page-title">Portfolio Analysis Results</h1>
+                            <p className="page-subtitle">
+                                Comprehensive analysis generated by EdgeAI's institutional-grade intelligence models
+                            </p>
+                            
+                            <div className="portfolio-summary">
+                                <h4>Portfolio Summary</h4>
+                                <div className="summary-details">
+                                    <div className="summary-item">
+                                        <strong>Client:</strong> {clientInfo.name}, Age {clientInfo.age}
+                                    </div>
+                                    <div className="summary-item">
+                                        <strong>Risk Profile:</strong> {clientInfo.riskTolerance}
+                                    </div>
+                                    <div className="summary-item">
+                                        <strong>Primary Goal:</strong> {clientInfo.primaryGoal}
+                                    </div>
+                                    <div className="summary-item">
+                                        <strong>Total Value:</strong> ${getTotalPortfolioValue().toLocaleString()}
+                                    </div>
+                                </div>
+                                {holdings.filter(h => h.ticker && h.amount).map((h, i) => (
+                                    <div key={i} className="holding-item">
+                                        <span>{h.ticker}</span>
+                                        <span>${parseFloat(h.amount).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="card">
+                                <div className="feature-badges">
+                                    <span className="feature-badge">Investment Intelligence</span>
+                                    <span className="feature-badge">Compliance Validated</span>
+                                    <span className="feature-badge">Behavioral Insights</span>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">📊</div>
+                                        <h3>Portfolio Health Assessment</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <div className="metric-grid">
+                                            <div className="metric-card">
+                                                <div className="metric-label">Overall Score</div>
+                                                <div className="metric-value">{results.portfolioHealth.score}/100</div>
+                                            </div>
+                                            <div className="metric-card">
+                                                <div className="metric-label">Grade</div>
+                                                <div className="metric-value">{results.portfolioHealth.grade}</div>
+                                            </div>
+                                        </div>
+                                        <p style={{marginTop: '16px', color: '#374151', lineHeight: '1.6'}}>{results.portfolioHealth.summary}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">💰</div>
+                                        <h3>Tax Optimization Analysis</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <div style={{fontSize: '24px', fontWeight: '600', color: '#10B981', marginBottom: '16px'}}>
+                                            Estimated Annual Tax Savings: {results.taxOptimization.annualSavings}
+                                        </div>
+                                        <p style={{marginBottom: '12px', fontWeight: '600', color: '#374151'}}>Identified Opportunities:</p>
+                                        {results.taxOptimization.opportunities.map((opp, i) => (
+                                            <div key={i} className="alert-box" style={{marginTop: '8px'}}>
+                                                {opp}
+                                            </div>
+                                        ))}
+                                        {results.taxOptimization.tlhCandidates && results.taxOptimization.tlhCandidates.length > 0 && (
+                                            <div className="alert-box warning" style={{marginTop: '12px'}}>
+                                                <strong>Tax-Loss Harvesting Candidates:</strong> {results.taxOptimization.tlhCandidates.join(', ')}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">⚖️</div>
+                                        <h3>Rebalancing Recommendations</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <p style={{marginBottom: '16px', fontSize: '15px'}}>
+                                            <strong>Status:</strong> {results.rebalancing.needsRebalancing ? 
+                                                <span style={{color: '#F59E0B'}}> Rebalancing Recommended</span> : 
+                                                <span style={{color: '#10B981'}}> Portfolio Well Balanced</span>}
+                                        </p>
+                                        <p style={{marginBottom: '12px', fontWeight: '600', color: '#374151'}}>Recommendations:</p>
+                                        {results.rebalancing.recommendations.map((rec, i) => (
+                                            <div key={i} className="alert-box info" style={{marginTop: '8px'}}>
+                                                {rec}
+                                            </div>
+                                        ))}
+                                        <p style={{marginTop: '16px', color: '#6B7280', fontSize: '14px', lineHeight: '1.6'}}>
+                                            <strong>Target Allocation:</strong> {results.rebalancing.targetAllocation}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">🎯</div>
+                                        <h3>Retirement Readiness</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <div className="metric-grid">
+                                            <div className="metric-card">
+                                                <div className="metric-label">Readiness Score</div>
+                                                <div className="metric-value">{results.retirementReadiness.score}/100</div>
+                                            </div>
+                                            <div className="metric-card">
+                                                <div className="metric-label">Monthly Savings Target</div>
+                                                <div className="metric-value" style={{fontSize: '20px'}}>{results.retirementReadiness.monthlyNeeded}</div>
+                                            </div>
+                                        </div>
+                                        <div className={`alert-box ${results.retirementReadiness.onTrack ? '' : 'warning'}`} style={{marginTop: '16px'}}>
+                                            {results.retirementReadiness.recommendation}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">✓</div>
+                                        <h3>Regulatory Compliance Check</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <div className="metric-grid">
+                                            <div className="metric-card">
+                                                <div className="metric-label">Suitability Score</div>
+                                                <div className="metric-value">{results.compliance.suitabilityScore}/100</div>
+                                            </div>
+                                            <div className="metric-card">
+                                                <div className="metric-label">Compliance Status</div>
+                                                <div className="metric-value" style={{fontSize: '18px', color: '#10B981'}}>
+                                                    {results.compliance.status}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {results.compliance.issues && results.compliance.issues.length > 0 && (
+                                            <div style={{marginTop: '16px'}}>
+                                                {results.compliance.issues.map((issue, i) => (
+                                                    <p key={i} style={{color: '#374151', marginTop: '8px', fontSize: '14px', lineHeight: '1.6'}}>• {issue}</p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="result-section">
+                                    <div className="result-header">
+                                        <div className="result-icon">💬</div>
+                                        <h3>Personalized Investment Guidance</h3>
+                                    </div>
+                                    <div className="result-content">
+                                        <div style={{
+                                            background: '#FFFFFF',
+                                            padding: '20px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #E8EBED',
+                                            lineHeight: '1.7',
+                                            color: '#374151'
+                                        }}>
+                                            <p style={{fontSize: '15px', marginBottom: '12px'}}>
+                                                {results.behavioralCoaching.message}
+                                            </p>
+                                            <p style={{fontSize: '13px', color: '#6B7280', fontStyle: 'italic'}}>
+                                                — EdgeAI Behavioral Intelligence Model
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="info-banner">
+                                    <h4>Complete EdgeAI Platform Features</h4>
+                                    <p>
+                                        This demonstration showcases 6 core analytical capabilities. The full EdgeAI platform includes 
+                                        12 production-ready features: Multi-Account Optimization, Goal-Based Financial Planning, 
+                                        Advanced Portfolio Analytics, Real-Time Market Insights, Comprehensive Financial Plan Generation, 
+                                        and Conversational Portfolio Management.
+                                    </p>
+                                    <p className="value-prop">
+                                        Annual Client Value: $10,000 - $18,000 per household
+                                    </p>
+                                </div>
+                                
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        setStep(1);
+                                        setResults(null);
+                                        setError(null);
+                                        setHoldings([{ticker: '', amount: ''}, {ticker: '', amount: ''}, {ticker: '', amount: ''}]);
+                                        setClientInfo({name: '', age: '', riskTolerance: 'Medium', primaryGoal: 'Retirement'});
+                                    }}
+                                    style={{marginTop: '24px'}}
+                                >
+                                    Analyze Another Portfolio
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<EdgeAIDemo />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+
