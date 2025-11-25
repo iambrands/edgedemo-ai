@@ -15,4 +15,5 @@ polygon-api-client==1.13.0
 pandas==2.1.4
 numpy==1.26.2
 openai>=1.0.0
+gunicorn==21.2.0
 
