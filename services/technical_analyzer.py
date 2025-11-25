@@ -1,0 +1,334 @@
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+from services.tradier_connector import TradierConnector
+from flask import current_app
+import statistics
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+class TechnicalAnalyzer:
+    """Technical analysis service for generating trading signals"""
+    
+    def __init__(self):
+        self.tradier = TradierConnector()
+        try:
+            self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
+        except RuntimeError:
+            self.use_yahoo = False
+    
+    def analyze(self, symbol: str, lookback_days: int = 50) -> Dict:
+        """
+        Run comprehensive technical analysis on a symbol
+        
+        Returns:
+            Dict with indicators, signals, and confidence scores
+        """
+        # Get current quote
+        quote = self.tradier.get_quote(symbol)
+        
+        if 'quotes' not in quote or 'quote' not in quote['quotes']:
+            return {'error': 'Unable to get quote data'}
+        
+        quote_data = quote['quotes']['quote']
+        current_price = quote_data.get('last', 0)
+        
+        # Get historical data and calculate real indicators
+        indicators = self._calculate_indicators(symbol, current_price, lookback_days)
+        
+        # Generate signals
+        signals = self._generate_signals(symbol, current_price, indicators)
+        
+        return {
+            'symbol': symbol,
+            'current_price': current_price,
+            'indicators': indicators,
+            'signals': signals,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+    
+    def _calculate_indicators(self, symbol: str, current_price: float, lookback_days: int) -> Dict:
+        """Calculate technical indicators using real historical data from yfinance"""
+        quote = self.tradier.get_quote(symbol)
+        quote_data = quote.get('quotes', {}).get('quote', {}) if 'quotes' in quote else {}
+        
+        # Try to get real historical data from yfinance
+        historical_data = None
+        if self.use_yahoo:
+            try:
+                ticker = yf.Ticker(symbol)
+                # Get enough data for 200-day SMA (need at least 200 trading days)
+                period_days = max(lookback_days, 250)
+                historical_data = ticker.history(period=f"{period_days}d")
+            except Exception as e:
+                try:
+                    current_app.logger.warning(f"Failed to get yfinance data for {symbol}: {e}")
+                except RuntimeError:
+                    pass
+        
+        # If we have historical data, calculate real indicators
+        if historical_data is not None and not historical_data.empty:
+            return self._calculate_real_indicators(historical_data, current_price, quote_data)
+        else:
+            # Fallback to simplified indicators if yfinance not available
+            return self._calculate_simplified_indicators(current_price, quote_data)
+    
+    def _calculate_real_indicators(self, df: pd.DataFrame, current_price: float, quote_data: Dict) -> Dict:
+        """Calculate real technical indicators from historical data"""
+        closes = df['Close']
+        volumes = df['Volume']
+        
+        # Simple Moving Averages
+        sma_20 = closes.tail(20).mean() if len(closes) >= 20 else current_price
+        sma_50 = closes.tail(50).mean() if len(closes) >= 50 else current_price
+        sma_200 = closes.tail(200).mean() if len(closes) >= 200 else current_price
+        
+        # RSI calculation (14-period default)
+        rsi = self._calculate_rsi(closes, period=14)
+        
+        # MACD calculation
+        macd_data = self._calculate_macd(closes)
+        
+        # Volume analysis
+        current_volume = quote_data.get('volume', volumes.iloc[-1] if len(volumes) > 0 else 0)
+        avg_volume = volumes.tail(20).mean() if len(volumes) >= 20 else current_volume
+        
+        # Price change
+        if len(closes) >= 2:
+            prev_close = closes.iloc[-2]
+            change = current_price - prev_close
+            change_percent = (change / prev_close * 100) if prev_close > 0 else 0
+        else:
+            change = quote_data.get('change', 0)
+            change_percent = quote_data.get('change_percentage', 0)
+        
+        # Support/Resistance (52-week high/low)
+        high_52w = closes.tail(252).max() if len(closes) >= 252 else closes.max()
+        low_52w = closes.tail(252).min() if len(closes) >= 252 else closes.min()
+        
+        return {
+            'sma_20': float(sma_20),
+            'sma_50': float(sma_50),
+            'sma_200': float(sma_200),
+            'rsi': float(rsi),
+            'macd': macd_data,
+            'volume': {
+                'current': int(current_volume),
+                'average': float(avg_volume),
+                'ratio': float(current_volume / avg_volume) if avg_volume > 0 else 1.0
+            },
+            'price_change': {
+                'dollars': float(change),
+                'percent': float(change_percent)
+            },
+            'support_resistance': {
+                'high_52w': float(high_52w),
+                'low_52w': float(low_52w),
+                'current_vs_high': float((current_price / high_52w * 100) if high_52w > 0 else 0),
+                'current_vs_low': float((current_price / low_52w * 100) if low_52w > 0 else 0)
+            }
+        }
+    
+    def _calculate_simplified_indicators(self, current_price: float, quote_data: Dict) -> Dict:
+        """Fallback simplified indicators when historical data not available"""
+        sma_20 = current_price * 0.98
+        sma_50 = current_price * 0.95
+        sma_200 = current_price * 0.90
+        rsi = 50.0
+        volume = quote_data.get('volume', 0)
+        avg_volume = volume * 0.8
+        change = quote_data.get('change', 0)
+        change_percent = quote_data.get('change_percentage', 0)
+        high_52w = quote_data.get('high_52_week', current_price * 1.2)
+        low_52w = quote_data.get('low_52_week', current_price * 0.8)
+        
+        return {
+            'sma_20': sma_20,
+            'sma_50': sma_50,
+            'sma_200': sma_200,
+            'rsi': rsi,
+            'macd': {
+                'line': 0.0,
+                'signal': 0.0,
+                'histogram': 0.0
+            },
+            'volume': {
+                'current': volume,
+                'average': avg_volume,
+                'ratio': volume / avg_volume if avg_volume > 0 else 1.0
+            },
+            'price_change': {
+                'dollars': change,
+                'percent': change_percent
+            },
+            'support_resistance': {
+                'high_52w': high_52w,
+                'low_52w': low_52w,
+                'current_vs_high': (current_price / high_52w * 100) if high_52w > 0 else 0,
+                'current_vs_low': (current_price / low_52w * 100) if low_52w > 0 else 0
+            }
+        }
+    
+    def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> float:
+        """Calculate Relative Strength Index"""
+        if len(prices) < period + 1:
+            return 50.0  # Neutral if not enough data
+        
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        
+        return float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
+    
+    def _calculate_macd(self, prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Dict:
+        """Calculate MACD (Moving Average Convergence Divergence)"""
+        if len(prices) < slow + signal:
+            return {
+                'line': 0.0,
+                'signal': 0.0,
+                'histogram': 0.0
+            }
+        
+        ema_fast = prices.ewm(span=fast, adjust=False).mean()
+        ema_slow = prices.ewm(span=slow, adjust=False).mean()
+        macd_line = ema_fast - ema_slow
+        signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+        histogram = macd_line - signal_line
+        
+        return {
+            'line': float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
+            'signal': float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
+            'histogram': float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0
+        }
+    
+    def _generate_signals(self, symbol: str, current_price: float, indicators: Dict) -> List[Dict]:
+        """Generate trading signals from indicators"""
+        signals = []
+        
+        # Signal 1: Moving Average Crossover
+        if indicators['sma_20'] > indicators['sma_50'] > indicators['sma_200']:
+            # Golden cross - bullish
+            signals.append({
+                'type': 'bullish',
+                'name': 'Golden Cross',
+                'description': 'Price above all moving averages',
+                'confidence': 0.65,
+                'strength': 'medium'
+            })
+        elif indicators['sma_20'] < indicators['sma_50'] < indicators['sma_200']:
+            # Death cross - bearish
+            signals.append({
+                'type': 'bearish',
+                'name': 'Death Cross',
+                'description': 'Price below all moving averages',
+                'confidence': 0.65,
+                'strength': 'medium'
+            })
+        
+        # Signal 2: RSI
+        rsi = indicators['rsi']
+        if rsi < 30:
+            signals.append({
+                'type': 'bullish',
+                'name': 'RSI Oversold',
+                'description': f'RSI at {rsi:.1f} - oversold condition',
+                'confidence': 0.70,
+                'strength': 'high'
+            })
+        elif rsi > 70:
+            signals.append({
+                'type': 'bearish',
+                'name': 'RSI Overbought',
+                'description': f'RSI at {rsi:.1f} - overbought condition',
+                'confidence': 0.70,
+                'strength': 'high'
+            })
+        
+        # Signal 3: Volume
+        volume_ratio = indicators['volume']['ratio']
+        if volume_ratio > 1.5:
+            # High volume - confirms trend
+            price_change = indicators['price_change']['percent']
+            if price_change > 2:
+                signals.append({
+                    'type': 'bullish',
+                    'name': 'High Volume Breakout',
+                    'description': f'High volume ({volume_ratio:.1f}x) with price up {price_change:.1f}%',
+                    'confidence': 0.75,
+                    'strength': 'high'
+                })
+            elif price_change < -2:
+                signals.append({
+                    'type': 'bearish',
+                    'name': 'High Volume Breakdown',
+                    'description': f'High volume ({volume_ratio:.1f}x) with price down {abs(price_change):.1f}%',
+                    'confidence': 0.75,
+                    'strength': 'high'
+                })
+        
+        # Signal 4: MACD
+        macd_hist = indicators['macd']['histogram']
+        if macd_hist > 0 and indicators['macd']['line'] > indicators['macd']['signal']:
+            signals.append({
+                'type': 'bullish',
+                'name': 'MACD Bullish',
+                'description': 'MACD line above signal line',
+                'confidence': 0.60,
+                'strength': 'medium'
+            })
+        elif macd_hist < 0 and indicators['macd']['line'] < indicators['macd']['signal']:
+            signals.append({
+                'type': 'bearish',
+                'name': 'MACD Bearish',
+                'description': 'MACD line below signal line',
+                'confidence': 0.60,
+                'strength': 'medium'
+            })
+        
+        # Signal 5: Support/Resistance
+        vs_high = indicators['support_resistance']['current_vs_high']
+        vs_low = indicators['support_resistance']['current_vs_low']
+        
+        if vs_low < 105:  # Near 52-week low
+            signals.append({
+                'type': 'bullish',
+                'name': 'Near Support',
+                'description': f'Price near 52-week low ({vs_low:.1f}%)',
+                'confidence': 0.55,
+                'strength': 'low'
+            })
+        elif vs_high > 95:  # Near 52-week high
+            signals.append({
+                'type': 'bearish',
+                'name': 'Near Resistance',
+                'description': f'Price near 52-week high ({vs_high:.1f}%)',
+                'confidence': 0.55,
+                'strength': 'low'
+            })
+        
+        # Calculate overall signal
+        if signals:
+            bullish_signals = [s for s in signals if s['type'] == 'bullish']
+            bearish_signals = [s for s in signals if s['type'] == 'bearish']
+            
+            bullish_confidence = sum(s['confidence'] for s in bullish_signals) / len(bullish_signals) if bullish_signals else 0
+            bearish_confidence = sum(s['confidence'] for s in bearish_signals) / len(bearish_signals) if bearish_signals else 0
+            
+            overall_direction = 'bullish' if bullish_confidence > bearish_confidence else 'bearish'
+            overall_confidence = max(bullish_confidence, bearish_confidence)
+        else:
+            overall_direction = 'neutral'
+            overall_confidence = 0.0
+        
+        return {
+            'signals': signals,
+            'overall': {
+                'direction': overall_direction,
+                'confidence': overall_confidence,
+                'signal_count': len(signals)
+            }
+        }
+

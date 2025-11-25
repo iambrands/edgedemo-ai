@@ -1,0 +1,38 @@
+import api from './api';
+import { AuthResponse, User } from '../types/user';
+
+export const authService = {
+  register: async (username: string, email: string, password: string, riskTolerance: 'low' | 'moderate' | 'high' = 'moderate'): Promise<AuthResponse> => {
+    const response = await api.post('/auth/register', {
+      username,
+      email,
+      password,
+      risk_tolerance: riskTolerance,
+    });
+    return response.data;
+  },
+
+  updateUser: async (data: Partial<User>): Promise<{ user: User; message: string }> => {
+    const response = await api.put('/auth/user', data);
+    return response.data;
+  },
+
+  login: async (username: string, password: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/login', {
+      username,
+      password,
+    });
+    return response.data;
+  },
+
+  getCurrentUser: async (): Promise<{ user: User }> => {
+    const response = await api.get('/auth/user');
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  },
+};
+
