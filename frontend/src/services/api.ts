@@ -22,9 +22,18 @@ api.interceptors.request.use(
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Debug: log token presence (but not the actual token for security)
+      if (config.url?.includes('/close')) {
+        console.log('Sending request with token to:', config.url);
+      }
     } else {
       // Log warning if no token for protected endpoint
       console.warn('No access token found for request:', config.url);
+      // Don't make the request if it's a protected endpoint
+      if (!config.url?.includes('/auth/login') && 
+          !config.url?.includes('/auth/register')) {
+        console.error('Cannot make authenticated request without token');
+      }
     }
     return config;
   },
@@ -49,35 +58,42 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
+      console.log('401 error detected, attempting token refresh...');
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      if (!refreshToken) {
+        console.error('No refresh token available');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        return Promise.reject(error);
+      }
+      
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`,
-            },
-          });
-          
-          const { access_token } = response.data;
-          if (access_token) {
-            localStorage.setItem('access_token', access_token);
-            originalRequest.headers.Authorization = `Bearer ${access_token}`;
-            return api(originalRequest);
-          }
+        console.log('Attempting to refresh token...');
+        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+          headers: {
+            Authorization: `Bearer ${refreshToken}`,
+          },
+        });
+        
+        const { access_token } = response.data;
+        if (access_token) {
+          console.log('Token refreshed successfully');
+          localStorage.setItem('access_token', access_token);
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          return api(originalRequest);
+        } else {
+          console.error('No access_token in refresh response');
+          throw new Error('No access_token in refresh response');
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         // Refresh failed - clear tokens
-        console.error('Token refresh failed:', refreshError);
+        console.error('Token refresh failed:', refreshError.response?.data || refreshError.message);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         // Return the original error so the component can handle it
         return Promise.reject(error);
       }
-      
-      // No refresh token available
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      return Promise.reject(error);
     }
     
     return Promise.reject(error);
