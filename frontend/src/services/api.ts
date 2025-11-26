@@ -84,23 +84,22 @@ api.interceptors.response.use(
           if (!originalRequest.headers) {
             originalRequest.headers = {};
           }
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
           // Remove the retry flag so we can retry
           delete originalRequest._retry;
+          // Update headers with new token
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
           console.log('Retrying request with new token to:', originalRequest.url);
           console.log('Authorization header set:', originalRequest.headers.Authorization ? 'Yes' : 'No');
-          // Make a fresh request with the new token
-          // Use the api instance which has the baseURL configured
-          // Just update the headers on the original request and retry
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
           console.log('Retry config:', { 
             method: originalRequest.method, 
             url: originalRequest.url, 
             baseURL: api.defaults.baseURL,
+            fullURL: `${api.defaults.baseURL}${originalRequest.url}`,
             hasAuth: !!originalRequest.headers.Authorization 
           });
-          // Retry using the api instance with updated headers
-          return api(originalRequest);
+          // Retry using the api instance - the originalRequest already has the correct URL
+          // Just need to ensure headers are set
+          return api.request(originalRequest);
         } else {
           console.error('No access_token in refresh response');
           throw new Error('No access_token in refresh response');
