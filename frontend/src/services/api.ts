@@ -106,12 +106,22 @@ api.interceptors.response.use(
             baseURL: retryConfig.baseURL,
             fullURL: `${retryConfig.baseURL}${retryConfig.url}`,
             hasAuth: !!retryConfig.headers.Authorization,
-            authHeader: retryConfig.headers.Authorization.substring(0, 20) + '...'
+            contentType: retryConfig.headers['Content-Type'],
+            hasData: !!retryConfig.data,
+            dataType: typeof retryConfig.data
           });
           
-          // Make a fresh request with the new config
+          // Make a fresh request with the new config using api.post to ensure proper headers
           try {
-            const retryResponse = await api.request(retryConfig);
+            // Use the appropriate method based on original request
+            let retryResponse;
+            if (retryConfig.method.toLowerCase() === 'post') {
+              retryResponse = await api.post(retryConfig.url, retryConfig.data, {
+                headers: retryConfig.headers,
+              });
+            } else {
+              retryResponse = await api.request(retryConfig);
+            }
             console.log('Retry successful!', retryResponse.status);
             return retryResponse;
           } catch (retryError: any) {
