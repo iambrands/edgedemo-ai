@@ -63,17 +63,18 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // Refresh failed - clear tokens and redirect to login
+        // Refresh failed - clear tokens
         console.error('Token refresh failed:', refreshError);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        // Don't redirect here - let the app handle it
-        return Promise.reject(refreshError);
+        // Return the original error so the component can handle it
+        return Promise.reject(error);
       }
       
       // No refresh token available
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+      return Promise.reject(error);
     }
     
     return Promise.reject(error);

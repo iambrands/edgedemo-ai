@@ -403,7 +403,14 @@ const Dashboard: React.FC = () => {
                                 toast.success('Position closed');
                                 loadDashboardData();
                               } catch (error: any) {
-                                toast.error(error.response?.data?.error || 'Failed to close position');
+                                if (error.response?.status === 401) {
+                                  toast.error('Session expired. Please log in again.');
+                                  localStorage.removeItem('access_token');
+                                  localStorage.removeItem('refresh_token');
+                                  window.location.href = '/login';
+                                } else {
+                                  toast.error(error.response?.data?.error || 'Failed to close position');
+                                }
                               }
                             }
                           }}
@@ -710,7 +717,14 @@ const Dashboard: React.FC = () => {
                         setSelectedPosition(null);
                         loadDashboardData();
                       } catch (error: any) {
-                        toast.error(error.response?.data?.error || 'Failed to close position');
+                        if (error.response?.status === 401) {
+                          toast.error('Session expired. Please log in again.');
+                          localStorage.removeItem('access_token');
+                          localStorage.removeItem('refresh_token');
+                          window.location.href = '/login';
+                        } else {
+                          toast.error(error.response?.data?.error || 'Failed to close position');
+                        }
                       }
                     }
                   }}
