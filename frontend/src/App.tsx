@@ -12,6 +12,7 @@ import Trade from './pages/Trade';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Landing from './pages/Landing';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function AppRoutes() {
@@ -42,10 +43,20 @@ function AppRoutes() {
       <Toaster position="top-right" />
       <Routes>
         <Route 
+          path="/" 
+          element={
+            authenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Landing />
+            )
+          } 
+        />
+        <Route 
           path="/login" 
           element={
             authenticated ? (
-              <Navigate to="/" replace />
+              <Navigate to="/dashboard" replace />
             ) : (
               <Login />
             )
@@ -55,7 +66,7 @@ function AppRoutes() {
           path="/register" 
           element={
             authenticated ? (
-              <Navigate to="/" replace />
+              <Navigate to="/dashboard" replace />
             ) : (
               <Register />
             )
@@ -67,6 +78,7 @@ function AppRoutes() {
             authenticated ? (
               <Layout>
                 <Routes>
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/trade" element={<Trade />} />
                   <Route path="/analyzer" element={<OptionsAnalyzer />} />
@@ -78,7 +90,7 @@ function AppRoutes() {
                 </Routes>
               </Layout>
             ) : (
-              <Navigate to="/login" replace />
+              <Navigate to="/" replace />
             )
           }
         />
