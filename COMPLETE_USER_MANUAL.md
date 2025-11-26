@@ -1,0 +1,1574 @@
+# IAB OptionsBot - Complete User Instruction Manual
+
+**Version:** 1.0 Beta  
+**Last Updated:** January 2025
+
+---
+
+## 📋 Table of Contents
+
+1. [Introduction](#introduction)
+2. [Getting Started](#getting-started)
+3. [Dashboard - Your Trading Command Center](#dashboard)
+4. [Options Analyzer - Find the Best Trades](#options-analyzer)
+5. [Watchlist - Track Your Stocks](#watchlist)
+6. [Trade Execution - Place Your Trades](#trade-execution)
+7. [Automations - Automated Trading Strategies](#automations)
+8. [Alerts - Stay Informed](#alerts)
+9. [History - Review Your Trades](#history)
+10. [Settings - Customize Your Experience](#settings)
+11. [Understanding Options Trading](#understanding-options-trading)
+12. [Advanced Features](#advanced-features)
+13. [Troubleshooting](#troubleshooting)
+14. [FAQ](#faq)
+
+---
+
+## 🎯 Introduction
+
+### What is IAB OptionsBot?
+
+IAB OptionsBot is an intelligent options trading platform that combines:
+- **AI-Powered Analysis:** Get plain English explanations of complex options concepts
+- **Automated Trading:** Set up strategies that execute trades automatically
+- **Real-Time Data:** Access current market data and options chains
+- **Risk Management:** Built-in tools to protect your capital
+- **Paper Trading:** Practice with virtual money before risking real capital
+
+### Key Features
+
+✅ **Options Chain Analysis** - AI-powered scoring and recommendations  
+✅ **Automated Trading** - Set it and forget it strategies  
+✅ **Real-Time Alerts** - Never miss an opportunity  
+✅ **Performance Tracking** - Monitor your trading results  
+✅ **Risk Management** - Protect your capital automatically  
+✅ **Paper Trading** - Learn risk-free with $100,000 virtual balance  
+
+---
+
+## 🚀 Getting Started
+
+### Creating Your Account
+
+1. **Navigate to the Registration Page**
+   - Click "Register" or go to `/register`
+   - You'll see a registration form
+
+2. **Fill in Your Details:**
+   - **Username:** Choose a unique username (required)
+   - **Email:** Your email address (required)
+   - **Password:** Create a strong password (required)
+   - **Confirm Password:** Re-enter your password
+
+3. **Click "Register"**
+   - Your account will be created
+   - You'll be automatically logged in
+   - You'll be redirected to the Dashboard
+
+### First-Time Login
+
+If you already have an account:
+
+1. **Go to Login Page**
+   - Click "Login" or navigate to `/login`
+
+2. **Enter Credentials:**
+   - **Username:** Your registered username
+   - **Password:** Your password
+
+3. **Click "Login"**
+   - You'll be redirected to your Dashboard
+
+### Understanding Paper Trading
+
+**Important:** IAB OptionsBot uses **Paper Trading Mode** by default.
+
+**What This Means:**
+- ✅ You start with $100,000 in virtual money
+- ✅ All trades are simulated (not real money)
+- ✅ Perfect for learning and testing strategies
+- ✅ No financial risk while you learn
+- ✅ Real market data, virtual execution
+
+**When You're Ready:**
+- Switch to "Live Trading" mode in Settings (when available)
+- Connect your real trading account
+- Start trading with real capital
+
+---
+
+## 📊 Dashboard - Your Trading Command Center
+
+The Dashboard is the first page you see after logging in. It's your central hub for monitoring your trading activity.
+
+### Account Balance Card
+
+**Location:** Top of the Dashboard
+
+**Shows:**
+- **Paper Trading Balance:** Your current virtual account balance
+- **Starting Balance:** $100,000 (default)
+- **Current Balance:** Updates in real-time as you trade
+
+**What to Watch:**
+- Monitor your balance to ensure you have funds for trades
+- Balance decreases when you buy options
+- Balance increases when you sell options or close profitable positions
+
+### Performance Statistics Cards
+
+**Four Key Metrics:**
+
+1. **Total Positions**
+   - Number of currently open positions
+   - Click to see all positions
+
+2. **Unrealized P/L**
+   - Profit or loss on open positions
+   - Green = profit, Red = loss
+   - Updates as market prices change
+
+3. **Realized P/L (30d)**
+   - Profit or loss from closed trades in the last 30 days
+   - Only includes completed trades
+
+4. **Win Rate**
+   - Percentage of winning trades
+   - Calculated from your recent trades
+   - Higher is better!
+
+### Performance Trend Chart
+
+**What It Shows:**
+- Line chart of your cumulative profit/loss over time
+- X-axis: Dates of your closed trades
+- Y-axis: Cumulative P/L in dollars
+
+**How to Read:**
+- **Upward trend:** You're making money
+- **Downward trend:** You're losing money
+- **Flat line:** Break-even
+
+**Note:** Chart only appears after you've closed some positions. If you see "No performance data yet," close some positions to see your trend.
+
+### Positions by Symbol Chart
+
+**What It Shows:**
+- Bar chart showing how many positions you have per stock
+- Helps you see your diversification
+
+**Example:**
+- 3 positions in AAPL
+- 2 positions in TSLA
+- 1 position in SPY
+
+### Active Positions Table
+
+**Location:** Below the charts
+
+**Columns:**
+- **Symbol:** Stock ticker (e.g., AAPL)
+- **Type:** CALL or PUT
+- **Quantity:** Number of contracts
+- **Entry Price:** Price you paid (premium for options)
+- **Current Price:** Current market price (premium for options)
+- **Expiration:** When the option expires
+- **P/L:** Unrealized profit/loss in dollars
+- **P/L %:** Unrealized profit/loss as percentage
+- **Actions:** Buttons to view details or close position
+
+**Understanding the Data:**
+- **Entry Price (premium):** For options, this is the premium you paid
+- **Current Price (premium):** Current option premium value
+- **P/L:** Difference between entry and current price
+- **Days to Expiration:** Shows urgency (red = <7 days, yellow = <21 days)
+
+**Actions:**
+- **Details Button:** Click to see full position information including:
+  - All Greeks (Delta, Gamma, Theta, Vega, IV)
+  - Entry and current Greeks comparison
+  - Full trade history
+  - Automation details (if automated)
+- **Close Button:** Immediately close the position
+
+### Recent Trades Table
+
+**Location:** Below Active Positions
+
+**Shows:** Your last 10 trades
+
+**Columns:**
+- **Date:** When the trade was executed
+- **Symbol:** Stock ticker
+- **Action:** BUY or SELL
+- **Quantity:** Number of contracts
+- **Price:** Execution price (premium for options)
+- **Expiration:** Option expiration date
+- **P/L:** Realized profit/loss (if position closed)
+- **Actions:** View details button
+
+**Details Button Shows:**
+- Complete trade information
+- Greeks at execution
+- P/L breakdown
+- Automation details (if automated)
+
+### Dashboard Actions
+
+**Refresh Button:**
+- Top right of Dashboard
+- Updates all data in real-time
+- Use when you want the latest information
+
+---
+
+## 🔍 Options Analyzer - Find the Best Trades
+
+The Options Analyzer is your primary tool for finding profitable options trades using AI-powered analysis.
+
+### Accessing the Options Analyzer
+
+**Ways to Access:**
+1. Click "Options Analyzer" in the navigation menu
+2. From Watchlist → Click "Analyze" button
+3. Direct URL: `/analyzer`
+
+### Step-by-Step: Analyzing Options
+
+#### Step 1: Enter Stock Symbol
+
+1. **Type a Stock Symbol**
+   - Examples: AAPL, TSLA, SPY, NVDA
+   - Symbol is automatically converted to uppercase
+   - Press Enter or click outside the field
+
+2. **What Happens:**
+   - System fetches available expiration dates
+   - Current stock price is displayed at the top
+   - Expiration dropdown populates
+
+#### Step 2: Select Expiration Date
+
+1. **View Available Expirations**
+   - Dropdown shows all available expiration dates
+   - Dates are sorted chronologically
+   - Format: YYYY-MM-DD
+
+2. **Choose Your Expiration:**
+   - **Income Strategy:** Choose shorter expirations (1-3 weeks)
+   - **Balanced Strategy:** Choose medium expirations (3-6 weeks)
+   - **Growth Strategy:** Choose longer expirations (6+ weeks)
+
+3. **Select from Dropdown**
+   - Click the expiration you want
+
+#### Step 3: Choose Strategy Preference
+
+**Three Options:**
+
+1. **Income**
+   - Focus: Collecting premium
+   - Best for: Selling options (covered calls, cash-secured puts)
+   - DTE Preference: 14-21 days
+   - Risk: Lower to moderate
+
+2. **Balanced**
+   - Focus: Mix of income and growth
+   - Best for: Most traders
+   - DTE Preference: 30-45 days
+   - Risk: Moderate
+
+3. **Growth**
+   - Focus: Capital appreciation
+   - Best for: Buying options for upside
+   - DTE Preference: 45-60+ days
+   - Risk: Higher
+
+#### Step 4: Analyze Options
+
+1. **Click "Analyze Options" Button**
+   - Button is at the bottom of the form
+   - Only enabled when symbol and expiration are selected
+
+2. **Wait for Analysis**
+   - System analyzes all available options
+   - AI processes each option
+   - Results are scored and sorted
+
+3. **View Results**
+   - Options are displayed in a table
+   - Sorted by score (best first)
+   - Each option shows key metrics
+
+### Understanding the Results Table
+
+**Columns in Results:**
+
+1. **Score (0-1.0)**
+   - Overall quality score
+   - Higher = better opportunity
+   - Color-coded:
+     - 🟢 Green: 0.8-1.0 (Excellent)
+     - 🟡 Yellow: 0.6-0.8 (Good)
+     - 🟠 Orange: 0.4-0.6 (Fair)
+     - 🔴 Red: <0.4 (Poor)
+
+2. **Category**
+   - Excellent, Good, Fair, or Poor
+   - Quick visual indicator
+
+3. **Contract Type**
+   - CALL or PUT
+   - Shows direction of the trade
+
+4. **Strike Price**
+   - The strike price of the option
+   - Compare to current stock price
+
+5. **Premium (Mid)**
+   - Current option premium
+   - Average of bid and ask
+
+6. **Delta**
+   - Price sensitivity to stock movement
+   - Range: -1.0 to +1.0
+   - Higher absolute value = more sensitive
+
+7. **Greeks**
+   - Delta, Gamma, Theta, Vega, IV
+   - Hover for quick tooltips
+
+8. **Days to Expiration (DTE)**
+   - How many days until expiration
+   - Lower = more time decay risk
+
+9. **Volume**
+   - Trading volume
+   - Higher = more liquid
+
+10. **Open Interest**
+    - Number of open contracts
+    - Higher = more interest
+
+### AI Analysis Section
+
+**For Each Option, You'll See:**
+
+#### AI Recommendation
+- **Action:** Buy, Consider, Consider Carefully, or Avoid
+- **Confidence:** High, Medium, or Low
+- **Suitability:** Suitable, Moderately Suitable, or Not Suitable
+- **Reasoning:** 2-3 sentence explanation
+
+#### Greeks Explained (Plain English)
+
+**Delta:**
+- What it means in simple terms
+- How it affects your trade
+- Example: "Delta of 0.50 means for every $1 the stock moves, this option moves $0.50"
+
+**Gamma:**
+- How delta changes as stock moves
+- Impact on your position
+
+**Theta (Time Decay):**
+- How much value you lose per day
+- Critical for timing decisions
+- Example: "Losing $0.50 per day in time decay"
+
+**Vega (Volatility):**
+- Sensitivity to volatility changes
+- How IV affects the option price
+
+**Implied Volatility (IV):**
+- Current volatility level
+- High IV = expensive options
+- Low IV = cheaper options
+
+#### Trade Analysis
+
+**Overview:**
+- Overall assessment of the trade
+- ITM/OTM status
+- Current market conditions
+
+**Best Case Scenario:**
+- What happens if everything goes right
+- Maximum profit potential
+
+**Worst Case Scenario:**
+- What happens if trade goes against you
+- Maximum loss (usually premium paid)
+
+**Break-Even:**
+- Exact price needed to break even
+- For calls: Strike + Premium
+- For puts: Strike - Premium
+
+**Profit Potential:**
+- How much stock needs to move
+- Percentage move required
+- Time considerations
+
+**Time Considerations:**
+- Days remaining
+- Time decay impact
+- Urgency level
+
+#### Risk Assessment
+
+**Overall Risk Level:**
+- Low, Moderate, or High
+- Based on multiple factors
+
+**Risk Factors:**
+- List of specific risks
+- What to watch out for
+
+**Warnings:**
+- Important cautions
+- Red flags to consider
+
+### Quick Actions from Options Analyzer
+
+**Trade Button:**
+1. Click "Trade" on any option
+2. You're taken to Trade page
+3. All fields are pre-filled
+4. Review and execute
+
+**Add to Watchlist:**
+1. Click "Add to Watchlist" button (top right)
+2. Stock is added to your watchlist
+3. You can track it over time
+
+### Tips for Using Options Analyzer
+
+1. **Start with High Scores:** Focus on options with scores >0.7
+2. **Read AI Analysis:** The explanations are very educational
+3. **Compare Multiple Options:** Analyze different strikes and expirations
+4. **Consider Your Strategy:** Match options to your preference (income/growth/balanced)
+5. **Check Liquidity:** Look for options with volume >100
+6. **Mind the Greeks:** Understand what each Greek means for your trade
+7. **Time Decay:** Be aware of theta, especially near expiration
+
+---
+
+## 📈 Watchlist - Track Your Stocks
+
+The Watchlist helps you monitor stocks you're interested in trading.
+
+### Adding Stocks to Watchlist
+
+#### Method 1: From Options Analyzer
+1. Analyze a stock in Options Analyzer
+2. Click "Add to Watchlist" button (top right)
+3. Stock is automatically added
+
+#### Method 2: From Watchlist Page
+1. Go to Watchlist page
+2. Click "Add Stock" button
+3. Enter stock symbol
+4. (Optional) Add tags (e.g., "tech", "dividend", "growth")
+5. (Optional) Add notes (e.g., "Watching for earnings")
+6. Click "Add"
+
+### Viewing Your Watchlist
+
+**Table Columns:**
+- **Symbol:** Stock ticker
+- **Company Name:** Full company name
+- **Current Price:** Real-time stock price
+- **Change %:** Price change percentage
+  - Green arrow (↑) = up
+  - Red arrow (↓) = down
+- **Volume:** Trading volume
+- **Tags:** Your custom tags
+- **Actions:** Quick action buttons
+
+### Quick Actions
+
+**For Each Stock:**
+
+1. **Analyze Button**
+   - Click to go to Options Analyzer
+   - Symbol is pre-filled
+   - Start analyzing immediately
+
+2. **Trade Button**
+   - Click to go to Trade page
+   - Symbol is pre-filled
+   - Quick trade execution
+
+3. **Notes Button**
+   - Click to edit your notes
+   - Add reminders or observations
+   - Save your thoughts
+
+### Managing Your Watchlist
+
+**Filtering:**
+- Use search box to filter by symbol
+- Filter by tags (if implemented)
+
+**Sorting:**
+- Click column headers to sort
+- Sort by symbol, price, or change
+
+**Removing Stocks:**
+- Click "Remove" or delete button
+- Confirm removal
+- Stock is removed from watchlist
+
+### Price Indicators
+
+**Visual Indicators:**
+- **Green Arrow (↑):** Price increased
+- **Red Arrow (↓):** Price decreased
+- **Percentage:** Shows % change
+- **Color Coding:** Green for gains, red for losses
+
+### Best Practices
+
+1. **Keep It Focused:** Don't add too many stocks (10-20 is manageable)
+2. **Use Tags:** Organize stocks by strategy or sector
+3. **Add Notes:** Document why you're watching each stock
+4. **Regular Review:** Check your watchlist regularly
+5. **Remove Unused:** Clean up stocks you're no longer interested in
+
+---
+
+## 💼 Trade Execution - Place Your Trades
+
+The Trade page is where you execute options trades manually.
+
+### Accessing the Trade Page
+
+**Ways to Access:**
+1. Click "Trade" in navigation menu
+2. From Options Analyzer → Click "Trade" button on any option
+3. From Watchlist → Click "Trade" button
+4. From Dashboard → Click "Start Trading" link
+
+### Step-by-Step: Placing a Trade
+
+#### Step 1: Select Stock Symbol
+
+1. **Enter or Select Symbol**
+   - If coming from Options Analyzer/Watchlist, symbol is pre-filled
+   - Otherwise, type the symbol
+   - Symbol auto-converts to uppercase
+
+2. **Stock Price Display**
+   - Current stock price is shown
+   - Updates automatically
+   - Use "Fetch Stock Price" to refresh
+
+#### Step 2: Choose Trade Action
+
+**Two Options:**
+
+1. **Buy (Long)**
+   - You're buying the option
+   - Bullish for calls, bearish for puts
+   - You own the option
+   - Maximum loss = premium paid
+
+2. **Sell (Short)**
+   - You're selling the option
+   - Collecting premium
+   - Higher risk (unlimited loss potential)
+   - Maximum profit = premium received
+
+**For Beginners:** Start with "Buy" (long positions)
+
+#### Step 3: Select Contract Type
+
+**Two Options:**
+
+1. **Call**
+   - Right to buy stock at strike price
+   - Profits when stock goes up
+   - Bullish position
+
+2. **Put**
+   - Right to sell stock at strike price
+   - Profits when stock goes down
+   - Bearish position
+
+#### Step 4: Choose Expiration Date
+
+1. **Select from Dropdown**
+   - Shows available expiration dates
+   - Choose based on your strategy
+   - Shorter = more time decay risk
+
+2. **After Selection:**
+   - Option price is automatically fetched
+   - Strike prices become available
+
+#### Step 5: Select Strike Price
+
+1. **Choose Strike**
+   - Dropdown shows available strikes
+   - Select the strike you want
+   - Price updates automatically
+
+2. **Understanding Strikes:**
+   - **ITM (In-the-Money):** Option has intrinsic value
+   - **ATM (At-the-Money):** Strike = current stock price
+   - **OTM (Out-of-the-Money):** No intrinsic value (cheaper)
+
+#### Step 6: Enter Quantity
+
+1. **Number of Contracts**
+   - Enter how many contracts you want
+   - Each contract = 100 shares
+   - Minimum: 1 contract
+
+2. **Cost Calculation:**
+   - Total Cost = Price × Quantity × 100
+   - Example: $5.00 premium × 2 contracts × 100 = $1,000
+
+#### Step 7: Review Price
+
+1. **Option Price**
+   - Automatically fetched when all fields are filled
+   - Shows current mid-price (average of bid/ask)
+   - Use "Fetch Current Price" to refresh
+
+2. **Price Details:**
+   - **Bid:** What buyers are willing to pay
+   - **Ask:** What sellers want
+   - **Mid:** Average (what you'll likely pay)
+
+#### Step 8: Review Trade Summary
+
+**Before Executing, Check:**
+
+- **Symbol:** Correct stock?
+- **Action:** Buy or Sell?
+- **Type:** Call or Put?
+- **Expiration:** Correct date?
+- **Strike:** Right strike price?
+- **Quantity:** Correct number of contracts?
+- **Price:** Current and fair?
+- **Total Cost:** Can you afford it?
+- **Balance After:** Will you have funds left?
+
+#### Step 9: Execute Trade
+
+1. **Click "Execute Trade" Button**
+   - Button is at the bottom
+   - Only enabled when all fields are valid
+
+2. **Confirmation**
+   - Review the confirmation dialog
+   - Verify all details
+   - Click "Confirm" to execute
+
+3. **Success**
+   - Trade is executed immediately
+   - You'll see a success message
+   - Position appears in Dashboard
+
+### Understanding Trade Costs
+
+**For Options:**
+- **Price per Contract:** The premium (e.g., $5.00)
+- **Contracts:** Number of contracts (e.g., 2)
+- **Multiplier:** 100 (standard for options)
+- **Total Cost:** $5.00 × 2 × 100 = $1,000
+
+**For Stocks (if trading stocks):**
+- **Price per Share:** Stock price
+- **Shares:** Number of shares
+- **Total Cost:** Price × Shares
+
+### Trade Execution Details
+
+**What Happens:**
+1. System checks your balance
+2. Verifies risk limits
+3. Executes the trade
+4. Creates a position (for buys)
+5. Updates your balance
+6. Records the trade in history
+
+**Risk Checks:**
+- Sufficient balance
+- Daily loss limit not exceeded
+- Position size within limits
+- Maximum positions not exceeded
+
+### Paper Trading Info
+
+**Important Notice on Trade Page:**
+- Reminds you this is paper trading
+- Virtual money only
+- No real financial risk
+- Perfect for learning
+
+### Tips for Trading
+
+1. **Start Small:** Begin with 1-2 contracts
+2. **Check Balance:** Ensure you have enough funds
+3. **Verify Details:** Double-check all fields before executing
+4. **Use Real Prices:** Always fetch current price
+5. **Understand Costs:** Know what you're paying
+6. **Set Limits:** Use stop losses and profit targets
+7. **Track Performance:** Monitor your trades in Dashboard
+
+---
+
+## 🤖 Automations - Automated Trading Strategies
+
+Automations let you create trading strategies that execute automatically based on your criteria.
+
+### Understanding Automations
+
+**What They Do:**
+- Monitor stocks continuously
+- Scan for trading opportunities
+- Execute trades automatically
+- Manage positions (take profits, stop losses)
+- All based on your rules
+
+**Benefits:**
+- Trade 24/7 (during market hours)
+- Never miss opportunities
+- Remove emotion from trading
+- Consistent execution
+- Saves time
+
+### Creating an Automation
+
+#### Step 1: Access Automations Page
+
+1. **Navigate to Automations**
+   - Click "Automations" in navigation
+   - Or go to `/automations`
+
+2. **View Existing Automations**
+   - See all your automations
+   - Active vs. Inactive status
+   - Performance metrics
+
+#### Step 2: Click "Create Automation"
+
+1. **Open Creation Modal**
+   - Click green "Create Automation" button
+   - Modal form appears
+
+2. **Fill in Details:**
+
+**Name:**
+- Descriptive name (e.g., "AAPL Bullish Calls")
+- Helps you identify the automation
+- Required field
+
+**Symbol:**
+- Stock to monitor (e.g., AAPL, TSLA)
+- Must be a valid stock symbol
+- Required field
+
+**Strategy:**
+- **Income:** Focus on premium collection
+- **Growth:** Focus on capital appreciation
+- **Balanced:** Mix of both
+- Required field
+
+**Min Confidence:**
+- Minimum signal confidence to execute (0.0 - 1.0)
+- **Lower (0.3-0.5):** More trades, more aggressive
+- **Higher (0.7-0.9):** Fewer trades, more conservative
+- **Default:** 0.30 (moderate)
+- Required field
+
+**Profit Target %:**
+- When to take profits
+- Example: 20% = close position when up 20%
+- Required field
+
+**Stop Loss %:**
+- When to cut losses
+- Example: 10% = close position when down 10%
+- Required field
+
+**Max Position Size %:**
+- Maximum % of balance per trade
+- Example: 5% = max $5,000 per trade (on $100k balance)
+- Required field
+
+#### Step 3: Create Automation
+
+1. **Click "Create" Button**
+   - Automation is created
+   - Appears in your automations list
+   - Starts as "Inactive"
+
+2. **Activate Automation**
+   - Toggle the switch to "Active"
+   - Automation will start scanning
+
+### Starting the Automation Engine
+
+**Important:** Automations only work when the engine is running.
+
+1. **Check Engine Status**
+   - Top of Automations page
+   - Shows "Running" or "Stopped"
+
+2. **Start Engine**
+   - Click "Start Engine" button
+   - Engine begins scanning
+   - Status changes to "Running"
+
+3. **Engine Activity**
+   - Scans every cycle (configurable)
+   - Checks all active automations
+   - Executes trades when conditions met
+
+### How Automations Work
+
+**The Process:**
+
+1. **Scanning Phase**
+   - Engine checks each active automation
+   - Fetches current market data
+   - Analyzes technical indicators
+
+2. **Signal Detection**
+   - Looks for buy/sell signals
+   - Calculates confidence score
+   - Compares to min_confidence
+
+3. **Risk Check**
+   - Verifies sufficient balance
+   - Checks position size limits
+   - Validates daily loss limits
+
+4. **Execution**
+   - If all conditions met, executes trade
+   - Creates position (for buys)
+   - Records trade in history
+
+5. **Monitoring**
+   - Tracks open positions
+   - Monitors profit targets
+   - Watches stop losses
+
+6. **Exit Signals**
+   - Closes position when profit target hit
+   - Closes position when stop loss hit
+   - Manages positions automatically
+
+### Managing Automations
+
+#### Editing an Automation
+
+1. **Click "Edit" Button**
+   - On the automation card
+   - Opens edit modal
+
+2. **Modify Settings**
+   - Can change all settings except symbol
+   - Symbol is locked (create new automation to change)
+
+3. **Save Changes**
+   - Click "Update"
+   - Changes take effect immediately
+
+#### Toggling Active/Inactive
+
+1. **Toggle Switch**
+   - On each automation card
+   - Green = Active (scanning)
+   - Gray = Inactive (paused)
+
+2. **When to Pause:**
+   - Market closed
+   - Testing different settings
+   - Taking a break
+
+#### Deleting an Automation
+
+1. **Click Delete Button**
+   - On the automation card
+   - Confirm deletion
+
+2. **What Happens:**
+   - Automation is removed
+   - Open positions remain
+   - Trade history preserved
+
+### Viewing Automation Activity
+
+**Recent Activity Section:**
+- Shows recent trades from automations
+- Displays:
+  - Trade details
+  - Position status (created/closed)
+  - P/L information
+  - Link to view position
+
+**Automation Details:**
+- Execution count
+- Last executed time
+- Performance metrics
+
+### Automation Best Practices
+
+1. **Start Conservative:**
+   - Higher min_confidence (0.7+)
+   - Smaller position sizes
+   - Tighter stop losses
+
+2. **Test First:**
+   - Run in paper trading
+   - Monitor for a few days
+   - Adjust based on results
+
+3. **Diversify:**
+   - Don't put all capital in one automation
+   - Spread across multiple stocks
+   - Different strategies
+
+4. **Monitor Regularly:**
+   - Check automation activity
+   - Review executed trades
+   - Adjust settings as needed
+
+5. **Set Appropriate Limits:**
+   - Realistic profit targets
+   - Protective stop losses
+   - Reasonable position sizes
+
+6. **Understand the Strategy:**
+   - Know what signals trigger trades
+   - Understand the risk
+   - Match to your risk tolerance
+
+### Automation Settings Explained
+
+**Min Confidence:**
+- **0.3-0.4:** Very aggressive, many trades
+- **0.5-0.6:** Moderate, balanced approach
+- **0.7-0.8:** Conservative, high-quality trades only
+- **0.9+:** Very conservative, rare executions
+
+**Profit Target:**
+- **10-15%:** Quick profits, more trades
+- **20-30%:** Balanced approach
+- **40%+:** Let winners run, fewer exits
+
+**Stop Loss:**
+- **5-10%:** Tight stops, protect capital
+- **15-20%:** Moderate, allow for volatility
+- **25%+:** Wide stops, more room
+
+**Max Position Size:**
+- **1-2%:** Very conservative
+- **3-5%:** Moderate risk
+- **10%+:** Aggressive (not recommended)
+
+---
+
+## 🔔 Alerts - Stay Informed
+
+Alerts keep you informed about market opportunities, position changes, and important events.
+
+### Types of Alerts
+
+1. **Buy Signal**
+   - Strong buying opportunity detected
+   - Based on technical analysis
+   - AI-generated explanation
+
+2. **Sell Signal**
+   - Time to exit a position
+   - Profit target or stop loss hit
+   - Risk management alert
+
+3. **Risk Alert**
+   - Approaching risk limits
+   - Daily loss limit warning
+   - Position size warnings
+
+4. **Trade Executed**
+   - Automation executed a trade
+   - Manual trade confirmation
+   - Position created/closed
+
+### Viewing Alerts
+
+**Alerts Page:**
+- All alerts in one place
+- Unread alerts highlighted
+- Sorted by priority and date
+
+**Alert Information:**
+- **Type:** What kind of alert
+- **Priority:** High, Medium, or Low
+- **Symbol:** Stock involved
+- **Title:** Brief summary
+- **Message:** Detailed information
+- **Explanation:** Why this alert was generated
+- **Timestamp:** When it was created
+
+### Managing Alerts
+
+**Mark as Read:**
+- Click on an alert to mark as read
+- Removes highlight
+- Keeps in history
+
+**Mark All Read:**
+- Button at top of page
+- Marks all alerts as read at once
+- Useful for clearing the list
+
+**Filtering:**
+- Filter by type
+- Filter by priority
+- Filter by symbol
+
+### Quick Actions from Alerts
+
+**View Position:**
+- If alert is about a position
+- Click to see position details
+- Navigate to Dashboard
+
+**View Automation:**
+- If alert is from automation
+- Click to see automation settings
+- Navigate to Automations page
+
+**Trade:**
+- If alert suggests a trade
+- Click to go to Trade page
+- Pre-fill trade details
+
+### Alert Generation
+
+**Automatic:**
+- System generates alerts automatically
+- Based on market conditions
+- Based on your positions
+- Based on automations
+
+**Manual:**
+- Click "Generate Alerts" button
+- Manually trigger alert scanning
+- Useful for immediate updates
+
+### Understanding Alert Priorities
+
+**High Priority:**
+- Critical actions needed
+- Risk alerts
+- Important trade signals
+
+**Medium Priority:**
+- Informational
+- Trade confirmations
+- Market updates
+
+**Low Priority:**
+- General information
+- Non-urgent updates
+
+### Best Practices
+
+1. **Check Regularly:** Review alerts daily
+2. **Act on High Priority:** Don't ignore critical alerts
+3. **Use Quick Actions:** Take advantage of links
+4. **Keep Clean:** Mark read alerts to stay organized
+5. **Understand Context:** Read explanations to learn
+
+---
+
+## 📜 History - Review Your Trades
+
+The History page shows all your past trades for analysis and record-keeping.
+
+### Accessing History
+
+**Ways to Access:**
+1. Click "History" in navigation menu
+2. From Dashboard → Click "View All Trades"
+3. Direct URL: `/history`
+
+### Viewing Trade History
+
+**Table Shows:**
+- **Date:** When trade was executed
+- **Symbol:** Stock ticker
+- **Action:** BUY or SELL
+- **Type:** CALL, PUT, or STOCK
+- **Quantity:** Number of contracts/shares
+- **Price:** Execution price
+- **P/L:** Realized profit/loss
+- **Source:** Manual or Automation
+
+### Filtering Trades
+
+**Quick Filters:**
+- **Today:** Trades from today
+- **This Week:** Trades from this week
+- **This Month:** Trades from this month
+- **This Year:** Trades from this year
+
+**Advanced Filtering:**
+- Filter by symbol
+- Filter by date range
+- Filter by source (manual/automation)
+- Filter by profit/loss
+
+### Trade Details
+
+**Click to Expand:**
+- Full trade information
+- Greeks at execution
+- P/L breakdown
+- Commission (if any)
+- Notes
+- Related position (if applicable)
+
+### Understanding Your History
+
+**Key Metrics:**
+- **Total Trades:** Number of completed trades
+- **Winning Trades:** Number of profitable trades
+- **Losing Trades:** Number of losing trades
+- **Win Rate:** Percentage of winning trades
+- **Average Return:** Average profit/loss per trade
+- **Total P/L:** Cumulative profit/loss
+
+### Exporting History
+
+**Future Feature:**
+- Export to CSV
+- Export to PDF
+- Tax reporting format
+
+### Best Practices
+
+1. **Review Regularly:** Learn from your trades
+2. **Identify Patterns:** What works, what doesn't
+3. **Track Performance:** Monitor win rate and returns
+4. **Keep Records:** Important for taxes and analysis
+
+---
+
+## ⚙️ Settings - Customize Your Experience
+
+The Settings page lets you customize your account and trading preferences.
+
+### Accessing Settings
+
+**Ways to Access:**
+1. Click "Settings" in navigation menu
+2. Click your profile/username
+3. Direct URL: `/settings`
+
+### Account Settings
+
+**Default Strategy:**
+- **Income:** Premium collection focus
+- **Growth:** Capital appreciation focus
+- **Balanced:** Mix of both
+- Affects default recommendations
+
+**Risk Tolerance:**
+- **Low:** Conservative approach
+- **Moderate:** Balanced approach
+- **High:** Aggressive approach
+- Affects risk limits and recommendations
+
+**Trading Mode:**
+- **Paper:** Virtual money (default)
+- **Live:** Real money (when available)
+- Switch when ready for live trading
+
+**Notifications:**
+- Enable/disable email notifications
+- Control alert frequency
+
+### Risk Limits Section
+
+**Customize Your Risk Management:**
+
+**Max Daily Loss %:**
+- Maximum loss per day as percentage
+- Default: 50% for paper trading
+- Example: 10% = max $10,000 loss per day (on $100k)
+
+**Max Position Size %:**
+- Maximum % of balance per position
+- Default: 10%
+- Example: 5% = max $5,000 per position
+
+**Max Open Positions:**
+- Maximum number of simultaneous positions
+- Default: 10
+- Prevents over-diversification
+
+**Max Capital at Risk %:**
+- Maximum % of capital at risk total
+- Default: 50%
+- Protects your account
+
+**How to Adjust:**
+1. Expand "Risk Limits" section
+2. Modify values
+3. Click "Save" or "Update"
+4. Changes take effect immediately
+
+### Paper Trading Section
+
+**Reset Paper Balance:**
+- Button to reset to $100,000
+- Useful for starting fresh
+- Clears all positions and trades
+- **Warning:** This action cannot be undone
+
+**Current Balance:**
+- Shows your current paper balance
+- Updates in real-time
+
+### Profile Settings
+
+**Update Email:**
+- Change your email address
+- Used for notifications
+- Used for account recovery
+
+**Change Password:**
+- Update your password
+- Requires current password
+- Use strong passwords
+
+### Best Practices for Settings
+
+1. **Match Risk Tolerance:** Set limits that match your comfort level
+2. **Start Conservative:** Begin with tighter limits
+3. **Adjust Over Time:** Modify as you gain experience
+4. **Review Regularly:** Check settings periodically
+5. **Understand Impact:** Know how each setting affects trading
+
+---
+
+## 📚 Understanding Options Trading
+
+### What Are Options?
+
+**Definition:**
+Options are contracts that give you the right (but not obligation) to buy or sell a stock at a specific price by a specific date.
+
+**Key Concepts:**
+- **Call Option:** Right to BUY stock
+- **Put Option:** Right to SELL stock
+- **Strike Price:** Price at which you can exercise
+- **Expiration Date:** When the option expires
+- **Premium:** Price you pay for the option
+
+### The Greeks Explained
+
+**Delta:**
+- Measures price sensitivity
+- Range: -1.0 to +1.0
+- Example: Delta 0.50 = option moves $0.50 for every $1 stock move
+
+**Gamma:**
+- Measures how delta changes
+- Higher gamma = delta changes faster
+- Important for position management
+
+**Theta:**
+- Measures time decay
+- Negative value (you lose money over time)
+- Higher near expiration
+- Example: Theta -0.50 = lose $0.50 per day
+
+**Vega:**
+- Measures volatility sensitivity
+- Higher vega = more sensitive to IV changes
+- Important for volatility trading
+
+**Implied Volatility (IV):**
+- Market's expectation of volatility
+- Higher IV = more expensive options
+- Lower IV = cheaper options
+
+### Option Strategies
+
+**Buying Calls:**
+- Bullish strategy
+- Profit when stock goes up
+- Limited risk (premium paid)
+- Unlimited profit potential
+
+**Buying Puts:**
+- Bearish strategy
+- Profit when stock goes down
+- Limited risk (premium paid)
+- Profit limited by stock going to zero
+
+**Selling Calls:**
+- Bearish/neutral strategy
+- Collect premium
+- Limited profit (premium)
+- Unlimited risk (if uncovered)
+
+**Selling Puts:**
+- Bullish strategy
+- Collect premium
+- Limited profit (premium)
+- Risk = strike price - premium
+
+### Key Terms
+
+**In-the-Money (ITM):**
+- Call: Stock price > Strike price
+- Put: Stock price < Strike price
+- Has intrinsic value
+
+**At-the-Money (ATM):**
+- Stock price = Strike price
+- No intrinsic value
+- Only time value
+
+**Out-of-the-Money (OTM):**
+- Call: Stock price < Strike price
+- Put: Stock price > Strike price
+- No intrinsic value
+- Cheaper premiums
+
+**Intrinsic Value:**
+- Real value of option
+- ITM options have intrinsic value
+- OTM options have zero intrinsic value
+
+**Time Value:**
+- Premium above intrinsic value
+- Decays over time (theta)
+- Higher with more time to expiration
+
+---
+
+## 🚀 Advanced Features
+
+### Performance Tracking
+
+**Dashboard Metrics:**
+- Real-time P/L tracking
+- Win rate calculation
+- Performance trends
+- Position analysis
+
+### AI-Powered Analysis
+
+**Options Analyzer:**
+- AI explains complex concepts
+- Personalized recommendations
+- Risk assessment
+- Trade analysis
+
+### Automated Trading
+
+**Automations:**
+- Set-and-forget strategies
+- 24/7 monitoring
+- Automatic execution
+- Position management
+
+### Risk Management
+
+**Built-in Protection:**
+- Daily loss limits
+- Position size limits
+- Capital at risk limits
+- Automatic stop losses
+
+---
+
+## 🆘 Troubleshooting
+
+### Common Issues and Solutions
+
+#### Can't Login
+
+**Problem:** Unable to log in
+
+**Solutions:**
+1. Check username and password
+2. Clear browser cache and cookies
+3. Try different browser
+4. Check if account exists
+5. Use "Forgot Password" if available
+6. Contact support
+
+#### Trades Not Executing
+
+**Problem:** Trade button doesn't work or trade fails
+
+**Solutions:**
+1. Check your balance (sufficient funds?)
+2. Verify risk limits (not exceeded?)
+3. Check all fields are filled
+4. Verify price is valid
+5. Check market hours
+6. Review error message
+
+#### Prices Not Updating
+
+**Problem:** Prices show old data
+
+**Solutions:**
+1. Refresh the page
+2. Click "Fetch Current Price"
+3. Check internet connection
+4. Wait a moment (prices update periodically)
+
+#### Automation Not Working
+
+**Problem:** Automation not executing trades
+
+**Solutions:**
+1. Check engine is running
+2. Verify automation is active
+3. Lower min_confidence if too high
+4. Check market hours
+5. Verify sufficient balance
+6. Check risk limits
+
+#### Performance Chart Empty
+
+**Problem:** Chart shows "No data"
+
+**Solutions:**
+- Chart only shows after closing positions
+- Close some positions to see trend
+- This is normal if you haven't closed trades yet
+
+#### CORS Errors
+
+**Problem:** Browser shows CORS errors
+
+**Solutions:**
+1. Check backend is running
+2. Verify CORS configuration
+3. Check frontend API URL
+4. Contact support if persists
+
+---
+
+## ❓ FAQ
+
+### General Questions
+
+**Q: Is this real money trading?**  
+A: No, by default it's paper trading with virtual money. You can switch to live trading in Settings when ready.
+
+**Q: How much virtual money do I start with?**  
+A: $100,000 in paper trading mode.
+
+**Q: Can I reset my paper balance?**  
+A: Yes, in Settings → Paper Trading section → "Reset Paper Balance" button.
+
+**Q: Is my data saved?**  
+A: Yes, all your trades, positions, and settings are saved to your account.
+
+### Trading Questions
+
+**Q: What's the minimum trade size?**  
+A: 1 contract for options, 1 share for stocks.
+
+**Q: Can I trade stocks, not just options?**  
+A: Currently focused on options, but stock trading may be available.
+
+**Q: How are prices determined?**  
+A: Real-time market data from Yahoo Finance and Tradier API.
+
+**Q: Are there commissions?**  
+A: In paper trading, commissions are simulated. Check Settings for commission rates.
+
+### Automation Questions
+
+**Q: How often do automations check for opportunities?**  
+A: Configurable, typically every few minutes during market hours.
+
+**Q: Can I have multiple automations?**  
+A: Yes, you can create multiple automations for different stocks/strategies.
+
+**Q: Do automations work when I'm not logged in?**  
+A: Yes, as long as the automation engine is running.
+
+**Q: Can I edit an automation after creating it?**  
+A: Yes, click "Edit" on any automation to modify settings.
+
+### Technical Questions
+
+**Q: What browsers are supported?**  
+A: Modern browsers (Chrome, Firefox, Safari, Edge) - latest versions recommended.
+
+**Q: Do I need to install anything?**  
+A: No, it's a web application. Just need a browser and internet connection.
+
+**Q: Is my data secure?**  
+A: Yes, we use industry-standard security practices. Passwords are encrypted.
+
+**Q: Can I use this on mobile?**  
+A: The interface is responsive and works on tablets. Mobile optimization coming soon.
+
+---
+
+## 📞 Support
+
+### Getting Help
+
+- **User Manual:** This document
+- **Dashboard:** Check for error messages
+- **Support Email:** [Your support email]
+- **Feedback:** Share your thoughts and issues
+
+### Reporting Issues
+
+When reporting problems, include:
+- What you were doing
+- What happened (error message)
+- What you expected
+- Screenshots (if possible)
+- Browser and OS information
+
+---
+
+## 🎓 Learning Resources
+
+### Built-in Learning
+
+- **AI Explanations:** Read the analysis in Options Analyzer
+- **Greeks Tooltips:** Hover over Greek values for explanations
+- **Paper Trading:** Practice risk-free
+
+### External Resources
+
+- Options trading courses
+- Options Greeks tutorials
+- Risk management guides
+- Market analysis resources
+
+---
+
+**Happy Trading! 🚀**
+
+*Remember: This is a beta version. We appreciate your feedback and patience as we improve the platform.*
+
+---
+
+**Version:** 1.0 Beta  
+**Last Updated:** January 2025  
+**For:** IAB OptionsBot Beta Testers
+
