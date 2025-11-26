@@ -22,6 +22,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Log warning if no token for protected endpoint
+      console.warn('No access token found for request:', config.url);
     }
     return config;
   },

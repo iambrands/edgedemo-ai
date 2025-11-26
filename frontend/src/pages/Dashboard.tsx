@@ -399,15 +399,24 @@ const Dashboard: React.FC = () => {
                           onClick={async () => {
                             if (window.confirm(`Close position: ${position.quantity} ${position.symbol} ${position.contract_type?.toUpperCase()}?`)) {
                               try {
+                                // Check if user is logged in before making request
+                                const token = localStorage.getItem('access_token');
+                                if (!token) {
+                                  toast.error('You are not logged in. Please log in again.');
+                                  window.location.href = '/login';
+                                  return;
+                                }
+                                
                                 await api.post(`/trades/positions/${position.id}/close`);
                                 toast.success('Position closed');
                                 loadDashboardData();
                               } catch (error: any) {
+                                console.error('Close position error:', error);
                                 if (error.response?.status === 401) {
                                   // Token refresh should have been attempted automatically
                                   // If we still get 401, the refresh failed
                                   const errorMsg = error.response?.data?.error || 'Authentication failed';
-                                  if (errorMsg.includes('refresh') || errorMsg.includes('expired')) {
+                                  if (errorMsg.includes('refresh') || errorMsg.includes('expired') || errorMsg.includes('Missing Authorization')) {
                                     toast.error('Session expired. Please log in again.');
                                     setTimeout(() => {
                                       localStorage.removeItem('access_token');
