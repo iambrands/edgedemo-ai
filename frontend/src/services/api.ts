@@ -105,7 +105,19 @@ api.interceptors.response.use(
           });
           
           // Make a fresh request with the new config
-          return api.request(retryConfig);
+          try {
+            const retryResponse = await api.request(retryConfig);
+            console.log('Retry successful!', retryResponse.status);
+            return retryResponse;
+          } catch (retryError: any) {
+            console.error('Retry failed:', retryError.response?.status, retryError.response?.data);
+            console.error('Retry error details:', {
+              status: retryError.response?.status,
+              error: retryError.response?.data,
+              headers: retryError.response?.headers,
+            });
+            throw retryError;
+          }
         } else {
           console.error('No access_token in refresh response');
           throw new Error('No access_token in refresh response');
