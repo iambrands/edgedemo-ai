@@ -30,6 +30,11 @@ def token_required(f):
             return f(user, *args, **kwargs)
         
         try:
+            # Check if Authorization header is present
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return jsonify({'error': 'Missing Authorization Header'}), 401
+            
             verify_jwt_in_request()
             current_user_id = get_jwt_identity()
             # Convert to int if it's a string (JWT identity is string)
@@ -46,10 +51,17 @@ def token_required(f):
         except Exception as e:
             import traceback
             # Log the actual error for debugging
+            error_msg = str(e)
             try:
-                current_app.logger.error(f"Token validation error: {str(e)}\n{traceback.format_exc()}")
+                current_app.logger.error(f"Token validation error: {error_msg}\n{traceback.format_exc()}")
             except:
                 pass
-            return jsonify({'error': f'Invalid or missing token: {str(e)}'}), 401
+            # Provide more specific error message
+            if 'expired' in error_msg.lower():
+                return jsonify({'error': f'Token expired: {error_msg}'}), 401
+            elif 'invalid' in error_msg.lower() or 'malformed' in error_msg.lower():
+                return jsonify({'error': f'Invalid token: {error_msg}'}), 401
+            else:
+                return jsonify({'error': f'Invalid or missing token: {error_msg}'}), 401
     return decorated
 

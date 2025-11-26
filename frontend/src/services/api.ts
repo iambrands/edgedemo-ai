@@ -88,14 +88,21 @@ api.interceptors.response.use(
           // Remove the retry flag so we can retry
           delete originalRequest._retry;
           console.log('Retrying request with new token to:', originalRequest.url);
-          // Make a fresh request with the new token
-          return api({
-            ...originalRequest,
+          console.log('Authorization header set:', originalRequest.headers.Authorization ? 'Yes' : 'No');
+          // Make a fresh request with the new token - use the original request config
+          const retryConfig = {
+            method: originalRequest.method,
+            url: originalRequest.url,
+            data: originalRequest.data,
+            params: originalRequest.params,
             headers: {
               ...originalRequest.headers,
               Authorization: `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
             },
-          });
+          };
+          console.log('Retry config:', { method: retryConfig.method, url: retryConfig.url, hasAuth: !!retryConfig.headers.Authorization });
+          return api(retryConfig);
         } else {
           console.error('No access_token in refresh response');
           throw new Error('No access_token in refresh response');
