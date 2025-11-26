@@ -395,32 +395,53 @@ class TradeExecutor:
             return {'error': 'Position not found'}
         
         if exit_price is None:
-            # Update position to get current price (handles options correctly)
-            monitor = PositionMonitor()
-            monitor.update_position_data(position)
-            exit_price = position.current_price
+            # Try to update position to get current price (handles options correctly)
+            # But don't fail if Tradier API is unavailable
+            try:
+                monitor = PositionMonitor()
+                monitor.update_position_data(position)
+                exit_price = position.current_price
+            except Exception as e:
+                # If update fails (e.g., Tradier API unavailable), log but continue
+                try:
+                    current_app.logger.warning(f"Could not update position data for close: {str(e)}")
+                except:
+                    pass
+                exit_price = position.current_price or position.entry_price
             
-            # If still no price, try to get it
-            if not exit_price:
-                if position.option_symbol and position.expiration_date and position.strike_price:
-                    # For options, get from options chain
-                    expiration_str = position.expiration_date.strftime('%Y-%m-%d')
-                    options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
-                    for option in options_chain:
-                        if (option.get('strike') == position.strike_price and 
-                            option.get('type') == position.contract_type):
-                            bid = option.get('bid', 0)
-                            ask = option.get('ask', 0)
-                            exit_price = (bid + ask) / 2 if (bid > 0 and ask > 0) else option.get('last', 0)
-                            break
-                else:
-                    # For stocks, get stock price
-                    quote = self.tradier.get_quote(position.symbol)
-                    if 'quotes' in quote and 'quote' in quote['quotes']:
-                        exit_price = quote['quotes']['quote']['last']
+            # If still no price, try to get it (but handle errors gracefully)
+            if not exit_price or exit_price <= 0:
+                try:
+                    if position.option_symbol and position.expiration_date and position.strike_price:
+                        # For options, get from options chain
+                        expiration_str = position.expiration_date.strftime('%Y-%m-%d')
+                        options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                        if options_chain and isinstance(options_chain, dict) and 'options' in options_chain:
+                            options_list = options_chain['options'].get('option', [])
+                            if not isinstance(options_list, list):
+                                options_list = [options_list] if options_list else []
+                            for option in options_list:
+                                if (option.get('strike') == position.strike_price and 
+                                    option.get('type') == position.contract_type):
+                                    bid = option.get('bid', 0)
+                                    ask = option.get('ask', 0)
+                                    exit_price = (bid + ask) / 2 if (bid > 0 and ask > 0) else option.get('last', 0)
+                                    break
+                    else:
+                        # For stocks, get stock price
+                        quote = self.tradier.get_quote(position.symbol)
+                        if 'quotes' in quote and 'quote' in quote['quotes']:
+                            exit_price = quote['quotes']['quote'].get('last', 0)
+                except Exception as e:
+                    # If Tradier API fails, use fallback
+                    try:
+                        current_app.logger.warning(f"Could not fetch price from Tradier for close: {str(e)}")
+                    except:
+                        pass
                 
-                if not exit_price:
-                    exit_price = position.entry_price  # Fallback
+                # Final fallback: use entry price or current price
+                if not exit_price or exit_price <= 0:
+                    exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
         
         # Execute sell trade (skip risk checks for exits)
         result = self.execute_trade(
