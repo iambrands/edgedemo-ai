@@ -35,7 +35,8 @@ def token_required(f):
             if not auth_header:
                 return jsonify({'error': 'Missing Authorization Header'}), 401
             
-            verify_jwt_in_request()
+            # Verify JWT token - disable CSRF check for API requests
+            verify_jwt_in_request(locations=['headers'])
             current_user_id = get_jwt_identity()
             # Convert to int if it's a string (JWT identity is string)
             user_id = int(current_user_id) if isinstance(current_user_id, str) else current_user_id
