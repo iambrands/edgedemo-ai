@@ -166,11 +166,19 @@ def update_user(current_user):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@auth_bp.route('/refresh', methods=['POST'])
-@jwt_required(refresh=True)
+@auth_bp.route('/refresh', methods=['POST', 'OPTIONS'])
 def refresh():
     """Refresh access token"""
+    if request.method == 'OPTIONS':
+        # Flask-CORS will handle this, just return empty response
+        response = jsonify({})
+        response.status_code = 200
+        return response
+    
     try:
+        # Verify refresh token
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        verify_jwt_in_request(refresh=True)
         current_user_id = get_jwt_identity()
         new_token = create_access_token(identity=str(current_user_id))
         return jsonify({'access_token': new_token}), 200

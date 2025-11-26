@@ -404,10 +404,19 @@ const Dashboard: React.FC = () => {
                                 loadDashboardData();
                               } catch (error: any) {
                                 if (error.response?.status === 401) {
-                                  toast.error('Session expired. Please log in again.');
-                                  localStorage.removeItem('access_token');
-                                  localStorage.removeItem('refresh_token');
-                                  window.location.href = '/login';
+                                  // Token refresh should have been attempted automatically
+                                  // If we still get 401, the refresh failed
+                                  const errorMsg = error.response?.data?.error || 'Authentication failed';
+                                  if (errorMsg.includes('refresh') || errorMsg.includes('expired')) {
+                                    toast.error('Session expired. Please log in again.');
+                                    setTimeout(() => {
+                                      localStorage.removeItem('access_token');
+                                      localStorage.removeItem('refresh_token');
+                                      window.location.href = '/login';
+                                    }, 2000);
+                                  } else {
+                                    toast.error('Authentication error. Please try again.');
+                                  }
                                 } else {
                                   toast.error(error.response?.data?.error || 'Failed to close position');
                                 }
@@ -718,10 +727,19 @@ const Dashboard: React.FC = () => {
                         loadDashboardData();
                       } catch (error: any) {
                         if (error.response?.status === 401) {
-                          toast.error('Session expired. Please log in again.');
-                          localStorage.removeItem('access_token');
-                          localStorage.removeItem('refresh_token');
-                          window.location.href = '/login';
+                          // Token refresh should have been attempted automatically
+                          // If we still get 401, the refresh failed
+                          const errorMsg = error.response?.data?.error || 'Authentication failed';
+                          if (errorMsg.includes('refresh') || errorMsg.includes('expired')) {
+                            toast.error('Session expired. Please log in again.');
+                            setTimeout(() => {
+                              localStorage.removeItem('access_token');
+                              localStorage.removeItem('refresh_token');
+                              window.location.href = '/login';
+                            }, 2000);
+                          } else {
+                            toast.error('Authentication error. Please try again.');
+                          }
                         } else {
                           toast.error(error.response?.data?.error || 'Failed to close position');
                         }
