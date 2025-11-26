@@ -34,67 +34,34 @@ const Landing: React.FC = () => {
 
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Text Content */}
-          <div className="text-center lg:text-left">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              Trade Options with
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-amber-500">
-                AI-Powered Intelligence
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-700 mb-8">
-              The intelligent options trading platform that combines advanced AI analysis, 
-              automated strategies, and real-time market data to help you make smarter trades.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link
-                to="/register"
-                className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-all font-semibold text-lg shadow-lg transform hover:-translate-y-1 hover:shadow-xl text-center"
-              >
-                Start Trading Free →
-              </Link>
-              <Link
-                to="/login"
-                className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-all font-semibold text-lg shadow-md text-center"
-              >
-                Sign In
-              </Link>
-            </div>
-            <p className="mt-6 text-gray-600 text-sm">
-              🎯 Start with $100,000 in paper trading • No credit card required • Risk-free learning
-            </p>
+        <div className="text-center">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            Trade Options with
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-amber-500">
+              AI-Powered Intelligence
+            </span>
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
+            The intelligent options trading platform that combines advanced AI analysis, 
+            automated strategies, and real-time market data to help you make smarter trades.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              to="/register"
+              className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-all font-semibold text-lg shadow-lg transform hover:-translate-y-1 hover:shadow-xl"
+            >
+              Start Trading Free →
+            </Link>
+            <Link
+              to="/login"
+              className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-all font-semibold text-lg shadow-md"
+            >
+              Sign In
+            </Link>
           </div>
-          
-          {/* Right Column - Hero Image */}
-          <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              {/* Placeholder for your custom image - Replace this img tag with your image */}
-              <img
-                src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-                alt="Trading Dashboard"
-                className="w-full h-auto object-cover"
-                onError={(e) => {
-                  // Fallback to gradient if image fails to load
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.parentElement!.innerHTML = `
-                    <div class="w-full h-96 bg-gradient-to-br from-blue-600 via-blue-500 to-amber-500 flex items-center justify-center">
-                      <div class="text-white text-center p-8">
-                        <div class="text-6xl mb-4">📈</div>
-                        <div class="text-2xl font-bold">IAB OptionsBot</div>
-                        <div class="text-lg mt-2">AI-Powered Trading Platform</div>
-                      </div>
-                    </div>
-                  `;
-                }}
-              />
-              {/* Optional: Overlay gradient for better text contrast if needed */}
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent pointer-events-none"></div>
-            </div>
-            {/* Decorative elements */}
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-amber-400 rounded-full opacity-20 blur-2xl"></div>
-            <div className="absolute -top-4 -left-4 w-32 h-32 bg-blue-400 rounded-full opacity-20 blur-2xl"></div>
-          </div>
+          <p className="mt-6 text-gray-600 text-sm">
+            🎯 Start with $100,000 in paper trading • No credit card required • Risk-free learning
+          </p>
         </div>
       </div>
 
