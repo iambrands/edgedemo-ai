@@ -78,10 +78,24 @@ api.interceptors.response.use(
         
         const { access_token } = response.data;
         if (access_token) {
-          console.log('Token refreshed successfully');
+          console.log('Token refreshed successfully, new token length:', access_token.length);
           localStorage.setItem('access_token', access_token);
+          // Update the authorization header - ensure headers object exists
+          if (!originalRequest.headers) {
+            originalRequest.headers = {};
+          }
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return api(originalRequest);
+          // Remove the retry flag so we can retry
+          delete originalRequest._retry;
+          console.log('Retrying request with new token to:', originalRequest.url);
+          // Make a fresh request with the new token
+          return api({
+            ...originalRequest,
+            headers: {
+              ...originalRequest.headers,
+              Authorization: `Bearer ${access_token}`,
+            },
+          });
         } else {
           console.error('No access_token in refresh response');
           throw new Error('No access_token in refresh response');
