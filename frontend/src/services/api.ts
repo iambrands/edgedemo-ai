@@ -86,13 +86,18 @@ api.interceptors.response.use(
             method: originalRequest.method || 'post',
             url: originalRequest.url,
             baseURL: api.defaults.baseURL,
-            data: originalRequest.data,
+            data: originalRequest.data || {}, // Ensure data is an object, not undefined
             params: originalRequest.params,
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${access_token}`,
             },
           };
+          
+          // If there's no data, send empty object as JSON
+          if (!retryConfig.data) {
+            retryConfig.data = {};
+          }
           
           console.log('Retrying request with new token to:', originalRequest.url);
           console.log('Retry config:', { 
