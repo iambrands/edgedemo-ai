@@ -412,10 +412,17 @@ const Dashboard: React.FC = () => {
                                 loadDashboardData();
                               } catch (error: any) {
                                 console.error('Close position error:', error);
+                                console.error('Error response:', error.response?.data);
+                                console.error('Error status:', error.response?.status);
                                 if (error.response?.status === 401) {
                                   // Token refresh should have been attempted automatically
-                                  // If we still get 401, the refresh failed
+                                  // If we still get 401, the refresh failed or the new token is invalid
                                   const errorMsg = error.response?.data?.error || 'Authentication failed';
+                                  console.error('401 error details:', {
+                                    error: errorMsg,
+                                    hasToken: !!localStorage.getItem('access_token'),
+                                    tokenLength: localStorage.getItem('access_token')?.length
+                                  });
                                   if (errorMsg.includes('refresh') || errorMsg.includes('expired') || errorMsg.includes('Missing Authorization')) {
                                     toast.error('Session expired. Please log in again.');
                                     setTimeout(() => {
@@ -424,7 +431,7 @@ const Dashboard: React.FC = () => {
                                       window.location.href = '/login';
                                     }, 2000);
                                   } else {
-                                    toast.error('Authentication error. Please try again.');
+                                    toast.error(`Authentication error: ${errorMsg}. Please try logging in again.`);
                                   }
                                 } else {
                                   toast.error(error.response?.data?.error || 'Failed to close position');
