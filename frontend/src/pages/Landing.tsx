@@ -35,6 +35,11 @@ const Landing: React.FC = () => {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
+          <div className="inline-block bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200 rounded-full px-6 py-2 mb-6">
+            <p className="text-blue-700 font-semibold text-sm md:text-base">
+              ⚡ Set It and Forget It
+            </p>
+          </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Trade Options with
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-amber-500">
@@ -90,8 +95,8 @@ const Landing: React.FC = () => {
                 <span className="text-2xl">⚡</span>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Automated Trading</h3>
-              <p className="text-gray-600">
-                Set up trading strategies that execute automatically. Monitor opportunities 24/7 
+              <p className="text-gray-600 mb-2">
+                <span className="font-semibold text-blue-600">"Set It and Forget It"</span> - Set up trading strategies that execute automatically. Monitor opportunities 24/7 
                 and let the system work for you based on your criteria.
               </p>
             </div>
