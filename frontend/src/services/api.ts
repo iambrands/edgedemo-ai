@@ -80,26 +80,32 @@ api.interceptors.response.use(
         if (access_token) {
           console.log('Token refreshed successfully, new token length:', access_token.length);
           localStorage.setItem('access_token', access_token);
-          // Update the authorization header - ensure headers object exists
-          if (!originalRequest.headers) {
-            originalRequest.headers = {};
-          }
-          // Remove the retry flag so we can retry
-          delete originalRequest._retry;
-          // Update headers with new token
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          console.log('Retrying request with new token to:', originalRequest.url);
-          console.log('Authorization header set:', originalRequest.headers.Authorization ? 'Yes' : 'No');
-          console.log('Retry config:', { 
-            method: originalRequest.method, 
-            url: originalRequest.url, 
+          
+          // Create a completely fresh request config to avoid any issues with the original request
+          const retryConfig = {
+            method: originalRequest.method || 'post',
+            url: originalRequest.url,
             baseURL: api.defaults.baseURL,
-            fullURL: `${api.defaults.baseURL}${originalRequest.url}`,
-            hasAuth: !!originalRequest.headers.Authorization 
+            data: originalRequest.data,
+            params: originalRequest.params,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${access_token}`,
+            },
+          };
+          
+          console.log('Retrying request with new token to:', originalRequest.url);
+          console.log('Retry config:', { 
+            method: retryConfig.method, 
+            url: retryConfig.url, 
+            baseURL: retryConfig.baseURL,
+            fullURL: `${retryConfig.baseURL}${retryConfig.url}`,
+            hasAuth: !!retryConfig.headers.Authorization,
+            authHeader: retryConfig.headers.Authorization.substring(0, 20) + '...'
           });
-          // Retry using the api instance - the originalRequest already has the correct URL
-          // Just need to ensure headers are set
-          return api.request(originalRequest);
+          
+          // Make a fresh request with the new config
+          return api.request(retryConfig);
         } else {
           console.error('No access_token in refresh response');
           throw new Error('No access_token in refresh response');
