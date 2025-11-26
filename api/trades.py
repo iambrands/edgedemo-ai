@@ -103,10 +103,14 @@ def get_positions(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@trades_bp.route('/positions/<int:position_id>/close', methods=['POST'])
+@trades_bp.route('/positions/<int:position_id>/close', methods=['POST', 'OPTIONS'])
 @token_required
 def close_position(current_user, position_id):
     """Close a position"""
+    # OPTIONS is handled by token_required decorator
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
     data = request.get_json() or {}
     exit_price = data.get('exit_price')
     
