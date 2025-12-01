@@ -639,11 +639,12 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         return min(1.0, max(0.0, base_score * multiplier))
     
     def _map_recommendation_to_category(self, action: str) -> str:
-        """Map recommendation action to category"""
+        """Map recommendation action to category (Conservative, Balanced, Aggressive)"""
+        # Map to the same categories used by the scoring system
         category_map = {
-            'buy': 'strong_buy',
-            'consider': 'buy',
-            'consider_carefully': 'hold',
-            'avoid': 'avoid'
+            'buy': 'Aggressive',  # High confidence buys are aggressive
+            'consider': 'Balanced',  # Moderate recommendations are balanced
+            'consider_carefully': 'Conservative',  # Cautious recommendations are conservative
+            'avoid': 'Conservative'  # Avoid recommendations are conservative
         }
-        return category_map.get(action, 'hold')
+        return category_map.get(action, 'Balanced')

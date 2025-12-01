@@ -12,6 +12,13 @@ const api = axios.create({
 // Add token to requests (but NOT for auth endpoints)
 api.interceptors.request.use(
   (config) => {
+    // Ensure Content-Type is set for POST/PUT/PATCH requests
+    if (config.method && ['post', 'put', 'patch'].includes(config.method.toLowerCase())) {
+      if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+    }
+    
     // Don't add token to login/register endpoints
     if (config.url?.includes('/auth/login') || 
         config.url?.includes('/auth/register') ||
@@ -25,6 +32,7 @@ api.interceptors.request.use(
       // Debug: log token presence (but not the actual token for security)
       if (config.url?.includes('/close')) {
         console.log('Sending request with token to:', config.url);
+        console.log('Content-Type:', config.headers['Content-Type']);
       }
     } else {
       // Log warning if no token for protected endpoint
@@ -82,22 +90,23 @@ api.interceptors.response.use(
           localStorage.setItem('access_token', access_token);
           
           // Create a completely fresh request config to avoid any issues with the original request
+          // Preserve original data - could be undefined, null, empty object, or actual data
+          let originalData = originalRequest.data;
+          if (originalData === undefined || originalData === null) {
+            originalData = {};
+          }
+          
           const retryConfig = {
             method: originalRequest.method || 'post',
             url: originalRequest.url,
             baseURL: api.defaults.baseURL,
-            data: originalRequest.data || {}, // Ensure data is an object, not undefined
+            data: originalData,
             params: originalRequest.params,
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${access_token}`,
             },
           };
-          
-          // If there's no data, send empty object as JSON
-          if (!retryConfig.data) {
-            retryConfig.data = {};
-          }
           
           console.log('Retrying request with new token to:', originalRequest.url);
           console.log('Retry config:', { 
@@ -111,16 +120,49 @@ api.interceptors.response.use(
             dataType: typeof retryConfig.data
           });
           
-          // Make a fresh request with the new config using api.post to ensure proper headers
+          // Make a fresh request with the new config
           try {
+            // Prepare request data - axios will automatically JSON.stringify objects
+            const requestData = retryConfig.data || {};
+            
+            // Build full URL
+            const fullUrl = `${retryConfig.baseURL}${retryConfig.url}`;
+            
             // Use the appropriate method based on original request
             let retryResponse;
             if (retryConfig.method.toLowerCase() === 'post') {
-              retryResponse = await api.post(retryConfig.url, retryConfig.data, {
-                headers: retryConfig.headers,
-              });
+              // Use axios directly with full URL to ensure proper headers
+              retryResponse = await axios.post(
+                fullUrl,
+                requestData,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': retryConfig.headers.Authorization,
+                  },
+                }
+              );
+            } else if (retryConfig.method.toLowerCase() === 'get') {
+              retryResponse = await axios.get(
+                fullUrl,
+                {
+                  params: retryConfig.params,
+                  headers: {
+                    'Authorization': retryConfig.headers.Authorization,
+                  },
+                }
+              );
             } else {
-              retryResponse = await api.request(retryConfig);
+              retryResponse = await axios.request({
+                method: retryConfig.method,
+                url: fullUrl,
+                data: requestData,
+                params: retryConfig.params,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': retryConfig.headers.Authorization,
+                },
+              });
             }
             console.log('Retry successful!', retryResponse.status);
             return retryResponse;
@@ -131,6 +173,12 @@ api.interceptors.response.use(
               error: retryError.response?.data,
               headers: retryError.response?.headers,
             });
+            // If retry fails with 401, clear tokens and redirect
+            if (retryError.response?.status === 401) {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              window.location.href = '/login';
+            }
             throw retryError;
           }
         } else {

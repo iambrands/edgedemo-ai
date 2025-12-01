@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OptionContract } from '../../types/options';
 import { watchlistService } from '../../services/watchlist';
@@ -8,13 +8,36 @@ interface OptionsChainTableProps {
   options: OptionContract[];
   symbol?: string;
   expiration?: string;
+  stockPrice?: number | null;
 }
 
-const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, expiration }) => {
+const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, expiration, stockPrice }) => {
   const navigate = useNavigate();
   const [sortConfig, setSortConfig] = useState<{ key: keyof OptionContract; direction: 'asc' | 'desc' } | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [highlightedStrike, setHighlightedStrike] = useState<number | null>(null);
+  
+  // Find the strike closest to current stock price
+  React.useEffect(() => {
+    if (stockPrice && options.length > 0) {
+      // Find the strike price closest to the current stock price
+      const closestOption = options.reduce((closest, current) => {
+        const closestDiff = Math.abs(closest.strike - stockPrice);
+        const currentDiff = Math.abs(current.strike - stockPrice);
+        return currentDiff < closestDiff ? current : closest;
+      });
+      setHighlightedStrike(closestOption.strike);
+      
+      // Scroll to the highlighted row after a short delay
+      setTimeout(() => {
+        const element = document.getElementById(`option-row-${closestOption.option_symbol}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [stockPrice, options]);
 
   const handleTrade = (option: OptionContract) => {
     // Store trade data in sessionStorage to pass to Trade page
@@ -68,7 +91,12 @@ const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, 
 
   const filteredOptions = filterCategory === 'all'
     ? sortedOptions
-    : sortedOptions.filter(opt => opt.category === filterCategory);
+    : sortedOptions.filter(opt => {
+        // Case-insensitive category matching
+        const optCategory = opt.category?.toLowerCase() || '';
+        const filterCat = filterCategory.toLowerCase();
+        return optCategory === filterCat;
+      });
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -187,9 +215,26 @@ const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredOptions.map((option) => (
-              <React.Fragment key={option.option_symbol}>
-                <tr className="hover:bg-gray-50">
+            {filteredOptions.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
+                  No options found for the selected category. Try selecting "All" to see all options.
+                </td>
+              </tr>
+            ) : (
+              filteredOptions.map((option) => {
+                const isAtTheMoney = stockPrice && highlightedStrike && Math.abs(option.strike - stockPrice) < 0.01;
+                const isNearTheMoney = stockPrice && highlightedStrike && option.strike === highlightedStrike;
+                return (
+                  <React.Fragment key={option.option_symbol}>
+                <tr 
+                  id={`option-row-${option.option_symbol}`}
+                  className={`hover:bg-gray-50 ${
+                    isAtTheMoney || isNearTheMoney 
+                      ? 'bg-blue-50 border-l-4 border-blue-500' 
+                      : ''
+                  }`}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-semibold rounded ${
                       option.contract_type === 'call' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
@@ -198,7 +243,14 @@ const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, 
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatCurrency(option.strike)}
+                    <div className="flex items-center gap-2">
+                      {formatCurrency(option.strike)}
+                      {(isAtTheMoney || isNearTheMoney) && stockPrice && (
+                        <span className="px-2 py-0.5 bg-blue-500 text-white text-xs font-bold rounded">
+                          ATM
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatCurrency(option.mid_price)}
@@ -228,9 +280,9 @@ const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, 
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
                       onClick={() => setExpandedRow(expandedRow === option.option_symbol ? null : option.option_symbol)}
-                      className="text-primary hover:text-indigo-600 font-medium"
+                      className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-indigo-600 font-medium text-xs transition-colors"
                     >
-                      {expandedRow === option.option_symbol ? 'Hide' : 'Details'}
+                      {expandedRow === option.option_symbol ? 'Hide Details' : 'View Details'}
                     </button>
                   </td>
                 </tr>
@@ -453,8 +505,10 @@ const OptionsChainTable: React.FC<OptionsChainTableProps> = ({ options, symbol, 
                     </td>
                   </tr>
                 )}
-              </React.Fragment>
-            ))}
+                  </React.Fragment>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

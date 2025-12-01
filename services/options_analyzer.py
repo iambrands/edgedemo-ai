@@ -105,7 +105,7 @@ class OptionsAnalyzer:
                 open_interest=open_interest
             )
             
-            # Determine category
+            # Determine category based on calculated score
             category = self._categorize_recommendation(score)
             
             # Get AI-powered analysis
@@ -127,11 +127,17 @@ class OptionsAnalyzer:
                     user_risk_tolerance=user_risk_tolerance
                 )
                 
-                # Use AI analysis for explanation and category if available
+                # Use AI analysis for explanation if available
+                # But keep the calculated score (don't override with AI score)
+                # Only use AI category if it's valid (Conservative, Balanced, Aggressive)
                 if ai_analysis:
                     explanation = ai_analysis.get('explanation', explanation)
-                    category = ai_analysis.get('category', category)
-                    score = ai_analysis.get('score', score)
+                    ai_category = ai_analysis.get('category', category)
+                    # Only use AI category if it matches our expected values
+                    if ai_category in ['Conservative', 'Balanced', 'Aggressive']:
+                        category = ai_category
+                    # Keep the calculated score - don't override with AI score
+                    # This ensures scores vary based on actual option characteristics
             except Exception as e:
                 # Log error but don't fail the entire analysis
                 try:

@@ -189,12 +189,12 @@ class TradeExecutor:
                 from models.alert import Alert
                 from datetime import timedelta
                 from services.ai_alert_generator import AIAlertGenerator
-                from models.user import User
+                # User is already imported at the top of the file
                 
                 # Get position if it was created (for BUY trades)
                 position = None
                 if action.lower() == 'buy':
-                    from models.position import Position
+                    # Position is already imported at the top of the file
                     position = db.session.query(Position).filter_by(
                         user_id=user_id,
                         symbol=symbol,
@@ -404,6 +404,7 @@ class TradeExecutor:
             except Exception as e:
                 # If update fails (e.g., Tradier API unavailable), log but continue
                 try:
+                    from flask import current_app
                     current_app.logger.warning(f"Could not update position data for close: {str(e)}")
                 except:
                     pass
@@ -435,6 +436,7 @@ class TradeExecutor:
                 except Exception as e:
                     # If Tradier API fails, use fallback
                     try:
+                        from flask import current_app
                         current_app.logger.warning(f"Could not fetch price from Tradier for close: {str(e)}")
                     except:
                         pass
