@@ -39,11 +39,19 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///iab_optionsbot.db'
+    # Heroku provides DATABASE_URL in postgres:// format, convert to postgresql://
+    database_url = os.environ.get('DATABASE_URL') or 'sqlite:///iab_optionsbot.db'
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = database_url
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://user:pass@localhost/iab_optionsbot'
+    # Heroku provides DATABASE_URL in postgres:// format, convert to postgresql://
+    database_url = os.environ.get('DATABASE_URL') or 'postgresql://user:pass@localhost/iab_optionsbot'
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = database_url
 
 class TestingConfig(Config):
     TESTING = True
