@@ -244,7 +244,7 @@ def test_alerts_endpoints(token: str):
     return all(results)
 
 def test_frontend_pages():
-    """Test frontend pages load correctly"""
+    """Test frontend pages load correctly (React Router - all should return index.html)"""
     print_header("Frontend Pages")
     
     pages = [
@@ -265,9 +265,20 @@ def test_frontend_pages():
     for path, name in pages:
         try:
             response = requests.get(f"{BASE_URL}{path}", timeout=10, allow_redirects=True)
-            if response.status_code in [200, 302, 401]:  # 401 is OK for protected pages
-                print_success(f"{name} ({path}): Loads correctly")
+            # For React Router, all routes should return index.html (200) or redirect
+            # Check if response contains React app markers
+            content = response.text.lower()
+            is_react_app = 'root' in content or 'react' in content or '<title>iab optionsbot</title>' in content
+            
+            if response.status_code == 200 and is_react_app:
+                print_success(f"{name} ({path}): Loads correctly (React Router)")
                 results.append(True)
+            elif response.status_code in [302, 401]:  # Redirects or auth required are OK
+                print_success(f"{name} ({path}): Redirects/Auth required (OK)")
+                results.append(True)
+            elif response.status_code == 200:
+                print_warning(f"{name} ({path}): Returns 200 but may not be React app")
+                results.append(True)  # Still count as OK
             else:
                 print_error(f"{name} ({path}): Status {response.status_code}")
                 results.append(False)
