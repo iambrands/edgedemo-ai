@@ -123,13 +123,20 @@ def create_app(config_name=None):
     # This must be registered AFTER all API blueprints
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
-    # Serve static files (CSS, JS, images, etc.)
-    @app.route('/static/<path:path>')
-    def serve_static(path):
+    # Serve static files (CSS, JS, images, etc.) from /static/ path
+    @app.route('/static/<path:filename>')
+    def serve_static(filename):
         """Serve static files from the React build directory"""
         if not os.path.exists(static_folder):
+            app.logger.error(f'Static folder not found: {static_folder}')
             return {'error': 'Frontend not built. Run: cd frontend && npm run build'}, 404
-        return send_from_directory(os.path.join(static_folder, 'static'), path)
+        
+        static_path = os.path.join(static_folder, 'static', filename)
+        if not os.path.exists(static_path):
+            app.logger.error(f'Static file not found: {static_path}')
+            return {'error': 'File not found'}, 404
+        
+        return send_from_directory(os.path.join(static_folder, 'static'), filename)
     
     # Catch-all route for React Router (must be last)
     @app.route('/', defaults={'path': ''})
@@ -142,6 +149,10 @@ def create_app(config_name=None):
         # For API routes that weren't caught by blueprints, return 404
         if path.startswith('api/'):
             return {'error': 'API endpoint not found'}, 404
+        
+        # Don't handle static files here - they're handled by the route above
+        if path.startswith('static/'):
+            return {'error': 'Static file not found'}, 404
         
         # Serve index.html (React Router will handle client-side routing)
         return send_from_directory(static_folder, 'index.html')
