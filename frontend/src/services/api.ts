@@ -1,6 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Determine API base URL - use environment variable, or current origin in production, or localhost for development
+const getApiBaseUrl = () => {
+  // If REACT_APP_API_URL is set, use it
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // In production (on Heroku), use the current origin
+  if (window.location.origin.includes('herokuapp.com') || window.location.origin.includes('https://')) {
+    return `${window.location.origin}/api`;
+  }
+  
+  // Default to localhost for local development
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
