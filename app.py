@@ -13,7 +13,9 @@ jwt = JWTManager()
 
 def create_app(config_name=None):
     """Application factory pattern"""
-    app = Flask(__name__)
+    # Set static folder for React build
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
     
     # Load configuration
     config_name = config_name or os.environ.get('FLASK_ENV', 'development')
@@ -121,22 +123,7 @@ def create_app(config_name=None):
     
     # Serve React app static files (for production deployment)
     # This must be registered AFTER all API blueprints
-    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
-    
-    # Serve static files (CSS, JS, images, etc.) from /static/ path
-    @app.route('/static/<path:filename>')
-    def serve_static(filename):
-        """Serve static files from the React build directory"""
-        if not os.path.exists(static_folder):
-            app.logger.error(f'Static folder not found: {static_folder}')
-            return {'error': 'Frontend not built. Run: cd frontend && npm run build'}, 404
-        
-        static_path = os.path.join(static_folder, 'static', filename)
-        if not os.path.exists(static_path):
-            app.logger.error(f'Static file not found: {static_path}')
-            return {'error': 'File not found'}, 404
-        
-        return send_from_directory(os.path.join(static_folder, 'static'), filename)
+    # Static folder is already set in Flask app initialization above
     
     # Catch-all route for React Router (must be last)
     @app.route('/', defaults={'path': ''})
