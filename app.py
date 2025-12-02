@@ -125,6 +125,18 @@ def create_app(config_name=None):
     # This must be registered AFTER all API blueprints
     # Static folder is already set in Flask app initialization above
     
+    # Serve favicon and other root-level files
+    @app.route('/favicon.ico')
+    def serve_favicon():
+        """Serve favicon"""
+        if not os.path.exists(static_folder):
+            return '', 404
+        favicon_path = os.path.join(static_folder, 'favicon.ico')
+        if os.path.exists(favicon_path):
+            return send_from_directory(static_folder, 'favicon.ico')
+        # Return empty 204 (No Content) if favicon doesn't exist to prevent 404 errors
+        return '', 204
+    
     # Catch-all route for React Router (must be last)
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
