@@ -113,8 +113,12 @@ const OptionsAnalyzer: React.FC = () => {
       if (response.data && response.data.current_price) {
         setStockPrice(response.data.current_price);
       }
-    } catch (error) {
-      // Silently fail - symbol might not exist yet
+    } catch (error: any) {
+      // Silently fail - symbol might not exist or user not authenticated
+      // Only log if it's not a 401/404 (expected errors)
+      if (error.response?.status && ![401, 404].includes(error.response.status)) {
+        console.warn('Failed to fetch stock price:', error.response?.data?.error || error.message);
+      }
     }
   };
 
