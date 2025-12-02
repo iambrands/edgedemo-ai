@@ -149,11 +149,12 @@ def create_app(config_name=None):
         if path.startswith('api/'):
             return {'error': 'API endpoint not found'}, 404
         
-        # Don't handle static files here - they're handled by the route above
+        # Don't handle static files here - Flask handles them automatically
         if path.startswith('static/'):
             return {'error': 'Static file not found'}, 404
         
-        # Serve index.html (React Router will handle client-side routing)
+        # Serve index.html for all other routes (React Router will handle client-side routing)
+        # This includes /login, /register, /dashboard, etc.
         return send_from_directory(static_folder, 'index.html')
     
     return app
