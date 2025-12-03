@@ -334,7 +334,6 @@ const OptionsAnalyzer: React.FC = () => {
             <h2 className="text-xl font-bold text-secondary mb-4">🎯 Top Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {options
-                .filter(opt => opt.ai_analysis)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 6)
                 .map((option) => (
@@ -358,7 +357,7 @@ const OptionsAnalyzer: React.FC = () => {
                       </span>
                     </div>
                     
-                    {option.ai_analysis && (
+                    {option.ai_analysis && option.ai_analysis.recommendation ? (
                       <>
                         <div className="mb-2">
                           <div className="flex items-center gap-2 mb-1">
@@ -382,13 +381,13 @@ const OptionsAnalyzer: React.FC = () => {
                           <div>
                             <span className="text-gray-500">Risk:</span>
                             <span className={`ml-1 font-semibold ${
-                              option.ai_analysis.risk_assessment.overall_risk_level === 'high'
+                              option.ai_analysis.risk_assessment?.overall_risk_level === 'high'
                                 ? 'text-red-600'
-                                : option.ai_analysis.risk_assessment.overall_risk_level === 'moderate'
+                                : option.ai_analysis.risk_assessment?.overall_risk_level === 'moderate'
                                 ? 'text-yellow-600'
                                 : 'text-green-600'
                             }`}>
-                              {option.ai_analysis.risk_assessment.overall_risk_level.toUpperCase()}
+                              {option.ai_analysis.risk_assessment?.overall_risk_level?.toUpperCase() || 'MODERATE'}
                             </span>
                           </div>
                           <div>
@@ -397,25 +396,46 @@ const OptionsAnalyzer: React.FC = () => {
                           </div>
                         </div>
                         
-                        <div className="text-xs text-gray-500 line-clamp-1 mb-3">
-                          {option.ai_analysis.trade_analysis.best_case}
-                        </div>
-                        
-                        <button
-                          onClick={() => setExpandedOption(expandedOption === option.option_symbol ? null : option.option_symbol)}
-                          className="w-full px-3 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 font-medium text-xs transition-colors"
-                        >
-                          {expandedOption === option.option_symbol ? 'Hide Details' : 'View Details'}
-                        </button>
+                        {option.ai_analysis.trade_analysis?.best_case && (
+                          <div className="text-xs text-gray-500 line-clamp-1 mb-3">
+                            {option.ai_analysis.trade_analysis.best_case}
+                          </div>
+                        )}
                       </>
+                    ) : (
+                      <div className="mb-2">
+                        <div className="text-xs text-gray-600 mb-2">
+                          <span className="font-semibold">Category:</span> {option.category || 'N/A'}
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2">
+                          {option.explanation || 'Analysis available in details view.'}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                          <div>
+                            <span className="text-gray-500">Price:</span>
+                            <span className="ml-1 font-semibold">${option.mid_price.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Volume:</span>
+                            <span className="ml-1 font-semibold">{option.volume || 0}</span>
+                          </div>
+                        </div>
+                      </div>
                     )}
+                    
+                    <button
+                      onClick={() => setExpandedOption(expandedOption === option.option_symbol ? null : option.option_symbol)}
+                      className="w-full px-3 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 font-medium text-xs transition-colors mt-2"
+                    >
+                      {expandedOption === option.option_symbol ? 'Hide Details' : 'View Details'}
+                    </button>
                   </div>
                 ))}
             </div>
             
-            {options.filter(opt => opt.ai_analysis).length === 0 && (
+            {options.length === 0 && (
               <p className="text-gray-500 text-center py-4">
-                No AI analysis available. Click "Details" on any option to see full analysis.
+                No options found for this expiration date.
               </p>
             )}
 
