@@ -123,6 +123,16 @@ def create_app(config_name=None):
     # Define static folder path
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
+    # Debug: Log static folder info at startup
+    app.logger.info(f'Static folder path: {static_folder}')
+    app.logger.info(f'Static folder exists: {os.path.exists(static_folder)}')
+    if os.path.exists(static_folder):
+        app.logger.info(f'Static folder contents: {os.listdir(static_folder)}')
+        static_path = os.path.join(static_folder, 'static')
+        if os.path.exists(static_path):
+            app.logger.info(f'Static path exists: {static_path}')
+            app.logger.info(f'Static path contents: {os.listdir(static_path)}')
+    
     # Serve static files (CSS, JS, images, etc.) from /static/ path
     # IMPORTANT: This MUST be registered BEFORE the catch-all route
     # React build puts files in frontend/build/static/, so we serve from there
@@ -131,13 +141,25 @@ def create_app(config_name=None):
         """Serve static files from the React build directory"""
         static_path = os.path.join(static_folder, 'static')
         app.logger.info(f'Serving static file: {filename} from {static_path}')
+        app.logger.info(f'Static path exists: {os.path.exists(static_path)}')
         if not os.path.exists(static_path):
             app.logger.error(f'Static path not found: {static_path}')
+            app.logger.error(f'Static folder exists: {os.path.exists(static_folder)}')
+            if os.path.exists(static_folder):
+                app.logger.error(f'Static folder contents: {os.listdir(static_folder)}')
             return {'error': 'Frontend not built'}, 404
+        file_path = os.path.join(static_path, filename)
+        app.logger.info(f'Looking for file: {file_path}')
+        app.logger.info(f'File exists: {os.path.exists(file_path)}')
+        if not os.path.exists(file_path):
+            app.logger.error(f'File not found: {file_path}')
+            app.logger.error(f'Directory contents: {os.listdir(static_path) if os.path.exists(static_path) else "N/A"}')
         try:
             return send_from_directory(static_path, filename)
         except Exception as e:
             app.logger.error(f'Error serving static file {filename}: {str(e)}')
+            import traceback
+            app.logger.error(traceback.format_exc())
             return {'error': f'Error serving file: {str(e)}'}, 500
     
     # Serve favicon
