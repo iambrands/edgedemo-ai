@@ -120,19 +120,24 @@ def create_app(config_name=None):
     def health():
         return {'status': 'healthy', 'service': 'IAB OptionsBot'}, 200
     
-    # Define static folder path (already set in Flask init, but keep for reference)
+    # Define static folder path
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
-    # Flask will automatically serve files from static_folder via /static/ URL
-    # But React build puts files in static_folder/static/, so we need a custom route
+    # Serve static files (CSS, JS, images, etc.) from /static/ path
+    # React build puts files in frontend/build/static/, so we serve from there
     @app.route('/static/<path:filename>')
     def serve_static(filename):
         """Serve static files from the React build directory"""
         static_path = os.path.join(static_folder, 'static')
+        app.logger.info(f'Serving static file: {filename} from {static_path}')
         if not os.path.exists(static_path):
             app.logger.error(f'Static path not found: {static_path}')
             return {'error': 'Frontend not built'}, 404
-        return send_from_directory(static_path, filename)
+        try:
+            return send_from_directory(static_path, filename)
+        except Exception as e:
+            app.logger.error(f'Error serving static file {filename}: {str(e)}')
+            return {'error': f'Error serving file: {str(e)}'}, 500
     
     # Serve favicon
     @app.route('/favicon.ico')
