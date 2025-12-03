@@ -195,6 +195,159 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                     pass  # Outside application context
             return None
     
+    def _generate_claude_analysis(self, option: Dict, stock_price: float,
+                                  delta: float, gamma: float, theta: float,
+                                  vega: float, iv: float, days_to_expiration: int,
+                                  user_risk_tolerance: str) -> Optional[Dict]:
+        """Generate AI-powered analysis using Claude (Anthropic)"""
+        try:
+            import anthropic
+            
+            contract_type = option.get('type', '').lower()
+            strike = float(option.get('strike', 0))
+            mid_price = option.get('mid_price', 0)
+            volume = int(option.get('volume', 0))
+            open_interest = int(option.get('open_interest', 0))
+            
+            prompt = f"""You are an expert options trading analyst. Analyze this option trade and provide a comprehensive, easy-to-understand analysis.
+
+Option Details:
+- Symbol: {option.get('symbol', 'N/A')}
+- Type: {contract_type.upper()}
+- Strike: ${strike:.2f}
+- Current Stock Price: ${stock_price:.2f}
+- Premium (Mid Price): ${mid_price:.2f}
+- Days to Expiration: {days_to_expiration}
+- Volume: {volume}
+- Open Interest: {open_interest}
+
+Greeks:
+- Delta: {delta:.4f}
+- Gamma: {gamma:.4f}
+- Theta: {theta:.4f}
+- Vega: {vega:.4f}
+- Implied Volatility: {iv*100:.2f}%
+
+User Risk Tolerance: {user_risk_tolerance}
+
+Provide a comprehensive analysis in the following format:
+
+**AI Recommendation:** [Buy/Consider/Consider Carefully/Avoid] (Confidence: High/Medium/Low)
+**Suitability:** [Suitable/Moderately Suitable/Not Suitable] for {user_risk_tolerance} risk tolerance
+**Reasoning:** [2-3 sentence explanation]
+
+**Greeks Explained:**
+**Delta:** [Plain English explanation of what this delta means for the trade]
+**Gamma:** [Plain English explanation of gamma's impact]
+**Theta:** [Plain English explanation of time decay implications]
+**Vega:** [Plain English explanation of volatility sensitivity]
+**Implied Volatility:** [Plain English explanation of IV level and implications]
+
+**Trade Analysis:**
+**Overview:** [Overall trade assessment]
+**Best Case:** [Best case scenario]
+**Worst Case:** [Worst case scenario]
+**Break-Even:** [Break-even calculation and explanation]
+**Profit Potential:** [Profit potential analysis]
+**Time Considerations:** [Time-related factors]
+
+**Risk Assessment:**
+**Overall Risk Level:** [Low/Moderate/High]
+**Risk Factors:** [List key risk factors]
+**Warnings:** [Any important warnings]
+
+Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance trader."""
+            
+            # Create Claude client
+            client = anthropic.Anthropic(
+                api_key=self.anthropic_api_key,
+                timeout=10.0,  # 10 second timeout
+                max_retries=0  # Disable automatic retries
+            )
+            
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",  # Use latest Claude model
+                max_tokens=2000,
+                temperature=0.7,
+                system="You are an expert options trading analyst providing clear, actionable, and educational analysis. Focus on practical insights and risk awareness.",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            
+            ai_content = message.content[0].text.strip()
+            
+            # Parse the AI response into structured format (same as OpenAI)
+            # Extract recommendation
+            if "**AI Recommendation:**" in ai_content:
+                rec_line = ai_content.split("**AI Recommendation:**")[1].split("\n")[0].strip()
+                if "Buy" in rec_line:
+                    action = "buy"
+                elif "Consider Carefully" in rec_line:
+                    action = "consider_carefully"
+                elif "Consider" in rec_line:
+                    action = "consider"
+                else:
+                    action = "avoid"
+                
+                confidence = "high" if "High" in rec_line else "medium" if "Medium" in rec_line else "low"
+            else:
+                action = "consider"
+                confidence = "medium"
+            
+            # Extract suitability
+            suitability = "suitable"
+            if "**Suitability:**" in ai_content:
+                suit_line = ai_content.split("**Suitability:**")[1].split("\n")[0].strip()
+                if "Not Suitable" in suit_line:
+                    suitability = "not_suitable"
+                elif "Moderately" in suit_line:
+                    suitability = "moderately_suitable"
+            
+            # Extract reasoning
+            reasoning = ""
+            if "**Reasoning:**" in ai_content:
+                reasoning = ai_content.split("**Reasoning:**")[1].split("**")[0].strip()
+            
+            # Map to score and category
+            score = self._map_recommendation_to_score(action, confidence)
+            category = self._map_recommendation_to_category(action)
+            
+            return {
+                'score': score,
+                'category': category,
+                'explanation': ai_content,  # Use full AI-generated explanation
+                'greeks_explanation': {},  # Will be extracted from explanation
+                'trade_analysis': {},  # Will be extracted from explanation
+                'risk_assessment': {},  # Will be extracted from explanation
+                'recommendation': {
+                    'action': action,
+                    'confidence': confidence,
+                    'suitability': suitability,
+                    'reasoning': reasoning
+                },
+                'ai_generated_at': datetime.utcnow().isoformat(),
+                'ai_generated': True,
+                'ai_provider': 'claude'  # Mark as Claude-generated
+            }
+        except Exception as e:
+            # Check if it's a quota exceeded error (429)
+            error_str = str(e)
+            if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
+                self.claude_quota_exceeded = True
+                try:
+                    from flask import current_app
+                    current_app.logger.warning("Claude quota exceeded - falling back to rule-based analysis")
+                except RuntimeError:
+                    pass
+            else:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(f"Claude analysis error: {e}")
+                except RuntimeError:
+                    pass  # Outside application context
+            return None
+    
     def analyze_option_with_ai(self, option: Dict, stock_price: float, 
                                user_risk_tolerance: str = 'moderate') -> Dict:
         """
