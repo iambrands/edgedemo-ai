@@ -16,15 +16,22 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code (but exclude node_modules and build to speed up)
 COPY . .
 
 # Build frontend
 WORKDIR /app/frontend
 RUN npm install && npm run build
 
+# Verify build was created
+RUN ls -la /app/frontend/build/ || echo "Build directory not found!"
+RUN ls -la /app/frontend/build/static/ || echo "Static directory not found!"
+
 # Return to app directory
 WORKDIR /app
+
+# Verify frontend build exists
+RUN ls -la /app/frontend/build/static/js/ || echo "JS files not found!"
 
 # Make start script executable
 RUN chmod +x start.sh
