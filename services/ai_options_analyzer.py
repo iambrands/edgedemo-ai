@@ -13,6 +13,7 @@ class AIOptionsAnalyzer:
     def __init__(self):
         self.openai_api_key = os.environ.get('OPENAI_API_KEY')
         self.use_openai = bool(self.openai_api_key)
+        self.quota_exceeded = False  # Track if quota is exceeded to avoid retries
         if self.use_openai:
             try:
                 import openai
@@ -88,7 +89,15 @@ Provide a comprehensive analysis in the following format:
 
 Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance trader."""
             
-            response = openai.chat.completions.create(
+            # Use OpenAI client with timeout and no retries for 429 errors
+            from openai import OpenAI
+            client = OpenAI(
+                api_key=self.openai_api_key,
+                timeout=10.0,  # 10 second timeout
+                max_retries=0  # Disable automatic retries - we'll handle errors ourselves
+            )
+            
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are an expert options trading analyst providing clear, actionable, and educational analysis. Focus on practical insights and risk awareness."},
@@ -154,11 +163,21 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                 'ai_generated': True
             }
         except Exception as e:
-            try:
-                from flask import current_app
-                current_app.logger.error(f"OpenAI analysis error: {e}")
-            except RuntimeError:
-                pass  # Outside application context
+            # Check if it's a quota exceeded error (429)
+            error_str = str(e)
+            if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
+                self.quota_exceeded = True
+                try:
+                    from flask import current_app
+                    current_app.logger.warning("OpenAI quota exceeded - disabling AI analysis for this session")
+                except RuntimeError:
+                    pass
+            else:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(f"OpenAI analysis error: {e}")
+                except RuntimeError:
+                    pass  # Outside application context
             return None
     
     def analyze_option_with_ai(self, option: Dict, stock_price: float, 
@@ -192,8 +211,8 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         except (ValueError, TypeError):
             days_to_expiration = 0
         
-        # Try OpenAI first if available, fallback to rule-based
-        if self.use_openai:
+        # Try OpenAI first if available and quota not exceeded, fallback to rule-based
+        if self.use_openai and not self.quota_exceeded:
             try:
                 ai_result = self._generate_openai_analysis(
                     option=option,
@@ -209,12 +228,22 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                 if ai_result:
                     return ai_result
             except Exception as e:
-                # Fallback to rule-based if OpenAI fails
-                try:
-                    from flask import current_app
-                    current_app.logger.warning(f"OpenAI analysis failed, using rule-based: {e}")
-                except RuntimeError:
-                    pass  # Outside application context
+                # Check if it's a quota error
+                error_str = str(e)
+                if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
+                    self.quota_exceeded = True
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning("OpenAI quota exceeded - disabling AI analysis for remaining options")
+                    except RuntimeError:
+                        pass
+                else:
+                    # Fallback to rule-based if OpenAI fails for other reasons
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(f"OpenAI analysis failed, using rule-based: {e}")
+                    except RuntimeError:
+                        pass  # Outside application context
         
         # Generate rule-based explanations (fallback)
         greeks_explanation = self._explain_greeks(
