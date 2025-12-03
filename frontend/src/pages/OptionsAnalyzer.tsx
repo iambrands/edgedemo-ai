@@ -494,13 +494,13 @@ const OptionsAnalyzer: React.FC = () => {
                           <div className="bg-white rounded-lg p-3 border border-gray-200">
                             <div className="text-xs text-gray-500 mb-1">Risk Level</div>
                             <div className={`text-sm font-bold ${
-                              option.ai_analysis.risk_assessment.overall_risk_level === 'high'
+                              option.ai_analysis.risk_assessment?.overall_risk_level === 'high'
                                 ? 'text-red-600'
-                                : option.ai_analysis.risk_assessment.overall_risk_level === 'moderate'
+                                : option.ai_analysis.risk_assessment?.overall_risk_level === 'moderate'
                                 ? 'text-yellow-600'
                                 : 'text-green-600'
                             }`}>
-                              {option.ai_analysis.risk_assessment.overall_risk_level.toUpperCase()}
+                              {option.ai_analysis.risk_assessment?.overall_risk_level?.toUpperCase() || 'MODERATE'}
                             </div>
                           </div>
                           <div className="bg-white rounded-lg p-3 border border-gray-200">
@@ -518,29 +518,37 @@ const OptionsAnalyzer: React.FC = () => {
                           <div className="bg-white rounded-lg p-3 border border-gray-200">
                             <div className="text-xs text-gray-500 mb-1">Break-Even</div>
                             <div className="text-sm font-bold text-gray-700">
-                              {option.ai_analysis.trade_analysis.break_even.split(':')[1]?.trim().split(' ')[0] || 'N/A'}
+                              {option.ai_analysis.trade_analysis?.break_even?.split(':')[1]?.trim().split(' ')[0] || 'N/A'}
                             </div>
                           </div>
                         </div>
 
                         {/* Quick Summary */}
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
-                          <h5 className="font-semibold text-sm text-gray-700 mb-2">📋 Quick Summary</h5>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-start gap-2">
-                              <span className="text-green-600 font-semibold min-w-[80px]">✓ Best Case:</span>
-                              <span className="text-gray-700">{option.ai_analysis.trade_analysis.best_case}</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-red-600 font-semibold min-w-[80px]">✗ Worst Case:</span>
-                              <span className="text-gray-700">{option.ai_analysis.trade_analysis.worst_case}</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-orange-600 font-semibold min-w-[80px]">⏰ Time:</span>
-                              <span className="text-gray-700">{option.ai_analysis.trade_analysis.time_considerations}</span>
+                        {option.ai_analysis.trade_analysis && (
+                          <div className="bg-white rounded-lg p-4 border border-gray-200">
+                            <h5 className="font-semibold text-sm text-gray-700 mb-2">📋 Quick Summary</h5>
+                            <div className="space-y-2 text-sm">
+                              {option.ai_analysis.trade_analysis.best_case && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-green-600 font-semibold min-w-[80px]">✓ Best Case:</span>
+                                  <span className="text-gray-700">{option.ai_analysis.trade_analysis.best_case}</span>
+                                </div>
+                              )}
+                              {option.ai_analysis.trade_analysis.worst_case && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-red-600 font-semibold min-w-[80px]">✗ Worst Case:</span>
+                                  <span className="text-gray-700">{option.ai_analysis.trade_analysis.worst_case}</span>
+                                </div>
+                              )}
+                              {option.ai_analysis.trade_analysis.time_considerations && (
+                                <div className="flex items-start gap-2">
+                                  <span className="text-orange-600 font-semibold min-w-[80px]">⏰ Time:</span>
+                                  <span className="text-gray-700">{option.ai_analysis.trade_analysis.time_considerations}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ) : null}
 
