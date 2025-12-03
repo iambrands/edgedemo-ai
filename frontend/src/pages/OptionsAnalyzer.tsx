@@ -102,7 +102,7 @@ const OptionsAnalyzer: React.FC = () => {
         if (data.options.length > 0) {
           toast.success(`Found ${data.count || data.options.length} options`);
         } else {
-          toast.info('No options found for this expiration');
+          toast('No options found for this expiration', { icon: '⚠️' });
         }
       } else {
         console.error('Invalid response format:', data);
