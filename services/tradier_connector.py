@@ -163,13 +163,27 @@ class TradierConnector:
         
         # Fall back to mock or Tradier
         if self.use_mock:
-            return self._mock_expirations(symbol)['expirations']['expiration']
+            mock_data = self._mock_expirations(symbol)
+            try:
+                current_app.logger.info(f'Mock expirations for {symbol}: {mock_data}')
+            except RuntimeError:
+                pass
+            return mock_data['expirations']['expiration']
         
         endpoint = f'markets/options/expirations'
         params = {'symbol': symbol}
         response = self._make_request(endpoint, params)
+        try:
+            current_app.logger.info(f'Tradier expirations response for {symbol}: {response}')
+        except RuntimeError:
+            pass
         if 'expirations' in response and 'expiration' in response['expirations']:
-            return response['expirations']['expiration']
+            expirations = response['expirations']['expiration']
+            # Handle both list and single value
+            if isinstance(expirations, list):
+                return expirations
+            else:
+                return [expirations]
         return []
     
     def _mock_expirations(self, symbol: str) -> Dict:
