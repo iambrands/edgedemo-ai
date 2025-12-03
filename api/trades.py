@@ -22,6 +22,7 @@ def execute_trade(current_user):
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
+        current_app.logger.info(f'Executing trade: {data}')
         trade_executor = get_trade_executor()
         result = trade_executor.execute_trade(
             user_id=current_user.id,
@@ -37,8 +38,10 @@ def execute_trade(current_user):
             automation_id=data.get('automation_id'),
             notes=data.get('notes')
         )
+        current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
     except Exception as e:
+        current_app.logger.error(f'Trade execution error: {str(e)}', exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @trades_bp.route('/history', methods=['GET'])

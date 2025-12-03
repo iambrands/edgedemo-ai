@@ -93,7 +93,7 @@ const Trade: React.FC = () => {
   const fetchStockPrice = async () => {
     if (!symbol) return;
     try {
-      const response = await api.get(`/watchlist/quote/${symbol}`);
+      const response = await api.get(`/options/quote/${symbol}`);
       if (response.data && response.data.current_price) {
         setStockPrice(response.data.current_price);
       }

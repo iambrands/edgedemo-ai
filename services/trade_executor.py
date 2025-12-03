@@ -18,7 +18,17 @@ class TradeExecutor:
     
     def _get_db(self):
         """Get db instance from current app context"""
-        return current_app.extensions['sqlalchemy']
+        try:
+            from app import db
+            return db
+        except ImportError:
+            # Fallback: get from current_app
+            try:
+                return current_app.extensions.get('sqlalchemy')
+            except (RuntimeError, AttributeError):
+                # Last resort: try to get from flask_sqlalchemy
+                from flask_sqlalchemy import SQLAlchemy
+                return SQLAlchemy()
     
     def execute_trade(self, user_id: int, symbol: str, action: str, quantity: int,
                      option_symbol: str = None, strike: float = None,
@@ -133,6 +143,17 @@ class TradeExecutor:
         
         db = self._get_db()
         
+        # Parse expiration date safely
+        expiration_date_obj = None
+        if expiration_date:
+            try:
+                expiration_date_obj = datetime.strptime(expiration_date, '%Y-%m-%d').date()
+            except (ValueError, TypeError) as e:
+                try:
+                    current_app.logger.warning(f'Invalid expiration date format: {expiration_date}, error: {e}')
+                except RuntimeError:
+                    pass
+        
         # Create trade record
         trade = Trade(
             user_id=user_id,
@@ -143,7 +164,7 @@ class TradeExecutor:
             quantity=quantity,
             price=price,
             strike_price=strike,
-            expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d').date() if expiration_date else None,
+            expiration_date=expiration_date_obj,
             trade_date=datetime.utcnow(),
             delta=delta,
             gamma=gamma,
