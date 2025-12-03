@@ -7,8 +7,10 @@ __pycache__/
 env/
 venv/
 ENV/
+# Ignore build directories except frontend/build
 build/
-!frontend/build/
+!/frontend/
+!/frontend/build/
 develop-eggs/
 dist/
 downloads/
