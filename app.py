@@ -128,12 +128,19 @@ def create_app(config_name=None):
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
     # Serve static files (CSS, JS, images, etc.) from /static/ path
+    # This MUST be registered before the catch-all route
     @app.route('/static/<path:filename>')
     def serve_static(filename):
         """Serve static files from the React build directory"""
         if not os.path.exists(static_folder):
+            app.logger.error(f'Static folder not found: {static_folder}')
             return {'error': 'Frontend not built'}, 404
-        return send_from_directory(os.path.join(static_folder, 'static'), filename)
+        static_path = os.path.join(static_folder, 'static')
+        file_path = os.path.join(static_path, filename)
+        if not os.path.exists(file_path):
+            app.logger.error(f'Static file not found: {file_path}')
+            return {'error': 'Static file not found'}, 404
+        return send_from_directory(static_path, filename)
     
     # Serve favicon
     @app.route('/favicon.ico')
@@ -159,7 +166,9 @@ def create_app(config_name=None):
             return {'error': 'API endpoint not found'}, 404
         
         # Don't handle static files here - they're handled by the route above
+        # This should never be reached if the static route is working correctly
         if path.startswith('static/'):
+            app.logger.warning(f'Static file request reached catch-all: {path}')
             return {'error': 'Static file not found'}, 404
         
         # Serve index.html for all other routes (React Router handles client-side routing)
