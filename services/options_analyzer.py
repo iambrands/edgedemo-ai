@@ -61,21 +61,71 @@ class OptionsAnalyzer:
                 pass
             return []
         
-        analyzed_options = []
+        # Performance optimization: Limit and pre-filter options before AI analysis
+        # Only analyze top candidates to reduce API calls and processing time
+        MAX_OPTIONS_TO_ANALYZE = 50  # Limit to top 50 options for AI analysis
+        
         try:
-            current_app.logger.info(f'Analyzing {len(options)} options...')
+            current_app.logger.info(f'Received {len(options)} options, will analyze top {MAX_OPTIONS_TO_ANALYZE} candidates')
         except RuntimeError:
             pass
         
-        for i, option in enumerate(options):
-            analyzed = self._analyze_option(option, preference, stock_price, user_risk_tolerance)
-            if analyzed:
-                analyzed_options.append(analyzed)
-            if (i + 1) % 50 == 0:
+        # Step 1: Quick pre-filter and basic scoring (no AI) for all options
+        pre_analyzed = []
+        for option in options:
+            basic_analysis = self._analyze_option_basic(option, preference, stock_price, user_risk_tolerance, use_ai=False)
+            if basic_analysis:
+                # Store original option for later AI enhancement
+                basic_analysis['original_option'] = option
+                pre_analyzed.append(basic_analysis)
+        
+        # Step 2: Sort by basic score and take top candidates
+        pre_analyzed.sort(key=lambda x: x['score'], reverse=True)
+        top_candidates = pre_analyzed[:MAX_OPTIONS_TO_ANALYZE]
+        
+        try:
+            current_app.logger.info(f'Pre-filtered to {len(top_candidates)} top candidates for AI analysis')
+        except RuntimeError:
+            pass
+        
+        # Step 3: AI analysis only for top candidates (parallel processing)
+        analyzed_options = []
+        import concurrent.futures
+        import threading
+        
+        # Use ThreadPoolExecutor for parallel AI analysis
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Submit all AI analysis tasks
+            future_to_option = {
+                executor.submit(
+                    self._analyze_option_with_ai,
+                    option['original_option'],
+                    preference,
+                    stock_price,
+                    user_risk_tolerance,
+                    basic_analysis=option
+                ): option for option in top_candidates
+            }
+            
+            # Collect results as they complete
+            for i, future in enumerate(concurrent.futures.as_completed(future_to_option)):
                 try:
-                    current_app.logger.info(f'Analyzed {i + 1}/{len(options)} options...')
-                except RuntimeError:
-                    pass
+                    analyzed = future.result(timeout=30)  # 30 second timeout per option
+                    if analyzed:
+                        analyzed_options.append(analyzed)
+                    if (i + 1) % 10 == 0:
+                        try:
+                            current_app.logger.info(f'AI analyzed {i + 1}/{len(top_candidates)} top options...')
+                        except RuntimeError:
+                            pass
+                except Exception as e:
+                    option = future_to_option[future]
+                    # If AI analysis fails, use the basic analysis
+                    analyzed_options.append(option)
+                    try:
+                        current_app.logger.warning(f'AI analysis failed for option, using basic analysis: {str(e)[:100]}')
+                    except RuntimeError:
+                        pass
         
         try:
             current_app.logger.info(f'Analysis complete: {len(analyzed_options)} options analyzed successfully')
@@ -87,7 +137,77 @@ class OptionsAnalyzer:
         
         return analyzed_options
     
-    def _analyze_option(self, option: Dict, preference: str, stock_price: float, user_risk_tolerance: str = 'moderate') -> Optional[Dict]:
+    def _analyze_option_basic(self, option: Dict, preference: str, stock_price: float, user_risk_tolerance: str = 'moderate', use_ai: bool = False) -> Optional[Dict]:
+        """Analyze a single option contract with basic scoring (no AI)"""
+        return self._analyze_option(option, preference, stock_price, user_risk_tolerance, use_ai=use_ai)
+    
+    def _analyze_option_with_ai(self, original_option: Dict, preference: str, stock_price: float, user_risk_tolerance: str, basic_analysis: Dict = None) -> Optional[Dict]:
+        """Enhance basic analysis with AI - used for parallel processing"""
+        if basic_analysis:
+            # Start with basic analysis and enhance with AI
+            result = basic_analysis.copy()
+        else:
+            # Do basic analysis first
+            result = self._analyze_option(original_option, preference, stock_price, user_risk_tolerance, use_ai=False)
+            if not result:
+                return None
+        
+        # Add AI analysis
+        try:
+            # Extract data from result for AI analysis
+            contract_type = result.get('contract_type', '')
+            strike = result.get('strike', 0)
+            mid_price = result.get('mid_price', 0)
+            bid = result.get('bid', 0)
+            ask = result.get('ask', 0)
+            last_price = result.get('last_price', 0)
+            volume = result.get('volume', 0)
+            open_interest = result.get('open_interest', 0)
+            
+            ai_analysis = self.ai_analyzer.analyze_option_with_ai(
+                option={
+                    'type': contract_type,
+                    'strike': strike,
+                    'expiration_date': result.get('expiration_date', ''),
+                    'mid_price': mid_price,
+                    'bid': bid,
+                    'ask': ask,
+                    'last': last_price,
+                    'volume': volume,
+                    'open_interest': open_interest,
+                    'greeks': {
+                        'delta': result.get('delta', 0),
+                        'gamma': result.get('gamma', 0),
+                        'theta': result.get('theta', 0),
+                        'vega': result.get('vega', 0),
+                        'mid_iv': result.get('implied_volatility', 0)
+                    }
+                },
+                stock_price=stock_price,
+                user_risk_tolerance=user_risk_tolerance
+            )
+            
+            if ai_analysis:
+                # Merge AI analysis into result
+                result['ai_analysis'] = ai_analysis
+                # Update explanation if AI provides one
+                if 'explanation' in ai_analysis:
+                    result['explanation'] = ai_analysis['explanation']
+                # Update category if AI provides a valid one
+                ai_category = ai_analysis.get('category', '')
+                if ai_category in ['Conservative', 'Balanced', 'Aggressive']:
+                    result['category'] = ai_category
+        except Exception as e:
+            # If AI fails, keep basic analysis
+            try:
+                from flask import current_app
+                current_app.logger.warning(f'AI analysis failed, using basic: {str(e)[:100]}')
+            except RuntimeError:
+                pass
+        
+        return result
+    
+    def _analyze_option(self, option: Dict, preference: str, stock_price: float, user_risk_tolerance: str = 'moderate', use_ai: bool = True) -> Optional[Dict]:
         """Analyze a single option contract"""
         try:
             # Extract option data - handle None values
@@ -145,49 +265,55 @@ class OptionsAnalyzer:
             # Determine category based on calculated score
             category = self._categorize_recommendation(score)
             
-            # Get AI-powered analysis
-            try:
-                ai_analysis = self.ai_analyzer.analyze_option_with_ai(
-                    option={
-                        'type': contract_type,
-                        'strike': strike,
-                        'expiration_date': option.get('expiration_date'),
-                        'mid_price': mid_price,
-                        'bid': bid,
-                        'ask': ask,
-                        'last': last_price,
-                        'volume': volume,
-                        'open_interest': open_interest,
-                        'greeks': greeks
-                    },
-                    stock_price=stock_price,
-                    user_risk_tolerance=user_risk_tolerance
-                )
-                
-                # Use AI analysis for explanation if available
-                # But keep the calculated score (don't override with AI score)
-                # Only use AI category if it's valid (Conservative, Balanced, Aggressive)
-                if ai_analysis:
-                    explanation = ai_analysis.get('explanation', explanation)
-                    ai_category = ai_analysis.get('category', category)
-                    # Only use AI category if it matches our expected values
-                    if ai_category in ['Conservative', 'Balanced', 'Aggressive']:
-                        category = ai_category
-                    # Keep the calculated score - don't override with AI score
-                    # This ensures scores vary based on actual option characteristics
-            except Exception as e:
-                # Log error but don't fail the entire analysis
-                try:
-                    from flask import current_app
-                    current_app.logger.error(f"AI analysis error: {str(e)}")
-                except:
-                    pass
-                ai_analysis = {}
+            # Store original option for AI analysis if needed
+            original_option = option.copy()
             
-            return {
+            # Get AI-powered analysis (only if use_ai is True)
+            ai_analysis = None
+            if use_ai:
+                try:
+                    ai_analysis = self.ai_analyzer.analyze_option_with_ai(
+                        option={
+                            'type': contract_type,
+                            'strike': strike,
+                            'expiration_date': option.get('expiration_date'),
+                            'mid_price': mid_price,
+                            'bid': bid,
+                            'ask': ask,
+                            'last': last_price,
+                            'volume': volume,
+                            'open_interest': open_interest,
+                            'greeks': greeks
+                        },
+                        stock_price=stock_price,
+                        user_risk_tolerance=user_risk_tolerance
+                    )
+                    
+                    # Use AI analysis for explanation if available
+                    # But keep the calculated score (don't override with AI score)
+                    # Only use AI category if it's valid (Conservative, Balanced, Aggressive)
+                    if ai_analysis:
+                        explanation = ai_analysis.get('explanation', explanation)
+                        ai_category = ai_analysis.get('category', category)
+                        # Only use AI category if it matches our expected values
+                        if ai_category in ['Conservative', 'Balanced', 'Aggressive']:
+                            category = ai_category
+                        # Keep the calculated score - don't override with AI score
+                        # This ensures scores vary based on actual option characteristics
+                except Exception as e:
+                    # Log error but don't fail the entire analysis
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(f"AI analysis error: {str(e)}")
+                    except:
+                        pass
+                    ai_analysis = {}
+            
+            result = {
                 'option_symbol': option.get('symbol'),
                 'description': option.get('description'),
                 'contract_type': contract_type,
+                'original_option': original_option,  # Store for later AI enhancement
                 'strike': strike,
                 'expiration_date': option.get('expiration_date'),
                 'last_price': last_price,
@@ -210,6 +336,8 @@ class OptionsAnalyzer:
                 'stock_price': stock_price,
                 'ai_analysis': ai_analysis  # Add AI analysis
             }
+            
+            return result
         except Exception as e:
             try:
                 from flask import current_app
