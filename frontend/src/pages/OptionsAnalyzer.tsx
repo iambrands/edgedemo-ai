@@ -167,6 +167,11 @@ const OptionsAnalyzer: React.FC = () => {
         console.log('Auto-selecting first expiration:', expirations[0]);
         setExpiration(expirations[0]);
       }
+    } else {
+      // Clear expiration if no expirations available
+      if (expiration) {
+        setExpiration('');
+      }
     }
   }, [expirations]); // Remove expiration from dependencies to avoid loops
 
@@ -282,7 +287,7 @@ const OptionsAnalyzer: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Expiration</label>
             <select
-              value={expiration || ''}
+              value={expiration}
               onChange={(e) => {
                 console.log('Expiration changed to:', e.target.value);
                 setExpiration(e.target.value);
@@ -290,12 +295,20 @@ const OptionsAnalyzer: React.FC = () => {
               disabled={loadingExpirations || expirations.length === 0}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
             >
-              <option value="">{loadingExpirations ? 'Loading...' : expirations.length === 0 ? 'No expirations available' : 'Select expiration'}</option>
-              {expirations.map((exp) => (
-                <option key={exp} value={exp}>
-                  {exp}
-                </option>
-              ))}
+              {loadingExpirations ? (
+                <option value="">Loading...</option>
+              ) : expirations.length === 0 ? (
+                <option value="">No expirations available</option>
+              ) : (
+                <>
+                  {!expiration && <option value="">Select expiration</option>}
+                  {expirations.map((exp) => (
+                    <option key={exp} value={exp}>
+                      {exp}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
             {expiration && (
               <p className="mt-1 text-xs text-gray-500">
