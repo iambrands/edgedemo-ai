@@ -267,7 +267,15 @@ def create_app(config_name=None):
         """Serve React app - catch-all for non-API routes"""
         # For API routes that weren't caught by blueprints, return 404
         if path.startswith('api/'):
-            return {'error': 'API endpoint not found'}, 404
+            app.logger.error(f'⚠️ API route reached catch-all (not matched by blueprints): {path}')
+            app.logger.error(f'Request method: {request.method}')
+            app.logger.error(f'Request URL: {request.url}')
+            # Log all registered routes for debugging
+            app.logger.error('Registered API routes:')
+            for rule in app.url_map.iter_rules():
+                if 'api' in str(rule):
+                    app.logger.error(f'  {rule.rule} -> {rule.endpoint} [{", ".join(rule.methods)}]')
+            return {'error': f'API endpoint not found: {path}'}, 404
         
         # Static files should be handled by the route above
         # If we reach here, log it for debugging
