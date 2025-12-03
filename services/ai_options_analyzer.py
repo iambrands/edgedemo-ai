@@ -184,7 +184,7 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                 self.quota_exceeded = True
                 try:
                     from flask import current_app
-                    current_app.logger.warning("OpenAI quota exceeded - disabling AI analysis for this session")
+                    current_app.logger.warning("OpenAI quota exceeded - will try Claude API")
                 except RuntimeError:
                     pass
             else:
