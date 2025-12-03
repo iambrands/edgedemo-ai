@@ -58,25 +58,6 @@ def analyze_options(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@options_bp.route('/chain/<symbol>/<expiration>', methods=['GET'])
-@token_required
-def get_options_chain(current_user, symbol, expiration):
-    """Get options chain for symbol and expiration"""
-    symbol = symbol.upper()
-    if not validate_symbol(symbol):
-        return jsonify({'error': 'Invalid symbol'}), 400
-    
-    try:
-        tradier = get_tradier()
-        chain = tradier.get_options_chain(symbol, expiration)
-        return jsonify({
-            'symbol': symbol,
-            'expiration': expiration,
-            'chain': chain
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
 @token_required
 def get_quote(current_user, symbol):
@@ -140,6 +121,25 @@ def get_quote(current_user, symbol):
                 }), 200
         
         return jsonify({'error': 'Quote not available'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@options_bp.route('/chain/<symbol>/<expiration>', methods=['GET'])
+@token_required
+def get_options_chain(current_user, symbol, expiration):
+    """Get options chain for symbol and expiration"""
+    symbol = symbol.upper()
+    if not validate_symbol(symbol):
+        return jsonify({'error': 'Invalid symbol'}), 400
+    
+    try:
+        tradier = get_tradier()
+        chain = tradier.get_options_chain(symbol, expiration)
+        return jsonify({
+            'symbol': symbol,
+            'expiration': expiration,
+            'chain': chain
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
