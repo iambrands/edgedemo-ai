@@ -32,15 +32,24 @@ const OptionsAnalyzer: React.FC = () => {
     setLoadingExpirations(true);
     try {
       const data = await optionsService.getExpirations(trimmedSymbol);
-      setExpirations(data.expirations);
-      if (data.expirations.length > 0 && !expiration) {
-        setExpiration(data.expirations[0]);
+      console.log('Expirations data:', data);
+      if (data && data.expirations && Array.isArray(data.expirations)) {
+        setExpirations(data.expirations);
+        // Always set the first expiration if available and none is selected
+        if (data.expirations.length > 0) {
+          setExpiration(prev => prev || data.expirations[0]);
+        }
+      } else {
+        console.warn('Invalid expirations data:', data);
+        setExpirations([]);
       }
     } catch (error: any) {
+      console.error('Failed to fetch expirations:', error);
       // Only show error if it's not a 404 or validation error
       if (error.response?.status !== 404 && error.response?.status !== 400) {
         toast.error(error.response?.data?.error || 'Failed to fetch expirations');
       }
+      setExpirations([]);
     } finally {
       setLoadingExpirations(false);
     }
