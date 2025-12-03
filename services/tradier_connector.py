@@ -177,22 +177,34 @@ class TradierConnector:
             current_app.logger.info(f'Tradier expirations response for {symbol}: {response}')
         except RuntimeError:
             pass
-        if 'expirations' in response and 'expiration' in response['expirations']:
-            expirations = response['expirations']['expiration']
-            # Handle both list and single value
-            if isinstance(expirations, list):
-                result = expirations
+        
+        # Tradier API can return either 'expiration' or 'date' field
+        if 'expirations' in response:
+            expirations_data = response['expirations']
+            # Check for 'date' field (Tradier Sandbox format)
+            if 'date' in expirations_data:
+                expirations = expirations_data['date']
+            # Check for 'expiration' field (Tradier Production format)
+            elif 'expiration' in expirations_data:
+                expirations = expirations_data['expiration']
             else:
-                result = [expirations] if expirations else []
+                expirations = None
             
-            # If Tradier returns empty, fall back to mock data
-            if not result:
-                try:
-                    current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
-                except RuntimeError:
-                    pass
-                return self._mock_expirations(symbol)['expirations']['expiration']
-            return result
+            if expirations:
+                # Handle both list and single value
+                if isinstance(expirations, list):
+                    result = expirations
+                else:
+                    result = [expirations] if expirations else []
+                
+                # If Tradier returns empty, fall back to mock data
+                if not result:
+                    try:
+                        current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
+                    except RuntimeError:
+                        pass
+                    return self._mock_expirations(symbol)['expirations']['expiration']
+                return result
         
         # If no expirations in response, fall back to mock data
         try:
