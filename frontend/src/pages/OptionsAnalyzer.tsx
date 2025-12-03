@@ -446,7 +446,7 @@ const OptionsAnalyzer: React.FC = () => {
                 <div className="mt-6 bg-gray-50 rounded-lg p-6 border-2 border-primary">
                   <div className="space-y-4">
                     {/* Quick Analysis - Formatted */}
-                    {option.ai_analysis ? (
+                    {option.ai_analysis && option.ai_analysis.recommendation ? (
                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-lg border-2 border-blue-200 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="font-bold text-lg text-secondary flex items-center gap-2">
