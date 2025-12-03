@@ -132,13 +132,66 @@ def create_app(config_name=None):
         if os.path.exists(static_path):
             app.logger.info(f'Static path exists: {static_path}')
             app.logger.info(f'Static path contents: {os.listdir(static_path)}')
+            # List actual files in js and css
+            js_path = os.path.join(static_path, 'js')
+            css_path = os.path.join(static_path, 'css')
+            if os.path.exists(js_path):
+                app.logger.info(f'JS files: {os.listdir(js_path)}')
+            if os.path.exists(css_path):
+                app.logger.info(f'CSS files: {os.listdir(css_path)}')
     
     # Serve static files (CSS, JS, images, etc.) from /static/ path
     # IMPORTANT: This MUST be registered BEFORE the catch-all route
-    # React build puts files in frontend/build/static/, so we serve from there
+    # Use explicit route patterns to ensure they match before catch-all
+    @app.route('/static/js/<path:filename>')
+    def serve_static_js(filename):
+        """Serve JS files from the React build directory"""
+        static_path = os.path.join(static_folder, 'static', 'js')
+        app.logger.info(f'=== STATIC JS FILE REQUEST ===')
+        app.logger.info(f'Requested filename: {filename}')
+        app.logger.info(f'Static path: {static_path}')
+        if not os.path.exists(static_path):
+            app.logger.error(f'JS path not found: {static_path}')
+            return {'error': 'JS directory not found'}, 404
+        file_path = os.path.join(static_path, filename)
+        app.logger.info(f'Full file path: {file_path}')
+        app.logger.info(f'File exists: {os.path.exists(file_path)}')
+        if not os.path.exists(file_path):
+            app.logger.error(f'File not found: {file_path}')
+            app.logger.error(f'Directory contents: {os.listdir(static_path)}')
+            return {'error': f'File not found: {filename}'}, 404
+        try:
+            return send_from_directory(static_path, filename)
+        except Exception as e:
+            app.logger.error(f'Error serving JS file {filename}: {str(e)}')
+            return {'error': f'Error serving file: {str(e)}'}, 500
+    
+    @app.route('/static/css/<path:filename>')
+    def serve_static_css(filename):
+        """Serve CSS files from the React build directory"""
+        static_path = os.path.join(static_folder, 'static', 'css')
+        app.logger.info(f'=== STATIC CSS FILE REQUEST ===')
+        app.logger.info(f'Requested filename: {filename}')
+        app.logger.info(f'Static path: {static_path}')
+        if not os.path.exists(static_path):
+            app.logger.error(f'CSS path not found: {static_path}')
+            return {'error': 'CSS directory not found'}, 404
+        file_path = os.path.join(static_path, filename)
+        app.logger.info(f'Full file path: {file_path}')
+        app.logger.info(f'File exists: {os.path.exists(file_path)}')
+        if not os.path.exists(file_path):
+            app.logger.error(f'File not found: {file_path}')
+            app.logger.error(f'Directory contents: {os.listdir(static_path)}')
+            return {'error': f'File not found: {filename}'}, 404
+        try:
+            return send_from_directory(static_path, filename)
+        except Exception as e:
+            app.logger.error(f'Error serving CSS file {filename}: {str(e)}')
+            return {'error': f'Error serving file: {str(e)}'}, 500
+    
     @app.route('/static/<path:filename>')
     def serve_static(filename):
-        """Serve static files from the React build directory"""
+        """Serve other static files from the React build directory"""
         static_path = os.path.join(static_folder, 'static')
         app.logger.info(f'=== STATIC FILE REQUEST ===')
         app.logger.info(f'Requested filename: {filename}')
