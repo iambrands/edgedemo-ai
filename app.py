@@ -96,6 +96,29 @@ def create_app(config_name=None):
     
     # Create database tables if they don't exist
     with app.app_context():
+        # Verify AI API configuration
+        openai_key = os.environ.get('OPENAI_API_KEY', '')
+        anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
+        app.logger.info("=" * 50)
+        app.logger.info("AI API Configuration:")
+        app.logger.info(f"  OpenAI API Key: {'✅ Set' if openai_key else '❌ Not set'}")
+        app.logger.info(f"  Anthropic API Key: {'✅ Set' if anthropic_key else '❌ Not set'}")
+        
+        # Check if packages are installed
+        try:
+            import openai
+            app.logger.info("  OpenAI package: ✅ Installed")
+        except ImportError:
+            app.logger.warning("  OpenAI package: ❌ Not installed")
+        
+        try:
+            import anthropic
+            app.logger.info("  Anthropic package: ✅ Installed")
+        except ImportError:
+            app.logger.warning("  Anthropic package: ❌ Not installed")
+        
+        app.logger.info("=" * 50)
+        
         # Import all models to ensure they're registered
         from models.user import User
         from models.stock import Stock
