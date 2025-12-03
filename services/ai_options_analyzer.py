@@ -33,13 +33,24 @@ class AIOptionsAnalyzer:
         if self.use_claude:
             try:
                 import anthropic
+                try:
+                    from flask import current_app
+                    current_app.logger.info(f"✅ Claude API configured (key present: {bool(self.anthropic_api_key)})")
+                except RuntimeError:
+                    pass  # Outside application context
             except ImportError:
                 self.use_claude = False
                 try:
                     from flask import current_app
-                    current_app.logger.warning("Anthropic package not installed")
+                    current_app.logger.warning("❌ Anthropic package not installed - install with: pip install anthropic")
                 except RuntimeError:
                     pass  # Outside application context
+        else:
+            try:
+                from flask import current_app
+                current_app.logger.warning("⚠️ Claude API not configured - ANTHROPIC_API_KEY not set")
+            except RuntimeError:
+                pass  # Outside application context
     
     def _generate_openai_analysis(self, option: Dict, stock_price: float,
                                   delta: float, gamma: float, theta: float,
@@ -203,6 +214,13 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         try:
             import anthropic
             
+            # Log that we're trying Claude
+            try:
+                from flask import current_app
+                current_app.logger.info("🤖 Attempting Claude API analysis...")
+            except RuntimeError:
+                pass
+            
             contract_type = option.get('type', '').lower()
             strike = float(option.get('strike', 0))
             mid_price = option.get('mid_price', 0)
@@ -277,6 +295,13 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             
             ai_content = message.content[0].text.strip()
             
+            # Log success
+            try:
+                from flask import current_app
+                current_app.logger.info("✅ Claude API analysis successful")
+            except RuntimeError:
+                pass
+            
             # Parse the AI response into structured format (same as OpenAI)
             # Extract recommendation
             if "**AI Recommendation:**" in ai_content:
@@ -331,19 +356,39 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                 'ai_provider': 'claude'  # Mark as Claude-generated
             }
         except Exception as e:
-            # Check if it's a quota exceeded error (429)
+            # Log the full error for debugging
             error_str = str(e)
-            if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
+            error_type = type(e).__name__
+            
+            try:
+                from flask import current_app
+                current_app.logger.error(f"❌ Claude API error ({error_type}): {error_str}")
+                # Log more details if available
+                if hasattr(e, 'status_code'):
+                    current_app.logger.error(f"   Status code: {e.status_code}")
+                if hasattr(e, 'response'):
+                    current_app.logger.error(f"   Response: {e.response}")
+            except RuntimeError:
+                pass  # Outside application context
+            
+            # Check if it's a quota exceeded error (429)
+            if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower() or (hasattr(e, 'status_code') and e.status_code == 429):
                 self.claude_quota_exceeded = True
                 try:
                     from flask import current_app
-                    current_app.logger.warning("Claude quota exceeded - falling back to rule-based analysis")
+                    current_app.logger.warning("⚠️ Claude quota exceeded - falling back to rule-based analysis")
+                except RuntimeError:
+                    pass
+            elif '401' in error_str or 'authentication' in error_str.lower() or (hasattr(e, 'status_code') and e.status_code == 401):
+                try:
+                    from flask import current_app
+                    current_app.logger.error("❌ Claude API authentication failed - check ANTHROPIC_API_KEY")
                 except RuntimeError:
                     pass
             else:
                 try:
                     from flask import current_app
-                    current_app.logger.error(f"Claude analysis error: {e}")
+                    current_app.logger.error(f"❌ Claude analysis failed: {error_type}: {error_str}")
                 except RuntimeError:
                     pass  # Outside application context
             return None
@@ -417,6 +462,11 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         # Try Claude if OpenAI is unavailable or quota exceeded
         if self.use_claude and not self.claude_quota_exceeded:
             try:
+                try:
+                    from flask import current_app
+                    current_app.logger.info(f"🔄 Trying Claude API (use_claude={self.use_claude}, quota_exceeded={self.claude_quota_exceeded})")
+                except RuntimeError:
+                    pass
                 ai_result = self._generate_claude_analysis(
                     option=option,
                     stock_price=stock_price,
