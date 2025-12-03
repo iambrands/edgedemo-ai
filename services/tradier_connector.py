@@ -114,12 +114,18 @@ class TradierConnector:
         endpoint = 'markets/quotes'
         params = {'symbols': symbol}
         response = self._make_request(endpoint, params)
+        # Always return the full structure to match mock data format
         if 'quotes' in response and 'quote' in response['quotes']:
             quote = response['quotes']['quote']
             if isinstance(quote, list):
                 quote = quote[0]
-            return quote
-        return {}
+            # Return in the same format as mock data
+            return {
+                'quotes': {
+                    'quote': quote
+                }
+            }
+        return {'quotes': {'quote': {}}}
     
     def _mock_quote(self, symbol: str) -> Dict:
         """Mock stock quote"""
