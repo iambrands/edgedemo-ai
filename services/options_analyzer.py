@@ -53,22 +53,22 @@ class OptionsAnalyzer:
     def _analyze_option(self, option: Dict, preference: str, stock_price: float, user_risk_tolerance: str = 'moderate') -> Optional[Dict]:
         """Analyze a single option contract"""
         try:
-            # Extract option data
+            # Extract option data - handle None values
             contract_type = option.get('type', '').lower()
-            strike = float(option.get('strike', 0))
-            last_price = float(option.get('last', 0))
-            bid = float(option.get('bid', 0))
-            ask = float(option.get('ask', 0))
-            volume = int(option.get('volume', 0))
-            open_interest = int(option.get('open_interest', 0))
+            strike = float(option.get('strike') or 0)
+            last_price = float(option.get('last') or 0)
+            bid = float(option.get('bid') or 0)
+            ask = float(option.get('ask') or 0)
+            volume = int(option.get('volume') or 0)
+            open_interest = int(option.get('open_interest') or 0)
             
-            # Extract Greeks
-            greeks = option.get('greeks', {})
-            delta = float(greeks.get('delta', 0))
-            gamma = float(greeks.get('gamma', 0))
-            theta = float(greeks.get('theta', 0))
-            vega = float(greeks.get('vega', 0))
-            iv = float(greeks.get('mid_iv', 0))
+            # Extract Greeks - handle None values
+            greeks = option.get('greeks', {}) or {}
+            delta = float(greeks.get('delta') or 0)
+            gamma = float(greeks.get('gamma') or 0)
+            theta = float(greeks.get('theta') or 0)
+            vega = float(greeks.get('vega') or 0)
+            iv = float(greeks.get('mid_iv') or greeks.get('iv') or 0)
             
             # Calculate spread
             if bid > 0 and ask > 0:
