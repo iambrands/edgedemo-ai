@@ -7,8 +7,10 @@ const getApiBaseUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   
-  // In production (on Heroku), use the current origin
-  if (window.location.origin.includes('herokuapp.com') || window.location.origin.includes('https://')) {
+  // In production (on Heroku, Railway, or any https://), use the current origin
+  if (window.location.origin.includes('herokuapp.com') || 
+      window.location.origin.includes('railway.app') ||
+      window.location.origin.includes('https://')) {
     return `${window.location.origin}/api`;
   }
   

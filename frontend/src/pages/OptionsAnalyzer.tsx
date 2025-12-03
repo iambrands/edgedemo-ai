@@ -79,6 +79,13 @@ const OptionsAnalyzer: React.FC = () => {
     // Check if symbol was passed from navigation
     if (location.state && location.state.symbol) {
       setSymbol(location.state.symbol);
+    } else {
+      // On initial mount, fetch data for default symbol (AAPL)
+      const trimmedSymbol = symbol.trim().toUpperCase();
+      if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
+        fetchExpirations();
+        fetchStockPrice();
+      }
     }
   }, [location.state]);
 
@@ -114,11 +121,24 @@ const OptionsAnalyzer: React.FC = () => {
         setStockPrice(response.data.current_price);
       }
     } catch (error: any) {
-      // Silently fail - symbol might not exist or user not authenticated
-      // Only log if it's not a 401/404 (expected errors)
-      if (error.response?.status && ![401, 404].includes(error.response.status)) {
-        console.warn('Failed to fetch stock price:', error.response?.data?.error || error.message);
+      // Log the error for debugging but don't show toast for 404s (expected for invalid symbols)
+      const status = error.response?.status;
+      const errorMsg = error.response?.data?.error || error.message;
+      
+      if (status === 404) {
+        // 404 is expected for invalid symbols or when quote service is unavailable
+        console.debug(`Quote not available for ${trimmedSymbol}:`, errorMsg);
+      } else if (status === 401) {
+        // 401 means user needs to authenticate - this shouldn't happen on Options Analyzer
+        console.warn('Authentication required for quote:', errorMsg);
+      } else if (status === 500) {
+        // Server error - might be Tradier/Yahoo issue
+        console.warn('Quote service error:', errorMsg);
+      } else if (status) {
+        // Other HTTP errors
+        console.warn(`Failed to fetch stock price (${status}):`, errorMsg);
       }
+      // Don't set stockPrice to null on error - keep previous value if available
     }
   };
 
