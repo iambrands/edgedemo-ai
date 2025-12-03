@@ -63,8 +63,11 @@ def get_quote(current_user, symbol):
         tradier = TradierConnector()
         quote = tradier.get_quote(symbol)
         
+        current_app.logger.info(f'Tradier quote response: {quote}')
+        
         if 'quotes' in quote and 'quote' in quote['quotes']:
             quote_data = quote['quotes']['quote']
+            current_app.logger.info(f'Quote data: {quote_data}')
             current_price = quote_data.get('last')
             if current_price and current_price > 0:
                 return jsonify({
@@ -78,6 +81,7 @@ def get_quote(current_user, symbol):
                     'open': quote_data.get('open')
                 }), 200
         
+        current_app.logger.error(f'Quote not available for {symbol}. Response: {quote}')
         return jsonify({'error': 'Quote not available'}), 404
     except Exception as e:
         current_app.logger.error(f'Quote error: {str(e)}')
