@@ -56,8 +56,14 @@ def add_to_watchlist(current_user):
 @token_required
 def get_quote(current_user, symbol):
     """Get current quote for a symbol - uses Yahoo Finance if enabled, otherwise Tradier"""
+    from flask import current_app
+    current_app.logger.info(f'=== QUOTE ENDPOINT CALLED ===')
+    current_app.logger.info(f'Symbol: {symbol}')
+    current_app.logger.info(f'User: {current_user.username if current_user else "None"}')
+    
     symbol = symbol.upper()
     if not validate_symbol(symbol):
+        current_app.logger.error(f'Invalid symbol: {symbol}')
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
