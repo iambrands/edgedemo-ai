@@ -13,8 +13,10 @@ jwt = JWTManager()
 
 def create_app(config_name=None):
     """Application factory pattern"""
-    # Don't set static_folder here - we'll handle it manually for React Router
-    app = Flask(__name__)
+    # Set static folder for React build files
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
+    static_url_path = ''
+    app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
     
     # Load configuration
     config_name = config_name or os.environ.get('FLASK_ENV', 'development')
@@ -120,34 +122,24 @@ def create_app(config_name=None):
     def health():
         return {'status': 'healthy', 'service': 'IAB OptionsBot'}, 200
     
-    # Serve React app static files (for production deployment)
-    # This must be registered AFTER all API blueprints
-    # Static folder is already set in Flask app initialization above
-    
-    # Define static folder path
+    # Define static folder path (already set in Flask init, but keep for reference)
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
-    # Serve static files (CSS, JS, images, etc.) from /static/ path
-    # This MUST be registered before the catch-all route
+    # Flask will automatically serve files from static_folder via /static/ URL
+    # But React build puts files in static_folder/static/, so we need a custom route
     @app.route('/static/<path:filename>')
     def serve_static(filename):
         """Serve static files from the React build directory"""
-        if not os.path.exists(static_folder):
-            app.logger.error(f'Static folder not found: {static_folder}')
-            return {'error': 'Frontend not built'}, 404
         static_path = os.path.join(static_folder, 'static')
-        file_path = os.path.join(static_path, filename)
-        if not os.path.exists(file_path):
-            app.logger.error(f'Static file not found: {file_path}')
-            return {'error': 'Static file not found'}, 404
+        if not os.path.exists(static_path):
+            app.logger.error(f'Static path not found: {static_path}')
+            return {'error': 'Frontend not built'}, 404
         return send_from_directory(static_path, filename)
     
     # Serve favicon
     @app.route('/favicon.ico')
     def serve_favicon():
         """Serve favicon"""
-        if not os.path.exists(static_folder):
-            return '', 204
         favicon_path = os.path.join(static_folder, 'favicon.ico')
         if os.path.exists(favicon_path):
             return send_from_directory(static_folder, 'favicon.ico')
@@ -158,20 +150,22 @@ def create_app(config_name=None):
     @app.route('/<path:path>')
     def serve_react_app(path):
         """Serve React app - catch-all for non-API routes"""
-        if not os.path.exists(static_folder):
-            return {'error': 'Frontend not built. Run: cd frontend && npm run build'}, 404
-        
         # For API routes that weren't caught by blueprints, return 404
         if path.startswith('api/'):
             return {'error': 'API endpoint not found'}, 404
         
         # Don't handle static files here - they're handled by the route above
-        # This should never be reached if the static route is working correctly
         if path.startswith('static/'):
-            app.logger.warning(f'Static file request reached catch-all: {path}')
             return {'error': 'Static file not found'}, 404
         
         # Serve index.html for all other routes (React Router handles client-side routing)
+        if not os.path.exists(static_folder):
+            return {'error': 'Frontend not built. Run: cd frontend && npm run build'}, 404
+        
+        index_path = os.path.join(static_folder, 'index.html')
+        if not os.path.exists(index_path):
+            return {'error': 'index.html not found'}, 404
+        
         return send_from_directory(static_folder, 'index.html')
     
     return app
