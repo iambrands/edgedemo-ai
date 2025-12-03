@@ -8,12 +8,16 @@ from flask import current_app
 import os
 
 class AIOptionsAnalyzer:
-    """AI-powered options analysis with plain English explanations using OpenAI"""
+    """AI-powered options analysis with plain English explanations using OpenAI and Claude"""
     
     def __init__(self):
         self.openai_api_key = os.environ.get('OPENAI_API_KEY')
+        self.anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         self.use_openai = bool(self.openai_api_key)
-        self.quota_exceeded = False  # Track if quota is exceeded to avoid retries
+        self.use_claude = bool(self.anthropic_api_key)
+        self.quota_exceeded = False  # Track if OpenAI quota is exceeded
+        self.claude_quota_exceeded = False  # Track if Claude quota is exceeded
+        
         if self.use_openai:
             try:
                 import openai
@@ -22,7 +26,18 @@ class AIOptionsAnalyzer:
                 self.use_openai = False
                 try:
                     from flask import current_app
-                    current_app.logger.warning("OpenAI package not installed, using rule-based analysis")
+                    current_app.logger.warning("OpenAI package not installed")
+                except RuntimeError:
+                    pass  # Outside application context
+        
+        if self.use_claude:
+            try:
+                import anthropic
+            except ImportError:
+                self.use_claude = False
+                try:
+                    from flask import current_app
+                    current_app.logger.warning("Anthropic package not installed")
                 except RuntimeError:
                     pass  # Outside application context
     
@@ -211,10 +226,45 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         except (ValueError, TypeError):
             days_to_expiration = 0
         
-        # Try OpenAI first if available and quota not exceeded, fallback to rule-based
+        # Try OpenAI first if available and quota not exceeded
         if self.use_openai and not self.quota_exceeded:
             try:
                 ai_result = self._generate_openai_analysis(
+                    option=option,
+                    stock_price=stock_price,
+                    delta=delta,
+                    gamma=gamma,
+                    theta=theta,
+                    vega=vega,
+                    iv=iv,
+                    days_to_expiration=days_to_expiration,
+                    user_risk_tolerance=user_risk_tolerance
+                )
+                if ai_result:
+                    ai_result['ai_provider'] = 'openai'  # Mark as OpenAI-generated
+                    return ai_result
+            except Exception as e:
+                # Check if it's a quota error
+                error_str = str(e)
+                if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
+                    self.quota_exceeded = True
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning("OpenAI quota exceeded - trying Claude API")
+                    except RuntimeError:
+                        pass
+                else:
+                    # Try Claude if OpenAI fails for other reasons
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(f"OpenAI analysis failed, trying Claude: {e}")
+                    except RuntimeError:
+                        pass  # Outside application context
+        
+        # Try Claude if OpenAI is unavailable or quota exceeded
+        if self.use_claude and not self.claude_quota_exceeded:
+            try:
+                ai_result = self._generate_claude_analysis(
                     option=option,
                     stock_price=stock_price,
                     delta=delta,
@@ -230,18 +280,18 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             except Exception as e:
                 # Check if it's a quota error
                 error_str = str(e)
-                if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
-                    self.quota_exceeded = True
+                if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
+                    self.claude_quota_exceeded = True
                     try:
                         from flask import current_app
-                        current_app.logger.warning("OpenAI quota exceeded - disabling AI analysis for remaining options")
+                        current_app.logger.warning("Claude quota exceeded - falling back to rule-based analysis")
                     except RuntimeError:
                         pass
                 else:
-                    # Fallback to rule-based if OpenAI fails for other reasons
+                    # Fallback to rule-based if Claude fails for other reasons
                     try:
                         from flask import current_app
-                        current_app.logger.warning(f"OpenAI analysis failed, using rule-based: {e}")
+                        current_app.logger.warning(f"Claude analysis failed, using rule-based: {e}")
                     except RuntimeError:
                         pass  # Outside application context
         

@@ -34,8 +34,9 @@ class Config:
     TIMEZONE = 'America/New_York'
     DISABLE_AUTH = os.environ.get('DISABLE_AUTH', 'false').lower() == 'true'  # For development/testing
     
-    # OpenAI Configuration
+    # AI API Configuration
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
     USE_OPENAI_ALERTS = os.environ.get('USE_OPENAI_ALERTS', 'true').lower() == 'true'  # Enable AI-powered alerts
     
     # CORS Configuration
