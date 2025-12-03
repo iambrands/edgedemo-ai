@@ -277,10 +277,10 @@ Provide a comprehensive analysis in the following format:
 Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance trader."""
             
             # Create Claude client
+            # Note: Anthropic SDK doesn't support timeout/max_retries in constructor
+            # We'll handle retries manually
             client = anthropic.Anthropic(
-                api_key=self.anthropic_api_key,
-                timeout=10.0,  # 10 second timeout
-                max_retries=0  # Disable automatic retries
+                api_key=self.anthropic_api_key
             )
             
             message = client.messages.create(
