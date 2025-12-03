@@ -88,11 +88,29 @@ const OptionsAnalyzer: React.FC = () => {
     }
 
     setLoading(true);
+    setOptions([]); // Clear previous results
     try {
+      console.log('Starting analysis for:', { symbol, expiration, preference });
       const data = await optionsService.analyze(symbol, expiration, preference);
-      setOptions(data.options);
-      toast.success(`Found ${data.count} options`);
+      console.log('Analysis response:', data);
+      console.log('Options array:', data.options);
+      console.log('Options count:', data.count);
+      console.log('Options length:', data.options?.length);
+      
+      if (data.options && Array.isArray(data.options)) {
+        setOptions(data.options);
+        if (data.options.length > 0) {
+          toast.success(`Found ${data.count || data.options.length} options`);
+        } else {
+          toast.warning('No options found for this expiration');
+        }
+      } else {
+        console.error('Invalid response format:', data);
+        toast.error('Invalid response from server');
+      }
     } catch (error: any) {
+      console.error('Analysis error:', error);
+      console.error('Error response:', error.response);
       toast.error(error.response?.data?.error || 'Failed to analyze options');
     } finally {
       setLoading(false);

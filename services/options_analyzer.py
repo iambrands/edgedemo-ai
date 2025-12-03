@@ -28,6 +28,11 @@ class OptionsAnalyzer:
         Returns:
             List of analyzed options with scores and explanations
         """
+        try:
+            current_app.logger.info(f'Getting stock price for {symbol}...')
+        except RuntimeError:
+            pass
+        
         # Get stock price if not provided
         if stock_price is None:
             quote = self.tradier.get_quote(symbol)
@@ -36,14 +41,46 @@ class OptionsAnalyzer:
             else:
                 stock_price = 100.0  # Fallback
         
+        try:
+            current_app.logger.info(f'Stock price: ${stock_price}, fetching options chain for {symbol} expiration {expiration}...')
+        except RuntimeError:
+            pass
+        
         # Get options chain
         options = self.tradier.get_options_chain(symbol, expiration)
         
+        try:
+            current_app.logger.info(f'Received {len(options)} options from chain')
+        except RuntimeError:
+            pass
+        
+        if not options:
+            try:
+                current_app.logger.warning(f'No options returned for {symbol} expiration {expiration}')
+            except RuntimeError:
+                pass
+            return []
+        
         analyzed_options = []
-        for option in options:
+        try:
+            current_app.logger.info(f'Analyzing {len(options)} options...')
+        except RuntimeError:
+            pass
+        
+        for i, option in enumerate(options):
             analyzed = self._analyze_option(option, preference, stock_price, user_risk_tolerance)
             if analyzed:
                 analyzed_options.append(analyzed)
+            if (i + 1) % 50 == 0:
+                try:
+                    current_app.logger.info(f'Analyzed {i + 1}/{len(options)} options...')
+                except RuntimeError:
+                    pass
+        
+        try:
+            current_app.logger.info(f'Analysis complete: {len(analyzed_options)} options analyzed successfully')
+        except RuntimeError:
+            pass
         
         # Sort by score (highest first)
         analyzed_options.sort(key=lambda x: x['score'], reverse=True)
