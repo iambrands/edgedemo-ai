@@ -119,7 +119,7 @@ const OptionsAnalyzer: React.FC = () => {
     }
     
     try {
-      const response = await api.get(`/watchlist/quote/${trimmedSymbol}`);
+      const response = await api.get(`/options/quote/${trimmedSymbol}`);
       if (response.data && response.data.current_price) {
         setStockPrice(response.data.current_price);
       }

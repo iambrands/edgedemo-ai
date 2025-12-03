@@ -77,6 +77,66 @@ def get_options_chain(current_user, symbol, expiration):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@options_bp.route('/quote/<symbol>', methods=['GET'])
+@token_required
+def get_quote(current_user, symbol):
+    """Get current quote for a symbol - uses Yahoo Finance if enabled, otherwise Tradier"""
+    from flask import current_app
+    symbol = symbol.upper()
+    if not validate_symbol(symbol):
+        return jsonify({'error': 'Invalid symbol'}), 400
+    
+    try:
+        use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
+        
+        # Try Yahoo Finance first if enabled
+        if use_yahoo:
+            try:
+                from services.yahoo_connector import YahooConnector
+                yahoo = YahooConnector()
+                quote = yahoo.get_quote(symbol)
+                
+                if 'quotes' in quote and 'quote' in quote['quotes']:
+                    quote_data = quote['quotes']['quote']
+                    current_price = quote_data.get('last')
+                    if current_price and current_price > 0:
+                        return jsonify({
+                            'symbol': symbol,
+                            'current_price': float(current_price),
+                            'change': quote_data.get('change', 0),
+                            'change_percent': ((quote_data.get('change', 0) / quote_data.get('close', current_price)) * 100) if quote_data.get('close') else 0,
+                            'volume': quote_data.get('volume', 0),
+                            'high': None,
+                            'low': None,
+                            'open': None
+                        }), 200
+            except Exception as e:
+                pass
+        
+        # Fallback to Tradier
+        from services.tradier_connector import TradierConnector
+        tradier = TradierConnector()
+        quote = tradier.get_quote(symbol)
+        
+        if 'quotes' in quote and 'quote' in quote['quotes']:
+            quote_data = quote['quotes']['quote']
+            current_price = quote_data.get('last')
+            if current_price and current_price > 0:
+                return jsonify({
+                    'symbol': symbol,
+                    'current_price': float(current_price),
+                    'change': quote_data.get('change', 0),
+                    'change_percent': quote_data.get('change_percentage', 0),
+                    'volume': quote_data.get('volume', 0),
+                    'high': quote_data.get('high'),
+                    'low': quote_data.get('low'),
+                    'open': quote_data.get('open')
+                }), 200
+        
+        return jsonify({'error': 'Quote not available'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @options_bp.route('/expirations/<symbol>', methods=['GET'])
 @token_required
 def get_expirations(current_user, symbol):
