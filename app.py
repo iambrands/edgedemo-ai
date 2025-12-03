@@ -120,6 +120,19 @@ def create_app(config_name=None):
     def health():
         return {'status': 'healthy', 'service': 'IAB OptionsBot'}, 200
     
+    # Debug: List all registered routes
+    @app.route('/debug/routes')
+    def debug_routes():
+        """Debug endpoint to see all registered routes"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': str(rule)
+            })
+        return {'routes': routes}, 200
+    
     # Define static folder path
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
     
@@ -250,10 +263,14 @@ def create_app(config_name=None):
         if path.startswith('api/'):
             return {'error': 'API endpoint not found'}, 404
         
-        # Static files should be handled by the route above, but safety check
+        # Static files should be handled by the route above
+        # If we reach here, log it for debugging
         if path.startswith('static/'):
-            app.logger.warning(f'Static file request reached catch-all: {path}')
-            return {'error': 'Static file not found'}, 404
+            app.logger.error(f'⚠️ Static file request reached catch-all route! Path: {path}')
+            app.logger.error(f'This should not happen - static routes should match first')
+            # Don't return 404 here - let it fall through to see what happens
+            # Actually, return 404 but with more info
+            return {'error': f'Static file route not matching. Path: {path}'}, 404
         
         # Serve index.html for all other routes (React Router handles client-side routing)
         if not os.path.exists(static_folder):
