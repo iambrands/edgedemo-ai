@@ -545,7 +545,7 @@ const OptionsAnalyzer: React.FC = () => {
                     ) : null}
 
                     {/* Detailed AI Analysis Sections */}
-                    {option.ai_analysis && (
+                    {option.ai_analysis && option.ai_analysis.greeks_explanation ? (
                       <>
                         {/* Greeks Explanation */}
                         <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -575,46 +575,89 @@ const OptionsAnalyzer: React.FC = () => {
                         </div>
 
                         {/* Trade Analysis */}
-                        <div className="bg-white p-4 rounded-lg border border-gray-200">
-                          <h4 className="font-semibold text-secondary mb-3">💡 Trade Analysis</h4>
-                          <div className="space-y-2 text-sm">
-                            <p><strong>Overview:</strong> {option.ai_analysis.trade_analysis.overview}</p>
-                            <p className="text-green-700"><strong>Best Case:</strong> {option.ai_analysis.trade_analysis.best_case}</p>
-                            <p className="text-red-700"><strong>Worst Case:</strong> {option.ai_analysis.trade_analysis.worst_case}</p>
-                            <p><strong>Break-Even:</strong> {option.ai_analysis.trade_analysis.break_even}</p>
-                            <p><strong>Profit Potential:</strong> {option.ai_analysis.trade_analysis.profit_potential}</p>
-                            <p className="text-orange-700"><strong>Time:</strong> {option.ai_analysis.trade_analysis.time_considerations}</p>
+                        {option.ai_analysis.trade_analysis && (
+                          <div className="bg-white p-4 rounded-lg border border-gray-200">
+                            <h4 className="font-semibold text-secondary mb-3">💡 Trade Analysis</h4>
+                            <div className="space-y-2 text-sm">
+                              <p><strong>Overview:</strong> {option.ai_analysis.trade_analysis.overview}</p>
+                              <p className="text-green-700"><strong>Best Case:</strong> {option.ai_analysis.trade_analysis.best_case}</p>
+                              <p className="text-red-700"><strong>Worst Case:</strong> {option.ai_analysis.trade_analysis.worst_case}</p>
+                              <p><strong>Break-Even:</strong> {option.ai_analysis.trade_analysis.break_even}</p>
+                              <p><strong>Profit Potential:</strong> {option.ai_analysis.trade_analysis.profit_potential}</p>
+                              <p className="text-orange-700"><strong>Time:</strong> {option.ai_analysis.trade_analysis.time_considerations}</p>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Risk Assessment */}
-                        <div className={`p-4 rounded-lg border ${
-                          option.ai_analysis.risk_assessment.overall_risk_level === 'high'
-                            ? 'bg-red-50 border-red-300'
-                            : option.ai_analysis.risk_assessment.overall_risk_level === 'moderate'
-                            ? 'bg-yellow-50 border-yellow-300'
-                            : 'bg-green-50 border-green-300'
-                        }`}>
-                          <h4 className="font-semibold mb-2">
-                            ⚠️ Risk Assessment: {option.ai_analysis.risk_assessment.overall_risk_level.toUpperCase()}
-                          </h4>
-                          {option.ai_analysis.risk_assessment.warnings.length > 0 && (
-                            <div className="mb-2">
-                              {option.ai_analysis.risk_assessment.warnings.map((warning, idx) => (
-                                <p key={idx} className="text-sm text-red-700 mb-1">{warning}</p>
-                              ))}
+                        {option.ai_analysis.risk_assessment && (
+                          <div className={`p-4 rounded-lg border ${
+                            option.ai_analysis.risk_assessment.overall_risk_level === 'high'
+                              ? 'bg-red-50 border-red-300'
+                              : option.ai_analysis.risk_assessment.overall_risk_level === 'moderate'
+                              ? 'bg-yellow-50 border-yellow-300'
+                              : 'bg-green-50 border-green-300'
+                          }`}>
+                            <h4 className="font-semibold mb-2">
+                              ⚠️ Risk Assessment: {option.ai_analysis.risk_assessment.overall_risk_level.toUpperCase()}
+                            </h4>
+                            {option.ai_analysis.risk_assessment.warnings && option.ai_analysis.risk_assessment.warnings.length > 0 && (
+                              <div className="mb-2">
+                                {option.ai_analysis.risk_assessment.warnings.map((warning, idx) => (
+                                  <p key={idx} className="text-sm text-red-700 mb-1">{warning}</p>
+                                ))}
+                              </div>
+                            )}
+                            {option.ai_analysis.risk_assessment.risk_factors && (
+                              <div className="text-sm">
+                                <strong>Risk Factors:</strong>
+                                <ul className="list-disc list-inside mt-1">
+                                  {option.ai_analysis.risk_assessment.risk_factors.map((factor, idx) => (
+                                    <li key={idx} className="text-gray-700">{factor}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <h4 className="font-semibold text-secondary mb-3">📊 Option Details</h4>
+                        <div className="space-y-3 text-sm">
+                          <div>
+                            <strong>Category:</strong> {option.category || 'N/A'}
+                          </div>
+                          <div>
+                            <strong>Explanation:</strong> {option.explanation || 'No detailed explanation available.'}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <strong>Delta:</strong> {option.delta.toFixed(4)}
                             </div>
-                          )}
-                          <div className="text-sm">
-                            <strong>Risk Factors:</strong>
-                            <ul className="list-disc list-inside mt-1">
-                              {option.ai_analysis.risk_assessment.risk_factors.map((factor, idx) => (
-                                <li key={idx} className="text-gray-700">{factor}</li>
-                              ))}
-                            </ul>
+                            <div>
+                              <strong>Gamma:</strong> {option.gamma.toFixed(4)}
+                            </div>
+                            <div>
+                              <strong>Theta:</strong> {option.theta.toFixed(4)}
+                            </div>
+                            <div>
+                              <strong>Vega:</strong> {option.vega.toFixed(4)}
+                            </div>
+                            <div>
+                              <strong>IV:</strong> {formatPercent(option.implied_volatility * 100)}
+                            </div>
+                            <div>
+                              <strong>Volume:</strong> {option.volume || 0}
+                            </div>
+                          </div>
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                            <p className="text-sm text-yellow-800">
+                              <strong>Note:</strong> AI-powered analysis is currently unavailable. Basic analysis and scoring are still provided.
+                            </p>
                           </div>
                         </div>
-                      </>
+                      </div>
                     )}
 
                     {/* Action Buttons */}
