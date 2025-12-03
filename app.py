@@ -13,10 +13,8 @@ jwt = JWTManager()
 
 def create_app(config_name=None):
     """Application factory pattern"""
-    # Set static folder for React build files
-    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')
-    static_url_path = ''
-    app = Flask(__name__, static_folder=static_folder, static_url_path=static_url_path)
+    # Don't set static_folder in Flask init - we'll handle React Router manually
+    app = Flask(__name__)
     
     # Load configuration
     config_name = config_name or os.environ.get('FLASK_ENV', 'development')
