@@ -75,36 +75,39 @@ const OptionsAnalyzer: React.FC = () => {
     }
   };
 
+  const [isInitialMount, setIsInitialMount] = React.useState(true);
+
   React.useEffect(() => {
     // Check if symbol was passed from navigation
     if (location.state && location.state.symbol) {
       setSymbol(location.state.symbol);
-    } else {
-      // On initial mount, fetch data for default symbol (AAPL)
-      const trimmedSymbol = symbol.trim().toUpperCase();
-      if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
-        fetchExpirations();
-        fetchStockPrice();
-      }
+      setIsInitialMount(false);
     }
   }, [location.state]);
 
   React.useEffect(() => {
     // Only fetch if symbol is at least 1 character and not just whitespace
     if (symbol && symbol.trim().length >= 1) {
-      // Debounce: wait 500ms after user stops typing
-      const timeoutId = setTimeout(() => {
-        // Only fetch if symbol is valid (2-5 characters, uppercase letters only)
-        const trimmedSymbol = symbol.trim().toUpperCase();
-        if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
+      const trimmedSymbol = symbol.trim().toUpperCase();
+      if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
+        // On initial mount, fetch immediately (no debounce)
+        // For subsequent changes, debounce to avoid excessive API calls
+        if (isInitialMount) {
           fetchExpirations();
           fetchStockPrice();
+          setIsInitialMount(false);
+        } else {
+          // Debounce: wait 500ms after user stops typing
+          const timeoutId = setTimeout(() => {
+            fetchExpirations();
+            fetchStockPrice();
+          }, 500);
+          
+          return () => clearTimeout(timeoutId);
         }
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
+      }
     }
-  }, [symbol]);
+  }, [symbol, isInitialMount]);
 
   const fetchStockPrice = async () => {
     if (!symbol || symbol.trim().length < 1) return;
