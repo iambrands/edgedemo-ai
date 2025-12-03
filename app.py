@@ -94,26 +94,32 @@ def create_app(config_name=None):
     app.register_blueprint(options_flow_bp, url_prefix='/api/options-flow')
     app.register_blueprint(tax_bp, url_prefix='/api/tax')
     
-    # Create database tables (only in development - use migrations in production)
+    # Create database tables if they don't exist
     with app.app_context():
-        # Only create tables if not in production and migrations don't exist
-        if app.config.get('DEBUG', False) and not os.path.exists('migrations/versions'):
-            from models.user import User
-            from models.stock import Stock
-            from models.position import Position
-            from models.automation import Automation
-            from models.trade import Trade
-            from models.risk_limits import RiskLimits
-            from models.audit_log import AuditLog
-            from models.error_log import ErrorLog
-            from models.iv_history import IVHistory
-            from models.strategy import Strategy, StrategyLeg
-            from models.alert import Alert
-            from models.earnings import EarningsCalendar
-            app.logger.info("Creating database tables (development mode)")
+        # Import all models to ensure they're registered
+        from models.user import User
+        from models.stock import Stock
+        from models.position import Position
+        from models.automation import Automation
+        from models.trade import Trade
+        from models.risk_limits import RiskLimits
+        from models.audit_log import AuditLog
+        from models.error_log import ErrorLog
+        from models.iv_history import IVHistory
+        from models.strategy import Strategy, StrategyLeg
+        from models.alert import Alert
+        from models.earnings import EarningsCalendar
+        
+        # Check if users table exists
+        inspector = db.inspect(db.engine)
+        tables = inspector.get_table_names()
+        
+        if 'users' not in tables:
+            app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
             db.create_all()
+            app.logger.info("✅ Database tables created successfully")
         else:
-            app.logger.info("Using database migrations (production mode)")
+            app.logger.info("✅ Database tables already exist")
     
     # Health check endpoint
     @app.route('/health')
