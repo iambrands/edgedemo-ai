@@ -33,11 +33,26 @@ const OptionsAnalyzer: React.FC = () => {
     try {
       const data = await optionsService.getExpirations(trimmedSymbol);
       console.log('Expirations data:', data);
-      if (data && data.expirations && Array.isArray(data.expirations)) {
-        setExpirations(data.expirations);
+      console.log('Expirations data type:', typeof data);
+      console.log('Expirations data.expirations:', data?.expirations);
+      console.log('Is array?', Array.isArray(data?.expirations));
+      
+      if (data && data.expirations) {
+        const expArray = Array.isArray(data.expirations) ? data.expirations : [];
+        console.log('Setting expirations:', expArray);
+        setExpirations(expArray);
         // Always set the first expiration if available and none is selected
-        if (data.expirations.length > 0) {
-          setExpiration(prev => prev || data.expirations[0]);
+        if (expArray.length > 0) {
+          console.log('Setting first expiration to:', expArray[0]);
+          setExpiration(prev => {
+            if (!prev) {
+              console.log('No previous expiration, setting to:', expArray[0]);
+              return expArray[0];
+            }
+            return prev;
+          });
+        } else {
+          console.warn('No expirations in array');
         }
       } else {
         console.warn('Invalid expirations data:', data);
@@ -121,12 +136,17 @@ const OptionsAnalyzer: React.FC = () => {
   
   // Separate effect to set expiration when expirations are loaded
   React.useEffect(() => {
-    console.log('Expirations effect triggered:', { expirations, expiration, expirationsLength: expirations.length });
+    console.log('Expirations effect triggered:', { 
+      expirations, 
+      expiration, 
+      expirationsLength: expirations.length,
+      firstExpiration: expirations[0]
+    });
     if (expirations.length > 0 && !expiration) {
-      console.log('Setting expiration to:', expirations[0]);
+      console.log('Auto-selecting first expiration:', expirations[0]);
       setExpiration(expirations[0]);
     }
-  }, [expirations, expiration]);
+  }, [expirations]); // Remove expiration from dependencies to avoid loops
 
   const fetchStockPrice = async () => {
     if (!symbol || symbol.trim().length < 1) return;
