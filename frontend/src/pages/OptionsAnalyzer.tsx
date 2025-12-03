@@ -116,7 +116,15 @@ const OptionsAnalyzer: React.FC = () => {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol, isInitialMount]);
+  
+  // Separate effect to set expiration when expirations are loaded
+  React.useEffect(() => {
+    if (expirations.length > 0 && !expiration) {
+      setExpiration(expirations[0]);
+    }
+  }, [expirations, expiration]);
 
   const fetchStockPrice = async () => {
     if (!symbol || symbol.trim().length < 1) return;
