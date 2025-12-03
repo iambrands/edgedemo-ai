@@ -152,6 +152,7 @@ def get_options_chain(current_user, symbol, expiration):
 @token_required
 def get_expirations(current_user, symbol):
     """Get available expiration dates for symbol"""
+    from flask import current_app
     symbol = symbol.upper()
     if not validate_symbol(symbol):
         return jsonify({'error': 'Invalid symbol'}), 400
@@ -159,11 +160,16 @@ def get_expirations(current_user, symbol):
     try:
         tradier = get_tradier()
         expirations = tradier.get_options_expirations(symbol)
+        current_app.logger.info(f'Expirations for {symbol}: {expirations}')
+        current_app.logger.info(f'Expirations type: {type(expirations)}, length: {len(expirations) if isinstance(expirations, list) else "N/A"}')
         return jsonify({
             'symbol': symbol,
             'expirations': expirations
         }), 200
     except Exception as e:
+        current_app.logger.error(f'Error getting expirations: {str(e)}')
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @options_bp.route('/signals/<symbol>', methods=['GET'])
