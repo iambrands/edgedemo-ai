@@ -121,7 +121,9 @@ const OptionsAnalyzer: React.FC = () => {
   
   // Separate effect to set expiration when expirations are loaded
   React.useEffect(() => {
+    console.log('Expirations effect triggered:', { expirations, expiration, expirationsLength: expirations.length });
     if (expirations.length > 0 && !expiration) {
+      console.log('Setting expiration to:', expirations[0]);
       setExpiration(expirations[0]);
     }
   }, [expirations, expiration]);
