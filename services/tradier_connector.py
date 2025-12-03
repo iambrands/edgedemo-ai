@@ -181,10 +181,25 @@ class TradierConnector:
             expirations = response['expirations']['expiration']
             # Handle both list and single value
             if isinstance(expirations, list):
-                return expirations
+                result = expirations
             else:
-                return [expirations]
-        return []
+                result = [expirations] if expirations else []
+            
+            # If Tradier returns empty, fall back to mock data
+            if not result:
+                try:
+                    current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
+                except RuntimeError:
+                    pass
+                return self._mock_expirations(symbol)['expirations']['expiration']
+            return result
+        
+        # If no expirations in response, fall back to mock data
+        try:
+            current_app.logger.warning(f'No expirations in Tradier response for {symbol}, falling back to mock data')
+        except RuntimeError:
+            pass
+        return self._mock_expirations(symbol)['expirations']['expiration']
     
     def _mock_expirations(self, symbol: str) -> Dict:
         """Mock expiration dates"""
