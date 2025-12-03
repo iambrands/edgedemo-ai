@@ -91,6 +91,9 @@ def get_quote(current_user, symbol):
 @token_required
 def analyze_options(current_user):
     """Analyze options chain with AI-powered explanations"""
+    from flask import current_app
+    import traceback
+    
     data = request.get_json()
     
     if not data or not data.get('symbol'):
@@ -109,15 +112,18 @@ def analyze_options(current_user):
         preference = 'balanced'
     
     try:
+        current_app.logger.info(f'Starting options analysis for {symbol}, expiration {expiration}')
         user_risk_tolerance = current_user.risk_tolerance or 'moderate'
         
         analyzer = get_analyzer()
+        current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
         results = analyzer.analyze_options_chain(
             symbol=symbol,
             expiration=expiration,
             preference=preference,
             user_risk_tolerance=user_risk_tolerance
         )
+        current_app.logger.info(f'Analysis complete, returning {len(results)} results')
         
         return jsonify({
             'symbol': symbol,
@@ -127,7 +133,9 @@ def analyze_options(current_user):
             'count': len(results)
         }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f'Error in analyze_options: {str(e)}')
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 @options_bp.route('/chain/<symbol>/<expiration>', methods=['GET'])
 @token_required

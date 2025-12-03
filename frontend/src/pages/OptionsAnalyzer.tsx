@@ -140,11 +140,15 @@ const OptionsAnalyzer: React.FC = () => {
       expirations, 
       expiration, 
       expirationsLength: expirations.length,
-      firstExpiration: expirations[0]
+      firstExpiration: expirations[0],
+      currentExpirationValue: expiration
     });
-    if (expirations.length > 0 && !expiration) {
-      console.log('Auto-selecting first expiration:', expirations[0]);
-      setExpiration(expirations[0]);
+    if (expirations.length > 0) {
+      // If no expiration is set, or current expiration is not in the list, set to first
+      if (!expiration || !expirations.includes(expiration)) {
+        console.log('Auto-selecting first expiration:', expirations[0]);
+        setExpiration(expirations[0]);
+      }
     }
   }, [expirations]); // Remove expiration from dependencies to avoid loops
 
@@ -260,18 +264,26 @@ const OptionsAnalyzer: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Expiration</label>
             <select
-              value={expiration}
-              onChange={(e) => setExpiration(e.target.value)}
+              value={expiration || ''}
+              onChange={(e) => {
+                console.log('Expiration changed to:', e.target.value);
+                setExpiration(e.target.value);
+              }}
               disabled={loadingExpirations || expirations.length === 0}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
             >
-              <option value="">Select expiration</option>
+              <option value="">{loadingExpirations ? 'Loading...' : expirations.length === 0 ? 'No expirations available' : 'Select expiration'}</option>
               {expirations.map((exp) => (
                 <option key={exp} value={exp}>
                   {exp}
                 </option>
               ))}
             </select>
+            {expiration && (
+              <p className="mt-1 text-xs text-gray-500">
+                Selected: {expiration}
+              </p>
+            )}
           </div>
 
           <div>
