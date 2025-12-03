@@ -140,21 +140,37 @@ def create_app(config_name=None):
     def serve_static(filename):
         """Serve static files from the React build directory"""
         static_path = os.path.join(static_folder, 'static')
-        app.logger.info(f'Serving static file: {filename} from {static_path}')
+        app.logger.info(f'=== STATIC FILE REQUEST ===')
+        app.logger.info(f'Requested filename: {filename}')
+        app.logger.info(f'Static path: {static_path}')
         app.logger.info(f'Static path exists: {os.path.exists(static_path)}')
+        
         if not os.path.exists(static_path):
             app.logger.error(f'Static path not found: {static_path}')
-            app.logger.error(f'Static folder exists: {os.path.exists(static_folder)}')
-            if os.path.exists(static_folder):
-                app.logger.error(f'Static folder contents: {os.listdir(static_folder)}')
             return {'error': 'Frontend not built'}, 404
+        
+        # List contents of js and css directories for debugging
+        js_dir = os.path.join(static_path, 'js')
+        css_dir = os.path.join(static_path, 'css')
+        if os.path.exists(js_dir):
+            app.logger.info(f'JS directory contents: {os.listdir(js_dir)}')
+        if os.path.exists(css_dir):
+            app.logger.info(f'CSS directory contents: {os.listdir(css_dir)}')
+        
         file_path = os.path.join(static_path, filename)
-        app.logger.info(f'Looking for file: {file_path}')
+        app.logger.info(f'Full file path: {file_path}')
         app.logger.info(f'File exists: {os.path.exists(file_path)}')
+        
         if not os.path.exists(file_path):
             app.logger.error(f'File not found: {file_path}')
-            app.logger.error(f'Directory contents: {os.listdir(static_path) if os.path.exists(static_path) else "N/A"}')
+            # Try to find similar files
+            dir_path = os.path.dirname(file_path)
+            if os.path.exists(dir_path):
+                app.logger.error(f'Directory exists, contents: {os.listdir(dir_path)}')
+            return {'error': f'File not found: {filename}'}, 404
+        
         try:
+            app.logger.info(f'Serving file: {file_path}')
             return send_from_directory(static_path, filename)
         except Exception as e:
             app.logger.error(f'Error serving static file {filename}: {str(e)}')
