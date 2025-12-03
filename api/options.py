@@ -77,13 +77,19 @@ def get_options_chain(current_user, symbol, expiration):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@options_bp.route('/quote/<symbol>', methods=['GET'])
+@options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
 @token_required
 def get_quote(current_user, symbol):
     """Get current quote for a symbol - uses Yahoo Finance if enabled, otherwise Tradier"""
-    from flask import current_app
+    from flask import current_app, request
+    current_app.logger.info(f'=== QUOTE ENDPOINT HIT ===')
+    current_app.logger.info(f'Method: {request.method}')
+    current_app.logger.info(f'Symbol: {symbol}')
+    current_app.logger.info(f'User: {current_user.username if current_user else "None"}')
+    
     symbol = symbol.upper()
     if not validate_symbol(symbol):
+        current_app.logger.error(f'Invalid symbol: {symbol}')
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
