@@ -17,9 +17,14 @@ class TechnicalAnalyzer:
         except RuntimeError:
             self.use_yahoo = False
     
-    def analyze(self, symbol: str, lookback_days: int = 50) -> Dict:
+    def analyze(self, symbol: str, lookback_days: int = 50, custom_filters: Dict = None) -> Dict:
         """
         Run comprehensive technical analysis on a symbol
+        
+        Args:
+            symbol: Stock symbol
+            lookback_days: Days of historical data to use
+            custom_filters: Optional custom filter settings to apply
         
         Returns:
             Dict with indicators, signals, and confidence scores
@@ -36,8 +41,8 @@ class TechnicalAnalyzer:
         # Get historical data and calculate real indicators
         indicators = self._calculate_indicators(symbol, current_price, lookback_days)
         
-        # Generate signals
-        signals = self._generate_signals(symbol, current_price, indicators)
+        # Generate signals with custom filters if provided
+        signals = self._generate_signals(symbol, current_price, indicators, custom_filters)
         
         return {
             'symbol': symbol,
@@ -204,53 +209,68 @@ class TechnicalAnalyzer:
             'histogram': float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0
         }
     
-    def _generate_signals(self, symbol: str, current_price: float, indicators: Dict) -> List[Dict]:
-        """Generate trading signals from indicators"""
+    def _generate_signals(self, symbol: str, current_price: float, indicators: Dict, custom_filters: Dict = None) -> Dict:
+        """Generate trading signals from indicators with optional custom filters"""
+        if custom_filters is None:
+            custom_filters = {}
+        
         signals = []
         
         # Signal 1: Moving Average Crossover
+        ma_enabled = custom_filters.get('ma_enabled', True)
+        require_golden_cross = custom_filters.get('require_golden_cross', True)
+        require_death_cross = custom_filters.get('require_death_cross', False)
+        
         sma_20 = indicators['sma_20']
         sma_50 = indicators['sma_50']
         sma_200 = indicators['sma_200']
         
-        if sma_20 > sma_50 > sma_200:
-            # Golden cross - bullish
-            # Calculate confidence based on how far price is above each MA
-            price_above_20 = ((current_price - sma_20) / sma_20 * 100) if sma_20 > 0 else 0
-            price_above_50 = ((current_price - sma_50) / sma_50 * 100) if sma_50 > 0 else 0
-            price_above_200 = ((current_price - sma_200) / sma_200 * 100) if sma_200 > 0 else 0
-            
-            # Base confidence increases with stronger separation
-            avg_separation = (price_above_20 + price_above_50 + price_above_200) / 3
-            base_confidence = 0.60 + min(0.15, avg_separation / 10)  # 60-75% based on separation
-            
-            signals.append({
-                'type': 'bullish',
-                'name': 'Golden Cross',
-                'description': f'Price ${current_price:.2f} above all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
-                'confidence': round(base_confidence, 2),
-                'strength': 'high' if base_confidence >= 0.70 else 'medium'
-            })
-        elif sma_20 < sma_50 < sma_200:
-            # Death cross - bearish
-            price_below_20 = ((sma_20 - current_price) / current_price * 100) if current_price > 0 else 0
-            price_below_50 = ((sma_50 - current_price) / current_price * 100) if current_price > 0 else 0
-            price_below_200 = ((sma_200 - current_price) / current_price * 100) if current_price > 0 else 0
-            
-            avg_separation = (price_below_20 + price_below_50 + price_below_200) / 3
-            base_confidence = 0.60 + min(0.15, avg_separation / 10)
-            
-            signals.append({
-                'type': 'bearish',
-                'name': 'Death Cross',
-                'description': f'Price ${current_price:.2f} below all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
-                'confidence': round(base_confidence, 2),
-                'strength': 'high' if base_confidence >= 0.70 else 'medium'
-            })
+        if ma_enabled and sma_20 > sma_50 > sma_200:
+            # Check if golden cross is required
+            if require_golden_cross:
+                # Golden cross - bullish
+                # Calculate confidence based on how far price is above each MA
+                price_above_20 = ((current_price - sma_20) / sma_20 * 100) if sma_20 > 0 else 0
+                price_above_50 = ((current_price - sma_50) / sma_50 * 100) if sma_50 > 0 else 0
+                price_above_200 = ((current_price - sma_200) / sma_200 * 100) if sma_200 > 0 else 0
+                
+                # Base confidence increases with stronger separation
+                avg_separation = (price_above_20 + price_above_50 + price_above_200) / 3
+                base_confidence = 0.60 + min(0.15, avg_separation / 10)  # 60-75% based on separation
+                
+                signals.append({
+                    'type': 'bullish',
+                    'name': 'Golden Cross',
+                    'description': f'Price ${current_price:.2f} above all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
+                    'confidence': round(base_confidence, 2),
+                    'strength': 'high' if base_confidence >= 0.70 else 'medium'
+                })
+        elif ma_enabled and sma_20 < sma_50 < sma_200:
+            # Check if death cross is required
+            if require_death_cross:
+                # Death cross - bearish
+                price_below_20 = ((sma_20 - current_price) / current_price * 100) if current_price > 0 else 0
+                price_below_50 = ((sma_50 - current_price) / current_price * 100) if current_price > 0 else 0
+                price_below_200 = ((sma_200 - current_price) / current_price * 100) if current_price > 0 else 0
+                
+                avg_separation = (price_below_20 + price_below_50 + price_below_200) / 3
+                base_confidence = 0.60 + min(0.15, avg_separation / 10)
+                
+                signals.append({
+                    'type': 'bearish',
+                    'name': 'Death Cross',
+                    'description': f'Price ${current_price:.2f} below all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
+                    'confidence': round(base_confidence, 2),
+                    'strength': 'high' if base_confidence >= 0.70 else 'medium'
+                })
         
         # Signal 2: RSI
+        rsi_enabled = custom_filters.get('rsi_enabled', True)
+        rsi_oversold_threshold = custom_filters.get('rsi_oversold_threshold', 30.0)
+        rsi_overbought_threshold = custom_filters.get('rsi_overbought_threshold', 70.0)
+        
         rsi = indicators['rsi']
-        if rsi < 30:
+        if rsi_enabled and rsi < rsi_oversold_threshold:
             signals.append({
                 'type': 'bullish',
                 'name': 'RSI Oversold',
@@ -258,7 +278,7 @@ class TechnicalAnalyzer:
                 'confidence': 0.70,
                 'strength': 'high'
             })
-        elif rsi > 70:
+        elif rsi_enabled and rsi > rsi_overbought_threshold:
             signals.append({
                 'type': 'bearish',
                 'name': 'RSI Overbought',
@@ -268,8 +288,12 @@ class TechnicalAnalyzer:
             })
         
         # Signal 3: Volume
+        volume_enabled = custom_filters.get('volume_enabled', True)
+        min_volume_ratio = custom_filters.get('min_volume_ratio', 1.0)
+        require_volume_confirmation = custom_filters.get('require_volume_confirmation', False)
+        
         volume_ratio = indicators['volume']['ratio']
-        if volume_ratio > 1.5:
+        if volume_enabled and volume_ratio > max(1.5, min_volume_ratio):
             # High volume - confirms trend
             price_change = indicators['price_change']['percent']
             if price_change > 2:
@@ -290,29 +314,40 @@ class TechnicalAnalyzer:
                 })
         
         # Signal 4: MACD
+        macd_enabled = custom_filters.get('macd_enabled', True)
+        require_macd_bullish = custom_filters.get('require_macd_bullish', True)
+        require_macd_bearish = custom_filters.get('require_macd_bearish', False)
+        min_macd_histogram = custom_filters.get('min_macd_histogram', 0.0)
+        
         macd_hist = indicators['macd']['histogram']
-        if macd_hist > 0 and indicators['macd']['line'] > indicators['macd']['signal']:
-            signals.append({
-                'type': 'bullish',
-                'name': 'MACD Bullish',
-                'description': 'MACD line above signal line',
-                'confidence': 0.60,
-                'strength': 'medium'
-            })
-        elif macd_hist < 0 and indicators['macd']['line'] < indicators['macd']['signal']:
-            signals.append({
-                'type': 'bearish',
-                'name': 'MACD Bearish',
-                'description': 'MACD line below signal line',
-                'confidence': 0.60,
-                'strength': 'medium'
-            })
+        if macd_enabled and macd_hist > min_macd_histogram and indicators['macd']['line'] > indicators['macd']['signal']:
+            if require_macd_bullish:
+                signals.append({
+                    'type': 'bullish',
+                    'name': 'MACD Bullish',
+                    'description': 'MACD line above signal line',
+                    'confidence': 0.60,
+                    'strength': 'medium'
+                })
+        elif macd_enabled and macd_hist < -abs(min_macd_histogram) and indicators['macd']['line'] < indicators['macd']['signal']:
+            if require_macd_bearish:
+                signals.append({
+                    'type': 'bearish',
+                    'name': 'MACD Bearish',
+                    'description': 'MACD line below signal line',
+                    'confidence': 0.60,
+                    'strength': 'medium'
+                })
         
         # Signal 5: Support/Resistance
+        support_resistance_enabled = custom_filters.get('support_resistance_enabled', False)
+        near_support_threshold = custom_filters.get('near_support_threshold', 105.0)
+        near_resistance_threshold = custom_filters.get('near_resistance_threshold', 95.0)
+        
         vs_high = indicators['support_resistance']['current_vs_high']
         vs_low = indicators['support_resistance']['current_vs_low']
         
-        if vs_low < 105:  # Near 52-week low
+        if support_resistance_enabled and vs_low < near_support_threshold:  # Near 52-week low
             signals.append({
                 'type': 'bullish',
                 'name': 'Near Support',
@@ -320,7 +355,7 @@ class TechnicalAnalyzer:
                 'confidence': 0.55,
                 'strength': 'low'
             })
-        elif vs_high > 95:  # Near 52-week high
+        elif support_resistance_enabled and vs_high > near_resistance_threshold:  # Near 52-week high
             signals.append({
                 'type': 'bearish',
                 'name': 'Near Resistance',
@@ -328,6 +363,28 @@ class TechnicalAnalyzer:
                 'confidence': 0.55,
                 'strength': 'low'
             })
+        
+        # Apply custom filter requirements
+        min_signal_count = custom_filters.get('min_signal_count', 1)
+        require_all_signals_bullish = custom_filters.get('require_all_signals_bullish', False)
+        require_all_signals_bearish = custom_filters.get('require_all_signals_bearish', False)
+        
+        # Filter signals based on requirements
+        if require_all_signals_bullish:
+            signals = [s for s in signals if s['type'] == 'bullish']
+        elif require_all_signals_bearish:
+            signals = [s for s in signals if s['type'] == 'bearish']
+        
+        # Check minimum signal count
+        if len(signals) < min_signal_count:
+            return {
+                'signals': [],
+                'overall': {
+                    'direction': 'neutral',
+                    'confidence': 0.0,
+                    'signal_count': 0
+                }
+            }
         
         # Calculate overall signal with weighted confidence
         if signals:

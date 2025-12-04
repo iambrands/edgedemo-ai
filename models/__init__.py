@@ -3,6 +3,7 @@ from models.stock import Stock
 from models.position import Position
 from models.automation import Automation
 from models.trade import Trade
+from models.alert_filters import AlertFilters
 
-__all__ = ['User', 'Stock', 'Position', 'Automation', 'Trade']
+__all__ = ['User', 'Stock', 'Position', 'Automation', 'Trade', 'AlertFilters']
 

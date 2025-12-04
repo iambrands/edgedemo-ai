@@ -13,19 +13,20 @@ class SignalGenerator:
         self.options_analyzer = OptionsAnalyzer()
         self.iv_analyzer = IVAnalyzer()
     
-    def generate_signals(self, symbol: str, automation_preferences: Dict = None) -> Dict:
+    def generate_signals(self, symbol: str, automation_preferences: Dict = None, custom_filters: Dict = None) -> Dict:
         """
         Generate comprehensive trading signals for a symbol
         
         Args:
             symbol: Stock symbol
             automation_preferences: User automation preferences (min_confidence, etc.)
+            custom_filters: Custom alert filter settings
         
         Returns:
             Dict with signals and recommendations
         """
-        # Run technical analysis
-        technical_analysis = self.technical_analyzer.analyze(symbol)
+        # Run technical analysis with custom filters
+        technical_analysis = self.technical_analyzer.analyze(symbol, custom_filters=custom_filters)
         
         if 'error' in technical_analysis:
             return {'error': technical_analysis['error']}

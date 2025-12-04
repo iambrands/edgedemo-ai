@@ -22,7 +22,7 @@ class AlertGenerator:
         """Get db instance from current app context"""
         return current_app.extensions['sqlalchemy']
     
-    def generate_buy_signals(self, user_id: int, symbol: str, user_preferences: Dict = None) -> List[Alert]:
+    def generate_buy_signals(self, user_id: int, symbol: str, user_preferences: Dict = None, custom_filters: Dict = None) -> List[Alert]:
         """Generate buy signals for a symbol"""
         db = self._get_db()
         
@@ -37,8 +37,22 @@ class AlertGenerator:
                     'min_confidence': getattr(user, 'min_confidence', 0.6)
                 }
         
-        # Get signals
-        signals = self.signal_generator.generate_signals(symbol, user_preferences or {})
+        # Get custom alert filters if not provided
+        if custom_filters is None:
+            from models.alert_filters import AlertFilters
+            alert_filters = db.session.query(AlertFilters).filter_by(user_id=user_id).first()
+            if alert_filters and alert_filters.enabled:
+                custom_filters = alert_filters.to_dict()
+                # Remove non-filter fields
+                custom_filters.pop('id', None)
+                custom_filters.pop('user_id', None)
+                custom_filters.pop('created_at', None)
+                custom_filters.pop('updated_at', None)
+                # Use min_confidence from filters
+                user_preferences['min_confidence'] = alert_filters.min_confidence
+        
+        # Get signals with custom filters
+        signals = self.signal_generator.generate_signals(symbol, user_preferences or {}, custom_filters)
         
         if 'error' in signals or not signals.get('signals', {}).get('recommended', False):
             return []
@@ -331,11 +345,23 @@ class AlertGenerator:
                 'min_confidence': 0.6  # Default, can be customized
             }
         
+        # Get custom alert filters
+        from models.alert_filters import AlertFilters
+        alert_filters = db.session.query(AlertFilters).filter_by(user_id=user_id).first()
+        custom_filters = None
+        if alert_filters and alert_filters.enabled:
+            custom_filters = alert_filters.to_dict()
+            # Remove non-filter fields
+            custom_filters.pop('id', None)
+            custom_filters.pop('user_id', None)
+            custom_filters.pop('created_at', None)
+            custom_filters.pop('updated_at', None)
+        
         # Generate buy signals for watchlist
         watchlist = db.session.query(Stock).filter_by(user_id=user_id).all()
         for stock in watchlist:
             try:
-                buy_alerts = self.generate_buy_signals(user_id, stock.symbol, user_preferences)
+                buy_alerts = self.generate_buy_signals(user_id, stock.symbol, user_preferences, custom_filters)
                 results['buy_signals'] += len(buy_alerts)
             except Exception as e:
                 # Log error but continue

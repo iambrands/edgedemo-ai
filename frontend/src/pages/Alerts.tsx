@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import AlertFilters from '../components/AlertFilters';
 
 interface Alert {
   id: number;
@@ -30,6 +31,8 @@ const Alerts: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterSettings, setFilterSettings] = useState<any>(null);
   const [filter, setFilter] = useState({
     status: 'active',
     type: '',
@@ -38,10 +41,20 @@ const Alerts: React.FC = () => {
 
   useEffect(() => {
     loadAlerts();
+    loadFilterSettings();
     // Refresh alerts every 30 seconds
     const interval = setInterval(loadAlerts, 30000);
     return () => clearInterval(interval);
   }, [filter]);
+
+  const loadFilterSettings = async () => {
+    try {
+      const response = await api.get('/alerts/filters');
+      setFilterSettings(response.data);
+    } catch (error: any) {
+      console.error('Failed to load filter settings:', error);
+    }
+  };
 
   const loadAlerts = async () => {
     try {
@@ -181,6 +194,13 @@ const Alerts: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => setShowFilters(true)}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium"
+            title="Configure custom alert filters"
+          >
+            ⚙️ Configure Filters
+          </button>
+          <button
             onClick={handleGenerateAlerts}
             disabled={generating}
             className={`px-4 py-2 rounded-lg transition-colors font-medium ${
@@ -265,14 +285,34 @@ const Alerts: React.FC = () => {
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">ℹ️ About Alerts</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• <strong>Buy Signals:</strong> Generated from your watchlist when technical indicators suggest buying opportunities</li>
-          <li>• <strong>Sell Signals:</strong> Generated for open positions when exit conditions are met (profit target, stop loss, expiration)</li>
-          <li>• <strong>Risk Alerts:</strong> Generated when portfolio risk limits are approached or exceeded</li>
-          <li>• <strong>Trade Alerts:</strong> Automatically created when automations execute trades</li>
-          <li>• <strong>Generate Alerts:</strong> Click "Generate Alerts" to scan your watchlist, positions, and risk limits now</li>
-        </ul>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="font-semibold text-blue-900 mb-2">ℹ️ About Alerts</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>Buy Signals:</strong> Generated from your watchlist when technical indicators suggest buying opportunities</li>
+              <li>• <strong>Sell Signals:</strong> Generated for open positions when exit conditions are met (profit target, stop loss, expiration)</li>
+              <li>• <strong>Risk Alerts:</strong> Generated when portfolio risk limits are approached or exceeded</li>
+              <li>• <strong>Trade Alerts:</strong> Automatically created when automations execute trades</li>
+              <li>• <strong>Generate Alerts:</strong> Click "Generate Alerts" to scan your watchlist, positions, and risk limits now</li>
+            </ul>
+          </div>
+          {filterSettings && (
+            <div className="ml-4 text-sm">
+              <div className="bg-white rounded p-2 border border-blue-300">
+                <p className="font-semibold text-blue-900 mb-1">Current Settings:</p>
+                <p className="text-blue-700">
+                  {filterSettings.is_default ? (
+                    <span>Using <strong>Platform Defaults</strong></span>
+                  ) : filterSettings.filters?.enabled ? (
+                    <span>Using <strong>Custom Filters</strong> (Min Confidence: {(filterSettings.filters.min_confidence * 100).toFixed(0)}%)</span>
+                  ) : (
+                    <span>Custom filters <strong>disabled</strong> (using defaults)</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Alerts List */}
@@ -479,6 +519,20 @@ const Alerts: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Filter Configuration Modal */}
+      {showFilters && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <AlertFilters
+              onClose={() => {
+                setShowFilters(false);
+                loadFilterSettings();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

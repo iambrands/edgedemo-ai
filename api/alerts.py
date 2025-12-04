@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models.alert import Alert
+from models.alert_filters import AlertFilters
 from services.alert_generator import AlertGenerator
 from utils.decorators import token_required
 from datetime import datetime
@@ -111,4 +112,76 @@ def get_unread_count(current_user):
     ).count()
     
     return jsonify({'count': count}), 200
+
+@alerts_bp.route('/filters', methods=['GET'])
+@token_required
+def get_alert_filters(current_user):
+    """Get user's alert filter preferences"""
+    db = get_db()
+    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+    
+    if not filters:
+        # Return defaults if no filters exist
+        defaults = AlertFilters.get_defaults()
+        return jsonify({
+            'filters': defaults,
+            'is_default': True
+        }), 200
+    
+    return jsonify({
+        'filters': filters.to_dict(),
+        'is_default': False
+    }), 200
+
+@alerts_bp.route('/filters', methods=['PUT'])
+@token_required
+def update_alert_filters(current_user):
+    """Update user's alert filter preferences"""
+    db = get_db()
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+    
+    if not filters:
+        # Create new filters
+        filters = AlertFilters(user_id=current_user.id)
+        db.session.add(filters)
+    
+    # Update filter fields
+    for key, value in data.items():
+        if hasattr(filters, key):
+            setattr(filters, key, value)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Alert filters updated',
+        'filters': filters.to_dict()
+    }), 200
+
+@alerts_bp.route('/filters/reset', methods=['POST'])
+@token_required
+def reset_alert_filters(current_user):
+    """Reset alert filters to defaults"""
+    db = get_db()
+    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+    
+    defaults = AlertFilters.get_defaults()
+    
+    if not filters:
+        filters = AlertFilters(user_id=current_user.id, **defaults)
+        db.session.add(filters)
+    else:
+        for key, value in defaults.items():
+            setattr(filters, key, value)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Alert filters reset to defaults',
+        'filters': filters.to_dict()
+    }), 200
 
