@@ -79,10 +79,12 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     // Don't retry auth endpoints (login, register, refresh, logout)
+    // Also don't redirect for filter endpoints - they're optional
     if (originalRequest.url?.includes('/auth/login') || 
         originalRequest.url?.includes('/auth/register') ||
         originalRequest.url?.includes('/auth/refresh') ||
-        originalRequest.url?.includes('/auth/logout')) {
+        originalRequest.url?.includes('/auth/logout') ||
+        originalRequest.url?.includes('/alerts/filters')) {
       return Promise.reject(error);
     }
     

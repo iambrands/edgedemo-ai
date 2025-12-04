@@ -117,71 +117,92 @@ def get_unread_count(current_user):
 @token_required
 def get_alert_filters(current_user):
     """Get user's alert filter preferences"""
-    db = get_db()
-    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
-    
-    if not filters:
-        # Return defaults if no filters exist
+    try:
+        db = get_db()
+        filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+        
+        if not filters:
+            # Return defaults if no filters exist
+            defaults = AlertFilters.get_defaults()
+            return jsonify({
+                'filters': defaults,
+                'is_default': True
+            }), 200
+        
+        return jsonify({
+            'filters': filters.to_dict(),
+            'is_default': False
+        }), 200
+    except Exception as e:
+        # If table doesn't exist yet, return defaults
+        from flask import current_app
+        current_app.logger.error(f'Error loading alert filters: {str(e)}')
         defaults = AlertFilters.get_defaults()
         return jsonify({
             'filters': defaults,
-            'is_default': True
+            'is_default': True,
+            'error': 'Using defaults - filters table may not exist yet'
         }), 200
-    
-    return jsonify({
-        'filters': filters.to_dict(),
-        'is_default': False
-    }), 200
 
 @alerts_bp.route('/filters', methods=['PUT'])
 @token_required
 def update_alert_filters(current_user):
     """Update user's alert filter preferences"""
-    db = get_db()
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
-    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
-    
-    if not filters:
-        # Create new filters
-        filters = AlertFilters(user_id=current_user.id)
-        db.session.add(filters)
-    
-    # Update filter fields
-    for key, value in data.items():
-        if hasattr(filters, key):
-            setattr(filters, key, value)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Alert filters updated',
-        'filters': filters.to_dict()
-    }), 200
+    try:
+        db = get_db()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+        
+        if not filters:
+            # Create new filters
+            filters = AlertFilters(user_id=current_user.id)
+            db.session.add(filters)
+        
+        # Update filter fields
+        for key, value in data.items():
+            if hasattr(filters, key):
+                setattr(filters, key, value)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Alert filters updated',
+            'filters': filters.to_dict()
+        }), 200
+    except Exception as e:
+        from flask import current_app
+        current_app.logger.error(f'Error updating alert filters: {str(e)}')
+        return jsonify({'error': f'Failed to update filters: {str(e)}'}), 500
 
 @alerts_bp.route('/filters/reset', methods=['POST'])
 @token_required
 def reset_alert_filters(current_user):
     """Reset alert filters to defaults"""
-    db = get_db()
-    filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
-    
-    defaults = AlertFilters.get_defaults()
-    
-    if not filters:
-        filters = AlertFilters(user_id=current_user.id, **defaults)
-        db.session.add(filters)
-    else:
-        for key, value in defaults.items():
-            setattr(filters, key, value)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Alert filters reset to defaults',
-        'filters': filters.to_dict()
-    }), 200
+    try:
+        db = get_db()
+        filters = db.session.query(AlertFilters).filter_by(user_id=current_user.id).first()
+        
+        defaults = AlertFilters.get_defaults()
+        
+        if not filters:
+            filters = AlertFilters(user_id=current_user.id, **defaults)
+            db.session.add(filters)
+        else:
+            for key, value in defaults.items():
+                setattr(filters, key, value)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Alert filters reset to defaults',
+            'filters': filters.to_dict()
+        }), 200
+    except Exception as e:
+        from flask import current_app
+        current_app.logger.error(f'Error resetting alert filters: {str(e)}')
+        return jsonify({'error': f'Failed to reset filters: {str(e)}'}), 500
 

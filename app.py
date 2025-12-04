@@ -96,6 +96,8 @@ def create_app(config_name=None):
     
     # Create database tables if they don't exist
     with app.app_context():
+        # Import all models to ensure they're registered with SQLAlchemy
+        from models import User, Stock, Position, Automation, Trade, AlertFilters
         # Verify AI API configuration
         openai_key = os.environ.get('OPENAI_API_KEY', '')
         anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
@@ -131,6 +133,7 @@ def create_app(config_name=None):
         from models.iv_history import IVHistory
         from models.strategy import Strategy, StrategyLeg
         from models.alert import Alert
+        from models.alert_filters import AlertFilters
         from models.earnings import EarningsCalendar
         
         # Check if users table exists
@@ -142,6 +145,11 @@ def create_app(config_name=None):
             db.create_all()
             app.logger.info("✅ Database tables created successfully")
         else:
+            # Check if alert_filters table exists, create if missing
+            if 'alert_filters' not in tables:
+                app.logger.warning("⚠️  alert_filters table not found. Creating...")
+                db.create_all()
+                app.logger.info("✅ alert_filters table created")
             app.logger.info("✅ Database tables already exist")
     
     # Health check endpoint

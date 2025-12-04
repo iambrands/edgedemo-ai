@@ -52,7 +52,16 @@ const Alerts: React.FC = () => {
       const response = await api.get('/alerts/filters');
       setFilterSettings(response.data);
     } catch (error: any) {
-      console.error('Failed to load filter settings:', error);
+      // Don't show error toast or redirect - just use defaults silently
+      console.warn('Failed to load filter settings, using defaults:', error);
+      // Set default state so UI doesn't break
+      setFilterSettings({
+        is_default: true,
+        filters: {
+          enabled: false,
+          min_confidence: 0.6
+        }
+      });
     }
   };
 

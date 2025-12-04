@@ -56,11 +56,13 @@ const AlertFilters: React.FC<AlertFiltersProps> = ({ onClose }) => {
   const loadFilters = async () => {
     try {
       const response = await api.get('/alerts/filters');
-      if (response.data.filters) {
+      if (response.data && response.data.filters) {
         setFilters(response.data.filters);
       }
     } catch (error: any) {
       console.error('Failed to load filters:', error);
+      toast.error('Failed to load filter settings. Using defaults.');
+      // Keep default state, just stop loading
     } finally {
       setLoading(false);
     }
