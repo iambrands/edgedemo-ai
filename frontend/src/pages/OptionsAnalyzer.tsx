@@ -221,15 +221,27 @@ const OptionsAnalyzer: React.FC = () => {
   };
 
   const handleTradeFromRecommendation = (option: OptionContract) => {
+    // Extract symbol from option_symbol if needed
+    let stockSymbol = symbol;
+    if (!stockSymbol && option.option_symbol) {
+      // Try to extract symbol from option_symbol (format: SYMBOL_DATE_TYPE_STRIKE)
+      const parts = option.option_symbol.split('_');
+      if (parts.length > 0) {
+        stockSymbol = parts[0];
+      }
+    }
+    
     // Store trade data in sessionStorage to pass to Trade page
     const tradeData = {
-      symbol: symbol || option.option_symbol.split('_')[0],
-      expiration: option.expiration_date,
-      strike: option.strike.toString(),
-      contractType: option.contract_type,
-      price: option.mid_price,
+      symbol: stockSymbol || 'AAPL', // Fallback to AAPL if can't determine
+      expiration: option.expiration_date || expiration,
+      strike: option.strike ? option.strike.toString() : '',
+      contractType: option.contract_type || 'call',
+      price: option.mid_price || option.last_price || 0,
       quantity: 1
     };
+    
+    console.log('Storing trade data:', tradeData);
     sessionStorage.setItem('tradeData', JSON.stringify(tradeData));
     navigate('/trade');
     toast.success('Trade details loaded! Review and execute on the Trade page.');

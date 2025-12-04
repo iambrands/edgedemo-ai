@@ -191,11 +191,19 @@ api.interceptors.response.use(
               error: retryError.response?.data,
               headers: retryError.response?.headers,
             });
-            // If retry fails with 401, clear tokens and redirect
+            // If retry fails with 401, clear tokens but don't redirect automatically
+            // Let the component handle the error (some pages may want to show error messages)
             if (retryError.response?.status === 401) {
               localStorage.removeItem('access_token');
               localStorage.removeItem('refresh_token');
-              window.location.href = '/login';
+              // Only redirect if we're not already on login/register page
+              if (!window.location.pathname.includes('/login') && 
+                  !window.location.pathname.includes('/register')) {
+                // Use setTimeout to avoid redirect during render
+                setTimeout(() => {
+                  window.location.href = '/login';
+                }, 100);
+              }
             }
             throw retryError;
           }
@@ -208,6 +216,17 @@ api.interceptors.response.use(
         console.error('Token refresh failed:', refreshError.response?.data || refreshError.message);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        // Only redirect if we're not already on login/register page
+        // And only for critical endpoints (not for optional data fetches)
+        const isCriticalEndpoint = originalRequest.url?.includes('/auth/user') || 
+                                   originalRequest.url?.includes('/trades/execute');
+        if (isCriticalEndpoint && 
+            !window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/register')) {
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
         // Return the original error so the component can handle it
         return Promise.reject(error);
       }

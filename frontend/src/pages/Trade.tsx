@@ -36,16 +36,31 @@ const Trade: React.FC = () => {
     if (tradeDataStr) {
       try {
         const tradeData = JSON.parse(tradeDataStr);
-        setSymbol(tradeData.symbol || '');
-        setExpiration(tradeData.expiration || '');
-        setStrike(tradeData.strike || '');
-        setContractType(tradeData.contractType || 'call');
-        setPrice(tradeData.price || null);
-        setQuantity(tradeData.quantity || 1);
+        console.log('Loading trade data from sessionStorage:', tradeData);
+        if (tradeData.symbol) {
+          setSymbol(tradeData.symbol);
+        }
+        if (tradeData.expiration) {
+          setExpiration(tradeData.expiration);
+        }
+        if (tradeData.strike) {
+          setStrike(tradeData.strike.toString());
+        }
+        if (tradeData.contractType) {
+          setContractType(tradeData.contractType);
+        }
+        if (tradeData.price) {
+          setPrice(parseFloat(tradeData.price));
+        }
+        if (tradeData.quantity) {
+          setQuantity(tradeData.quantity);
+        }
         // Clear the stored data after using it
         sessionStorage.removeItem('tradeData');
+        console.log('Trade data loaded successfully');
       } catch (error) {
         console.error('Failed to parse trade data:', error);
+        toast.error('Failed to load trade data');
       }
     }
   }, [location.state]);
@@ -80,11 +95,19 @@ const Trade: React.FC = () => {
       const response = await api.get(`/options/expirations/${symbol}`);
       const expirationsList = response.data.expirations || [];
       setExpirations(expirationsList.map((exp: string) => ({ date: exp })));
+      // Only auto-set expiration if we don't already have one from tradeData
       if (expirationsList.length > 0 && !expiration) {
         setExpiration(expirationsList[0]);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to fetch expirations');
+      // Don't show error toast - expirations are optional if we already have one
+      if (!expiration) {
+        console.error('Failed to fetch expirations:', error);
+        // Only show error if we don't have an expiration already set
+        if (error.response?.status !== 404 && error.response?.status !== 400) {
+          toast.error(error.response?.data?.error || 'Failed to fetch expirations');
+        }
+      }
     } finally {
       setLoadingExpirations(false);
     }
