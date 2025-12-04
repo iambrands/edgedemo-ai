@@ -35,7 +35,7 @@ class RiskManager:
                 'max_weekly_loss_percent': 75.0,
                 'max_monthly_loss_percent': 100.0,  # No monthly limit for paper
                 'min_dte': 7,
-                'max_dte': 90  # Increased from 60 to allow longer-term options in paper trading
+                'max_dte': 1095  # 3 years - allows LEAPS (Long-Term Equity Anticipation Securities)
             }
         else:
             # Live trading defaults (more conservative)
@@ -48,7 +48,7 @@ class RiskManager:
                 'max_weekly_loss_percent': 10.0,
                 'max_monthly_loss_percent': 20.0,
                 'min_dte': 7,
-                'max_dte': 90  # Increased from 60 to allow longer-term options
+                'max_dte': 1095  # 3 years - allows LEAPS (Long-Term Equity Anticipation Securities)
             }
         
         # Adjust based on risk tolerance
@@ -64,7 +64,7 @@ class RiskManager:
             base_defaults['max_weekly_loss_percent'] = base_defaults['max_daily_loss_percent'] * 2
             base_defaults['max_monthly_loss_percent'] = base_defaults['max_daily_loss_percent'] * 4
             base_defaults['min_dte'] = 14  # Prefer longer DTE
-            base_defaults['max_dte'] = 45
+            base_defaults['max_dte'] = 730  # 2 years - allows LEAPS even for conservative traders
             
         elif risk_tolerance == 'high':
             # Aggressive: Higher limits
@@ -78,7 +78,7 @@ class RiskManager:
             base_defaults['max_weekly_loss_percent'] = base_defaults['max_daily_loss_percent'] * 2
             base_defaults['max_monthly_loss_percent'] = base_defaults['max_daily_loss_percent'] * 4
             base_defaults['min_dte'] = 0  # Allow same-day expiration
-            base_defaults['max_dte'] = 90
+            base_defaults['max_dte'] = 1095  # 3 years - allows LEAPS for aggressive traders
             
         # 'moderate' uses base_defaults as-is
         

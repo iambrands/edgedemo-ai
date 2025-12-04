@@ -313,7 +313,7 @@ const Settings: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                   placeholder="Maximum days to expiration"
                 />
-                <p className="mt-1 text-xs text-gray-500">Maximum days until option expiration (90+ recommended for longer-term trades)</p>
+                <p className="mt-1 text-xs text-gray-500">Maximum days until option expiration (365+ for LEAPS, up to 1095 for 3-year LEAPS)</p>
               </div>
             </div>
             <button

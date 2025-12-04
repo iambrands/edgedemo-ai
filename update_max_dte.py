@@ -25,19 +25,19 @@ def update_max_dte():
         
         updated_count = 0
         for risk_limits in all_limits:
-            if risk_limits.max_dte and risk_limits.max_dte < 90:
+            if risk_limits.max_dte and risk_limits.max_dte < 1095:
                 old_max_dte = risk_limits.max_dte
-                risk_limits.max_dte = 90
+                risk_limits.max_dte = 1095  # 3 years - allows LEAPS
                 updated_count += 1
-                print(f"Updated user {risk_limits.user_id}: max_dte {old_max_dte} -> 90")
+                print(f"Updated user {risk_limits.user_id}: max_dte {old_max_dte} -> 1095 (3 years for LEAPS)")
             else:
                 print(f"Skipped user {risk_limits.user_id}: max_dte already {risk_limits.max_dte}")
         
         if updated_count > 0:
             db.session.commit()
-            print(f"\n✅ Updated {updated_count} risk limit records")
+            print(f"\n✅ Updated {updated_count} risk limit records to allow LEAPS (up to 3 years)")
         else:
-            print("\n✅ No updates needed - all max_dte values are already 90 or higher")
+            print("\n✅ No updates needed - all max_dte values are already 1095 or higher")
         
         print("=" * 60)
 
