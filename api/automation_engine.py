@@ -4,6 +4,9 @@ from services.market_hours import MarketHours
 from utils.decorators import token_required
 from datetime import datetime
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 automation_engine_bp = Blueprint('automation_engine', __name__)
 
@@ -364,11 +367,26 @@ def test_trade_automation(current_user, automation_id):
         # Use first suitable option
         test_option = suitable_options[0]
         
-        # Create opportunity dict
+        # Ensure contract has all required fields
+        if not test_option.get('expiration_date'):
+            test_option['expiration_date'] = best_expiration
+        
+        # Ensure signal has action set for test trade
+        signal_data = signals.get('signals', {})
+        if not signal_data.get('action') or signal_data.get('action') == 'hold':
+            # Force action based on contract type
+            if test_option.get('contract_type') == 'call':
+                signal_data['action'] = 'buy_call'
+            elif test_option.get('contract_type') == 'put':
+                signal_data['action'] = 'buy_put'
+            else:
+                signal_data['action'] = 'buy_call'  # Default to call
+        
+        # Create opportunity dict with all required fields
         opportunity = {
             'symbol': symbol,
             'contract': test_option,
-            'signal': signals['signals'],
+            'signal': signal_data,
             'automation_id': automation.id,
             'user_id': automation.user_id,
             'entry_reason': f'TEST TRADE - Manual trigger for testing automation {automation.name}',
@@ -376,31 +394,55 @@ def test_trade_automation(current_user, automation_id):
             'dte': (datetime.strptime(best_expiration, '%Y-%m-%d').date() - datetime.now().date()).days
         }
         
-        # Execute the opportunity
-        executed = controller.execute_opportunity(opportunity)
-        
-        if executed:
+        # Execute the opportunity with better error handling
+        try:
+            executed = controller.execute_opportunity(opportunity)
+            
+            if executed:
+                return jsonify({
+                    'message': 'Test trade executed successfully',
+                    'symbol': symbol,
+                    'option': {
+                        'strike': test_option.get('strike_price'),
+                        'expiration': best_expiration,
+                        'contract_type': test_option.get('contract_type'),
+                        'price': test_option.get('mid_price', 0)
+                    },
+                    'signal_confidence': signal_data.get('confidence', 0)
+                }), 200
+            else:
+                return jsonify({
+                    'error': 'Trade execution failed',
+                    'details': 'The opportunity was found but execution returned False. This might be due to risk validation, insufficient balance, or missing required fields.',
+                    'symbol': symbol,
+                    'option': {
+                        'strike': test_option.get('strike_price'),
+                        'expiration': best_expiration,
+                        'contract_type': test_option.get('contract_type'),
+                        'price': test_option.get('mid_price', 0)
+                    },
+                    'debug': {
+                        'signal_action': signal_data.get('action'),
+                        'has_option_symbol': bool(test_option.get('option_symbol')),
+                        'has_strike': bool(test_option.get('strike_price')),
+                        'has_expiration': bool(test_option.get('expiration_date'))
+                    }
+                }), 500
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.error(f"Test trade execution error: {e}", exc_info=True)
+            
             return jsonify({
-                'message': 'Test trade executed successfully',
-                'symbol': symbol,
-                'option': {
-                    'strike': test_option.get('strike_price'),
-                    'expiration': best_expiration,
-                    'contract_type': test_option.get('contract_type'),
-                    'price': test_option.get('mid_price', 0)
-                },
-                'signal_confidence': signals['signals'].get('confidence', 0)
-            }), 200
-        else:
-            return jsonify({
-                'error': 'Trade execution failed',
-                'details': 'The opportunity was found but execution failed. Check server logs for details.',
+                'error': 'Trade execution error',
+                'details': str(e),
                 'symbol': symbol,
                 'option': {
                     'strike': test_option.get('strike_price'),
                     'expiration': best_expiration,
                     'contract_type': test_option.get('contract_type')
-                }
+                },
+                'traceback': error_trace
             }), 500
             
     except Exception as e:

@@ -48,6 +48,7 @@ const Automations: React.FC = () => {
   const [activity, setActivity] = useState<AutomationActivity | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
+  const [testingTrade, setTestingTrade] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -268,8 +269,12 @@ const Automations: React.FC = () => {
   const handleTestTrade = async (automationId: number) => {
     if (!window.confirm('This will force execute a test trade for this automation. Continue?')) return;
     
+    setTestingTrade(automationId);
+    const loadingToast = toast.loading('Executing test trade... This may take a few seconds.');
+    
     try {
       const response = await api.post(`/automation_engine/test-trade/${automationId}`);
+      toast.dismiss(loadingToast);
       toast.success(
         `✅ Test trade executed! ${response.data.option?.contract_type?.toUpperCase()} ${response.data.symbol} @ $${response.data.option?.strike} exp ${response.data.option?.expiration}`,
         { duration: 6000 }
@@ -277,9 +282,11 @@ const Automations: React.FC = () => {
       loadActivity();
       loadAutomations();
     } catch (error: any) {
+      toast.dismiss(loadingToast);
       const errorMsg = error.response?.data?.error || 'Failed to execute test trade';
       const details = error.response?.data?.details;
       const symbol = error.response?.data?.symbol;
+      const debug = error.response?.data?.debug;
       
       // Build detailed error message
       let fullErrorMsg = errorMsg;
@@ -289,18 +296,23 @@ const Automations: React.FC = () => {
       if (symbol) {
         fullErrorMsg += `\n\nSymbol: ${symbol}`;
       }
+      if (debug) {
+        fullErrorMsg += `\n\nDebug Info: ${JSON.stringify(debug, null, 2)}`;
+      }
       
       toast.error(fullErrorMsg, { 
-        duration: 8000,
-        style: { whiteSpace: 'pre-line' }
+        duration: 10000,
+        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
       });
       
       if (error.response?.data?.traceback) {
-        console.error('Test Trade Error:', error.response.data.traceback);
+        console.error('Test Trade Error Traceback:', error.response.data.traceback);
       }
       
       // Log full error for debugging
       console.error('Test Trade Error Details:', error.response?.data);
+    } finally {
+      setTestingTrade(null);
     }
   };
 
@@ -718,10 +730,22 @@ const Automations: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleTestTrade(automation.id)}
-                  className="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                  disabled={testingTrade === automation.id}
+                  className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    testingTrade === automation.id
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
                   title="Force execute a test trade (bypasses some checks for testing)"
                 >
-                  🧪 Test Trade
+                  {testingTrade === automation.id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                      Testing...
+                    </span>
+                  ) : (
+                    '🧪 Test Trade'
+                  )}
                 </button>
                 <button
                   onClick={() => handleDelete(automation.id)}

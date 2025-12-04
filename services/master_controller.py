@@ -221,7 +221,21 @@ class AutomationMasterController:
             signal = opportunity.get('signal', {})
             action = signal.get('action', 'hold')
             
+            # If action is hold or missing, try to infer from contract
+            if action == 'hold' or not action:
+                contract = opportunity.get('contract', {})
+                contract_type_from_contract = contract.get('contract_type', '').lower()
+                if contract_type_from_contract == 'call':
+                    action = 'buy_call'
+                elif contract_type_from_contract == 'put':
+                    action = 'buy_put'
+                else:
+                    # Default to buy_call if we can't determine
+                    action = 'buy_call'
+                    logger.info(f"No action in signal, defaulting to buy_call for {symbol}")
+            
             if action == 'hold':
+                logger.warning(f"Action is still 'hold' for {symbol}, cannot execute")
                 return False
             
             # Map action to buy/sell
@@ -232,7 +246,7 @@ class AutomationMasterController:
                 contract_type = 'put'
                 trade_action = 'buy'
             else:
-                logger.warning(f"Unknown action: {action}")
+                logger.warning(f"Unknown action: {action} for {symbol}")
                 return False
             
             # Get contract details
