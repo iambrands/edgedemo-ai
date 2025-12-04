@@ -119,8 +119,14 @@ class PositionMonitor:
         db = self._get_db()
         
         # For options positions, get current option premium (not stock price)
-        # Check if it's an options position by contract_type (call/put)
-        if position.contract_type and position.contract_type.lower() in ['call', 'put']:
+        # Check if it's an options position by contract_type (call/put/option) OR by having expiration_date and strike
+        is_option_position = (
+            (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+            (position.expiration_date and position.strike_price) or
+            bool(position.option_symbol)
+        )
+        
+        if is_option_position:
             if not position.expiration_date:
                 # Missing expiration - can't find option
                 # If current_price looks like stock price, set to entry price
@@ -165,9 +171,20 @@ class PositionMonitor:
                 except (ValueError, TypeError):
                     option_strike_float = None
                 
-                if (option_strike_float is not None and 
-                    abs(option_strike_float - position_strike) < 0.01 and 
-                    option_type and option_type.lower() == position.contract_type.lower()):
+                # Match strike price
+                strike_match = (option_strike_float is not None and 
+                               abs(option_strike_float - position_strike) < 0.01)
+                
+                # Match contract type - handle 'option' as a wildcard (matches both call and put)
+                position_contract_type = (position.contract_type or '').lower()
+                option_contract_type = (option_type or '').lower()
+                type_match = (
+                    option_contract_type == position_contract_type or
+                    (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
+                    (not position_contract_type and option_contract_type in ['call', 'put'])
+                )
+                
+                if strike_match and type_match:
                     option_found = option
                     break
                 
@@ -188,8 +205,16 @@ class PositionMonitor:
                     except (ValueError, TypeError):
                         continue
                     
-                    if (option_strike_float is not None and 
-                        option_type and option_type.lower() == position.contract_type.lower()):
+                    # Match contract type - handle 'option' as a wildcard
+                    position_contract_type = (position.contract_type or '').lower()
+                    option_contract_type = (option_type or '').lower()
+                    type_match = (
+                        option_contract_type == position_contract_type or
+                        (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
+                        (not position_contract_type and option_contract_type in ['call', 'put'])
+                    )
+                    
+                    if option_strike_float is not None and type_match:
                         diff = abs(option_strike_float - position_strike)
                         if diff < closest_diff:
                             closest_diff = diff
