@@ -118,30 +118,36 @@ const OptionsAnalyzer: React.FC = () => {
   };
 
   const [isInitialMount, setIsInitialMount] = React.useState(true);
+  const [symbolFromNav, setSymbolFromNav] = React.useState<string | null>(null);
 
+  // Handle symbol from navigation (runs once when component mounts or location.state changes)
   React.useEffect(() => {
     // Check if symbol was passed from navigation
     if (location.state && location.state.symbol) {
       const navSymbol = location.state.symbol.trim().toUpperCase();
       console.log('Symbol from navigation:', navSymbol);
       if (navSymbol && /^[A-Z]{1,5}$/.test(navSymbol)) {
+        setSymbolFromNav(navSymbol);
         setSymbol(navSymbol);
         setIsInitialMount(true); // Set to true so the next useEffect will fetch immediately
       }
     }
   }, [location.state]);
 
+  // Fetch data when symbol changes (including from navigation)
   React.useEffect(() => {
     // Only fetch if symbol is at least 1 character and not just whitespace
     if (symbol && symbol.trim().length >= 1) {
       const trimmedSymbol = symbol.trim().toUpperCase();
       if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
-        // On initial mount, fetch immediately (no debounce)
+        // On initial mount or when symbol comes from navigation, fetch immediately (no debounce)
         // For subsequent changes, debounce to avoid excessive API calls
-        if (isInitialMount) {
+        if (isInitialMount || symbolFromNav === trimmedSymbol) {
+          console.log('Fetching data for symbol from navigation:', trimmedSymbol);
           fetchExpirations();
           fetchStockPrice();
           setIsInitialMount(false);
+          setSymbolFromNav(null); // Clear the flag after first fetch
         } else {
           // Debounce: wait 500ms after user stops typing
           const timeoutId = setTimeout(() => {
@@ -154,7 +160,7 @@ const OptionsAnalyzer: React.FC = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, isInitialMount]);
+  }, [symbol, isInitialMount, symbolFromNav]);
   
   // Separate effect to set expiration when expirations are loaded
   React.useEffect(() => {
