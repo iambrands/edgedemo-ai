@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from services.trade_executor import TradeExecutor
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
