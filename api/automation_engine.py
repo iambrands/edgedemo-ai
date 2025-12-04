@@ -367,9 +367,24 @@ def test_trade_automation(current_user, automation_id):
         # Use first suitable option
         test_option = suitable_options[0]
         
+        # Normalize field names - options analyzer uses 'strike' but trade executor expects 'strike_price'
+        if 'strike' in test_option and 'strike_price' not in test_option:
+            test_option['strike_price'] = test_option['strike']
+        elif 'strike_price' not in test_option:
+            # Try to extract from option_symbol if available
+            option_symbol = test_option.get('option_symbol', '')
+            if option_symbol:
+                # Option symbols typically end with strike price (e.g., NVDA250120C00150000 = $150 strike)
+                # This is a fallback - ideally strike should be in the option data
+                logger.warning(f"Strike price not found in option data for {option_symbol}")
+        
         # Ensure contract has all required fields
         if not test_option.get('expiration_date'):
             test_option['expiration_date'] = best_expiration
+        
+        # Ensure we have option_symbol if it's missing
+        if not test_option.get('option_symbol') and test_option.get('symbol'):
+            test_option['option_symbol'] = test_option['symbol']
         
         # Ensure signal has action set for test trade
         signal_data = signals.get('signals', {})
@@ -424,8 +439,10 @@ def test_trade_automation(current_user, automation_id):
                     'debug': {
                         'signal_action': signal_data.get('action'),
                         'has_option_symbol': bool(test_option.get('option_symbol')),
-                        'has_strike': bool(test_option.get('strike_price')),
-                        'has_expiration': bool(test_option.get('expiration_date'))
+                        'has_strike': bool(test_option.get('strike_price') or test_option.get('strike')),
+                        'has_expiration': bool(test_option.get('expiration_date')),
+                        'strike_value': test_option.get('strike_price') or test_option.get('strike'),
+                        'option_fields': list(test_option.keys())
                     }
                 }), 500
         except Exception as e:

@@ -249,11 +249,21 @@ class AutomationMasterController:
                 logger.warning(f"Unknown action: {action} for {symbol}")
                 return False
             
-            # Get contract details
-            option_symbol = contract.get('option_symbol')
-            strike = contract.get('strike_price')
-            expiration = contract.get('expiration_date')
-            price = contract.get('mid_price')
+            # Get contract details - normalize field names
+            option_symbol = contract.get('option_symbol') or contract.get('symbol')
+            # Options analyzer uses 'strike', trade executor expects 'strike_price'
+            strike = contract.get('strike_price') or contract.get('strike')
+            expiration = contract.get('expiration_date') or contract.get('expiration')
+            price = contract.get('mid_price') or contract.get('last_price') or contract.get('last')
+            
+            # Validate required fields
+            if not strike or strike == 0:
+                logger.error(f"Missing or invalid strike price in contract: {contract}")
+                return False
+            
+            if not expiration:
+                logger.error(f"Missing expiration date in contract: {contract}")
+                return False
             
             # Calculate position size (would use risk manager)
             quantity = 1  # Default, would calculate based on risk
