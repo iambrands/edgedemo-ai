@@ -280,6 +280,89 @@ const Alerts: React.FC = () => {
                       {alert.explanation && (
                         <p className="text-sm text-gray-600 mb-2">{alert.explanation}</p>
                       )}
+                      
+                      {/* Technical Indicators Details */}
+                      {alert.details?.indicators && (
+                        <div className="bg-gray-50 rounded-lg p-3 mb-3 mt-2">
+                          <h4 className="text-xs font-semibold text-gray-700 mb-2">📊 Technical Indicators:</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                            {alert.details.indicators.rsi !== undefined && (
+                              <div>
+                                <span className="text-gray-600">RSI:</span>
+                                <span className={`ml-1 font-medium ${
+                                  alert.details.indicators.rsi < 30 ? 'text-green-600' :
+                                  alert.details.indicators.rsi > 70 ? 'text-red-600' : 'text-gray-700'
+                                }`}>
+                                  {alert.details.indicators.rsi.toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                            {alert.details.indicators.sma_20 !== undefined && (
+                              <div>
+                                <span className="text-gray-600">SMA20:</span>
+                                <span className="ml-1 font-medium text-gray-700">${alert.details.indicators.sma_20.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {alert.details.indicators.sma_50 !== undefined && (
+                              <div>
+                                <span className="text-gray-600">SMA50:</span>
+                                <span className="ml-1 font-medium text-gray-700">${alert.details.indicators.sma_50.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {alert.details.indicators.volume?.ratio !== undefined && (
+                              <div>
+                                <span className="text-gray-600">Volume:</span>
+                                <span className={`ml-1 font-medium ${
+                                  alert.details.indicators.volume.ratio > 1.5 ? 'text-green-600' : 'text-gray-700'
+                                }`}>
+                                  {alert.details.indicators.volume.ratio.toFixed(1)}x
+                                </span>
+                              </div>
+                            )}
+                            {alert.details.indicators.macd?.histogram !== undefined && (
+                              <div>
+                                <span className="text-gray-600">MACD:</span>
+                                <span className={`ml-1 font-medium ${
+                                  alert.details.indicators.macd.histogram > 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {alert.details.indicators.macd.histogram > 0 ? '↑' : '↓'} {Math.abs(alert.details.indicators.macd.histogram).toFixed(3)}
+                                </span>
+                              </div>
+                            )}
+                            {alert.details.indicators.price_change?.percent !== undefined && (
+                              <div>
+                                <span className="text-gray-600">Price Change:</span>
+                                <span className={`ml-1 font-medium ${
+                                  alert.details.indicators.price_change.percent > 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {alert.details.indicators.price_change.percent > 0 ? '+' : ''}{alert.details.indicators.price_change.percent.toFixed(2)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Triggered Signals */}
+                      {alert.details?.triggered_signals && alert.details.triggered_signals.length > 0 && (
+                        <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                          <h4 className="text-xs font-semibold text-blue-900 mb-2">🎯 Signals Triggered:</h4>
+                          <ul className="space-y-1">
+                            {alert.details.triggered_signals.map((signal: any, idx: number) => (
+                              <li key={idx} className="text-xs text-blue-800">
+                                <span className="font-medium">{signal.name}</span>
+                                {signal.description && (
+                                  <span className="text-blue-700">: {signal.description}</span>
+                                )}
+                                <span className="text-blue-600 ml-1">
+                                  ({(signal.confidence * 100).toFixed(0)}% confidence, {signal.strength})
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
                       <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-3">
                         {alert.confidence && (
                           <span>Confidence: {(alert.confidence * 100).toFixed(1)}%</span>

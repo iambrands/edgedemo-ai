@@ -209,23 +209,43 @@ class TechnicalAnalyzer:
         signals = []
         
         # Signal 1: Moving Average Crossover
-        if indicators['sma_20'] > indicators['sma_50'] > indicators['sma_200']:
+        sma_20 = indicators['sma_20']
+        sma_50 = indicators['sma_50']
+        sma_200 = indicators['sma_200']
+        
+        if sma_20 > sma_50 > sma_200:
             # Golden cross - bullish
+            # Calculate confidence based on how far price is above each MA
+            price_above_20 = ((current_price - sma_20) / sma_20 * 100) if sma_20 > 0 else 0
+            price_above_50 = ((current_price - sma_50) / sma_50 * 100) if sma_50 > 0 else 0
+            price_above_200 = ((current_price - sma_200) / sma_200 * 100) if sma_200 > 0 else 0
+            
+            # Base confidence increases with stronger separation
+            avg_separation = (price_above_20 + price_above_50 + price_above_200) / 3
+            base_confidence = 0.60 + min(0.15, avg_separation / 10)  # 60-75% based on separation
+            
             signals.append({
                 'type': 'bullish',
                 'name': 'Golden Cross',
-                'description': 'Price above all moving averages',
-                'confidence': 0.65,
-                'strength': 'medium'
+                'description': f'Price ${current_price:.2f} above all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
+                'confidence': round(base_confidence, 2),
+                'strength': 'high' if base_confidence >= 0.70 else 'medium'
             })
-        elif indicators['sma_20'] < indicators['sma_50'] < indicators['sma_200']:
+        elif sma_20 < sma_50 < sma_200:
             # Death cross - bearish
+            price_below_20 = ((sma_20 - current_price) / current_price * 100) if current_price > 0 else 0
+            price_below_50 = ((sma_50 - current_price) / current_price * 100) if current_price > 0 else 0
+            price_below_200 = ((sma_200 - current_price) / current_price * 100) if current_price > 0 else 0
+            
+            avg_separation = (price_below_20 + price_below_50 + price_below_200) / 3
+            base_confidence = 0.60 + min(0.15, avg_separation / 10)
+            
             signals.append({
                 'type': 'bearish',
                 'name': 'Death Cross',
-                'description': 'Price below all moving averages',
-                'confidence': 0.65,
-                'strength': 'medium'
+                'description': f'Price ${current_price:.2f} below all moving averages (SMA20: ${sma_20:.2f}, SMA50: ${sma_50:.2f}, SMA200: ${sma_200:.2f})',
+                'confidence': round(base_confidence, 2),
+                'strength': 'high' if base_confidence >= 0.70 else 'medium'
             })
         
         # Signal 2: RSI
@@ -309,16 +329,41 @@ class TechnicalAnalyzer:
                 'strength': 'low'
             })
         
-        # Calculate overall signal
+        # Calculate overall signal with weighted confidence
         if signals:
             bullish_signals = [s for s in signals if s['type'] == 'bullish']
             bearish_signals = [s for s in signals if s['type'] == 'bearish']
             
-            bullish_confidence = sum(s['confidence'] for s in bullish_signals) / len(bullish_signals) if bullish_signals else 0
-            bearish_confidence = sum(s['confidence'] for s in bearish_signals) / len(bearish_signals) if bearish_signals else 0
+            # Weight signals by strength (high=1.2, medium=1.0, low=0.8)
+            def get_weight(strength):
+                return {'high': 1.2, 'medium': 1.0, 'low': 0.8}.get(strength, 1.0)
             
-            overall_direction = 'bullish' if bullish_confidence > bearish_confidence else 'bearish'
-            overall_confidence = max(bullish_confidence, bearish_confidence)
+            if bullish_signals:
+                weighted_sum = sum(s['confidence'] * get_weight(s.get('strength', 'medium')) for s in bullish_signals)
+                weight_sum = sum(get_weight(s.get('strength', 'medium')) for s in bullish_signals)
+                bullish_confidence = weighted_sum / weight_sum if weight_sum > 0 else 0
+            else:
+                bullish_confidence = 0
+                
+            if bearish_signals:
+                weighted_sum = sum(s['confidence'] * get_weight(s.get('strength', 'medium')) for s in bearish_signals)
+                weight_sum = sum(get_weight(s.get('strength', 'medium')) for s in bearish_signals)
+                bearish_confidence = weighted_sum / weight_sum if weight_sum > 0 else 0
+            else:
+                bearish_confidence = 0
+            
+            # Boost confidence if multiple signals agree
+            signal_count_boost = min(0.10, len(signals) * 0.02)  # Up to 10% boost for multiple signals
+            
+            if bullish_confidence > bearish_confidence:
+                overall_direction = 'bullish'
+                overall_confidence = min(1.0, bullish_confidence + signal_count_boost)
+            elif bearish_confidence > bullish_confidence:
+                overall_direction = 'bearish'
+                overall_confidence = min(1.0, bearish_confidence + signal_count_boost)
+            else:
+                overall_direction = 'neutral'
+                overall_confidence = max(bullish_confidence, bearish_confidence)
         else:
             overall_direction = 'neutral'
             overall_confidence = 0.0
@@ -327,7 +372,7 @@ class TechnicalAnalyzer:
             'signals': signals,
             'overall': {
                 'direction': overall_direction,
-                'confidence': overall_confidence,
+                'confidence': round(overall_confidence, 2),
                 'signal_count': len(signals)
             }
         }

@@ -106,16 +106,32 @@ Confidence: {confidence:.1%}
             technical_data = context.get('technical_analysis', {})
             indicators = technical_data.get('indicators', {})
             signals = technical_data.get('signals', {})
+            individual_signals = signals.get('signals', [])
+            
+            # Build list of triggered signals
+            signal_list = "\n".join([
+                f"- {s.get('name', 'Unknown')}: {s.get('description', '')} (Confidence: {s.get('confidence', 0):.1%}, Strength: {s.get('strength', 'medium')})"
+                for s in individual_signals
+            ]) if individual_signals else "No specific signals detected"
             
             prompt = f"""
 Generate a personalized BUY SIGNAL alert for {symbol}.
 
 Market Data:
 {base_info}
-RSI: {indicators.get('rsi', 'N/A')}
-MACD Signal: {signals.get('overall', {}).get('direction', 'neutral')}
-Moving Averages: SMA20=${indicators.get('sma_20', 0):.2f}, SMA50=${indicators.get('sma_50', 0):.2f}
-Volume: {context.get('volume_change_percent', 0):.1f}% vs average
+Current Price: ${context.get('current_price', 0):.2f}
+
+Technical Indicators:
+- RSI (Relative Strength Index): {indicators.get('rsi', 0):.1f} (30=oversold, 70=overbought)
+- Moving Averages: SMA20=${indicators.get('sma_20', 0):.2f}, SMA50=${indicators.get('sma_50', 0):.2f}, SMA200=${indicators.get('sma_200', 0):.2f}
+- MACD: Line={indicators.get('macd', {}).get('line', 0):.4f}, Signal={indicators.get('macd', {}).get('signal', 0):.4f}, Histogram={indicators.get('macd', {}).get('histogram', 0):.4f}
+- Volume: {indicators.get('volume', {}).get('ratio', 1.0):.2f}x average ({indicators.get('volume', {}).get('current', 0):,.0f} vs avg {indicators.get('volume', {}).get('average', 0):,.0f})
+- Price Change: ${indicators.get('price_change', {}).get('dollars', 0):.2f} ({indicators.get('price_change', {}).get('percent', 0):.2f}%)
+
+Triggered Signals:
+{signal_list}
+
+Overall Signal: {signals.get('overall', {}).get('direction', 'neutral')} with {signals.get('overall', {}).get('confidence', 0):.1%} confidence
 
 User Preferences:
 - Risk Tolerance: {user_preferences.get('risk_tolerance', 'moderate') if user_preferences else 'moderate'}
@@ -124,13 +140,15 @@ User Preferences:
 
 Generate:
 1. A concise, attention-grabbing title (max 60 chars)
-2. A clear, actionable message explaining why this is a buy opportunity
-3. A brief explanation of the key factors supporting this signal
+2. A clear, actionable message explaining why this is a buy opportunity - SPECIFICALLY MENTION which technical indicators triggered the signal (e.g., "RSI oversold at 28.5", "Golden Cross pattern with price above all moving averages", "High volume breakout with 2.3x average volume")
+3. A brief explanation listing the key technical factors: RSI value, moving average positions, MACD signal, volume analysis, etc.
+
+IMPORTANT: Be specific about the actual indicator values and what they mean. Don't use generic phrases like "multiple technical indicators" - list them explicitly.
 
 Format your response as:
 TITLE: [title]
-MESSAGE: [message]
-EXPLANATION: [explanation]
+MESSAGE: [message - include specific indicator values]
+EXPLANATION: [explanation - list the technical indicators that triggered this signal]
 """
         
         elif alert_type == 'sell_signal':
@@ -288,10 +306,47 @@ EXPLANATION: [explanation]
         confidence = context.get('confidence', 0)
         
         if alert_type == 'buy_signal':
+            technical_data = context.get('technical_analysis', {})
+            indicators = technical_data.get('indicators', {})
+            signals = technical_data.get('signals', {})
+            individual_signals = signals.get('signals', [])
+            
+            # Build indicator summary
+            rsi = indicators.get('rsi', 0)
+            sma_20 = indicators.get('sma_20', 0)
+            sma_50 = indicators.get('sma_50', 0)
+            volume_ratio = indicators.get('volume', {}).get('ratio', 1.0)
+            macd_hist = indicators.get('macd', {}).get('histogram', 0)
+            
+            # List triggered signals
+            signal_names = [s.get('name', '') for s in individual_signals if s.get('type') == 'bullish']
+            signal_list = ", ".join(signal_names) if signal_names else "Technical indicators"
+            
+            message = f"Technical analysis suggests a buying opportunity for {symbol} with {confidence:.1%} confidence. "
+            message += f"Triggered by: {signal_list}. "
+            
+            # Add specific indicator details
+            indicator_details = []
+            if rsi < 35:
+                indicator_details.append(f"RSI oversold at {rsi:.1f}")
+            if sma_20 > sma_50 > indicators.get('sma_200', 0):
+                indicator_details.append(f"Golden Cross (price above all MAs)")
+            if volume_ratio > 1.5:
+                indicator_details.append(f"High volume ({volume_ratio:.1f}x average)")
+            if macd_hist > 0:
+                indicator_details.append("MACD bullish crossover")
+            
+            if indicator_details:
+                message += "Key factors: " + ", ".join(indicator_details) + "."
+            
+            explanation = f"Technical indicators supporting this buy signal for {symbol}: "
+            explanation += f"RSI={rsi:.1f}, SMA20=${sma_20:.2f}, SMA50=${sma_50:.2f}, Volume={volume_ratio:.1f}x avg, MACD Histogram={macd_hist:.4f}. "
+            explanation += f"Consider reviewing the options chain for entry opportunities."
+            
             return {
                 'title': f"Buy Signal: {symbol}",
-                'message': f"Technical analysis suggests a buying opportunity for {symbol} with {confidence:.1%} confidence.",
-                'explanation': f"Multiple technical indicators are signaling a bullish move for {symbol}. Consider reviewing the options chain for entry opportunities."
+                'message': message,
+                'explanation': explanation
             }
         elif alert_type == 'sell_signal':
             pnl = context.get('unrealized_pnl', 0)

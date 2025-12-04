@@ -66,6 +66,11 @@ class AlertGenerator:
             user_preferences
         )
         
+        # Extract technical indicators and signals for details
+        indicators = technical_analysis.get('indicators', {})
+        technical_signals = technical_analysis.get('signals', {})
+        individual_signals = technical_signals.get('signals', [])
+        
         # Create alert with AI-generated content
         alert = Alert(
             user_id=user_id,
@@ -82,7 +87,39 @@ class AlertGenerator:
                 'technical_confidence': signal_info.get('technical_confidence'),
                 'iv_adjustment': signal_info.get('iv_adjustment'),
                 'signal_count': signal_info.get('signal_count'),
-                'ai_generated': True
+                'ai_generated': True,
+                # Include actual technical indicator values
+                'indicators': {
+                    'rsi': round(indicators.get('rsi', 0), 2),
+                    'sma_20': round(indicators.get('sma_20', 0), 2),
+                    'sma_50': round(indicators.get('sma_50', 0), 2),
+                    'sma_200': round(indicators.get('sma_200', 0), 2),
+                    'macd': {
+                        'line': round(indicators.get('macd', {}).get('line', 0), 4),
+                        'signal': round(indicators.get('macd', {}).get('signal', 0), 4),
+                        'histogram': round(indicators.get('macd', {}).get('histogram', 0), 4)
+                    },
+                    'volume': {
+                        'current': indicators.get('volume', {}).get('current', 0),
+                        'average': round(indicators.get('volume', {}).get('average', 0), 0),
+                        'ratio': round(indicators.get('volume', {}).get('ratio', 1.0), 2)
+                    },
+                    'price_change': {
+                        'dollars': round(indicators.get('price_change', {}).get('dollars', 0), 2),
+                        'percent': round(indicators.get('price_change', {}).get('percent', 0), 2)
+                    }
+                },
+                # Include which specific signals triggered
+                'triggered_signals': [
+                    {
+                        'name': s.get('name', ''),
+                        'type': s.get('type', ''),
+                        'description': s.get('description', ''),
+                        'confidence': s.get('confidence', 0),
+                        'strength': s.get('strength', 'medium')
+                    }
+                    for s in individual_signals
+                ]
             },
             expires_at=datetime.utcnow() + timedelta(hours=24)  # Alerts expire after 24 hours
         )
