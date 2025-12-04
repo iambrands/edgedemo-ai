@@ -35,7 +35,7 @@ class RiskManager:
                 'max_weekly_loss_percent': 75.0,
                 'max_monthly_loss_percent': 100.0,  # No monthly limit for paper
                 'min_dte': 7,
-                'max_dte': 60
+                'max_dte': 90  # Increased from 60 to allow longer-term options in paper trading
             }
         else:
             # Live trading defaults (more conservative)
@@ -48,7 +48,7 @@ class RiskManager:
                 'max_weekly_loss_percent': 10.0,
                 'max_monthly_loss_percent': 20.0,
                 'min_dte': 7,
-                'max_dte': 60
+                'max_dte': 90  # Increased from 60 to allow longer-term options
             }
         
         # Adjust based on risk tolerance

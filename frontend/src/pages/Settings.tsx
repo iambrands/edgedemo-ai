@@ -227,6 +227,14 @@ const Settings: React.FC = () => {
                 <span className="text-gray-600">Max Capital at Risk:</span>
                 <span className="ml-2 font-medium">{riskLimits.max_capital_at_risk_percent?.toFixed(1)}%</span>
               </div>
+              <div>
+                <span className="text-gray-600">Min DTE (Days to Expiration):</span>
+                <span className="ml-2 font-medium">{riskLimits.min_dte || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Max DTE (Days to Expiration):</span>
+                <span className="ml-2 font-medium">{riskLimits.max_dte || 'N/A'}</span>
+              </div>
             </div>
           </div>
         )}
@@ -280,6 +288,32 @@ const Settings: React.FC = () => {
                   onChange={(e) => setRiskLimits({...riskLimits, max_capital_at_risk_percent: parseFloat(e.target.value)})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Min DTE (Days to Expiration)
+                </label>
+                <input
+                  type="number"
+                  value={riskLimits.min_dte || ''}
+                  onChange={(e) => setRiskLimits({...riskLimits, min_dte: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  placeholder="Minimum days to expiration"
+                />
+                <p className="mt-1 text-xs text-gray-500">Minimum days until option expiration (0 = allow same-day)</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max DTE (Days to Expiration)
+                </label>
+                <input
+                  type="number"
+                  value={riskLimits.max_dte || ''}
+                  onChange={(e) => setRiskLimits({...riskLimits, max_dte: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  placeholder="Maximum days to expiration"
+                />
+                <p className="mt-1 text-xs text-gray-500">Maximum days until option expiration (90+ recommended for longer-term trades)</p>
               </div>
             </div>
             <button
