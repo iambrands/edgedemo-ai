@@ -54,11 +54,15 @@ api.interceptors.request.use(
       }
     } else {
       // Log warning if no token for protected endpoint
-      console.warn('No access token found for request:', config.url);
-      // Don't make the request if it's a protected endpoint
+      // But don't block auth endpoints or public endpoints
       if (!config.url?.includes('/auth/login') && 
-          !config.url?.includes('/auth/register')) {
-        console.error('Cannot make authenticated request without token');
+          !config.url?.includes('/auth/register') &&
+          !config.url?.includes('/auth/logout')) {
+        // Only warn, don't block - let the server return 401 if needed
+        // This allows logout to work even if tokens are already cleared
+        if (!config.url?.includes('/auth/')) {
+          console.warn('No access token found for request:', config.url);
+        }
       }
     }
     return config;
@@ -74,10 +78,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Don't retry auth endpoints (login, register, refresh)
+    // Don't retry auth endpoints (login, register, refresh, logout)
     if (originalRequest.url?.includes('/auth/login') || 
         originalRequest.url?.includes('/auth/register') ||
-        originalRequest.url?.includes('/auth/refresh')) {
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.url?.includes('/auth/logout')) {
+      return Promise.reject(error);
+    }
+    
+    // Handle 502/503/504 errors (server down) - don't try to refresh token
+    if (error.response?.status === 502 || 
+        error.response?.status === 503 || 
+        error.response?.status === 504) {
+      console.error('Server error (502/503/504), not attempting token refresh');
       return Promise.reject(error);
     }
     

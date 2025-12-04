@@ -27,11 +27,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(response.user);
         } catch (error: any) {
           // If error is 401/403, token is invalid - clear it
+          // If error is 502/503/504, server is down - keep token but don't set user
           // Otherwise, keep token and let user state be set from registration/login
-          if (error.response?.status === 401 || error.response?.status === 403) {
+          const status = error.response?.status;
+          if (status === 401 || status === 403) {
             console.error('Auth check failed - token invalid:', error);
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            setUser(null);
+          } else if (status === 502 || status === 503 || status === 504) {
+            // Server is down - don't clear token, might be temporary
+            console.warn('Server error during auth check (server may be down):', status);
+            // Don't set user state, but keep token for when server comes back
             setUser(null);
           } else {
             // Network error or other issue - don't clear token, might be temporary
@@ -72,8 +79,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    authService.logout();
-    setUser(null);
+    try {
+      // Clear all auth data
+      authService.logout();
+      setUser(null);
+      
+      // Clear any session data
+      sessionStorage.clear();
+      
+      // Navigate to login page
+      window.location.href = '/login';
+    } catch (error) {
+      // Even if logout fails, clear tokens and navigate
+      console.error('Logout error:', error);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      sessionStorage.clear();
+      setUser(null);
+      window.location.href = '/login';
+    }
   };
 
   return (

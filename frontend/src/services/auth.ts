@@ -31,8 +31,17 @@ export const authService = {
   },
 
   logout: () => {
+    // Clear all tokens
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    
+    // Clear session storage
+    sessionStorage.clear();
+    
+    // Note: We don't make an API call to logout because:
+    // 1. The server might be down (502 errors)
+    // 2. We want logout to work even if offline
+    // 3. Tokens are stateless - clearing them locally is sufficient
   },
 };
 
