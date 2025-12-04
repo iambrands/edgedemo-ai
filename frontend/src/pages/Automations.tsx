@@ -271,7 +271,7 @@ const Automations: React.FC = () => {
     try {
       const response = await api.post(`/automation_engine/test-trade/${automationId}`);
       toast.success(
-        `Test trade executed! ${response.data.option?.contract_type?.toUpperCase()} ${response.data.symbol} @ $${response.data.option?.strike} exp ${response.data.option?.expiration}`,
+        `✅ Test trade executed! ${response.data.option?.contract_type?.toUpperCase()} ${response.data.symbol} @ $${response.data.option?.strike} exp ${response.data.option?.expiration}`,
         { duration: 6000 }
       );
       loadActivity();
@@ -279,10 +279,28 @@ const Automations: React.FC = () => {
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Failed to execute test trade';
       const details = error.response?.data?.details;
-      toast.error(details ? `${errorMsg}: ${details}` : errorMsg, { duration: 6000 });
+      const symbol = error.response?.data?.symbol;
+      
+      // Build detailed error message
+      let fullErrorMsg = errorMsg;
+      if (details) {
+        fullErrorMsg += `\n\n${details}`;
+      }
+      if (symbol) {
+        fullErrorMsg += `\n\nSymbol: ${symbol}`;
+      }
+      
+      toast.error(fullErrorMsg, { 
+        duration: 8000,
+        style: { whiteSpace: 'pre-line' }
+      });
+      
       if (error.response?.data?.traceback) {
         console.error('Test Trade Error:', error.response.data.traceback);
       }
+      
+      // Log full error for debugging
+      console.error('Test Trade Error Details:', error.response?.data);
     }
   };
 

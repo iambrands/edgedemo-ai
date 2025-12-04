@@ -242,7 +242,16 @@ def test_trade_automation(current_user, automation_id):
             return jsonify({'error': 'Automation not found'}), 404
         
         if not automation.is_active:
-            return jsonify({'error': 'Automation is not active'}), 400
+            return jsonify({
+                'error': 'Automation is not active',
+                'details': 'Please activate the automation before testing'
+            }), 400
+        
+        if automation.is_paused:
+            return jsonify({
+                'error': 'Automation is paused',
+                'details': 'Please resume the automation before testing'
+            }), 400
         
         scanner = OpportunityScanner()
         controller = AutomationMasterController()
@@ -259,17 +268,19 @@ def test_trade_automation(current_user, automation_id):
         if 'error' in signals:
             return jsonify({
                 'error': 'Failed to generate signals',
-                'details': signals.get('error')
+                'details': signals.get('error', 'Unknown error generating signals'),
+                'symbol': symbol
             }), 400
         
         # Force find an option (relax filters for testing)
         symbol = automation.symbol
         expirations_list = scanner.tradier.get_options_expirations(symbol)
         
-        if not expirations_list:
+        if not expirations_list or len(expirations_list) == 0:
             return jsonify({
                 'error': 'No option expirations available',
-                'symbol': symbol
+                'symbol': symbol,
+                'details': f'No option expirations found for {symbol}. This might be due to market hours, symbol availability, or API limitations.'
             }), 400
         
         # Use first available expiration
@@ -288,31 +299,67 @@ def test_trade_automation(current_user, automation_id):
             return jsonify({
                 'error': 'No options found in chain',
                 'symbol': symbol,
-                'expiration': best_expiration
+                'expiration': best_expiration,
+                'details': f'No options chain data available for {symbol} on {best_expiration}. This might be due to market hours, symbol availability, or API limitations.'
             }), 400
         
         # Find any suitable option (relaxed criteria for testing)
-        direction = signals['signals'].get('direction', 'bullish')
+        # Get direction from signals, default to bullish for calls
+        signal_data = signals.get('signals', {})
+        direction = signal_data.get('direction', 'bullish')
+        
+        # If direction is 'neutral' or missing, default to bullish (calls)
+        if not direction or direction == 'neutral':
+            direction = 'bullish'
+        
         suitable_options = []
         
-        for option in chain[:20]:  # Check first 20 options
+        # Check all options, not just first 20
+        for option in chain:
+            # Filter by direction
             if direction == 'bullish' and option.get('contract_type') != 'call':
                 continue
             if direction == 'bearish' and option.get('contract_type') != 'put':
                 continue
             
-            # Very relaxed filters for testing
-            if option.get('bid', 0) > 0 and option.get('ask', 0) > 0:
+            # Very relaxed filters for testing - just need bid/ask
+            bid = option.get('bid', 0) or option.get('last', 0) or 0
+            ask = option.get('ask', 0) or option.get('last', 0) or 0
+            mid_price = option.get('mid_price', 0) or ((bid + ask) / 2) if (bid > 0 and ask > 0) else option.get('last', 0) or 0
+            
+            # Accept if we have any price data
+            if mid_price > 0 or bid > 0 or ask > 0:
+                # Update option with calculated mid_price if missing
+                if not option.get('mid_price'):
+                    option['mid_price'] = mid_price
                 suitable_options.append(option)
         
         if not suitable_options:
-            return jsonify({
-                'error': 'No suitable options found (even with relaxed filters)',
-                'symbol': symbol,
-                'expiration': best_expiration,
-                'direction': direction,
-                'chain_size': len(chain)
-            }), 400
+            # Try to find ANY option regardless of direction for testing
+            any_options = []
+            for option in chain[:50]:  # Check first 50
+                bid = option.get('bid', 0) or option.get('last', 0) or 0
+                ask = option.get('ask', 0) or option.get('last', 0) or 0
+                mid_price = option.get('mid_price', 0) or ((bid + ask) / 2) if (bid > 0 and ask > 0) else option.get('last', 0) or 0
+                
+                if mid_price > 0 or bid > 0 or ask > 0:
+                    if not option.get('mid_price'):
+                        option['mid_price'] = mid_price
+                    any_options.append(option)
+            
+            if any_options:
+                # Use any option we found, override direction
+                suitable_options = any_options[:1]
+                direction = 'bullish' if any_options[0].get('contract_type') == 'call' else 'bearish'
+            else:
+                return jsonify({
+                    'error': 'No suitable options found (even with relaxed filters)',
+                    'symbol': symbol,
+                    'expiration': best_expiration,
+                    'direction': direction,
+                    'chain_size': len(chain),
+                    'details': f'Checked {len(chain)} options. None have valid bid/ask prices. This might be due to market hours or symbol availability.'
+                }), 400
         
         # Use first suitable option
         test_option = suitable_options[0]
@@ -347,7 +394,13 @@ def test_trade_automation(current_user, automation_id):
         else:
             return jsonify({
                 'error': 'Trade execution failed',
-                'details': 'Check server logs for details'
+                'details': 'The opportunity was found but execution failed. Check server logs for details.',
+                'symbol': symbol,
+                'option': {
+                    'strike': test_option.get('strike_price'),
+                    'expiration': best_expiration,
+                    'contract_type': test_option.get('contract_type')
+                }
             }), 500
             
     except Exception as e:
