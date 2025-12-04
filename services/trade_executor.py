@@ -105,11 +105,25 @@ class TradeExecutor:
             }
             
             # Update paper balance
-            trade_cost = price * quantity * (100 if option_symbol else 1)
+            # Options trades: multiply by 100 (contract multiplier)
+            # Check if it's an option by contract_type OR option_symbol
+            is_option = bool(option_symbol) or (contract_type and contract_type.lower() in ['call', 'put'])
+            trade_cost = price * quantity * (100 if is_option else 1)
+            
+            try:
+                current_app.logger.info(f'Paper trade cost calculation: price={price}, quantity={quantity}, is_option={is_option}, trade_cost={trade_cost}, balance_before={user.paper_balance}')
+            except RuntimeError:
+                pass
+            
             if action.lower() == 'buy':
                 user.paper_balance -= trade_cost
             else:
                 user.paper_balance += trade_cost
+            
+            try:
+                current_app.logger.info(f'Balance after trade: {user.paper_balance}')
+            except RuntimeError:
+                pass
         else:
             # Live trading - place real order
             order_result = self.tradier.place_order(
