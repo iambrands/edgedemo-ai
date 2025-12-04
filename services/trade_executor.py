@@ -106,10 +106,12 @@ class TradeExecutor:
             
             # Update paper balance
             # Options trades: multiply by 100 (contract multiplier)
-            # Check if it's an option by contract_type OR option_symbol OR expiration_date
-            # If we have expiration_date and strike, it's definitely an option
+            # Check if it's an option by:
+            # 1. option_symbol is set
+            # 2. contract_type is 'call', 'put', or 'option'
+            # 3. expiration_date AND strike are both set (definitive indicator)
             is_option = bool(option_symbol) or \
-                       (contract_type and contract_type.lower() in ['call', 'put']) or \
+                       (contract_type and contract_type.lower() in ['call', 'put', 'option']) or \
                        (expiration_date and strike is not None)
             
             trade_cost = price * quantity * (100 if is_option else 1)
