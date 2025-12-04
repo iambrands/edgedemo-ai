@@ -58,7 +58,16 @@ const Automations: React.FC = () => {
     profit_target_percent: 50,
     stop_loss_percent: 25,
     max_days_to_hold: 30,
+    // Expiration controls
+    preferred_dte: 30,
+    min_dte: 21,
+    max_dte: 60,
+    // Strike controls (via delta)
+    target_delta: null as number | null,
+    min_delta: null as number | null,
+    max_delta: null as number | null,
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     loadAutomations();
@@ -195,6 +204,12 @@ const Automations: React.FC = () => {
       profit_target_percent: automation.profit_target_percent,
       stop_loss_percent: automation.stop_loss_percent || 25,
       max_days_to_hold: automation.max_days_to_hold || 30,
+      preferred_dte: (automation as any).preferred_dte || 30,
+      min_dte: (automation as any).min_dte || 21,
+      max_dte: (automation as any).max_dte || 60,
+      target_delta: (automation as any).target_delta || null,
+      min_delta: (automation as any).min_delta || null,
+      max_delta: (automation as any).max_delta || null,
     });
   };
 
@@ -213,6 +228,12 @@ const Automations: React.FC = () => {
         profit_target_percent: 50,
         stop_loss_percent: 25,
         max_days_to_hold: 30,
+        preferred_dte: 30,
+        min_dte: 21,
+        max_dte: 60,
+        target_delta: null,
+        min_delta: null,
+        max_delta: null,
       });
       loadAutomations();
     } catch (error: any) {
@@ -237,6 +258,12 @@ const Automations: React.FC = () => {
         profit_target_percent: 50,
         stop_loss_percent: 25,
         max_days_to_hold: 30,
+        preferred_dte: 30,
+        min_dte: 21,
+        max_dte: 60,
+        target_delta: null,
+        min_delta: null,
+        max_delta: null,
       });
       loadAutomations();
     } catch (error: any) {
@@ -637,6 +664,135 @@ const Automations: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Advanced Options - Expiration & Strike Controls */}
+              <div className="border-t border-gray-200 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 hover:text-primary mb-2"
+                >
+                  <span>⚙️ Advanced Options (Expiration & Strike Controls)</span>
+                  <span className={`transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+                
+                {showAdvanced && (
+                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">Expiration Date Controls (DTE)</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Preferred DTE
+                            <span className="text-gray-400 ml-1">(days)</span>
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.preferred_dte}
+                            onChange={(e) => setFormData({ ...formData, preferred_dte: parseInt(e.target.value) || 30 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="30"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Target expiration</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Min DTE
+                            <span className="text-gray-400 ml-1">(days)</span>
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.min_dte}
+                            onChange={(e) => setFormData({ ...formData, min_dte: parseInt(e.target.value) || 21 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="21"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Minimum days</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Max DTE
+                            <span className="text-gray-400 ml-1">(days)</span>
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.max_dte}
+                            onChange={(e) => setFormData({ ...formData, max_dte: parseInt(e.target.value) || 60 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="60"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Maximum days</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        💡 The automation will find options with expiration dates within this range. For covered calls, 30-45 DTE is common.
+                      </p>
+                    </div>
+
+                    <div className="border-t border-gray-300 pt-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">Strike Price Controls (via Delta)</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Target Delta
+                            <span className="text-gray-400 ml-1">(optional)</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="1"
+                            value={formData.target_delta || ''}
+                            onChange={(e) => setFormData({ ...formData, target_delta: e.target.value ? parseFloat(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="0.30"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Ideal delta</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Min Delta
+                            <span className="text-gray-400 ml-1">(optional)</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="1"
+                            value={formData.min_delta || ''}
+                            onChange={(e) => setFormData({ ...formData, min_delta: e.target.value ? parseFloat(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="0.20"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Minimum delta</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Max Delta
+                            <span className="text-gray-400 ml-1">(optional)</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="1"
+                            value={formData.max_delta || ''}
+                            onChange={(e) => setFormData({ ...formData, max_delta: e.target.value ? parseFloat(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            placeholder="0.40"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Maximum delta</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        💡 Delta controls strike selection. For covered calls, 0.30 delta (30-40% OTM) is common. Leave blank to let the system choose.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-3">
                 <button
                   type="submit"
@@ -649,6 +805,7 @@ const Automations: React.FC = () => {
                   onClick={() => {
                     setShowCreateModal(false);
                     setEditingAutomation(null);
+                    setShowAdvanced(false);
                     setFormData({
                       name: '',
                       description: '',
@@ -658,6 +815,12 @@ const Automations: React.FC = () => {
                       profit_target_percent: 50,
                       stop_loss_percent: 25,
                       max_days_to_hold: 30,
+                      preferred_dte: 30,
+                      min_dte: 21,
+                      max_dte: 60,
+                      target_delta: null,
+                      min_delta: null,
+                      max_delta: null,
                     });
                   }}
                   className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
