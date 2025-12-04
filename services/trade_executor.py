@@ -106,12 +106,16 @@ class TradeExecutor:
             
             # Update paper balance
             # Options trades: multiply by 100 (contract multiplier)
-            # Check if it's an option by contract_type OR option_symbol
-            is_option = bool(option_symbol) or (contract_type and contract_type.lower() in ['call', 'put'])
+            # Check if it's an option by contract_type OR option_symbol OR expiration_date
+            # If we have expiration_date and strike, it's definitely an option
+            is_option = bool(option_symbol) or \
+                       (contract_type and contract_type.lower() in ['call', 'put']) or \
+                       (expiration_date and strike is not None)
+            
             trade_cost = price * quantity * (100 if is_option else 1)
             
             try:
-                current_app.logger.info(f'Paper trade cost calculation: price={price}, quantity={quantity}, is_option={is_option}, trade_cost={trade_cost}, balance_before={user.paper_balance}')
+                current_app.logger.info(f'Paper trade cost calculation: price={price}, quantity={quantity}, contract_type={contract_type}, option_symbol={option_symbol}, expiration_date={expiration_date}, strike={strike}, is_option={is_option}, trade_cost={trade_cost}, balance_before={user.paper_balance}')
             except RuntimeError:
                 pass
             
