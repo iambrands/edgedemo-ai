@@ -29,6 +29,7 @@ const Alerts: React.FC = () => {
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [filter, setFilter] = useState({
     status: 'active',
     type: '',
@@ -90,15 +91,33 @@ const Alerts: React.FC = () => {
   };
 
   const handleGenerateAlerts = async () => {
+    if (generating) return; // Prevent multiple clicks
+    
+    setGenerating(true);
+    const loadingToast = toast.loading('Generating alerts... This may take a few seconds.');
+    
     try {
       const response = await api.post('/alerts/generate');
       const results = response.data.results;
-      toast.success(
-        `Generated ${results.total} alerts: ${results.buy_signals} buy signals, ${results.sell_signals} sell signals, ${results.risk_alerts} risk alerts`
-      );
-      loadAlerts();
+      
+      toast.dismiss(loadingToast);
+      
+      if (results.total > 0) {
+        toast.success(
+          `Generated ${results.total} alerts: ${results.buy_signals} buy signals, ${results.sell_signals} sell signals, ${results.risk_alerts} risk alerts`,
+          { duration: 5000 }
+        );
+      } else {
+        toast.success('Scan complete. No new alerts found.', { duration: 3000 });
+      }
+      
+      // Reload alerts to show the new ones
+      await loadAlerts();
     } catch (error: any) {
+      toast.dismiss(loadingToast);
       toast.error(error.response?.data?.error || 'Failed to generate alerts');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -154,14 +173,31 @@ const Alerts: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-secondary">Alerts</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-secondary">Alerts</h1>
+          {generating && (
+            <p className="text-sm text-gray-500 mt-1">Scanning watchlist, positions, and risk limits...</p>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={handleGenerateAlerts}
-            className="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium"
+            disabled={generating}
+            className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+              generating
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-success text-white hover:bg-green-600'
+            }`}
             title="Scan watchlist, positions, and risk limits to generate new alerts"
           >
-            Generate Alerts
+            {generating ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                Generating...
+              </span>
+            ) : (
+              'Generate Alerts'
+            )}
           </button>
           {alerts.filter(a => a.status === 'active').length > 0 && (
             <button
@@ -249,9 +285,21 @@ const Alerts: React.FC = () => {
             </p>
             <button
               onClick={handleGenerateAlerts}
-              className="mt-4 bg-success text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium"
+              disabled={generating}
+              className={`mt-4 px-6 py-2 rounded-lg transition-colors font-medium ${
+                generating
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-success text-white hover:bg-green-600'
+              }`}
             >
-              Generate Alerts Now
+              {generating ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                  Generating Alerts...
+                </span>
+              ) : (
+                'Generate Alerts Now'
+              )}
             </button>
           </div>
         ) : (
