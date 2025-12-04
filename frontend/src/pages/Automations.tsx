@@ -131,17 +131,39 @@ const Automations: React.FC = () => {
         // Show details for each automation
         if (diagnostics.automation_details && diagnostics.automation_details.length > 0) {
           const details = diagnostics.automation_details.map((d: any) => {
+            let detail = `${d.automation_name} (${d.symbol}): `;
+            
             if (d.has_error) {
-              return `${d.automation_name} (${d.symbol}): Error - ${d.error_message}`;
-            } else if (!d.signal_recommended) {
-              return `${d.automation_name} (${d.symbol}): Signal confidence ${(d.signal_confidence || 0).toFixed(2)} < min ${d.min_confidence.toFixed(2)}`;
+              detail += `❌ Error - ${d.error_message}`;
+            } else if (d.blocking_reasons && d.blocking_reasons.length > 0) {
+              detail += `⚠️ ${d.blocking_reasons.join(', ')}`;
+              if (d.signal_confidence !== null) {
+                detail += ` (Signal: ${(d.signal_confidence * 100).toFixed(1)}%)`;
+              }
+            } else if (d.signal_recommended && d.options_found) {
+              detail += `✅ Ready to trade! (Signal: ${(d.signal_confidence * 100).toFixed(1)}%, Options found)`;
+            } else if (d.signal_recommended) {
+              detail += `⚠️ Signal OK (${(d.signal_confidence * 100).toFixed(1)}%) but no suitable options found`;
+            } else if (d.signal_confidence !== null) {
+              detail += `⚠️ Signal confidence ${(d.signal_confidence * 100).toFixed(1)}% < min ${(d.min_confidence * 100).toFixed(1)}%`;
             } else {
-              return `${d.automation_name} (${d.symbol}): Signal OK (${(d.signal_confidence || 0).toFixed(2)}) but no suitable options found`;
+              detail += `⚠️ No signal generated`;
             }
+            
+            return detail;
           }).join('\n');
           
-          toast.success(message, { duration: 5000 });
-          console.log('Automation Diagnostics:', details);
+          // Show toast with summary
+          if (diagnostics.opportunities_found > 0) {
+            toast.success(message, { duration: 5000 });
+          } else {
+            toast(`Cycle completed. No trades executed.\n\n${details}`, { 
+              duration: 8000,
+              icon: 'ℹ️'
+            });
+          }
+          
+          console.log('Automation Diagnostics:', diagnostics.automation_details);
         } else {
           toast.success(message);
         }
@@ -240,6 +262,27 @@ const Automations: React.FC = () => {
       loadAutomations();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to delete automation');
+    }
+  };
+
+  const handleTestTrade = async (automationId: number) => {
+    if (!window.confirm('This will force execute a test trade for this automation. Continue?')) return;
+    
+    try {
+      const response = await api.post(`/automation_engine/test-trade/${automationId}`);
+      toast.success(
+        `Test trade executed! ${response.data.option?.contract_type?.toUpperCase()} ${response.data.symbol} @ $${response.data.option?.strike} exp ${response.data.option?.expiration}`,
+        { duration: 6000 }
+      );
+      loadActivity();
+      loadAutomations();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || 'Failed to execute test trade';
+      const details = error.response?.data?.details;
+      toast.error(details ? `${errorMsg}: ${details}` : errorMsg, { duration: 6000 });
+      if (error.response?.data?.traceback) {
+        console.error('Test Trade Error:', error.response.data.traceback);
+      }
     }
   };
 
@@ -642,7 +685,7 @@ const Automations: React.FC = () => {
                   <span className="font-medium">{automation.execution_count}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => handleEdit(automation)}
                   className="flex-1 bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm font-medium"
@@ -654,6 +697,13 @@ const Automations: React.FC = () => {
                   className="flex-1 bg-primary text-white px-3 py-2 rounded-lg hover:bg-indigo-600 transition-colors text-sm font-medium"
                 >
                   {automation.is_paused ? 'Resume' : 'Pause'}
+                </button>
+                <button
+                  onClick={() => handleTestTrade(automation.id)}
+                  className="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                  title="Force execute a test trade (bypasses some checks for testing)"
+                >
+                  🧪 Test Trade
                 </button>
                 <button
                   onClick={() => handleDelete(automation.id)}

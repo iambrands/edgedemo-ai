@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from services.master_controller import AutomationMasterController
 from services.market_hours import MarketHours
 from utils.decorators import token_required
+from datetime import datetime
 import threading
 
 automation_engine_bp = Blueprint('automation_engine', __name__)
@@ -102,6 +103,53 @@ def run_single_cycle(current_user):
             symbol = automation.symbol
             min_conf = getattr(automation, 'min_confidence', 0.70)
             
+            diagnostic_info = {
+                'automation_id': automation.id,
+                'automation_name': automation.name,
+                'symbol': symbol,
+                'min_confidence': min_conf,
+                'strategy_type': automation.strategy_type,
+                'can_trade': False,
+                'can_trade_reason': '',
+                'signal_confidence': None,
+                'signal_recommended': False,
+                'signal_action': None,
+                'options_found': False,
+                'options_count': 0,
+                'has_error': False,
+                'error_message': None,
+                'blocking_reasons': []
+            }
+            
+            # Check if we can trade this symbol
+            try:
+                can_trade = scanner.can_trade_symbol(automation, symbol)
+                diagnostic_info['can_trade'] = can_trade
+                
+                if not can_trade:
+                    # Check why we can't trade
+                    from models.position import Position
+                    existing_position = db.session.query(Position).filter_by(
+                        user_id=automation.user_id,
+                        symbol=symbol,
+                        status='open'
+                    ).first()
+                    
+                    if existing_position:
+                        diagnostic_info['blocking_reasons'].append(f'Already have open position in {symbol}')
+                    
+                    risk_limits = scanner.risk_manager.get_risk_limits(automation.user_id)
+                    open_positions = db.session.query(Position).filter_by(
+                        user_id=automation.user_id,
+                        status='open'
+                    ).count()
+                    
+                    if open_positions >= risk_limits.max_open_positions:
+                        diagnostic_info['blocking_reasons'].append(f'Max positions reached ({open_positions}/{risk_limits.max_open_positions})')
+            except Exception as e:
+                diagnostic_info['has_error'] = True
+                diagnostic_info['error_message'] = f'Error checking trade eligibility: {str(e)}'
+            
             # Try to generate signals to see what's happening
             try:
                 signals = scanner.signal_generator.generate_signals(
@@ -109,27 +157,44 @@ def run_single_cycle(current_user):
                     {'min_confidence': min_conf, 'strategy_type': automation.strategy_type}
                 )
                 
-                signal_info = {
-                    'automation_id': automation.id,
-                    'automation_name': automation.name,
-                    'symbol': symbol,
-                    'min_confidence': min_conf,
-                    'signal_confidence': signals.get('signals', {}).get('confidence', 0.0) if 'error' not in signals else None,
-                    'signal_recommended': signals.get('signals', {}).get('recommended', False) if 'error' not in signals else False,
-                    'signal_action': signals.get('signals', {}).get('action', 'hold') if 'error' not in signals else None,
-                    'has_error': 'error' in signals,
-                    'error_message': signals.get('error') if 'error' in signals else None
-                }
+                if 'error' in signals:
+                    diagnostic_info['has_error'] = True
+                    diagnostic_info['error_message'] = signals.get('error')
+                else:
+                    signal_data = signals.get('signals', {})
+                    diagnostic_info['signal_confidence'] = signal_data.get('confidence', 0.0)
+                    diagnostic_info['signal_recommended'] = signal_data.get('recommended', False)
+                    diagnostic_info['signal_action'] = signal_data.get('action', 'hold')
+                    
+                    if not diagnostic_info['signal_recommended']:
+                        if diagnostic_info['signal_confidence'] < min_conf:
+                            diagnostic_info['blocking_reasons'].append(
+                                f'Signal confidence {diagnostic_info["signal_confidence"]:.2%} < min {min_conf:.2%}'
+                            )
+                        else:
+                            diagnostic_info['blocking_reasons'].append('Signal not recommended (action=hold)')
+                    
+                    # If signal is good, check if options are available
+                    if diagnostic_info['signal_recommended'] and diagnostic_info['can_trade']:
+                        try:
+                            opportunity = scanner.analyze_options_for_signal(
+                                symbol,
+                                signals,
+                                automation
+                            )
+                            
+                            if opportunity:
+                                diagnostic_info['options_found'] = True
+                                diagnostic_info['options_count'] = 1
+                            else:
+                                diagnostic_info['blocking_reasons'].append('No suitable options found (check volume, open interest, spread, DTE)')
+                        except Exception as e:
+                            diagnostic_info['blocking_reasons'].append(f'Error finding options: {str(e)}')
             except Exception as e:
-                signal_info = {
-                    'automation_id': automation.id,
-                    'automation_name': automation.name,
-                    'symbol': symbol,
-                    'has_error': True,
-                    'error_message': str(e)
-                }
+                diagnostic_info['has_error'] = True
+                diagnostic_info['error_message'] = str(e)
             
-            diagnostics['automation_details'].append(signal_info)
+            diagnostics['automation_details'].append(diagnostic_info)
         
         return jsonify({
             'message': 'Automation cycle completed',
@@ -156,6 +221,141 @@ def get_market_status(current_user):
         return jsonify(status), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@automation_engine_bp.route('/test-trade/<int:automation_id>', methods=['POST'])
+@token_required
+def test_trade_automation(current_user, automation_id):
+    """Force execute a test trade for an automation (bypasses some checks for testing)"""
+    try:
+        from services.opportunity_scanner import OpportunityScanner
+        from services.master_controller import AutomationMasterController
+        from models.automation import Automation
+        from flask import current_app
+        
+        db = current_app.extensions['sqlalchemy']
+        automation = db.session.query(Automation).filter_by(
+            id=automation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not automation:
+            return jsonify({'error': 'Automation not found'}), 404
+        
+        if not automation.is_active:
+            return jsonify({'error': 'Automation is not active'}), 400
+        
+        scanner = OpportunityScanner()
+        controller = AutomationMasterController()
+        
+        # Generate signals with very low confidence threshold for testing
+        signals = scanner.signal_generator.generate_signals(
+            automation.symbol,
+            {
+                'min_confidence': 0.0,  # Bypass confidence check for testing
+                'strategy_type': automation.strategy_type
+            }
+        )
+        
+        if 'error' in signals:
+            return jsonify({
+                'error': 'Failed to generate signals',
+                'details': signals.get('error')
+            }), 400
+        
+        # Force find an option (relax filters for testing)
+        symbol = automation.symbol
+        expirations_list = scanner.tradier.get_options_expirations(symbol)
+        
+        if not expirations_list:
+            return jsonify({
+                'error': 'No option expirations available',
+                'symbol': symbol
+            }), 400
+        
+        # Use first available expiration
+        best_expiration = expirations_list[0]
+        
+        # Get options chain
+        from services.options_analyzer import OptionsAnalyzer
+        options_analyzer = OptionsAnalyzer()
+        chain = options_analyzer.analyze_options_chain(
+            symbol,
+            best_expiration,
+            preference='balanced'
+        )
+        
+        if not chain or len(chain) == 0:
+            return jsonify({
+                'error': 'No options found in chain',
+                'symbol': symbol,
+                'expiration': best_expiration
+            }), 400
+        
+        # Find any suitable option (relaxed criteria for testing)
+        direction = signals['signals'].get('direction', 'bullish')
+        suitable_options = []
+        
+        for option in chain[:20]:  # Check first 20 options
+            if direction == 'bullish' and option.get('contract_type') != 'call':
+                continue
+            if direction == 'bearish' and option.get('contract_type') != 'put':
+                continue
+            
+            # Very relaxed filters for testing
+            if option.get('bid', 0) > 0 and option.get('ask', 0) > 0:
+                suitable_options.append(option)
+        
+        if not suitable_options:
+            return jsonify({
+                'error': 'No suitable options found (even with relaxed filters)',
+                'symbol': symbol,
+                'expiration': best_expiration,
+                'direction': direction,
+                'chain_size': len(chain)
+            }), 400
+        
+        # Use first suitable option
+        test_option = suitable_options[0]
+        
+        # Create opportunity dict
+        opportunity = {
+            'symbol': symbol,
+            'contract': test_option,
+            'signal': signals['signals'],
+            'automation_id': automation.id,
+            'user_id': automation.user_id,
+            'entry_reason': f'TEST TRADE - Manual trigger for testing automation {automation.name}',
+            'expiration': best_expiration,
+            'dte': (datetime.strptime(best_expiration, '%Y-%m-%d').date() - datetime.now().date()).days
+        }
+        
+        # Execute the opportunity
+        executed = controller.execute_opportunity(opportunity)
+        
+        if executed:
+            return jsonify({
+                'message': 'Test trade executed successfully',
+                'symbol': symbol,
+                'option': {
+                    'strike': test_option.get('strike_price'),
+                    'expiration': best_expiration,
+                    'contract_type': test_option.get('contract_type'),
+                    'price': test_option.get('mid_price', 0)
+                },
+                'signal_confidence': signals['signals'].get('confidence', 0)
+            }), 200
+        else:
+            return jsonify({
+                'error': 'Trade execution failed',
+                'details': 'Check server logs for details'
+            }), 500
+            
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @automation_engine_bp.route('/activity', methods=['GET'])
 @token_required
