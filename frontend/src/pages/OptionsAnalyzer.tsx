@@ -122,8 +122,12 @@ const OptionsAnalyzer: React.FC = () => {
   React.useEffect(() => {
     // Check if symbol was passed from navigation
     if (location.state && location.state.symbol) {
-      setSymbol(location.state.symbol);
-      setIsInitialMount(false);
+      const navSymbol = location.state.symbol.trim().toUpperCase();
+      console.log('Symbol from navigation:', navSymbol);
+      if (navSymbol && /^[A-Z]{1,5}$/.test(navSymbol)) {
+        setSymbol(navSymbol);
+        setIsInitialMount(true); // Set to true so the next useEffect will fetch immediately
+      }
     }
   }, [location.state]);
 

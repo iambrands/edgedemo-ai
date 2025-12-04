@@ -75,7 +75,7 @@ const Watchlist: React.FC = () => {
   };
 
   const handleAnalyze = (symbol: string) => {
-    navigate('/options-analyzer', { state: { symbol } });
+    navigate('/analyzer', { state: { symbol } });
   };
 
   const handleTrade = (symbol: string) => {
