@@ -1,7 +1,14 @@
 # IAB OptionsBot - Complete User Instruction Manual
 
-**Version:** 1.0 Beta  
+**Version:** 1.1 Beta  
 **Last Updated:** January 2025
+
+## 🌐 Access the Application
+
+**Live URL:** [Your Railway Deployment URL]  
+**Note:** Replace with your actual Railway deployment URL (e.g., `https://your-app-name.up.railway.app`)
+
+**Status:** ✅ Live and Ready for Testing
 
 ---
 
@@ -39,10 +46,12 @@ IAB OptionsBot is an intelligent options trading platform that combines:
 
 ✅ **Options Chain Analysis** - AI-powered scoring and recommendations  
 ✅ **Automated Trading** - Set it and forget it strategies  
-✅ **Real-Time Alerts** - Never miss an opportunity  
+✅ **Real-Time Alerts** - Never miss an opportunity with customizable filters  
 ✅ **Performance Tracking** - Monitor your trading results  
 ✅ **Risk Management** - Protect your capital automatically  
 ✅ **Paper Trading** - Learn risk-free with $100,000 virtual balance  
+✅ **Test Trade Feature** - Test automations instantly with one click  
+✅ **Advanced Automation Controls** - Fine-tune expiration dates and strike prices  
 
 ---
 
@@ -863,17 +872,51 @@ Automations let you create trading strategies that execute automatically based o
    - Closes position when stop loss hit
    - Manages positions automatically
 
+### Testing Your Automation
+
+#### Test Trade Button
+
+**New Feature:** Each automation now has a "🧪 Test Trade" button!
+
+**What It Does:**
+- Forces a test trade execution for that automation
+- Bypasses some checks (confidence threshold, strict filters) for testing
+- Shows you exactly what trade would be executed
+- Perfect for understanding how your automation works
+
+**How to Use:**
+1. Find your automation in the list
+2. Click the green "🧪 Test Trade" button
+3. Confirm the dialog
+4. Wait for execution (you'll see a loading spinner)
+5. Check the success message showing what was traded
+6. View the position on your Dashboard
+
+**When to Use:**
+- Testing a new automation
+- Understanding why trades aren't executing
+- Verifying automation settings
+- Learning how the system selects options
+
+**Note:** Test trades are real trades (in paper trading mode). They will:
+- Create actual positions
+- Deduct from your paper balance
+- Appear in your trade history
+- Be managed by the automation
+
 ### Managing Automations
 
 #### Editing an Automation
 
 1. **Click "Edit" Button**
-   - On the automation card
+   - On the automation card (yellow button)
    - Opens edit modal
 
 2. **Modify Settings**
    - Can change all settings except symbol
    - Symbol is locked (create new automation to change)
+   - Can update DTE and delta controls
+   - Can adjust confidence, profit targets, stop losses
 
 3. **Save Changes**
    - Click "Update"
@@ -905,17 +948,44 @@ Automations let you create trading strategies that execute automatically based o
 ### Viewing Automation Activity
 
 **Recent Activity Section:**
-- Shows recent trades from automations
+- Shows recent trades from automations (last 24 hours)
 - Displays:
-  - Trade details
+  - Trade details (symbol, strike, expiration, price)
   - Position status (created/closed)
-  - P/L information
-  - Link to view position
+  - P/L information (unrealized for open, realized for closed)
+  - Link to view position on Dashboard
+- Updates automatically every 30 seconds
+
+**Automation Engine Status:**
+- **Status:** Running or Stopped
+- **Cycles Completed:** Number of scan cycles run
+- **Market Status:** Open, Pre-Market, After-Hours, or Closed
+- **Last Cycle:** When the last scan ran
+
+**Run Cycle Now Button:**
+- Manually trigger a scan without waiting
+- Useful for testing
+- Shows detailed diagnostics:
+  - How many automations were scanned
+  - Why trades aren't executing (if any)
+  - Signal confidence vs. minimum required
+  - Whether options were found
+  - Specific blocking reasons
+
+**Diagnostics Information:**
+When you click "Run Cycle Now", you'll see:
+- ✅ **Ready to trade:** Signal confidence meets threshold and options found
+- ⚠️ **Blocking reasons:** Why trades aren't executing:
+  - Signal confidence too low
+  - Already have open position
+  - Max positions reached
+  - No suitable options found (check volume, open interest, spread, DTE)
+  - Signal not recommended
 
 **Automation Details:**
-- Execution count
+- Execution count (how many trades made)
 - Last executed time
-- Performance metrics
+- Status (Active/Paused/Inactive)
 
 ### Automation Best Practices
 
@@ -1006,15 +1076,31 @@ Alerts keep you informed about market opportunities, position changes, and impor
 - All alerts in one place
 - Unread alerts highlighted
 - Sorted by priority and date
+- Color-coded by priority (red=critical, orange=high, yellow=medium, blue=low)
 
 **Alert Information:**
-- **Type:** What kind of alert
-- **Priority:** High, Medium, or Low
+- **Type:** What kind of alert (buy signal, sell signal, risk alert, trade executed)
+- **Priority:** Critical, High, Medium, or Low
 - **Symbol:** Stock involved
-- **Title:** Brief summary
-- **Message:** Detailed information
-- **Explanation:** Why this alert was generated
+- **Title:** Brief summary (AI-generated)
+- **Message:** Detailed information (AI-generated)
+- **Explanation:** Why this alert was generated (AI-generated)
+- **Confidence:** Signal confidence percentage
+- **Signal Strength:** High, Medium, or Low
 - **Timestamp:** When it was created
+
+**Technical Indicators Section:**
+- **New Feature:** Each alert now shows the technical indicators that triggered it
+- **RSI:** Relative Strength Index value (color-coded: green=oversold/bullish, red=overbought/bearish)
+- **MACD Histogram:** Positive (green) = bullish, Negative (red) = bearish
+- **SMA20, SMA50, SMA200:** Moving average values
+- **Volume Ratio:** Current volume vs. average
+- **Price Change:** 24-hour price change percentage
+
+**Signals Triggered Section:**
+- Lists all technical signals that met your criteria
+- Shows signal name, description, confidence, and strength
+- Example: "Golden Cross: Price above all moving averages (75% confidence, high strength)"
 
 ### Managing Alerts
 
@@ -1062,6 +1148,59 @@ Alerts keep you informed about market opportunities, position changes, and impor
 - Click "Generate Alerts" button
 - Manually trigger alert scanning
 - Useful for immediate updates
+- Shows progress with loading indicator
+- Displays results: "Generated X alerts: Y buy signals, Z sell signals, W risk alerts"
+
+### Customizing Alert Filters
+
+**New Feature:** You can now customize how alerts are generated!
+
+**Access:**
+- Click "Configure Filters" button on Alerts page
+- Opens a modal with all filter options
+
+**What You Can Customize:**
+
+**General Settings:**
+- **Enable Custom Filters:** Toggle to use your custom settings vs. platform defaults
+- **Minimum Confidence:** Minimum confidence % for signals (default: 60%)
+- **Minimum Signals Required:** How many technical signals must agree (default: 1)
+
+**RSI (Relative Strength Index) Filters:**
+- **Enable RSI:** Toggle RSI-based signals on/off
+- **Oversold Threshold:** RSI below this is bullish (default: 30)
+- **Overbought Threshold:** RSI above this is bearish (default: 70)
+
+**Moving Averages (SMA) Filters:**
+- **Enable MA:** Toggle moving average signals on/off
+- **Require Golden Cross:** All SMAs aligned bullish (SMA20 > SMA50 > SMA200)
+- **Require Death Cross:** All SMAs aligned bearish (SMA20 < SMA50 < SMA200)
+
+**MACD Filters:**
+- **Enable MACD:** Toggle MACD signals on/off
+- **Require MACD Bullish:** MACD line above signal, positive histogram
+- **Require MACD Bearish:** MACD line below signal, negative histogram
+
+**Volume Filters:**
+- **Enable Volume:** Toggle volume-based signals on/off
+- **Minimum Volume Ratio:** Current volume vs. average (default: 1.0x)
+- **Require Volume Confirmation:** Only generate if volume confirms price move
+
+**Signal Requirements:**
+- **Require All Signals Bullish:** All signals must be bullish
+- **Require All Signals Bearish:** All signals must be bearish
+
+**How to Use:**
+1. Click "Configure Filters"
+2. Toggle "Enable Custom Filters" to ON
+3. Adjust thresholds and requirements
+4. Click "Save Filters"
+5. Click "Generate Alerts" to use your custom settings
+6. Click "Reset to Defaults" to revert to platform defaults
+
+**Info Box:**
+- Shows whether you're using "Platform Defaults" or "Custom Filters"
+- Helps you understand what settings are active
 
 ### Understanding Alert Priorities
 
@@ -1437,12 +1576,36 @@ Options are contracts that give you the right (but not obligation) to buy or sel
 **Problem:** Automation not executing trades
 
 **Solutions:**
-1. Check engine is running
-2. Verify automation is active
-3. Lower min_confidence if too high
-4. Check market hours
-5. Verify sufficient balance
-6. Check risk limits
+1. **Check Engine Status:**
+   - Make sure "Start Engine" button shows "Running"
+   - If stopped, click "Start Engine"
+
+2. **Verify Automation is Active:**
+   - Check automation status is "Active" (green badge)
+   - If paused, click "Resume"
+
+3. **Use Test Trade Button:**
+   - Click "🧪 Test Trade" to force a test execution
+   - This helps identify what's blocking trades
+   - Shows detailed error messages
+
+4. **Check Diagnostics:**
+   - Click "Run Cycle Now" to see detailed diagnostics
+   - Look for blocking reasons:
+     - Signal confidence too low → Lower min_confidence (try 0.30)
+     - Already have position → Close existing position or enable "allow multiple positions"
+     - Max positions reached → Close some positions
+     - No suitable options → Check volume, open interest, spread, DTE settings
+
+5. **Verify Settings:**
+   - Lower min_confidence if too high (try 0.30 for testing)
+   - Check DTE settings (min_dte, max_dte) match available expirations
+   - Verify sufficient balance
+   - Check risk limits in Settings
+
+6. **Check Market Hours:**
+   - Automations work during market hours
+   - Use "Run Cycle Now" to test anytime
 
 #### Performance Chart Empty
 
@@ -1507,7 +1670,16 @@ A: Yes, you can create multiple automations for different stocks/strategies.
 A: Yes, as long as the automation engine is running.
 
 **Q: Can I edit an automation after creating it?**  
-A: Yes, click "Edit" on any automation to modify settings.
+A: Yes, click "Edit" on any automation to modify settings. You can change everything except the symbol.
+
+**Q: How do I test if my automation will work?**  
+A: Use the "🧪 Test Trade" button on any automation. This forces a test execution so you can see what trade would be made.
+
+**Q: Why isn't my automation executing trades?**  
+A: Click "Run Cycle Now" to see detailed diagnostics. Common reasons: signal confidence too low (lower min_confidence to 0.30), already have a position, or no suitable options found.
+
+**Q: Can I control which expiration dates and strike prices my automation uses?**  
+A: Yes! Click "⚙️ Advanced Options" when creating/editing an automation. You can set preferred DTE, min/max DTE, and target delta ranges.
 
 ### Technical Questions
 
@@ -1568,7 +1740,55 @@ When reporting problems, include:
 
 ---
 
-**Version:** 1.0 Beta  
+---
+
+## 📝 Recent Updates (Version 1.1)
+
+### New Features Added:
+
+1. **🧪 Test Trade Button**
+   - Force test trade execution for any automation
+   - Bypasses some checks for testing purposes
+   - Shows exactly what trade would be executed
+   - Perfect for understanding automation behavior
+
+2. **⚙️ Advanced Automation Controls**
+   - Expiration Date Controls (DTE): Set preferred, min, and max days to expiration
+   - Strike Price Controls (Delta): Set target, min, and max delta values
+   - Accessible via "Advanced Options" in Create/Edit Automation modal
+
+3. **🔔 Custom Alert Filters**
+   - Configure how alerts are generated
+   - Customize RSI, MACD, Moving Average, and Volume thresholds
+   - Set minimum confidence and signal requirements
+   - Toggle between platform defaults and custom filters
+
+4. **📊 Enhanced Alert Display**
+   - Technical Indicators section showing RSI, MACD, SMAs, Volume
+   - Signals Triggered section listing all technical signals
+   - Color-coded indicator values (green=bullish, red=bearish)
+   - Dynamic confidence calculation based on indicator strength
+
+5. **🔍 Improved Automation Diagnostics**
+   - Detailed diagnostics when running cycles
+   - Shows why trades aren't executing
+   - Lists specific blocking reasons
+   - Signal confidence vs. minimum required comparison
+
+6. **⚡ Better Error Handling**
+   - Loading states for all async operations
+   - Detailed error messages with context
+   - Better user feedback during operations
+
+7. **📈 LEAPS Support**
+   - Increased max DTE to 1095 days (3 years)
+   - Support for long-term options trading
+   - Configurable in Settings and Automation creation
+
+---
+
+**Version:** 1.1 Beta  
 **Last Updated:** January 2025  
-**For:** IAB OptionsBot Beta Testers
+**For:** IAB OptionsBot Beta Testers  
+**Live URL:** [Your Railway Deployment URL]
 
