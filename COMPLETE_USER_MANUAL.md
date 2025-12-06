@@ -766,10 +766,10 @@ Automations let you create trading strategies that execute automatically based o
 #### Step 2: Click "Create Automation"
 
 1. **Open Creation Modal**
-   - Click green "Create Automation" button
+   - Click purple "Create Automation" button
    - Modal form appears
 
-2. **Fill in Details:**
+2. **Fill in Basic Details:**
 
 **Name:**
 - Descriptive name (e.g., "AAPL Bullish Calls")
@@ -777,37 +777,81 @@ Automations let you create trading strategies that execute automatically based o
 - Required field
 
 **Symbol:**
-- Stock to monitor (e.g., AAPL, TSLA)
+- Stock to monitor (e.g., AAPL, TSLA, NVDA)
 - Must be a valid stock symbol
 - Required field
+- Cannot be changed after creation
 
-**Strategy:**
-- **Income:** Focus on premium collection
-- **Growth:** Focus on capital appreciation
-- **Balanced:** Mix of both
+**Description:**
+- Optional notes about this automation
+- Helps you remember the strategy
+
+**Strategy Type:**
+- **Covered Call:** Sell calls against stock you own
+- **Cash Secured Put:** Sell puts with cash backing
+- **Long Call:** Buy call options for upside
+- **Long Put:** Buy put options for downside protection
 - Required field
 
 **Min Confidence:**
 - Minimum signal confidence to execute (0.0 - 1.0)
 - **Lower (0.3-0.5):** More trades, more aggressive
 - **Higher (0.7-0.9):** Fewer trades, more conservative
-- **Default:** 0.30 (moderate)
+- **Default:** 0.30 (moderate, good for testing)
+- **For Testing:** Use 0.30 to make it easier to trigger
 - Required field
 
 **Profit Target %:**
 - When to take profits
-- Example: 20% = close position when up 20%
+- Example: 50% = close position when up 50%
 - Required field
 
 **Stop Loss %:**
 - When to cut losses
-- Example: 10% = close position when down 10%
-- Required field
+- Example: 25% = close position when down 25%
+- Optional but recommended
 
-**Max Position Size %:**
-- Maximum % of balance per trade
-- Example: 5% = max $5,000 per trade (on $100k balance)
-- Required field
+**Max Days to Hold:**
+- Maximum days to hold a position
+- Example: 30 = close after 30 days regardless of P/L
+- Optional
+
+3. **Advanced Options (Click to Expand):**
+
+**Expiration Date Controls (DTE):**
+
+- **Preferred DTE:** Target days to expiration (default: 30)
+  - The automation will prefer options with this DTE
+  - Example: 30-45 days for covered calls
+  
+- **Min DTE:** Minimum days to expiration (default: 21)
+  - Won't trade options with less than this many days
+  - Prevents trading options too close to expiration
+  
+- **Max DTE:** Maximum days to expiration (default: 60)
+  - Won't trade options with more than this many days
+  - Can be increased to 1095 days (3 years) for LEAPS
+  - For covered calls, 30-45 DTE is common
+
+**Strike Price Controls (via Delta):**
+
+- **Target Delta:** Ideal delta value (optional)
+  - For covered calls, 0.30 delta (30% OTM) is common
+  - Leave blank to let system choose
+  
+- **Min Delta:** Minimum delta (optional)
+  - Example: 0.20 = won't trade options with delta < 0.20
+  - Helps filter out deep OTM options
+  
+- **Max Delta:** Maximum delta (optional)
+  - Example: 0.40 = won't trade options with delta > 0.40
+  - Helps filter out deep ITM options
+
+**💡 Tip:** For covered calls, use:
+- Preferred DTE: 30-45 days
+- Target Delta: 0.30
+- Min Delta: 0.20
+- Max Delta: 0.40
 
 #### Step 3: Create Automation
 
