@@ -65,7 +65,7 @@ const Dashboard: React.FC = () => {
       };
 
       // Fetch all data in parallel, but handle each failure independently
-      const [positionsData, tradesData, watchlistData, userData] = await Promise.all([
+      const [positionsData, tradesData, watchlistData, userDataResponse] = await Promise.all([
         fetchWithTimeout(
           tradesService.getPositions(),
           { positions: [], count: 0 },
@@ -82,11 +82,13 @@ const Dashboard: React.FC = () => {
           'watchlist'
         ),
         fetchWithTimeout(
-          api.get('/auth/user'),
-          { data: { user: { paper_balance: 100000 } } },
+          api.get('/auth/user').catch(() => ({ data: { user: { paper_balance: 100000 } } } as any)),
+          { data: { user: { paper_balance: 100000 } } } as any,
           'user data'
         ),
       ]);
+      
+      const userData = userDataResponse;
 
       setPositions(positionsData.positions || []);
       setAllTrades(tradesData.trades || []); // Store all trades for performance trend
