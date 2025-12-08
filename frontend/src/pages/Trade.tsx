@@ -194,6 +194,10 @@ const Trade: React.FC = () => {
 
       toast.success(`${action === 'buy' ? 'Bought' : 'Sold'} ${quantity} ${contractType} contract(s)`);
       
+      // Signal that a trade was executed (for Dashboard auto-refresh)
+      sessionStorage.setItem('tradeExecuted', 'true');
+      window.dispatchEvent(new CustomEvent('tradeExecuted'));
+      
       // Reload balance
       await loadAccountBalance();
       

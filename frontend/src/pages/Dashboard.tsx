@@ -41,6 +41,43 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Auto-refresh when page becomes visible (user navigates back to Dashboard)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadDashboardData();
+      }
+    };
+    
+    // Listen for custom event when a trade is executed
+    const handleTradeExecuted = () => {
+      loadDashboardData();
+    };
+    
+    // Listen for focus event (user switches back to tab)
+    const handleFocus = () => {
+      loadDashboardData();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('tradeExecuted', handleTradeExecuted);
+    window.addEventListener('focus', handleFocus);
+    
+    // Also check sessionStorage for trade execution flag
+    const checkTradeFlag = setInterval(() => {
+      const tradeExecuted = sessionStorage.getItem('tradeExecuted');
+      if (tradeExecuted === 'true') {
+        sessionStorage.removeItem('tradeExecuted');
+        loadDashboardData();
+      }
+    }, 1000); // Check every second
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('tradeExecuted', handleTradeExecuted);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(checkTradeFlag);
+    };
   }, []);
 
   const loadDashboardData = async () => {
