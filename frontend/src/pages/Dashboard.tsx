@@ -38,6 +38,7 @@ const Dashboard: React.FC = () => {
   const [accountBalance, setAccountBalance] = useState<number | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -80,34 +81,47 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  const loadDashboardData = async () => {
+  const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
+
+  const loadDashboardData = async (updatePrices: boolean = false) => {
     setLoading(true);
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
-      // Create timeout promise (10 seconds)
+      // Create timeout promise (10 seconds for normal, 30 seconds if updating prices)
+      const timeoutMs = updatePrices ? 30000 : 10000;
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 10000);
+        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
       });
 
       // Fetch all data with individual error handling
-      const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string): Promise<T> => {
+      const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string, customTimeout?: number): Promise<T> => {
+        const timeout = customTimeout ? new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout')), customTimeout);
+        }) : timeoutPromise;
         try {
-          return await Promise.race([promise, timeoutPromise as Promise<T>]);
+          return await Promise.race([promise, timeout as Promise<T>]);
         } catch (error) {
           console.error(`Failed to load ${name}:`, error);
-          toast.error(`Failed to load ${name}. Using default values.`, { duration: 3000 });
+          if (!updatePrices || name !== 'positions') {
+            toast.error(`Failed to load ${name}. Using default values.`, { duration: 3000 });
+          }
           return defaultValue;
         }
       };
 
       // Fetch all data in parallel, but handle each failure independently
-      // Force update prices to recalculate P/L with correct formula for existing positions
+      // Only update prices if explicitly requested (manual refresh) or if forcePriceUpdate is true
+      const positionsUrl = updatePrices || forcePriceUpdate 
+        ? '/trades/positions?update_prices=true' 
+        : '/trades/positions';
+      
       const [positionsData, tradesData, watchlistData, userDataResponse] = await Promise.all([
         fetchWithTimeout(
-          api.get('/trades/positions?update_prices=true').then(res => res.data),
+          api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
-          'positions'
+          'positions',
+          updatePrices ? 30000 : 10000 // Longer timeout if updating prices
         ),
         fetchWithTimeout(
           tradesService.getHistory({ start_date: thirtyDaysAgo }),
@@ -149,7 +163,10 @@ const Dashboard: React.FC = () => {
 
   const refreshData = () => {
     // Force update prices when manually refreshing
-    loadDashboardData();
+    setForcePriceUpdate(true);
+    loadDashboardData(true).finally(() => {
+      setForcePriceUpdate(false);
+    });
   };
 
   const totalUnrealizedPnl = positions.reduce((sum, pos) => sum + (pos.unrealized_pnl || 0), 0);
@@ -308,9 +325,10 @@ const Dashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
         <button
           onClick={refreshData}
-          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
+          disabled={forcePriceUpdate}
+          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Refresh
+          {forcePriceUpdate ? 'Updating Prices...' : 'Refresh'}
         </button>
       </div>
 
