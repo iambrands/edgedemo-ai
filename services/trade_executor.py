@@ -383,25 +383,30 @@ class TradeExecutor:
                     # Reduce position
                     position.quantity -= quantity
     
-    def get_positions(self, user_id: int) -> List[Dict]:
-        """Get all open positions for user"""
-        from services.position_monitor import PositionMonitor
+    def get_positions(self, user_id: int, update_prices: bool = False) -> List[Dict]:
+        """Get all open positions for user
         
+        Args:
+            user_id: User ID
+            update_prices: If True, update position prices (slow). If False, return cached prices (fast).
+        """
         db = self._get_db()
         positions = db.session.query(Position).filter_by(user_id=user_id, status='open').all()
         
-        # Update current prices and P/L using position monitor (handles options correctly)
-        monitor = PositionMonitor()
-        for position in positions:
-            try:
-                monitor.update_position_data(position)
-            except Exception as e:
-                # Log but don't fail - continue with other positions
+        # Only update prices if explicitly requested (for performance)
+        if update_prices:
+            from services.position_monitor import PositionMonitor
+            monitor = PositionMonitor()
+            for position in positions:
                 try:
-                    from flask import current_app
-                    current_app.logger.warning(f"Failed to update position {position.id}: {e}")
-                except RuntimeError:
-                    pass
+                    monitor.update_position_data(position)
+                except Exception as e:
+                    # Log but don't fail - continue with other positions
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(f"Failed to update position {position.id}: {e}")
+                    except RuntimeError:
+                        pass
         
         return [p.to_dict() for p in positions]
     

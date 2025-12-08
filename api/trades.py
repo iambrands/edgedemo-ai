@@ -81,29 +81,17 @@ def get_positions(current_user):
         trade_executor = get_trade_executor()
         db = current_app.extensions['sqlalchemy']
         
-        # Update all positions with current prices before returning
-        monitor = PositionMonitor()
-        user_positions = db.session.query(Position).filter_by(
-            user_id=current_user.id,
-            status='open'
-        ).all()
+        # Get positions (fast - without price updates by default)
+        # Only update prices if update_prices parameter is true (default: false for speed)
+        update_prices = request.args.get('update_prices', 'false').lower() == 'true'
+        positions = trade_executor.get_positions(current_user.id, update_prices=update_prices)
         
-        for position in user_positions:
-            try:
-                monitor.update_position_data(position)
-            except Exception as e:
-                # Log but don't fail - continue updating other positions
-                try:
-                    current_app.logger.warning(f"Failed to update position {position.id}: {e}")
-                except RuntimeError:
-                    pass
-        
-        positions = trade_executor.get_positions(current_user.id)
         return jsonify({
             'positions': positions,
             'count': len(positions)
         }), 200
     except Exception as e:
+        current_app.logger.error(f"Error getting positions: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @trades_bp.route('/positions/<int:position_id>/close', methods=['POST', 'OPTIONS'])

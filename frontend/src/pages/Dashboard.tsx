@@ -44,22 +44,64 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const loadDashboardData = async () => {
+    setLoading(true);
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      // Create timeout promise (10 seconds)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000);
+      });
+
+      // Fetch all data with individual error handling
+      const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string): Promise<T> => {
+        try {
+          return await Promise.race([promise, timeoutPromise as Promise<T>]);
+        } catch (error) {
+          console.error(`Failed to load ${name}:`, error);
+          toast.error(`Failed to load ${name}. Using default values.`, { duration: 3000 });
+          return defaultValue;
+        }
+      };
+
+      // Fetch all data in parallel, but handle each failure independently
       const [positionsData, tradesData, watchlistData, userData] = await Promise.all([
-        tradesService.getPositions(),
-        tradesService.getHistory({ start_date: thirtyDaysAgo }),
-        watchlistService.getWatchlist(),
-        api.get('/auth/user').catch(() => ({ data: { user: { paper_balance: 100000 } } })),
+        fetchWithTimeout(
+          tradesService.getPositions(),
+          { positions: [], count: 0 },
+          'positions'
+        ),
+        fetchWithTimeout(
+          tradesService.getHistory({ start_date: thirtyDaysAgo }),
+          { trades: [], count: 0 },
+          'trade history'
+        ),
+        fetchWithTimeout(
+          watchlistService.getWatchlist(),
+          { watchlist: [], count: 0 },
+          'watchlist'
+        ),
+        fetchWithTimeout(
+          api.get('/auth/user'),
+          { data: { user: { paper_balance: 100000 } } },
+          'user data'
+        ),
       ]);
 
-      setPositions(positionsData.positions);
-      setAllTrades(tradesData.trades); // Store all trades for performance trend
-      setRecentTrades(tradesData.trades.slice(0, 10)); // Show only 10 in table
-      setWatchlist(watchlistData.watchlist);
-      setAccountBalance(userData.data.user.paper_balance || 100000);
-    } catch (error) {
+      setPositions(positionsData.positions || []);
+      setAllTrades(tradesData.trades || []); // Store all trades for performance trend
+      setRecentTrades((tradesData.trades || []).slice(0, 10)); // Show only 10 in table
+      setWatchlist(watchlistData.watchlist || []);
+      setAccountBalance(userData.data?.user?.paper_balance || 100000);
+    } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
+      toast.error('Failed to load some dashboard data. Please refresh the page.', { duration: 5000 });
+      // Set defaults so page can still render
+      setPositions([]);
+      setAllTrades([]);
+      setRecentTrades([]);
+      setWatchlist([]);
+      setAccountBalance(100000);
     } finally {
       setLoading(false);
     }
