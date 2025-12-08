@@ -81,8 +81,6 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
-
   const loadDashboardData = async (updatePrices: boolean = false) => {
     setLoading(true);
     try {
