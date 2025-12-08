@@ -278,7 +278,17 @@ class PositionMonitor:
         
         # Calculate unrealized P/L
         if position.current_price and position.entry_price:
-            position.unrealized_pnl = (position.current_price - position.entry_price) * position.quantity
+            # For options, multiply by 100 (contract multiplier)
+            # Check if it's an option by contract_type, option_symbol, or expiration_date + strike
+            is_option = (
+                (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                bool(position.option_symbol) or
+                (position.expiration_date and position.strike_price is not None)
+            )
+            
+            contract_multiplier = 100 if is_option else 1
+            position.unrealized_pnl = (position.current_price - position.entry_price) * position.quantity * contract_multiplier
+            
             if position.entry_price > 0:
                 position.unrealized_pnl_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
         

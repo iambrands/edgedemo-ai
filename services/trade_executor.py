@@ -374,8 +374,14 @@ class TradeExecutor:
                 if position.quantity <= quantity:
                     # Close position
                     position.status = 'closed'
-                    # Calculate realized P/L
-                    pnl = (price - position.entry_price) * position.quantity
+                    # Calculate realized P/L (multiply by 100 for options)
+                    is_option = (
+                        (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                        bool(position.option_symbol) or
+                        (position.expiration_date and position.strike_price is not None)
+                    )
+                    contract_multiplier = 100 if is_option else 1
+                    pnl = (price - position.entry_price) * position.quantity * contract_multiplier
                     pnl_percent = ((price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
                     # Update trade with P/L
                     # This would be done when closing the position
@@ -509,7 +515,15 @@ class TradeExecutor:
         
         # Update position
         position.status = 'closed'
-        position.unrealized_pnl = (exit_price - position.entry_price) * position.quantity
+        # For options, multiply by 100 (contract multiplier)
+        is_option = (
+            (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+            bool(position.option_symbol) or
+            (position.expiration_date and position.strike_price is not None)
+        )
+        contract_multiplier = 100 if is_option else 1
+        
+        position.unrealized_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
         position.unrealized_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
         
         # Update trade with realized P/L
