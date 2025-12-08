@@ -102,9 +102,10 @@ const Dashboard: React.FC = () => {
       };
 
       // Fetch all data in parallel, but handle each failure independently
+      // Force update prices to recalculate P/L with correct formula for existing positions
       const [positionsData, tradesData, watchlistData, userDataResponse] = await Promise.all([
         fetchWithTimeout(
-          tradesService.getPositions(),
+          api.get('/trades/positions?update_prices=true').then(res => res.data),
           { positions: [], count: 0 },
           'positions'
         ),
@@ -147,6 +148,7 @@ const Dashboard: React.FC = () => {
   };
 
   const refreshData = () => {
+    // Force update prices when manually refreshing
     loadDashboardData();
   };
 
