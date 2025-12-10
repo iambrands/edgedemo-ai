@@ -250,25 +250,60 @@ class PositionMonitor:
                     position.current_vega = greeks.get('vega')
                     position.current_iv = greeks.get('mid_iv') or greeks.get('implied_volatility')
             else:
-                # Couldn't find option in chain - likely deep OTM or expired
-                try:
-                    from flask import current_app
-                    current_app.logger.warning(
-                        f"Could not find option for position {position.id}: "
-                        f"{position.symbol} {position.contract_type} {position.strike_price} {expiration_str}. "
-                        f"Found {len(options_chain)} options in chain. Setting premium to near-zero."
-                    )
-                except RuntimeError:
-                    pass
-                
-                # If current_price looks like stock price (way too high for option premium), 
-                # set to a very low value (deep OTM options are worth near $0)
-                if position.current_price and position.current_price > 100:
-                    # This is definitely a stock price, not an option premium
-                    # For deep OTM options not in chain, set to near-zero
-                    position.current_price = max(0.01, position.entry_price * 0.1)  # At least $0.01 or 10% of entry
-                elif not position.current_price:
-                    position.current_price = position.entry_price
+                # Couldn't find option in chain - try getting quote directly using option_symbol
+                if position.option_symbol:
+                    try:
+                        # Try to get quote for the specific option symbol
+                        option_quote = self.tradier.get_quote(position.option_symbol)
+                        if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
+                            quote_data = option_quote['quotes']['quote']
+                            # Get bid/ask or last price
+                            bid = quote_data.get('bid', 0) or 0
+                            ask = quote_data.get('ask', 0) or 0
+                            last = quote_data.get('last', 0) or 0
+                            
+                            if bid > 0 and ask > 0:
+                                position.current_price = (bid + ask) / 2
+                            elif last > 0:
+                                position.current_price = last
+                            else:
+                                # No price available - keep entry price as fallback
+                                position.current_price = position.entry_price
+                        else:
+                            # Quote not available - use entry price as fallback
+                            position.current_price = position.entry_price
+                    except Exception as e:
+                        # If quote fails, log and use entry price
+                        try:
+                            from flask import current_app
+                            current_app.logger.warning(
+                                f"Could not get quote for option {position.option_symbol}: {e}. "
+                                f"Using entry price as fallback."
+                            )
+                        except RuntimeError:
+                            pass
+                        position.current_price = position.entry_price
+                else:
+                    # No option_symbol available - couldn't find in chain and can't get direct quote
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"Could not find option for position {position.id}: "
+                            f"{position.symbol} {position.contract_type} {position.strike_price} {expiration_str}. "
+                            f"Found {len(options_chain)} options in chain. No option_symbol to get direct quote. "
+                            f"Using entry price as fallback."
+                        )
+                    except RuntimeError:
+                        pass
+                    
+                    # Use entry price as fallback instead of setting to 0.01
+                    # This is safer - if we can't get current price, at least show what was paid
+                    if position.current_price and position.current_price > 100:
+                        # This looks like a stock price, not option premium - reset to entry
+                        position.current_price = position.entry_price
+                    elif not position.current_price or position.current_price < 0.1:
+                        # If current price is missing or suspiciously low, use entry price
+                        position.current_price = position.entry_price
         else:
             # For stock positions, get current stock price
             quote = self.tradier.get_quote(position.symbol)
