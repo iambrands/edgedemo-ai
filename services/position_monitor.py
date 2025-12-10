@@ -118,6 +118,27 @@ class PositionMonitor:
         """Update position with current prices and Greeks"""
         db = self._get_db()
         
+        # Check if current_price is suspiciously low (likely a bug) and needs correction
+        # If current_price is less than 1% of entry_price, it's probably wrong
+        needs_correction = (
+            position.current_price is not None and 
+            position.entry_price is not None and 
+            position.entry_price > 0 and
+            position.current_price < (position.entry_price * 0.01)
+        )
+        
+        if needs_correction:
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"Position {position.id} has suspiciously low current_price ${position.current_price:.2f} "
+                    f"(entry: ${position.entry_price:.2f}). Forcing price update."
+                )
+            except RuntimeError:
+                pass
+            # Reset to None to force fresh lookup
+            position.current_price = None
+        
         # For options positions, get current option premium (not stock price)
         # Check if it's an options position by contract_type (call/put/option) OR by having expiration_date and strike
         is_option_position = (
@@ -319,13 +340,14 @@ class PositionMonitor:
                 except RuntimeError:
                     pass
                 
-                # Always use entry price as fallback - this is safer than 0.01
-                # If current price is suspiciously low (< 10% of entry) or missing, use entry price
-                if not position.current_price or position.current_price < (position.entry_price * 0.1):
+                # ALWAYS use entry price as fallback if we couldn't get current price
+                # This ensures we never leave a position with 0.01 or other bad values
+                if position.entry_price and position.entry_price > 0:
                     position.current_price = position.entry_price
-                elif position.current_price > 100:
-                    # This looks like a stock price, not option premium - reset to entry
-                    position.current_price = position.entry_price
+                elif not position.current_price or position.current_price < 0.1:
+                    # If entry_price is also missing/bad, at least set to a reasonable default
+                    # But this should never happen in practice
+                    position.current_price = position.entry_price if position.entry_price else 0.0
         else:
             # For stock positions, get current stock price
             quote = self.tradier.get_quote(position.symbol)
