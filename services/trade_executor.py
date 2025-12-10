@@ -400,14 +400,16 @@ class TradeExecutor:
         positions = db.session.query(Position).filter_by(user_id=user_id, status='open').all()
         
         # Only update prices if explicitly requested (for performance)
-        if update_prices:
+        if update_prices and positions:
             from services.position_monitor import PositionMonitor
             monitor = PositionMonitor()
-            position_ids = [p.id for p in positions]  # Store IDs before updates
             
+            # Update each position
             for position in positions:
                 try:
                     monitor.update_position_data(position)
+                    # Refresh the position object to get updated values from DB
+                    db.session.refresh(position)
                 except Exception as e:
                     # Log but don't fail - continue with other positions
                     try:
@@ -417,16 +419,18 @@ class TradeExecutor:
                         pass
             
             # Commit all updates
-            db.session.commit()
-            
-            # Reload positions from database to ensure we have fresh data
-            # This ensures we get the updated current_price and unrealized_pnl
-            positions = db.session.query(Position).filter(
-                Position.id.in_(position_ids),
-                Position.user_id == user_id,
-                Position.status == 'open'
-            ).all()
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                try:
+                    from flask import current_app
+                    current_app.logger.error(f"Failed to commit position updates: {e}")
+                except RuntimeError:
+                    pass
         
+        # Always return positions - use the ones we have (they should be updated in memory)
+        # If update_prices was True, they've been refreshed, otherwise they're cached
         return [p.to_dict() for p in positions]
     
     def get_trade_history(self, user_id: int, symbol: str = None, 
