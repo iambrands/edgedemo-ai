@@ -159,12 +159,17 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const refreshData = () => {
+  const refreshData = async () => {
     // Force update prices when manually refreshing
     setForcePriceUpdate(true);
-    loadDashboardData(true).finally(() => {
+    try {
+      await loadDashboardData(true);
+      toast.success('Positions updated successfully', { duration: 3000 });
+    } catch (error) {
+      toast.error('Failed to update positions. Please try again.', { duration: 5000 });
+    } finally {
       setForcePriceUpdate(false);
-    });
+    }
   };
 
   const totalUnrealizedPnl = positions.reduce((sum, pos) => sum + (pos.unrealized_pnl || 0), 0);

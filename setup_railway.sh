@@ -63,3 +63,4 @@ echo ""
 echo "📝 To view logs: railway logs"
 echo "📊 To check status: railway status"
 
+

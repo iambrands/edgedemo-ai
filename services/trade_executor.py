@@ -403,6 +403,8 @@ class TradeExecutor:
         if update_prices:
             from services.position_monitor import PositionMonitor
             monitor = PositionMonitor()
+            position_ids = [p.id for p in positions]  # Store IDs before updates
+            
             for position in positions:
                 try:
                     monitor.update_position_data(position)
@@ -413,6 +415,17 @@ class TradeExecutor:
                         current_app.logger.warning(f"Failed to update position {position.id}: {e}")
                     except RuntimeError:
                         pass
+            
+            # Commit all updates
+            db.session.commit()
+            
+            # Reload positions from database to ensure we have fresh data
+            # This ensures we get the updated current_price and unrealized_pnl
+            positions = db.session.query(Position).filter(
+                Position.id.in_(position_ids),
+                Position.user_id == user_id,
+                Position.status == 'open'
+            ).all()
         
         return [p.to_dict() for p in positions]
     

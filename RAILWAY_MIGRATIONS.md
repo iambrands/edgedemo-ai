@@ -46,3 +46,4 @@ If migrations fail:
 2. Check deployment logs for errors
 3. Make sure the app deployed successfully before running migrations
 
+

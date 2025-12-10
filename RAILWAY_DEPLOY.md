@@ -67,3 +67,4 @@ flask db upgrade
 - Static files are served by Flask (configured in `app.py`)
 - The app will be available at `https://<your-project>.railway.app`
 
+

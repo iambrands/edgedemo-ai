@@ -41,3 +41,4 @@ Or in Railway dashboard:
 - **Static files 404**: Frontend build not included or wrong path
 - **Migration errors**: Database not accessible or migrations failing
 
+

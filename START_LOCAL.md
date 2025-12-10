@@ -85,3 +85,4 @@ You can register a new user or use existing credentials if you have them.
 - If using SQLite: Database file will be created automatically
 - If using PostgreSQL: Make sure DATABASE_URL is set correctly in .env
 
+
