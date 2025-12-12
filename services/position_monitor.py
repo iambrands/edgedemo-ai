@@ -114,6 +114,40 @@ class PositionMonitor:
                 return None
         return None
     
+    def _construct_option_symbol(self, position: Position) -> Optional[str]:
+        """Construct option symbol from position data if missing
+        Format: SYMBOL + YYYYMMDD + C/P + STRIKE*1000 (8 digits zero-padded)
+        Example: HOOD20260219P00140000
+        """
+        if not position.symbol or not position.expiration_date or not position.strike_price:
+            return None
+        
+        # Determine contract type (C for call, P for put)
+        contract_type = (position.contract_type or '').lower()
+        if contract_type == 'call':
+            option_type = 'C'
+        elif contract_type == 'put':
+            option_type = 'P'
+        elif contract_type == 'option':
+            # If contract_type is just 'option', try to infer from delta if available
+            # Negative delta usually means put, positive means call
+            if position.current_delta is not None:
+                option_type = 'P' if position.current_delta < 0 else 'C'
+            elif position.entry_delta is not None:
+                option_type = 'P' if position.entry_delta < 0 else 'C'
+            else:
+                # Default to call if we can't determine
+                option_type = 'C'
+        else:
+            # Default to call if unknown
+            option_type = 'C'
+        
+        # Format: SYMBOL + YYYYMMDD + C/P + STRIKE*1000 (8 digits)
+        expiration_str = position.expiration_date.strftime('%Y%m%d')
+        strike_encoded = f"{int(position.strike_price * 1000):08d}"
+        
+        return f"{position.symbol}{expiration_str}{option_type}{strike_encoded}"
+    
     def update_position_data(self, position: Position):
         """Update position with current prices and Greeks"""
         db = self._get_db()
@@ -157,6 +191,9 @@ class PositionMonitor:
                 db.session.commit()
                 return
             
+            # Format expiration string for use in error messages and API calls
+            expiration_str = position.expiration_date.strftime('%Y-%m-%d')
+            
             # If strike_price is missing but we have option_symbol, parse it
             if not position.strike_price and position.option_symbol:
                 parsed_strike = self._parse_strike_from_option_symbol(position.option_symbol)
@@ -173,6 +210,21 @@ class PositionMonitor:
                 position.last_updated = datetime.utcnow()
                 db.session.commit()
                 return
+            
+            # Construct option_symbol if missing (needed for direct quote)
+            if not position.option_symbol:
+                constructed_symbol = self._construct_option_symbol(position)
+                if constructed_symbol:
+                    position.option_symbol = constructed_symbol
+                    try:
+                        from flask import current_app
+                        current_app.logger.info(
+                            f"Constructed option_symbol for position {position.id}: {constructed_symbol}"
+                        )
+                    except RuntimeError:
+                        pass
+                    db.session.commit()
+            
             # Try direct quote first if option_symbol is available (faster and more reliable)
             option_found = None
             if position.option_symbol:
@@ -202,58 +254,27 @@ class PositionMonitor:
             
             # If direct quote didn't work, try options chain lookup
             if not option_found:
-                expiration_str = position.expiration_date.strftime('%Y-%m-%d')
                 options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
                 
                 # Find the specific option contract
                 position_strike = float(position.strike_price)
-            
-            for option in options_chain:
-                # Match by strike and contract type (primary method)
-                option_strike = option.get('strike') or option.get('strike_price')
-                option_type = option.get('type') or option.get('contract_type')
                 
-                # Convert to float for comparison (handle numpy types)
-                try:
-                    option_strike_float = float(option_strike) if option_strike is not None else None
-                except (ValueError, TypeError):
-                    option_strike_float = None
-                
-                # Match strike price
-                strike_match = (option_strike_float is not None and 
-                               abs(option_strike_float - position_strike) < 0.01)
-                
-                # Match contract type - handle 'option' as a wildcard (matches both call and put)
-                position_contract_type = (position.contract_type or '').lower()
-                option_contract_type = (option_type or '').lower()
-                type_match = (
-                    option_contract_type == position_contract_type or
-                    (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
-                    (not position_contract_type and option_contract_type in ['call', 'put'])
-                )
-                
-                if strike_match and type_match:
-                    option_found = option
-                    break
-                
-                # Also try matching by option_symbol if available
-                if position.option_symbol and option.get('symbol') == position.option_symbol:
-                    option_found = option
-                    break
-            
-            # If exact strike not found, find closest strike (for deep OTM options)
-            if not option_found and options_chain:
-                closest_option = None
-                closest_diff = float('inf')
                 for option in options_chain:
+                    # Match by strike and contract type (primary method)
                     option_strike = option.get('strike') or option.get('strike_price')
                     option_type = option.get('type') or option.get('contract_type')
+                    
+                    # Convert to float for comparison (handle numpy types)
                     try:
                         option_strike_float = float(option_strike) if option_strike is not None else None
                     except (ValueError, TypeError):
-                        continue
+                        option_strike_float = None
                     
-                    # Match contract type - handle 'option' as a wildcard
+                    # Match strike price
+                    strike_match = (option_strike_float is not None and 
+                                   abs(option_strike_float - position_strike) < 0.01)
+                    
+                    # Match contract type - handle 'option' as a wildcard (matches both call and put)
                     position_contract_type = (position.contract_type or '').lower()
                     option_contract_type = (option_type or '').lower()
                     type_match = (
@@ -262,15 +283,45 @@ class PositionMonitor:
                         (not position_contract_type and option_contract_type in ['call', 'put'])
                     )
                     
-                    if option_strike_float is not None and type_match:
-                        diff = abs(option_strike_float - position_strike)
-                        if diff < closest_diff:
-                            closest_diff = diff
-                            closest_option = option
+                    if strike_match and type_match:
+                        option_found = option
+                        break
+                    
+                    # Also try matching by option_symbol if available
+                    if position.option_symbol and option.get('symbol') == position.option_symbol:
+                        option_found = option
+                        break
                 
-                # Use closest if within reasonable range (within 5% of strike)
-                if closest_option and closest_diff < (position_strike * 0.05):
-                    option_found = closest_option
+                # If exact strike not found, find closest strike (for deep OTM options)
+                if not option_found and options_chain:
+                    closest_option = None
+                    closest_diff = float('inf')
+                    for option in options_chain:
+                        option_strike = option.get('strike') or option.get('strike_price')
+                        option_type = option.get('type') or option.get('contract_type')
+                        try:
+                            option_strike_float = float(option_strike) if option_strike is not None else None
+                        except (ValueError, TypeError):
+                            continue
+                        
+                        # Match contract type - handle 'option' as a wildcard
+                        position_contract_type = (position.contract_type or '').lower()
+                        option_contract_type = (option_type or '').lower()
+                        type_match = (
+                            option_contract_type == position_contract_type or
+                            (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
+                            (not position_contract_type and option_contract_type in ['call', 'put'])
+                        )
+                        
+                        if option_strike_float is not None and type_match:
+                            diff = abs(option_strike_float - position_strike)
+                            if diff < closest_diff:
+                                closest_diff = diff
+                                closest_option = option
+                    
+                    # Use closest if within reasonable range (within 5% of strike)
+                    if closest_option and closest_diff < (position_strike * 0.05):
+                        option_found = closest_option
             
             if option_found:
                 # Check if this was from direct quote (already set current_price)
