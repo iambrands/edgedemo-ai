@@ -49,6 +49,8 @@ const Automations: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
   const [testingTrade, setTestingTrade] = useState<number | null>(null);
+  const [startingEngine, setStartingEngine] = useState(false);
+  const [stoppingEngine, setStoppingEngine] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -111,22 +113,43 @@ const Automations: React.FC = () => {
   };
 
   const handleStartEngine = async () => {
+    setStartingEngine(true);
     try {
-      await api.post('/automation_engine/start');
-      toast.success('Automation engine started!');
-      loadEngineStatus();
+      const response = await api.post('/automation_engine/start');
+      toast.success(response.data?.message || 'Automation engine started!');
+      // Wait a moment for the engine to initialize, then check status
+      setTimeout(() => {
+        loadEngineStatus();
+      }, 1000);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to start engine');
+      // Suppress browser extension errors
+      if (error.message && error.message.includes('message channel')) {
+        // This is a browser extension error, ignore it
+        console.warn('Browser extension error (ignored):', error.message);
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to start engine');
+      }
+    } finally {
+      setStartingEngine(false);
     }
   };
 
   const handleStopEngine = async () => {
+    setStoppingEngine(true);
     try {
-      await api.post('/automation_engine/stop');
-      toast.success('Automation engine stopped');
+      const response = await api.post('/automation_engine/stop');
+      toast.success(response.data?.message || 'Automation engine stopped');
       loadEngineStatus();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to stop engine');
+      // Suppress browser extension errors
+      if (error.message && error.message.includes('message channel')) {
+        // This is a browser extension error, ignore it
+        console.warn('Browser extension error (ignored):', error.message);
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to stop engine');
+      }
+    } finally {
+      setStoppingEngine(false);
     }
   };
 
@@ -378,17 +401,19 @@ const Automations: React.FC = () => {
                 </button>
                 <button
                   onClick={handleStopEngine}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium transition-colors"
+                  disabled={stoppingEngine}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                 >
-                  Stop Engine
+                  {stoppingEngine ? 'Stopping...' : 'Stop Engine'}
                 </button>
               </>
             ) : (
               <button
                 onClick={handleStartEngine}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-colors"
+                disabled={startingEngine}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium transition-colors"
               >
-                Start Engine
+                {startingEngine ? 'Starting...' : 'Start Engine'}
               </button>
             )}
           </div>
