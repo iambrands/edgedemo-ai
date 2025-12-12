@@ -94,6 +94,43 @@ def get_positions(current_user):
         current_app.logger.error(f"Error getting positions: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+@trades_bp.route('/positions/<int:position_id>/refresh', methods=['POST', 'OPTIONS'])
+@token_required
+def refresh_position(current_user, position_id):
+    """Manually refresh a specific position's price and Greeks"""
+    # OPTIONS is handled by token_required decorator
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    try:
+        from services.position_monitor import PositionMonitor
+        from models.position import Position
+        from flask import current_app
+        
+        db = current_app.extensions['sqlalchemy']
+        position = db.session.query(Position).filter_by(
+            id=position_id, 
+            user_id=current_user.id,
+            status='open'
+        ).first()
+        
+        if not position:
+            return jsonify({'error': 'Position not found'}), 404
+        
+        # Update position data
+        monitor = PositionMonitor()
+        monitor.update_position_data(position)
+        db.session.refresh(position)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Position refreshed',
+            'position': position.to_dict()
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error refreshing position {position_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
 @trades_bp.route('/positions/<int:position_id>/close', methods=['POST', 'OPTIONS'])
 @token_required
 def close_position(current_user, position_id):

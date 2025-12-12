@@ -219,16 +219,41 @@ class PositionMonitor:
                     try:
                         from flask import current_app
                         current_app.logger.info(
-                            f"Constructed option_symbol for position {position.id}: {constructed_symbol}"
+                            f"Position {position.id} ({position.symbol}): "
+                            f"Constructed option_symbol: {constructed_symbol} "
+                            f"(contract_type={position.contract_type}, "
+                            f"delta={position.current_delta or position.entry_delta}, "
+                            f"strike={position.strike_price}, exp={expiration_str})"
                         )
                     except RuntimeError:
                         pass
                     db.session.commit()
+                else:
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"Position {position.id} ({position.symbol}): "
+                            f"Could not construct option_symbol - missing data: "
+                            f"symbol={bool(position.symbol)}, "
+                            f"expiration={bool(position.expiration_date)}, "
+                            f"strike={bool(position.strike_price)}"
+                        )
+                    except RuntimeError:
+                        pass
             
             # Try direct quote first if option_symbol is available (faster and more reliable)
             option_found = None
             if position.option_symbol:
                 try:
+                    try:
+                        from flask import current_app
+                        current_app.logger.info(
+                            f"Position {position.id} ({position.symbol}): "
+                            f"Trying direct quote for option_symbol: {position.option_symbol}"
+                        )
+                    except RuntimeError:
+                        pass
+                    
                     option_quote = self.tradier.get_quote(position.option_symbol)
                     if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
                         quote_data = option_quote['quotes']['quote']
@@ -236,19 +261,56 @@ class PositionMonitor:
                         ask = quote_data.get('ask', 0) or 0
                         last = quote_data.get('last', 0) or 0
                         
+                        try:
+                            from flask import current_app
+                            current_app.logger.info(
+                                f"Position {position.id} ({position.symbol}): "
+                                f"Direct quote result - bid={bid}, ask={ask}, last={last}"
+                            )
+                        except RuntimeError:
+                            pass
+                        
                         # If we have valid pricing data, use it
                         if bid > 0 and ask > 0:
                             position.current_price = (bid + ask) / 2
                             # Mark as found so we skip chain lookup
                             option_found = {'direct_quote': True, 'bid': bid, 'ask': ask, 'last': last}
+                            try:
+                                from flask import current_app
+                                current_app.logger.info(
+                                    f"Position {position.id} ({position.symbol}): "
+                                    f"Updated price from direct quote: ${position.current_price:.2f}"
+                                )
+                            except RuntimeError:
+                                pass
                         elif last > 0:
                             position.current_price = last
                             option_found = {'direct_quote': True, 'last': last}
+                            try:
+                                from flask import current_app
+                                current_app.logger.info(
+                                    f"Position {position.id} ({position.symbol}): "
+                                    f"Updated price from direct quote (last): ${position.current_price:.2f}"
+                                )
+                            except RuntimeError:
+                                pass
+                        else:
+                            try:
+                                from flask import current_app
+                                current_app.logger.warning(
+                                    f"Position {position.id} ({position.symbol}): "
+                                    f"Direct quote returned no valid prices (bid={bid}, ask={ask}, last={last})"
+                                )
+                            except RuntimeError:
+                                pass
                 except Exception as e:
                     # Log but continue to chain lookup
                     try:
                         from flask import current_app
-                        current_app.logger.debug(f"Direct quote failed for {position.option_symbol}: {e}. Trying chain lookup.")
+                        current_app.logger.warning(
+                            f"Position {position.id} ({position.symbol}): "
+                            f"Direct quote failed for {position.option_symbol}: {e}. Trying chain lookup."
+                        )
                     except RuntimeError:
                         pass
             

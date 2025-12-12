@@ -34,6 +34,11 @@ export const tradesService = {
     return response.data;
   },
 
+  refreshPosition: async (positionId: number): Promise<{ position: Position; message: string }> => {
+    const response = await api.post(`/trades/positions/${positionId}/refresh`);
+    return response.data;
+  },
+
   closePosition: async (positionId: number, exitPrice?: number): Promise<any> => {
     const response = await api.post(`/trades/positions/${positionId}/close`, {
       exit_price: exitPrice,

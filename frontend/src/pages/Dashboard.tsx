@@ -837,39 +837,59 @@ const Dashboard: React.FC = () => {
                 Close
               </button>
               {selectedPosition.status === 'open' && (
-                <button
-                  onClick={async () => {
-                    if (window.confirm(`Close position: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}?`)) {
+                <>
+                  <button
+                    onClick={async () => {
                       try {
-                        await api.post(`/trades/positions/${selectedPosition.id}/close`);
-                        toast.success('Position closed');
-                        setSelectedPosition(null);
-                        loadDashboardData();
+                        toast.loading('Refreshing position...', { id: 'refresh-position' });
+                        const result = await tradesService.refreshPosition(selectedPosition.id);
+                        toast.success('Position refreshed successfully', { id: 'refresh-position' });
+                        // Update the selected position with new data
+                        setSelectedPosition(result.position);
+                        // Also refresh the dashboard
+                        loadDashboardData(true);
                       } catch (error: any) {
-                        if (error.response?.status === 401) {
-                          // Token refresh should have been attempted automatically
-                          // If we still get 401, the refresh failed
-                          const errorMsg = error.response?.data?.error || 'Authentication failed';
-                          if (errorMsg.includes('refresh') || errorMsg.includes('expired')) {
-                            toast.error('Session expired. Please log in again.');
-                            setTimeout(() => {
-                              localStorage.removeItem('access_token');
-                              localStorage.removeItem('refresh_token');
-                              window.location.href = '/login';
-                            }, 2000);
+                        toast.error(error.response?.data?.error || 'Failed to refresh position', { id: 'refresh-position' });
+                      }
+                    }}
+                    className="flex-1 bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
+                  >
+                    Refresh Price
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Close position: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}?`)) {
+                        try {
+                          await api.post(`/trades/positions/${selectedPosition.id}/close`);
+                          toast.success('Position closed');
+                          setSelectedPosition(null);
+                          loadDashboardData();
+                        } catch (error: any) {
+                          if (error.response?.status === 401) {
+                            // Token refresh should have been attempted automatically
+                            // If we still get 401, the refresh failed
+                            const errorMsg = error.response?.data?.error || 'Authentication failed';
+                            if (errorMsg.includes('refresh') || errorMsg.includes('expired')) {
+                              toast.error('Session expired. Please log in again.');
+                              setTimeout(() => {
+                                localStorage.removeItem('access_token');
+                                localStorage.removeItem('refresh_token');
+                                window.location.href = '/login';
+                              }, 2000);
+                            } else {
+                              toast.error('Authentication error. Please try again.');
+                            }
                           } else {
-                            toast.error('Authentication error. Please try again.');
+                            toast.error(error.response?.data?.error || 'Failed to close position');
                           }
-                        } else {
-                          toast.error(error.response?.data?.error || 'Failed to close position');
                         }
                       }
-                    }
-                  }}
-                  className="flex-1 bg-error text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
-                >
-                  Close Position
-                </button>
+                    }}
+                    className="flex-1 bg-error text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
+                  >
+                    Close Position
+                  </button>
+                </>
               )}
             </div>
           </div>
