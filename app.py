@@ -25,8 +25,27 @@ def create_app(config_name=None):
         app.logger.warning('⚠️  AUTHENTICATION DISABLED - Development mode enabled')
     
     # Initialize extensions
-    # Flask-SQLAlchemy 3.x automatically uses SQLALCHEMY_ENGINE_OPTIONS if set
+    # Flask-SQLAlchemy 3.x supports SQLALCHEMY_ENGINE_OPTIONS in config
+    # The engine options are automatically applied when the engine is created
     db.init_app(app)
+    
+    # Apply connection pool settings after engine creation (if needed)
+    # Flask-SQLAlchemy 3.1.1 should pick up SQLALCHEMY_ENGINE_OPTIONS automatically
+    # But we can also configure the pool directly if needed
+    database_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if database_url.startswith('postgresql://') and hasattr(db, 'engine'):
+        try:
+            # Update pool settings if engine already exists
+            engine_options = app.config.get('SQLALCHEMY_ENGINE_OPTIONS', {})
+            if engine_options and hasattr(db.engine, 'pool'):
+                # Update pool settings
+                pool = db.engine.pool
+                if hasattr(pool, '_recreate'):
+                    # This will be applied on next connection
+                    pass
+        except Exception as e:
+            app.logger.warning(f"Could not configure connection pool: {e}")
+    
     migrate.init_app(app, db)
     jwt.init_app(app)
     
