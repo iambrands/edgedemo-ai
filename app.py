@@ -114,93 +114,110 @@ def create_app(config_name=None):
     app.register_blueprint(options_flow_bp, url_prefix='/api/options-flow')
     app.register_blueprint(tax_bp, url_prefix='/api/tax')
     
-    # Create database tables if they don't exist
-    with app.app_context():
-        # Import all models to ensure they're registered with SQLAlchemy
-        from models import User, Stock, Position, Automation, Trade, AlertFilters
-        # Verify AI API configuration
-        openai_key = os.environ.get('OPENAI_API_KEY', '')
-        anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
-        app.logger.info("=" * 50)
-        app.logger.info("AI API Configuration:")
-        app.logger.info(f"  OpenAI API Key: {'✅ Set' if openai_key else '❌ Not set'}")
-        app.logger.info(f"  Anthropic API Key: {'✅ Set' if anthropic_key else '❌ Not set'}")
-        
-        # Check if packages are installed
-        try:
-            import openai
-            app.logger.info("  OpenAI package: ✅ Installed")
-        except ImportError:
-            app.logger.warning("  OpenAI package: ❌ Not installed")
-        
-        try:
-            import anthropic
-            app.logger.info("  Anthropic package: ✅ Installed")
-        except ImportError:
-            app.logger.warning("  Anthropic package: ❌ Not installed")
-        
-        app.logger.info("=" * 50)
-        
-        # Import all models to ensure they're registered
-        from models.user import User
-        from models.stock import Stock
-        from models.position import Position
-        from models.automation import Automation
-        from models.trade import Trade
-        from models.risk_limits import RiskLimits
-        from models.audit_log import AuditLog
-        from models.error_log import ErrorLog
-        from models.iv_history import IVHistory
-        from models.strategy import Strategy, StrategyLeg
-        from models.alert import Alert
-        from models.alert_filters import AlertFilters
-        from models.earnings import EarningsCalendar
-        
-        # Check if users table exists with retry logic
+    # Import all models to ensure they're registered with SQLAlchemy
+    # This must happen before any database operations
+    from models import User, Stock, Position, Automation, Trade, AlertFilters
+    from models.user import User
+    from models.stock import Stock
+    from models.position import Position
+    from models.automation import Automation
+    from models.trade import Trade
+    from models.risk_limits import RiskLimits
+    from models.audit_log import AuditLog
+    from models.error_log import ErrorLog
+    from models.iv_history import IVHistory
+    from models.strategy import Strategy, StrategyLeg
+    from models.alert import Alert
+    from models.alert_filters import AlertFilters
+    from models.earnings import EarningsCalendar
+    
+    # Verify AI API configuration (non-blocking)
+    openai_key = os.environ.get('OPENAI_API_KEY', '')
+    anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    app.logger.info("=" * 50)
+    app.logger.info("AI API Configuration:")
+    app.logger.info(f"  OpenAI API Key: {'✅ Set' if openai_key else '❌ Not set'}")
+    app.logger.info(f"  Anthropic API Key: {'✅ Set' if anthropic_key else '❌ Not set'}")
+    
+    # Check if packages are installed
+    try:
+        import openai
+        app.logger.info("  OpenAI package: ✅ Installed")
+    except ImportError:
+        app.logger.warning("  OpenAI package: ❌ Not installed")
+    
+    try:
+        import anthropic
+        app.logger.info("  Anthropic package: ✅ Installed")
+    except ImportError:
+        app.logger.warning("  Anthropic package: ❌ Not installed")
+    
+    app.logger.info("=" * 50)
+    
+    # Initialize database tables in background (non-blocking)
+    # This prevents app crashes if database is temporarily unavailable
+    def init_database_background():
+        """Initialize database tables in background thread"""
         import time
-        max_retries = 5
-        retry_delay = 2
+        import threading
         
-        for attempt in range(max_retries):
-            try:
-                # Test database connection
-                db.engine.connect().close()
-                
-                # Check if users table exists
-                inspector = db.inspect(db.engine)
-                tables = inspector.get_table_names()
-                
-                if 'users' not in tables:
-                    app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
-                    db.create_all()
-                    app.logger.info("✅ Database tables created successfully")
-                else:
-                    # Check if alert_filters table exists, create if missing
-                    if 'alert_filters' not in tables:
-                        app.logger.warning("⚠️  alert_filters table not found. Creating...")
-                        db.create_all()
-                        app.logger.info("✅ alert_filters table created")
-                    app.logger.info("✅ Database tables already exist")
-                
-                # Success - break out of retry loop
-                break
-                
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    app.logger.warning(
-                        f"⚠️  Database connection failed (attempt {attempt + 1}/{max_retries}): {str(e)}. "
-                        f"Retrying in {retry_delay} seconds..."
-                    )
-                    time.sleep(retry_delay)
-                else:
-                    app.logger.error(
-                        f"❌ Failed to connect to database after {max_retries} attempts: {str(e)}"
-                    )
-                    app.logger.warning(
-                        "⚠️  Application will start but database operations may fail. "
-                        "Please check DATABASE_URL and ensure the database is accessible."
-                    )
-                    # Don't raise - let the app start anyway (it might recover later)
+        def _init_db():
+            max_retries = 10
+            retry_delay = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    with app.app_context():
+                        # Test database connection
+                        conn = db.engine.connect()
+                        conn.close()
+                        
+                        # Check if users table exists
+                        inspector = db.inspect(db.engine)
+                        tables = inspector.get_table_names()
+                        
+                        if 'users' not in tables:
+                            app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
+                            db.create_all()
+                            app.logger.info("✅ Database tables created successfully")
+                        else:
+                            # Check if alert_filters table exists, create if missing
+                            if 'alert_filters' not in tables:
+                                app.logger.warning("⚠️  alert_filters table not found. Creating...")
+                                db.create_all()
+                                app.logger.info("✅ alert_filters table created")
+                            app.logger.info("✅ Database tables already exist")
+                        
+                        # Success - return
+                        return
+                        
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        app.logger.warning(
+                            f"⚠️  Database connection failed (attempt {attempt + 1}/{max_retries}): {str(e)[:200]}. "
+                            f"Retrying in {retry_delay} seconds..."
+                        )
+                        time.sleep(retry_delay)
+                    else:
+                        app.logger.error(
+                            f"❌ Failed to connect to database after {max_retries} attempts: {str(e)[:200]}"
+                        )
+                        app.logger.warning(
+                            "⚠️  Database initialization failed. Application will continue, "
+                            "but database operations may fail until connection is restored."
+                        )
+        
+        # Start database initialization in background thread
+        thread = threading.Thread(target=_init_db, daemon=True)
+        thread.start()
+        app.logger.info("🔄 Database initialization started in background...")
+    
+    # Start database initialization (non-blocking)
+    try:
+        init_database_background()
+    except Exception as e:
+        app.logger.error(f"Failed to start database initialization thread: {e}")
+        app.logger.warning("Application will continue, but database may not be initialized")
     
     # Health check endpoint
     @app.route('/health')
