@@ -2,13 +2,16 @@ from flask import Blueprint, request, jsonify, current_app
 from models.user import User
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 from utils.decorators import token_required
+from utils.db_helpers import with_db_retry, get_db_with_retry
+from sqlalchemy.exc import OperationalError, DisconnectionError
 from datetime import datetime
+import time
 
 auth_bp = Blueprint('auth', __name__)
 
 def get_db():
-    """Get database instance from current app"""
-    return current_app.extensions['sqlalchemy']
+    """Get database instance from current app with retry logic"""
+    return get_db_with_retry()
 
 @auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
@@ -70,7 +73,7 @@ def register():
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    """User login"""
+    """User login with database retry logic"""
     if request.method == 'OPTIONS':
         # Flask-CORS will handle this, just return empty response
         response = jsonify({})
@@ -82,27 +85,65 @@ def login():
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({'error': 'Username and password required'}), 400
     
-    try:
-        db = get_db()
-        user = db.session.query(User).filter_by(username=data['username']).first()
-        
-        if not user or not user.check_password(data['password']):
-            return jsonify({'error': 'Invalid credentials'}), 401
-        
-        # Generate tokens - identity must be a string
-        access_token = create_access_token(identity=str(user.id))
-        refresh_token = create_refresh_token(identity=str(user.id))
-        
-        response = jsonify({
-            'message': 'Login successful',
-            'user': user.to_dict(),
-            'access_token': access_token,
-            'refresh_token': refresh_token
-        })
-        response.status_code = 200
-        return response
-    except Exception as e:
-        return jsonify({'error': f'Login failed: {str(e)}'}), 500
+    # Retry logic for database connection
+    max_retries = 3
+    retry_delay = 1
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            db = get_db()
+            user = db.session.query(User).filter_by(username=data['username']).first()
+            
+            if not user or not user.check_password(data['password']):
+                return jsonify({'error': 'Invalid credentials'}), 401
+            
+            # Generate tokens - identity must be a string
+            access_token = create_access_token(identity=str(user.id))
+            refresh_token = create_refresh_token(identity=str(user.id))
+            
+            response = jsonify({
+                'message': 'Login successful',
+                'user': user.to_dict(),
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            })
+            response.status_code = 200
+            return response
+            
+        except (OperationalError, DisconnectionError) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                current_app.logger.warning(
+                    f"Database connection error during login (attempt {attempt + 1}/{max_retries}): {str(e)[:200]}. "
+                    f"Retrying in {retry_delay} seconds..."
+                )
+                time.sleep(retry_delay)
+                # Try to dispose connection pool to force reconnection
+                try:
+                    db = current_app.extensions.get('sqlalchemy')
+                    if db and hasattr(db, 'engine'):
+                        db.engine.dispose()
+                except Exception:
+                    pass
+            else:
+                current_app.logger.error(f"Database connection failed after {max_retries} attempts: {str(e)[:200]}")
+                return jsonify({
+                    'error': 'Database connection failed. Please try again in a moment.',
+                    'details': str(e)[:200]
+                }), 503
+        except Exception as e:
+            # For non-connection errors, don't retry
+            current_app.logger.error(f"Login error: {str(e)}")
+            return jsonify({'error': f'Login failed: {str(e)}'}), 500
+    
+    # Should never reach here, but just in case
+    if last_exception:
+        return jsonify({
+            'error': 'Database connection failed. Please try again in a moment.',
+            'details': str(last_exception)[:200]
+        }), 503
+    return jsonify({'error': 'Login failed'}), 500
 
 @auth_bp.route('/user', methods=['GET'])
 @token_required
