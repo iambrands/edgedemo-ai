@@ -16,16 +16,24 @@ class Config:
     
     # Connection pool settings for PostgreSQL (helps with Railway connection issues)
     if database_url.startswith('postgresql://'):
+        connect_args = {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000'  # 30 second statement timeout
+        }
+        
+        # Railway PostgreSQL may require SSL
+        # Check if it's a Railway database (interchange.proxy.rlwy.net)
+        if 'interchange.proxy.rlwy.net' in database_url or 'railway' in database_url.lower():
+            # Railway databases typically require SSL but allow self-signed certs
+            connect_args['sslmode'] = 'require'
+        
         SQLALCHEMY_ENGINE_OPTIONS = {
             'pool_size': 5,
             'max_overflow': 10,
             'pool_timeout': 20,
             'pool_recycle': 3600,  # Recycle connections after 1 hour
             'pool_pre_ping': True,  # Verify connections before using
-            'connect_args': {
-                'connect_timeout': 10,
-                'options': '-c statement_timeout=30000'  # 30 second statement timeout
-            }
+            'connect_args': connect_args
         }
     else:
         SQLALCHEMY_ENGINE_OPTIONS = {}

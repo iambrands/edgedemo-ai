@@ -30,6 +30,12 @@ def create_app(config_name=None):
     # DO NOT access db.engine here - it will trigger a connection attempt
     db.init_app(app)
     
+    # Verify engine options are set (for debugging)
+    if app.config.get('SQLALCHEMY_ENGINE_OPTIONS'):
+        app.logger.info(f"Database engine options configured: {list(app.config['SQLALCHEMY_ENGINE_OPTIONS'].keys())}")
+        if 'connect_args' in app.config['SQLALCHEMY_ENGINE_OPTIONS']:
+            app.logger.info(f"Connection args: {app.config['SQLALCHEMY_ENGINE_OPTIONS']['connect_args']}")
+    
     # Initialize Flask-Migrate (doesn't connect to DB during init)
     migrate.init_app(app, db)
     jwt.init_app(app)
@@ -147,7 +153,35 @@ def create_app(config_name=None):
     # Health check endpoint
     @app.route('/health')
     def health():
-        return {'status': 'healthy', 'service': 'IAB OptionsBot'}, 200
+        """Health check endpoint - checks app and database status"""
+        from flask import current_app
+        status = {
+            'status': 'healthy',
+            'service': 'IAB OptionsBot',
+            'database': 'unknown',
+            'database_url_set': bool(current_app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('postgresql://'))
+        }
+        
+        # Try to check database connection
+        try:
+            db = current_app.extensions.get('sqlalchemy')
+            if db:
+                # Try a simple query
+                db.session.execute(db.text('SELECT 1'))
+                status['database'] = 'connected'
+            else:
+                status['database'] = 'not_initialized'
+        except Exception as e:
+            error_msg = str(e)
+            status['database'] = f'error: {error_msg[:200]}'
+            status['status'] = 'degraded'
+            # Log the full error for debugging
+            current_app.logger.error(f"Database health check failed: {error_msg}")
+            import traceback
+            current_app.logger.error(traceback.format_exc())
+        
+        status_code = 200 if status['database'] == 'connected' else 503
+        return status, status_code
     
     # Debug: List all registered routes
     @app.route('/debug/routes')
