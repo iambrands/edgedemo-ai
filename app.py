@@ -25,6 +25,7 @@ def create_app(config_name=None):
         app.logger.warning('⚠️  AUTHENTICATION DISABLED - Development mode enabled')
     
     # Initialize extensions
+    # Flask-SQLAlchemy 3.x automatically uses SQLALCHEMY_ENGINE_OPTIONS if set
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
@@ -136,21 +137,51 @@ def create_app(config_name=None):
         from models.alert_filters import AlertFilters
         from models.earnings import EarningsCalendar
         
-        # Check if users table exists
-        inspector = db.inspect(db.engine)
-        tables = inspector.get_table_names()
+        # Check if users table exists with retry logic
+        import time
+        max_retries = 5
+        retry_delay = 2
         
-        if 'users' not in tables:
-            app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
-            db.create_all()
-            app.logger.info("✅ Database tables created successfully")
-        else:
-            # Check if alert_filters table exists, create if missing
-            if 'alert_filters' not in tables:
-                app.logger.warning("⚠️  alert_filters table not found. Creating...")
-                db.create_all()
-                app.logger.info("✅ alert_filters table created")
-            app.logger.info("✅ Database tables already exist")
+        for attempt in range(max_retries):
+            try:
+                # Test database connection
+                db.engine.connect().close()
+                
+                # Check if users table exists
+                inspector = db.inspect(db.engine)
+                tables = inspector.get_table_names()
+                
+                if 'users' not in tables:
+                    app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
+                    db.create_all()
+                    app.logger.info("✅ Database tables created successfully")
+                else:
+                    # Check if alert_filters table exists, create if missing
+                    if 'alert_filters' not in tables:
+                        app.logger.warning("⚠️  alert_filters table not found. Creating...")
+                        db.create_all()
+                        app.logger.info("✅ alert_filters table created")
+                    app.logger.info("✅ Database tables already exist")
+                
+                # Success - break out of retry loop
+                break
+                
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    app.logger.warning(
+                        f"⚠️  Database connection failed (attempt {attempt + 1}/{max_retries}): {str(e)}. "
+                        f"Retrying in {retry_delay} seconds..."
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    app.logger.error(
+                        f"❌ Failed to connect to database after {max_retries} attempts: {str(e)}"
+                    )
+                    app.logger.warning(
+                        "⚠️  Application will start but database operations may fail. "
+                        "Please check DATABASE_URL and ensure the database is accessible."
+                    )
+                    # Don't raise - let the app start anyway (it might recover later)
     
     # Health check endpoint
     @app.route('/health')

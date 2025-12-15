@@ -13,6 +13,22 @@ class Config:
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = database_url
+    
+    # Connection pool settings for PostgreSQL (helps with Railway connection issues)
+    if database_url.startswith('postgresql://'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 10,
+            'pool_timeout': 20,
+            'pool_recycle': 3600,  # Recycle connections after 1 hour
+            'pool_pre_ping': True,  # Verify connections before using
+            'connect_args': {
+                'connect_timeout': 10,
+                'options': '-c statement_timeout=30000'  # 30 second statement timeout
+            }
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {}
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
