@@ -58,7 +58,8 @@ def create_automation(current_user):
             min_open_interest=data.get('min_open_interest', 100),
             max_spread_percent=data.get('max_spread_percent', 15.0),
             profit_target_percent=data.get('profit_target_percent', 50.0),
-            stop_loss_percent=data.get('stop_loss_percent'),
+            profit_target_1=data.get('profit_target_percent', 50.0),  # Set profit_target_1 from profit_target_percent
+            stop_loss_percent=-abs(data.get('stop_loss_percent', 15.0)) if data.get('stop_loss_percent') else -15.0,  # Normalize to negative
             max_days_to_hold=data.get('max_days_to_hold'),
             exit_at_profit_target=data.get('exit_at_profit_target', True),
             exit_at_stop_loss=data.get('exit_at_stop_loss', True),
@@ -105,8 +106,10 @@ def update_automation(current_user, automation_id):
             automation.min_confidence = data['min_confidence']
         if 'profit_target_percent' in data:
             automation.profit_target_percent = data['profit_target_percent']
+            automation.profit_target_1 = data['profit_target_percent']  # Also update profit_target_1
         if 'stop_loss_percent' in data:
-            automation.stop_loss_percent = data['stop_loss_percent']
+            # Normalize stop_loss_percent to always be negative
+            automation.stop_loss_percent = -abs(data['stop_loss_percent'])
         
         db.session.commit()
         

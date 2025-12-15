@@ -523,10 +523,13 @@ class PositionMonitor:
                     return (True, f"Profit target reached ({profit_percent:.2f}%)")
         
         # Check stop loss
-        if automation and automation.stop_loss_percent:
+        if automation and automation.stop_loss_percent and automation.exit_at_stop_loss:
             loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
-            if loss_percent >= automation.stop_loss_percent:
-                return (True, f"Stop loss triggered ({loss_percent:.2f}%)")
+            # Normalize stop_loss_percent - it might be stored as positive (10) or negative (-10)
+            # We always compare as positive loss percentages
+            stop_loss_threshold = abs(automation.stop_loss_percent)
+            if loss_percent >= stop_loss_threshold:
+                return (True, f"Stop loss triggered ({loss_percent:.2f}% loss, threshold: {stop_loss_threshold}%)")
         
         # Check max days to hold
         if automation and automation.max_days_to_hold and automation.exit_at_max_days:

@@ -39,6 +39,8 @@ const Dashboard: React.FC = () => {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     loadDashboardData();
@@ -196,6 +198,64 @@ const Dashboard: React.FC = () => {
       day: 'numeric', 
       year: 'numeric' 
     });
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedPositions = [...positions].sort((a, b) => {
+    if (!sortColumn) return 0;
+    
+    let aVal: any, bVal: any;
+    switch (sortColumn) {
+      case 'symbol':
+        aVal = a.symbol;
+        bVal = b.symbol;
+        break;
+      case 'quantity':
+        aVal = a.quantity;
+        bVal = b.quantity;
+        break;
+      case 'entry_price':
+        aVal = a.entry_price;
+        bVal = b.entry_price;
+        break;
+      case 'current_price':
+        aVal = a.current_price || 0;
+        bVal = b.current_price || 0;
+        break;
+      case 'expiration':
+        aVal = a.expiration_date ? new Date(a.expiration_date).getTime() : 0;
+        bVal = b.expiration_date ? new Date(b.expiration_date).getTime() : 0;
+        break;
+      case 'pnl':
+        aVal = a.unrealized_pnl || 0;
+        bVal = b.unrealized_pnl || 0;
+        break;
+      case 'pnl_percent':
+        aVal = a.unrealized_pnl_percent || 0;
+        bVal = b.unrealized_pnl_percent || 0;
+        break;
+      default:
+        return 0;
+    }
+    
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const SortArrow = ({ column }: { column: string }) => {
+    if (sortColumn !== column) {
+      return <span className="text-gray-400 ml-1">↕</span>;
+    }
+    return <span className="text-primary ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
   // Calculate performance trend - group trades by date and calculate daily P/L
@@ -421,26 +481,61 @@ const Dashboard: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('symbol')}
+                >
+                  Symbol <SortArrow column="symbol" />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entry Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiration</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P/L</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P/L %</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('quantity')}
+                >
+                  Quantity <SortArrow column="quantity" />
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('entry_price')}
+                >
+                  Entry Price <SortArrow column="entry_price" />
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('current_price')}
+                >
+                  Current Price <SortArrow column="current_price" />
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('expiration')}
+                >
+                  Expiration <SortArrow column="expiration" />
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('pnl')}
+                >
+                  P/L <SortArrow column="pnl" />
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('pnl_percent')}
+                >
+                  P/L % <SortArrow column="pnl_percent" />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {positions.length === 0 ? (
+              {sortedPositions.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
                     No active positions. <a href="/trade" className="text-primary hover:underline">Start trading</a> or create an automation.
                   </td>
                 </tr>
               ) : (
-                positions.map((position) => {
+                sortedPositions.map((position) => {
                   const dte = calculateDTE(position.expiration_date);
                   return (
                     <tr key={position.id} className="hover:bg-gray-50">
@@ -746,12 +841,24 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Cost:</span>
-                    <span className="font-medium">${(selectedPosition.entry_price * selectedPosition.quantity).toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${(() => {
+                        const isOption = selectedPosition.contract_type && 
+                          ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
+                        const multiplier = isOption ? 100 : 1;
+                        return (selectedPosition.entry_price * selectedPosition.quantity * multiplier).toFixed(2);
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current Value:</span>
                     <span className="font-medium">
-                      ${((selectedPosition.current_price || 0) * selectedPosition.quantity).toFixed(2)}
+                      ${(() => {
+                        const isOption = selectedPosition.contract_type && 
+                          ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
+                        const multiplier = isOption ? 100 : 1;
+                        return ((selectedPosition.current_price || 0) * selectedPosition.quantity * multiplier).toFixed(2);
+                      })()}
                     </span>
                   </div>
                   <div className={`flex justify-between pt-2 border-t ${
@@ -763,6 +870,76 @@ const Dashboard: React.FC = () => {
                       ({(selectedPosition.unrealized_pnl_percent || 0).toFixed(2)}%)
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* AI Analysis */}
+              <div className="space-y-4 col-span-2">
+                <h3 className="font-semibold text-gray-700 border-b pb-2">AI Analysis</h3>
+                <div className="bg-blue-50 rounded-lg p-4 text-sm">
+                  {(() => {
+                    const isOption = selectedPosition.contract_type && 
+                      ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
+                    const pnlPercent = selectedPosition.unrealized_pnl_percent || 0;
+                    const dte = calculateDTE(selectedPosition.expiration_date);
+                    const currentDelta = selectedPosition.current_delta || selectedPosition.entry_delta;
+                    const currentIV = selectedPosition.current_iv || selectedPosition.entry_iv;
+                    
+                    let analysis = [];
+                    
+                    // P/L Analysis
+                    if (pnlPercent > 25) {
+                      analysis.push(`📈 Strong profit: Position is up ${pnlPercent.toFixed(1)}%. Consider taking profits if you've reached your target.`);
+                    } else if (pnlPercent > 10) {
+                      analysis.push(`📊 Moderate profit: Position is up ${pnlPercent.toFixed(1)}%. Monitor for profit target.`);
+                    } else if (pnlPercent < -10) {
+                      analysis.push(`⚠️ Significant loss: Position is down ${Math.abs(pnlPercent).toFixed(1)}%. Review stop-loss settings and consider exiting if risk management rules apply.`);
+                    } else if (pnlPercent < -5) {
+                      analysis.push(`📉 Moderate loss: Position is down ${Math.abs(pnlPercent).toFixed(1)}%. Monitor closely and consider stop-loss.`);
+                    } else {
+                      analysis.push(`➡️ Flat position: Currently ${pnlPercent >= 0 ? 'up' : 'down'} ${Math.abs(pnlPercent).toFixed(1)}%. Continue monitoring.`);
+                    }
+                    
+                    // DTE Analysis (for options)
+                    if (isOption && dte !== null) {
+                      if (dte <= 7) {
+                        analysis.push(`⏰ Time decay risk: Only ${dte} days until expiration. Time decay (theta) will accelerate. Consider closing if near target.`);
+                      } else if (dte <= 21) {
+                        analysis.push(`⏱️ Approaching expiration: ${dte} days remaining. Time decay will increase.`);
+                      }
+                    }
+                    
+                    // Delta Analysis (for options)
+                    if (isOption && currentDelta !== null && currentDelta !== undefined) {
+                      const deltaPercent = Math.abs(currentDelta * 100);
+                      if (deltaPercent > 70) {
+                        analysis.push(`🎯 High delta (${(currentDelta * 100).toFixed(1)}%): Position behaves more like stock. Large price moves will have significant impact.`);
+                      } else if (deltaPercent < 30) {
+                        analysis.push(`🎲 Low delta (${(currentDelta * 100).toFixed(1)}%): Position is out-of-the-money. Lower probability of profit but higher leverage if it moves favorably.`);
+                      }
+                    }
+                    
+                    // IV Analysis (for options)
+                    if (isOption && currentIV !== null && currentIV !== undefined) {
+                      const ivPercent = currentIV * 100;
+                      if (ivPercent > 50) {
+                        analysis.push(`📊 High implied volatility (${ivPercent.toFixed(1)}%): Premiums are elevated. Good for selling, challenging for buying.`);
+                      } else if (ivPercent < 20) {
+                        analysis.push(`📉 Low implied volatility (${ivPercent.toFixed(1)}%): Premiums are relatively cheap. Good for buying, less attractive for selling.`);
+                      }
+                    }
+                    
+                    // Overall recommendation
+                    if (analysis.length === 0) {
+                      analysis.push(`📋 Position appears stable. Continue monitoring price action and Greeks.`);
+                    }
+                    
+                    return analysis.map((item, idx) => (
+                      <div key={idx} className="mb-2 text-gray-700">
+                        {item}
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 

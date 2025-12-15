@@ -290,22 +290,22 @@ const History: React.FC = () => {
                                 <strong>Expiration:</strong> {new Date(trade.expiration_date).toLocaleDateString()}
                               </div>
                             )}
-                            {trade.delta !== undefined && (
+                            {trade.delta !== undefined && trade.delta !== null && (
                               <div>
                                 <strong>Delta:</strong> {trade.delta.toFixed(4)}
                               </div>
                             )}
-                            {trade.theta !== undefined && (
+                            {trade.theta !== undefined && trade.theta !== null && (
                               <div>
                                 <strong>Theta:</strong> {trade.theta.toFixed(4)}
                               </div>
                             )}
-                            {trade.gamma !== undefined && (
+                            {trade.gamma !== undefined && trade.gamma !== null && (
                               <div>
                                 <strong>Gamma:</strong> {trade.gamma.toFixed(4)}
                               </div>
                             )}
-                            {trade.vega !== undefined && (
+                            {trade.vega !== undefined && trade.vega !== null && (
                               <div>
                                 <strong>Vega:</strong> {trade.vega.toFixed(4)}
                               </div>

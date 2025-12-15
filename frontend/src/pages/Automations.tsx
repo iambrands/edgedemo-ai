@@ -338,28 +338,43 @@ const Automations: React.FC = () => {
       const symbol = error.response?.data?.symbol;
       const debug = error.response?.data?.debug;
       
-      // Build detailed error message
-      let fullErrorMsg = errorMsg;
-      if (details) {
-        fullErrorMsg += `\n\n${details}`;
+      // Build user-friendly error message
+      let userFriendlyMsg = errorMsg;
+      if (details && !details.includes('JSON.stringify')) {
+        // Only include details if they're not debug info
+        userFriendlyMsg += `\n\n${details}`;
       }
-      if (symbol) {
-        fullErrorMsg += `\n\nSymbol: ${symbol}`;
-      }
+      
+      // Show a closable toast with better formatting
+      const toastId = toast.error(
+        <div className="space-y-2">
+          <div className="font-semibold">{errorMsg}</div>
+          {details && !details.includes('JSON.stringify') && (
+            <div className="text-sm">{details}</div>
+          )}
+          {symbol && (
+            <div className="text-sm text-gray-600">Symbol: {symbol}</div>
+          )}
+          <button
+            onClick={() => toast.dismiss(toastId)}
+            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+          >
+            Close
+          </button>
+        </div>,
+        { 
+          duration: 15000, // 15 seconds max, but user can close
+          style: { maxWidth: '500px' }
+        }
+      );
+      
+      // Log full debug info to console
       if (debug) {
-        fullErrorMsg += `\n\nDebug Info: ${JSON.stringify(debug, null, 2)}`;
+        console.error('Test Trade Debug Info:', debug);
       }
-      
-      toast.error(fullErrorMsg, { 
-        duration: 10000,
-        style: { whiteSpace: 'pre-line', maxWidth: '500px' }
-      });
-      
       if (error.response?.data?.traceback) {
         console.error('Test Trade Error Traceback:', error.response.data.traceback);
       }
-      
-      // Log full error for debugging
       console.error('Test Trade Error Details:', error.response?.data);
     } finally {
       setTestingTrade(null);
