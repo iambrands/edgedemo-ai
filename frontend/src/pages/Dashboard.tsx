@@ -1157,65 +1157,78 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* P/L & Greeks */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-700 border-b pb-2">Performance & Greeks</h3>
-                <div className="space-y-2 text-sm">
-                  {selectedTrade.realized_pnl !== null && selectedTrade.realized_pnl !== undefined && (
-                    <div className={`flex justify-between pt-2 border-t ${
-                      (selectedTrade.realized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
-                    }`}>
-                      <span className="font-semibold">Realized P/L:</span>
-                      <span className="font-bold text-lg">
-                        ${selectedTrade.realized_pnl.toFixed(2)}
-                        {selectedTrade.realized_pnl_percent && (
-                          <span className="text-sm ml-1">
-                            ({selectedTrade.realized_pnl_percent.toFixed(2)}%)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {selectedTrade.delta !== null && selectedTrade.delta !== undefined && (
-                    <>
-                      <div className="flex justify-between pt-2">
-                        <span className="text-gray-600">Delta:</span>
-                        <span className="font-medium">{selectedTrade.delta.toFixed(4)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Gamma:</span>
-                        <span className="font-medium">{selectedTrade.gamma?.toFixed(4) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Theta:</span>
-                        <span className="font-medium">{selectedTrade.theta?.toFixed(4) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Vega:</span>
-                        <span className="font-medium">{selectedTrade.vega?.toFixed(4) || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Implied Volatility:</span>
-                        <span className="font-medium">
-                          {selectedTrade.implied_volatility ? `${(selectedTrade.implied_volatility * 100).toFixed(2)}%` : 'N/A'}
+              {/* P/L & Greeks - Only show if we have data */}
+              {((selectedTrade.realized_pnl !== null && selectedTrade.realized_pnl !== undefined) ||
+                (selectedTrade.delta !== null && selectedTrade.delta !== undefined) ||
+                (selectedTrade.commission > 0) ||
+                selectedTrade.notes) && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 border-b pb-2">Performance & Greeks</h3>
+                  <div className="space-y-2 text-sm">
+                    {selectedTrade.realized_pnl !== null && selectedTrade.realized_pnl !== undefined && (
+                      <div className={`flex justify-between pt-2 border-t ${
+                        (selectedTrade.realized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
+                      }`}>
+                        <span className="font-semibold">Realized P/L:</span>
+                        <span className="font-bold text-lg">
+                          ${selectedTrade.realized_pnl.toFixed(2)}
+                          {selectedTrade.realized_pnl_percent !== null && selectedTrade.realized_pnl_percent !== undefined && (
+                            <span className="text-sm ml-1">
+                              ({selectedTrade.realized_pnl_percent.toFixed(2)}%)
+                            </span>
+                          )}
                         </span>
                       </div>
-                    </>
-                  )}
-                  {selectedTrade.commission > 0 && (
-                    <div className="flex justify-between pt-2 border-t">
-                      <span className="text-gray-600">Commission:</span>
-                      <span className="font-medium">${selectedTrade.commission.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {selectedTrade.notes && (
-                    <div className="pt-2 border-t">
-                      <span className="text-gray-600 block mb-1">Notes:</span>
-                      <span className="text-sm text-gray-700">{selectedTrade.notes}</span>
-                    </div>
-                  )}
+                    )}
+                    {selectedTrade.delta !== null && selectedTrade.delta !== undefined && (
+                      <>
+                        <div className="flex justify-between pt-2">
+                          <span className="text-gray-600">Delta:</span>
+                          <span className="font-medium">{selectedTrade.delta.toFixed(4)}</span>
+                        </div>
+                        {selectedTrade.gamma !== null && selectedTrade.gamma !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Gamma:</span>
+                            <span className="font-medium">{selectedTrade.gamma.toFixed(4)}</span>
+                          </div>
+                        )}
+                        {selectedTrade.theta !== null && selectedTrade.theta !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Theta:</span>
+                            <span className="font-medium">{selectedTrade.theta.toFixed(4)}</span>
+                          </div>
+                        )}
+                        {selectedTrade.vega !== null && selectedTrade.vega !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Vega:</span>
+                            <span className="font-medium">{selectedTrade.vega.toFixed(4)}</span>
+                          </div>
+                        )}
+                        {selectedTrade.implied_volatility !== null && selectedTrade.implied_volatility !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Implied Volatility:</span>
+                            <span className="font-medium">
+                              {(selectedTrade.implied_volatility * 100).toFixed(2)}%
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {selectedTrade.commission > 0 && (
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="text-gray-600">Commission:</span>
+                        <span className="font-medium">${selectedTrade.commission.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedTrade.notes && (
+                      <div className="pt-2 border-t">
+                        <span className="text-gray-600 block mb-1">Notes:</span>
+                        <span className="text-sm text-gray-700">{selectedTrade.notes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="mt-6">

@@ -298,12 +298,20 @@ const Alerts: React.FC = () => {
           <div className="flex-1">
             <h3 className="font-semibold text-blue-900 mb-2">ℹ️ About Alerts</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• <strong>Buy Signals:</strong> Generated from your watchlist when technical indicators suggest buying opportunities</li>
-              <li>• <strong>Sell Signals:</strong> Generated for open positions when exit conditions are met (profit target, stop loss, expiration)</li>
-              <li>• <strong>Risk Alerts:</strong> Generated when portfolio risk limits are approached or exceeded</li>
-              <li>• <strong>Trade Alerts:</strong> Automatically created when automations execute trades</li>
-              <li>• <strong>Generate Alerts:</strong> Click "Generate Alerts" to scan your watchlist, positions, and risk limits now</li>
+              <li>• <strong>Buy Signals:</strong> Generated from your watchlist when technical indicators (RSI, moving averages, MACD, volume) suggest buying opportunities. Confidence score (0-100%) shows signal strength.</li>
+              <li>• <strong>Sell Signals:</strong> Generated for open positions when exit conditions are met (profit target reached, stop loss triggered, expiration approaching, or max days held).</li>
+              <li>• <strong>Risk Alerts:</strong> Generated when portfolio risk limits are approached or exceeded (daily loss limits, position size limits, etc.).</li>
+              <li>• <strong>Trade Alerts:</strong> Automatically created when automations execute trades (both buys and sells).</li>
+              <li>• <strong>Confidence Score:</strong> Shows how strong the signal is (0-100%). Higher = stronger signal. Signals with confidence ≥ your Min Confidence setting will trigger automation trades.</li>
+              <li>• <strong>Generate Alerts:</strong> Click "Generate Alerts" to scan your watchlist, positions, and risk limits now. This runs technical analysis on all watchlist symbols.</li>
             </ul>
+            <div className="mt-3 p-2 bg-white rounded border border-blue-300">
+              <p className="text-xs text-blue-900 font-semibold mb-1">💡 How Confidence is Calculated:</p>
+              <p className="text-xs text-blue-800">
+                Confidence is based on: (1) Technical indicator strength (moving averages, RSI, MACD), (2) How far price is above/below moving averages, (3) Volume patterns, (4) IV rank adjustments. 
+                The 77% you see is from the Golden Cross pattern calculation when price is well above all moving averages. Different patterns produce different confidence scores.
+              </p>
+            </div>
           </div>
           {filterSettings && (
             <div className="ml-4 text-sm">
@@ -459,6 +467,104 @@ const Alerts: React.FC = () => {
                           </ul>
                         </div>
                       )}
+
+                      {/* AI Analysis Section */}
+                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 mb-3 border border-purple-200">
+                        <h4 className="text-sm font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                          🤖 AI Analysis & Recommendation
+                        </h4>
+                        <div className="text-sm text-gray-700 space-y-2">
+                          {(() => {
+                            const confidence = alert.confidence || 0;
+                            const indicators = alert.details?.indicators || {};
+                            const rsi = indicators.rsi;
+                            const sma20 = indicators.sma_20;
+                            const sma50 = indicators.sma_50;
+                            const volumeRatio = indicators.volume?.ratio;
+                            const priceChange = indicators.price_change?.percent;
+                            const macdHist = indicators.macd?.histogram;
+                            
+                            let analysis = [];
+                            
+                            // Confidence Analysis
+                            if (confidence >= 0.75) {
+                              analysis.push(`✅ **Strong Signal** (${(confidence * 100).toFixed(1)}% confidence): This is a high-quality trading opportunity with multiple technical indicators aligned.`);
+                            } else if (confidence >= 0.60) {
+                              analysis.push(`⚠️ **Moderate Signal** (${(confidence * 100).toFixed(1)}% confidence): This is a decent opportunity, but consider additional factors before trading.`);
+                            } else {
+                              analysis.push(`📊 **Weak Signal** (${(confidence * 100).toFixed(1)}% confidence): This signal has lower confidence. Proceed with caution.`);
+                            }
+                            
+                            // RSI Analysis
+                            if (rsi !== undefined) {
+                              if (rsi < 30) {
+                                analysis.push(`📉 **RSI Oversold** (${rsi.toFixed(1)}): Stock is oversold, potential bounce opportunity. Good for buying calls.`);
+                              } else if (rsi > 70) {
+                                analysis.push(`📈 **RSI Overbought** (${rsi.toFixed(1)}): Stock is overbought, may pull back. Consider waiting or buying puts.`);
+                              } else if (rsi > 50) {
+                                analysis.push(`➡️ **RSI Neutral-Bullish** (${rsi.toFixed(1)}): Momentum is positive but not extreme.`);
+                              } else {
+                                analysis.push(`➡️ **RSI Neutral-Bearish** (${rsi.toFixed(1)}): Momentum is negative but not extreme.`);
+                              }
+                            }
+                            
+                            // Moving Average Analysis
+                            if (sma20 && sma50) {
+                              if (sma20 > sma50) {
+                                analysis.push(`📊 **Bullish Trend**: Price (${alert.details?.indicators?.sma_20 ? `$${alert.details.indicators.sma_20.toFixed(2)}` : 'current'}) is above both SMA20 and SMA50, indicating upward momentum.`);
+                              } else {
+                                analysis.push(`📊 **Bearish Trend**: Price is below moving averages, indicating downward pressure.`);
+                              }
+                            }
+                            
+                            // Volume Analysis
+                            if (volumeRatio !== undefined) {
+                              if (volumeRatio > 1.5) {
+                                analysis.push(`📢 **High Volume** (${volumeRatio.toFixed(1)}x average): Strong interest in this stock. Volume confirms the price movement.`);
+                              } else if (volumeRatio < 0.7) {
+                                analysis.push(`🔇 **Low Volume** (${volumeRatio.toFixed(1)}x average): Weak volume suggests the move may not be sustainable.`);
+                              }
+                            }
+                            
+                            // MACD Analysis
+                            if (macdHist !== undefined) {
+                              if (macdHist > 0) {
+                                analysis.push(`📈 **MACD Bullish**: MACD histogram is positive, indicating bullish momentum.`);
+                              } else {
+                                analysis.push(`📉 **MACD Bearish**: MACD histogram is negative, indicating bearish momentum.`);
+                              }
+                            }
+                            
+                            // Price Change Analysis
+                            if (priceChange !== undefined) {
+                              if (priceChange > 2) {
+                                analysis.push(`🚀 **Strong Price Move** (+${priceChange.toFixed(2)}%): Significant price movement suggests strong momentum.`);
+                              } else if (priceChange < -2) {
+                                analysis.push(`📉 **Significant Decline** (${priceChange.toFixed(2)}%): Large drop may present buying opportunity if oversold.`);
+                              }
+                            }
+                            
+                            // Overall Recommendation
+                            if (alert.alert_type === 'buy_signal') {
+                              if (confidence >= 0.75) {
+                                analysis.push(`💡 **Recommendation**: This is a strong buy signal. Consider reviewing options chains for entry opportunities. Look for calls with 30-45 days to expiration and delta around 0.30-0.40.`);
+                              } else {
+                                analysis.push(`💡 **Recommendation**: This signal has moderate confidence. Review the technical indicators above and consider waiting for stronger confirmation or use smaller position sizes.`);
+                              }
+                            } else if (alert.alert_type === 'sell_signal') {
+                              analysis.push(`💡 **Recommendation**: Exit conditions have been met. Consider closing this position to lock in profits or limit losses as configured in your automation.`);
+                            }
+                            
+                            return analysis.map((item, idx) => (
+                              <div key={idx} className="text-xs leading-relaxed">
+                                {item.split('**').map((part, i) => 
+                                  i % 2 === 1 ? <strong key={i} className="text-purple-800">{part}</strong> : part
+                                )}
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
                       
                       <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-3">
                         {alert.confidence && (

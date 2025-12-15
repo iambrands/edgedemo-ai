@@ -315,7 +315,7 @@ const History: React.FC = () => {
                                 <strong>IV:</strong> {(trade.implied_volatility * 100).toFixed(2)}%
                               </div>
                             )}
-                            {trade.realized_pnl_percent !== undefined && (
+                            {trade.realized_pnl_percent !== undefined && trade.realized_pnl_percent !== null && (
                               <div>
                                 <strong>Return %:</strong> {trade.realized_pnl_percent.toFixed(2)}%
                               </div>
