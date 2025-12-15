@@ -21,11 +21,12 @@ class Config:
             'options': '-c statement_timeout=30000'  # 30 second statement timeout
         }
         
-        # Railway PostgreSQL may require SSL
-        # Check if it's a Railway database (interchange.proxy.rlwy.net)
+        # Railway PostgreSQL connection settings
+        # Test shows connection works with SSL, but let's make it flexible
         if 'interchange.proxy.rlwy.net' in database_url or 'railway' in database_url.lower():
-            # Railway databases typically require SSL but allow self-signed certs
-            connect_args['sslmode'] = 'require'
+            # Try 'prefer' first (will use SSL if available, but won't fail if not)
+            # If that doesn't work, Railway will need 'require'
+            connect_args['sslmode'] = 'prefer'
         
         SQLALCHEMY_ENGINE_OPTIONS = {
             'pool_size': 5,
