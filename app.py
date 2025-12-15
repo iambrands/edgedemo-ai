@@ -27,25 +27,10 @@ def create_app(config_name=None):
     # Initialize extensions
     # Flask-SQLAlchemy 3.x supports SQLALCHEMY_ENGINE_OPTIONS in config
     # The engine options are automatically applied when the engine is created
+    # DO NOT access db.engine here - it will trigger a connection attempt
     db.init_app(app)
     
-    # Apply connection pool settings after engine creation (if needed)
-    # Flask-SQLAlchemy 3.1.1 should pick up SQLALCHEMY_ENGINE_OPTIONS automatically
-    # But we can also configure the pool directly if needed
-    database_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
-    if database_url.startswith('postgresql://') and hasattr(db, 'engine'):
-        try:
-            # Update pool settings if engine already exists
-            engine_options = app.config.get('SQLALCHEMY_ENGINE_OPTIONS', {})
-            if engine_options and hasattr(db.engine, 'pool'):
-                # Update pool settings
-                pool = db.engine.pool
-                if hasattr(pool, '_recreate'):
-                    # This will be applied on next connection
-                    pass
-        except Exception as e:
-            app.logger.warning(f"Could not configure connection pool: {e}")
-    
+    # Initialize Flask-Migrate (doesn't connect to DB during init)
     migrate.init_app(app, db)
     jwt.init_app(app)
     
@@ -154,70 +139,10 @@ def create_app(config_name=None):
     
     app.logger.info("=" * 50)
     
-    # Initialize database tables in background (non-blocking)
-    # This prevents app crashes if database is temporarily unavailable
-    def init_database_background():
-        """Initialize database tables in background thread"""
-        import time
-        import threading
-        
-        def _init_db():
-            max_retries = 10
-            retry_delay = 3
-            
-            for attempt in range(max_retries):
-                try:
-                    with app.app_context():
-                        # Test database connection
-                        conn = db.engine.connect()
-                        conn.close()
-                        
-                        # Check if users table exists
-                        inspector = db.inspect(db.engine)
-                        tables = inspector.get_table_names()
-                        
-                        if 'users' not in tables:
-                            app.logger.warning("⚠️  Database tables not found. Creating tables from models...")
-                            db.create_all()
-                            app.logger.info("✅ Database tables created successfully")
-                        else:
-                            # Check if alert_filters table exists, create if missing
-                            if 'alert_filters' not in tables:
-                                app.logger.warning("⚠️  alert_filters table not found. Creating...")
-                                db.create_all()
-                                app.logger.info("✅ alert_filters table created")
-                            app.logger.info("✅ Database tables already exist")
-                        
-                        # Success - return
-                        return
-                        
-                except Exception as e:
-                    if attempt < max_retries - 1:
-                        app.logger.warning(
-                            f"⚠️  Database connection failed (attempt {attempt + 1}/{max_retries}): {str(e)[:200]}. "
-                            f"Retrying in {retry_delay} seconds..."
-                        )
-                        time.sleep(retry_delay)
-                    else:
-                        app.logger.error(
-                            f"❌ Failed to connect to database after {max_retries} attempts: {str(e)[:200]}"
-                        )
-                        app.logger.warning(
-                            "⚠️  Database initialization failed. Application will continue, "
-                            "but database operations may fail until connection is restored."
-                        )
-        
-        # Start database initialization in background thread
-        thread = threading.Thread(target=_init_db, daemon=True)
-        thread.start()
-        app.logger.info("🔄 Database initialization started in background...")
-    
-    # Start database initialization (non-blocking)
-    try:
-        init_database_background()
-    except Exception as e:
-        app.logger.error(f"Failed to start database initialization thread: {e}")
-        app.logger.warning("Application will continue, but database may not be initialized")
+    # Database tables are created via migrations (railway_start.sh runs flask db upgrade)
+    # No database connection is attempted during app initialization
+    # This prevents crashes if the database is temporarily unavailable
+    app.logger.info("✅ Application initialized. Database will connect on first use.")
     
     # Health check endpoint
     @app.route('/health')
