@@ -34,11 +34,37 @@ def execute_trade(current_user):
         if not quantity:
             return jsonify({'error': 'Invalid quantity. Must be between 1 and 10000'}), 400
         
-        option_symbol = sanitize_input(data.get('option_symbol', ''), max_length=50) if data.get('option_symbol') else None
-        strike = sanitize_float(data.get('strike'), min_val=0.01, max_val=100000.0) if data.get('strike') else None
-        expiration_date = sanitize_input(data.get('expiration_date', ''), max_length=10) if data.get('expiration_date') else None
-        contract_type = sanitize_input(data.get('contract_type', ''), max_length=10).lower() if data.get('contract_type') else None
-        price = sanitize_float(data.get('price'), min_val=0.0, max_val=100000.0) if data.get('price') else None
+        # Handle optional fields - only sanitize if they exist
+        option_symbol = None
+        if data.get('option_symbol'):
+            option_symbol = sanitize_input(data.get('option_symbol', ''), max_length=50)
+            if not option_symbol:
+                option_symbol = None
+        
+        strike = None
+        if data.get('strike') is not None:
+            # For options, strike can be any positive number (even very small)
+            strike_val = sanitize_float(data.get('strike'), min_val=0.001, max_val=100000.0)
+            if strike_val is not None:
+                strike = strike_val
+        
+        expiration_date = None
+        if data.get('expiration_date'):
+            exp_date = sanitize_input(data.get('expiration_date', ''), max_length=10)
+            if exp_date:
+                expiration_date = exp_date
+        
+        contract_type = None
+        if data.get('contract_type'):
+            ct = sanitize_input(data.get('contract_type', ''), max_length=10).lower()
+            if ct in ['call', 'put', 'stock', 'option']:
+                contract_type = ct
+        
+        price = None
+        if data.get('price') is not None:
+            price_val = sanitize_float(data.get('price'), min_val=0.0, max_val=100000.0)
+            if price_val is not None:
+                price = price_val
         strategy_source = sanitize_input(data.get('strategy_source', 'manual'), max_length=20)
         automation_id = sanitize_int(data.get('automation_id'), min_val=1) if data.get('automation_id') else None
         notes = sanitize_input(data.get('notes', ''), max_length=500) if data.get('notes') else None
