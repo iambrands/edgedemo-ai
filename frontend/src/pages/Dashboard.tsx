@@ -430,6 +430,76 @@ const Dashboard: React.FC = () => {
         </button>
       </div>
 
+      {/* Today's Opportunities Widget */}
+      {opportunities.length > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-secondary">🎯 Today's Opportunities</h2>
+              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                {opportunities.length} found
+              </span>
+            </div>
+            <button
+              onClick={loadOpportunities}
+              disabled={loadingOpportunities}
+              className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
+            >
+              {loadingOpportunities ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {opportunities.map((opp, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleAnalyzeOpportunity(opp.symbol)}
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-bold text-lg text-secondary">{opp.symbol}</h3>
+                    {opp.current_price && (
+                      <p className="text-sm text-gray-600">${opp.current_price.toFixed(2)}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
+                      opp.signal_direction === 'bullish' 
+                        ? 'bg-green-100 text-green-800' 
+                        : opp.signal_direction === 'bearish'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {opp.signal_direction?.toUpperCase() || 'NEUTRAL'}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {(opp.confidence * 100).toFixed(0)}% confidence
+                    </div>
+                  </div>
+                </div>
+                {opp.reason && (
+                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">{opp.reason}</p>
+                )}
+                <div className="flex items-center justify-between text-xs">
+                  {opp.iv_rank !== undefined && (
+                    <span className={`px-2 py-1 rounded ${
+                      opp.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
+                      opp.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      IV Rank: {opp.iv_rank.toFixed(0)}%
+                    </span>
+                  )}
+                  <button className="text-primary font-medium hover:text-indigo-700">
+                    Analyze Options →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Account Balance Card */}
       <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between">
