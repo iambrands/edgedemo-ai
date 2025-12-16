@@ -518,6 +518,13 @@ const Help: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        initialPageUrl="/help"
+      />
     </div>
   );
 };
