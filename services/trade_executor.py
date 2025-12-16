@@ -425,6 +425,7 @@ class TradeExecutor:
                 else:
                     # Reduce position
                     position.quantity -= quantity
+            return False  # No new position created for sell
     
     def get_positions(self, user_id: int, update_prices: bool = False) -> List[Dict]:
         """Get all open positions for user
