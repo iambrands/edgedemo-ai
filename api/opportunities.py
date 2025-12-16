@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
+from services.market_movers import MarketMoversService
 from models.stock import Stock
 
 opportunities_bp = Blueprint('opportunities', __name__)
@@ -186,4 +187,22 @@ def quick_scan(current_user):
     except Exception as e:
         current_app.logger.error(f"Error in quick scan: {e}", exc_info=True)
         return jsonify({'error': 'Failed to perform quick scan'}), 500
+
+@opportunities_bp.route('/market-movers', methods=['GET'])
+@token_required
+def get_market_movers(current_user):
+    """Get market movers - high volume/volatility stocks"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        movers_service = MarketMoversService()
+        movers = movers_service.get_market_movers(limit=limit)
+        
+        return jsonify({
+            'movers': movers,
+            'count': len(movers)
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting market movers: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to load market movers'}), 500
 

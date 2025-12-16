@@ -53,6 +53,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
     loadOpportunities();
+    loadMarketMovers();
     
     // Check if user has seen onboarding
     const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');
