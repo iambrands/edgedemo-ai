@@ -215,7 +215,10 @@ const Dashboard: React.FC = () => {
         const newOpportunities = results.filter((r: any) => !existingSymbols.has(r.symbol));
         setOpportunities([...opportunities, ...newOpportunities]);
       } else {
-        toast.info('No opportunities found in popular symbols. Try adding symbols to your watchlist.', { duration: 4000 });
+        toast('No opportunities found in popular symbols. Try adding symbols to your watchlist.', { 
+          duration: 4000,
+          icon: 'ℹ️'
+        });
       }
     } catch (error: any) {
       console.error('Quick scan failed:', error);
