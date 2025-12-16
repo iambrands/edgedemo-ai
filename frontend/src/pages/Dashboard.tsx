@@ -393,8 +393,27 @@ const Dashboard: React.FC = () => {
     return <div className="text-center py-12">Loading dashboard...</div>;
   }
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('has_seen_onboarding', 'true');
+    setShowOnboarding(false);
+    toast.success('Welcome to IAB OptionsBot! 🎉');
+  };
+
+  const handleOnboardingSkip = () => {
+    localStorage.setItem('has_seen_onboarding', 'true');
+    setShowOnboarding(false);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <OnboardingModal
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
         <button
