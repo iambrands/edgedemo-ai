@@ -612,8 +612,20 @@ const Dashboard: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
+          {opportunities.length === 0 && !loadingOpportunities && (
+            <p className="text-center text-gray-500 text-sm py-4">
+              No high-confidence opportunities (70%+) found. Add symbols to your watchlist or try Quick Scan.
+            </p>
+          )}
+          </>
+        )}
+        
+        {!showOpportunities && (
+          <p className="text-center text-gray-500 text-sm py-4 italic">
+            Opportunities hidden. Click "Show" to display.
+          </p>
+        )}
+      </div>
 
       {/* Account Balance Card */}
       <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-6">
