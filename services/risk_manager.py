@@ -103,6 +103,20 @@ class RiskManager:
             )
             db.session.add(risk_limits)
             db.session.commit()
+        else:
+            # Update existing risk limits if they have outdated max_dte (e.g., 30 days)
+            # This fixes users who were created before we increased the default max_dte
+            user = db.session.query(User).get(user_id)
+            if user and risk_limits.max_dte and risk_limits.max_dte <= 60:
+                # If max_dte is 60 or less, update it to match current defaults
+                defaults = self._get_default_risk_limits(user)
+                if defaults.get('max_dte', 1095) > risk_limits.max_dte:
+                    try:
+                        current_app.logger.info(f'Updating max_dte for user {user_id} from {risk_limits.max_dte} to {defaults.get("max_dte", 1095)}')
+                    except RuntimeError:
+                        pass
+                    risk_limits.max_dte = defaults.get('max_dte', 1095)
+                    db.session.commit()
         
         return risk_limits
     
