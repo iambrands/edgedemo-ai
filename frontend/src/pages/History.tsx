@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { tradesService } from '../services/trades';
 import { Trade } from '../types/trades';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 const History: React.FC = () => {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -74,6 +75,33 @@ const History: React.FC = () => {
     setTimeout(loadHistory, 100);
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.start_date) params.append('start_date', filters.start_date);
+      if (filters.end_date) params.append('end_date', filters.end_date);
+      
+      const response = await api.get(`/tax/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `trades_export_${new Date().toISOString().split('T')[0]}.csv`;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Trade history exported successfully!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to export trade history');
+    }
+  };
+
   const totalPnl = trades
     .filter(t => t.realized_pnl)
     .reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
@@ -121,9 +149,16 @@ const History: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <h2 className="text-xl font-bold text-secondary">Filters</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleExportCSV}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+            >
+              <span>📥</span>
+              Export CSV
+            </button>
             <button
               onClick={() => setQuickDateRange('today')}
               className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm font-medium"

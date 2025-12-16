@@ -36,13 +36,16 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete, onSkip })
             Your <strong>Dashboard</strong> shows everything you need:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
+            <li><strong>Today's Opportunities:</strong> High-confidence trading signals (70%+) from your watchlist</li>
+            <li><strong>Market Movers:</strong> Stocks with high volume and volatility</li>
+            <li><strong>AI-Powered Suggestions:</strong> Personalized recommendations based on your trading patterns</li>
             <li><strong>Active Positions:</strong> See all your open trades</li>
             <li><strong>P/L Tracking:</strong> Monitor your profits and losses</li>
             <li><strong>Performance Charts:</strong> Track your trading progress</li>
             <li><strong>Recent Trades:</strong> Review your trade history</li>
           </ul>
           <p className="text-sm text-gray-600 mt-4">
-            💡 <strong>Tip:</strong> Click "Details" on any position to see full information including AI analysis!
+            💡 <strong>Tip:</strong> Use "Quick Scan" to find opportunities instantly, or click any opportunity card to analyze options!
           </p>
         </div>
       ),
@@ -116,8 +119,11 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete, onSkip })
             Here's what to do next:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-2">
-            <li><strong>Add stocks to your Watchlist</strong> (stocks you want to trade)</li>
-            <li><strong>Use Options Analyzer</strong> to find good trades</li>
+            <li><strong>Check Today's Opportunities</strong> on your Dashboard for high-confidence signals</li>
+            <li><strong>Use Quick Scan</strong> to instantly find trading opportunities</li>
+            <li><strong>Review AI Suggestions</strong> for personalized recommendations</li>
+            <li><strong>Add stocks to your Watchlist</strong> (stocks you want to track)</li>
+            <li><strong>Use Options Analyzer</strong> to analyze and find good trades</li>
             <li><strong>Execute trades</strong> from the Trade page</li>
             <li><strong>Monitor positions</strong> on your Dashboard</li>
             <li><strong>Create automations</strong> for hands-free trading</li>

@@ -102,7 +102,20 @@ const Help: React.FC = () => {
             Your Dashboard is the central hub where you can see everything about your trading activity at a glance.
           </p>
           
-          <h4 className="text-xl font-semibold text-gray-900 mt-4">Key Components</h4>
+          <h4 className="text-xl font-semibold text-gray-900 mt-4">Discovery Features</h4>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+            <li><strong>Today's Opportunities:</strong> High-confidence trading signals (70%+) from your watchlist. Shows top 5 opportunities with confidence scores, signal direction, and IV rank. Toggle to show/hide.</li>
+            <li><strong>Quick Scan:</strong> One-click button in the header to instantly scan 10 popular symbols for trading opportunities. Results merge with Today's Opportunities.</li>
+            <li><strong>Market Movers:</strong> Top 8 stocks with high volume and volatility. Shows price change %, volume ratio, and IV rank. Always visible.</li>
+            <li><strong>AI-Powered Suggestions:</strong> Personalized symbol recommendations based on your trading patterns, risk tolerance, and current market signals. Shows top 8 suggestions with scores, match reasons, and risk levels.</li>
+          </ul>
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-purple-800">
+              <strong>💡 Tip:</strong> Click any opportunity, mover, or suggestion card to instantly analyze options for that symbol in the Options Analyzer!
+            </p>
+          </div>
+
+          <h4 className="text-xl font-semibold text-gray-900 mt-6">Key Components</h4>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             <li><strong>Account Balance:</strong> Your current paper trading balance</li>
             <li><strong>Active Positions:</strong> All your open trades with real-time P/L</li>
