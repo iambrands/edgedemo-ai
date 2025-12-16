@@ -355,6 +355,21 @@ const Help: React.FC = () => {
             <li>Trade duration</li>
             <li>Commission and fees</li>
           </ul>
+
+          <h4 className="text-xl font-semibold text-gray-900 mt-6">Exporting Trade History</h4>
+          <p className="text-gray-700">
+            You can export your trade history to CSV for analysis or tax purposes:
+          </p>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+            <li>Apply any filters you want (date range, symbol, etc.)</li>
+            <li>Click the "Export CSV" button in the Filters section</li>
+            <li>The CSV file will download with all trade details</li>
+          </ol>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> The exported CSV includes all trade details and is compatible with tax software and Excel.
+            </p>
+          </div>
         </div>
       ),
     },
