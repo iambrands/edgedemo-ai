@@ -69,7 +69,7 @@ def execute_trade(current_user):
         automation_id = sanitize_int(data.get('automation_id'), min_val=1) if data.get('automation_id') else None
         notes = sanitize_input(data.get('notes', ''), max_length=500) if data.get('notes') else None
         
-        current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}')
+        current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}, strike={strike}, expiration={expiration_date}, contract_type={contract_type}, price={price}')
         trade_executor = get_trade_executor()
         result = trade_executor.execute_trade(
             user_id=current_user.id,
@@ -87,9 +87,19 @@ def execute_trade(current_user):
         )
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
+    except ValueError as e:
+        # Validation errors - return 400
+        current_app.logger.warning(f'Trade validation error: {str(e)}')
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        current_app.logger.error(f'Trade execution error: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        # Other errors - return 500 with detailed logging
+        import traceback
+        error_trace = traceback.format_exc()
+        current_app.logger.error(f'Trade execution error: {str(e)}\n{error_trace}', exc_info=True)
+        return jsonify({
+            'error': 'Failed to execute trade. Please try again or contact support if the issue persists.',
+            'details': str(e) if current_app.config.get('DEBUG') else None
+        }), 500
 
 @trades_bp.route('/history', methods=['GET'])
 @token_required
