@@ -705,23 +705,30 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Market Movers Widget */}
-      {marketMovers.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-secondary">📈 Market Movers</h2>
+      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-secondary">📈 Market Movers</h2>
+            {marketMovers.length > 0 && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {marketMovers.length} high-activity stocks
+              </span>
+            )}
+            {marketMovers.length === 0 && !loadingMarketMovers && (
               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                 High volume & volatility
               </span>
-            </div>
-            <button
-              onClick={loadMarketMovers}
-              disabled={loadingMarketMovers}
-              className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
-            >
-              {loadingMarketMovers ? 'Refreshing...' : 'Refresh'}
-            </button>
+            )}
           </div>
+          <button
+            onClick={loadMarketMovers}
+            disabled={loadingMarketMovers}
+            className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
+          >
+            {loadingMarketMovers ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        {marketMovers.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {marketMovers.map((mover, idx) => (
               <div
