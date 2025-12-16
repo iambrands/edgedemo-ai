@@ -80,6 +80,9 @@ const Register: React.FC = () => {
         throw new Error('Token not saved');
       }
       
+      // Clear onboarding flag so new users see the tour
+      localStorage.removeItem('has_seen_onboarding');
+      
       // Navigate to dashboard
       setTimeout(() => {
         window.location.href = '/';

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Position, Trade } from '../types/trades';
 import { Stock } from '../types/watchlist';
 import { Line, Bar } from 'react-chartjs-2';
+import OnboardingModal from '../components/OnboardingModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -41,6 +42,7 @@ const Dashboard: React.FC = () => {
   const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
