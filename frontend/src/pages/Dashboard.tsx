@@ -18,6 +18,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from 'chart.js';
 
 ChartJS.register(
@@ -28,7 +29,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const Dashboard: React.FC = () => {
@@ -109,8 +111,9 @@ const Dashboard: React.FC = () => {
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
-      // Create timeout promise (10 seconds for normal, 30 seconds if updating prices)
-      const timeoutMs = updatePrices ? 30000 : 10000;
+      // Create timeout promise (20 seconds for normal, 45 seconds if updating prices)
+      // Increased timeouts to handle slower API responses
+      const timeoutMs = updatePrices ? 45000 : 20000;
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
       });
@@ -124,7 +127,9 @@ const Dashboard: React.FC = () => {
           return await Promise.race([promise, timeout as Promise<T>]);
         } catch (error) {
           console.error(`Failed to load ${name}:`, error);
-          if (!updatePrices || name !== 'positions') {
+          // Only show toast for critical failures, not for timeouts during initial load
+          // This prevents spam of error messages
+          if (updatePrices && name !== 'positions') {
             toast.error(`Failed to load ${name}. Using default values.`, { duration: 3000 });
           }
           return defaultValue;
@@ -142,22 +147,25 @@ const Dashboard: React.FC = () => {
           api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
           'positions',
-          updatePrices ? 30000 : 10000 // Longer timeout if updating prices
+          updatePrices ? 45000 : 20000 // Longer timeout if updating prices
         ),
         fetchWithTimeout(
           tradesService.getHistory({ start_date: thirtyDaysAgo }),
           { trades: [], count: 0 },
-          'trade history'
+          'trade history',
+          20000 // 20 second timeout
         ),
         fetchWithTimeout(
           watchlistService.getWatchlist(),
           { watchlist: [], count: 0 },
-          'watchlist'
+          'watchlist',
+          20000 // 20 second timeout
         ),
         fetchWithTimeout(
           api.get('/auth/user').catch(() => ({ data: { user: { paper_balance: 100000 } } } as any)),
           { data: { user: { paper_balance: 100000 } } } as any,
-          'user data'
+          'user data',
+          20000 // 20 second timeout
         ),
       ]);
       
