@@ -76,7 +76,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete, onSkip })
             <strong>Automations</strong> let you trade automatically:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-            <li>Set entry conditions (e.g., "Buy when RSI < 30")</li>
+            <li>Set entry conditions (e.g., "Buy when RSI &lt; 30")</li>
             <li>Set exit conditions (profit target, stop loss)</li>
             <li>Let the system trade for you automatically</li>
             <li>Monitor positions and execute exits</li>
