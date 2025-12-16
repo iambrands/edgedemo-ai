@@ -48,6 +48,8 @@ const Dashboard: React.FC = () => {
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
   const [quickScanResults, setQuickScanResults] = useState<any[]>([]);
   const [loadingQuickScan, setLoadingQuickScan] = useState(false);
+  const [marketMovers, setMarketMovers] = useState<any[]>([]);
+  const [loadingMarketMovers, setLoadingMarketMovers] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -598,6 +600,69 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Market Movers Widget */}
+      {marketMovers.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-secondary">📈 Market Movers</h2>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                High volume & volatility
+              </span>
+            </div>
+            <button
+              onClick={loadMarketMovers}
+              disabled={loadingMarketMovers}
+              className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
+            >
+              {loadingMarketMovers ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {marketMovers.map((mover, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleAnalyzeOpportunity(mover.symbol)}
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-bold text-lg text-secondary">{mover.symbol}</h3>
+                    <p className="text-sm text-gray-600">${mover.current_price?.toFixed(2) || 'N/A'}</p>
+                  </div>
+                  <div className={`text-right ${mover.movement_type === 'up' ? 'text-green-600' : mover.movement_type === 'down' ? 'text-red-600' : 'text-gray-600'}`}>
+                    <div className="text-sm font-semibold">
+                      {mover.change_percent > 0 ? '+' : ''}{mover.change_percent?.toFixed(2) || 0}%
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-2">
+                  <div className="flex flex-col gap-1">
+                    {mover.volume_ratio > 1 && (
+                      <span className="text-gray-600">
+                        Vol: {mover.volume_ratio.toFixed(1)}x avg
+                      </span>
+                    )}
+                    {mover.iv_rank > 0 && (
+                      <span className={`px-2 py-0.5 rounded ${
+                        mover.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
+                        mover.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        IV: {mover.iv_rank.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <button className="text-primary font-medium hover:text-indigo-700 text-xs">
+                    Analyze →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Active Positions */}
       <div className="bg-white rounded-lg shadow">
