@@ -3,6 +3,7 @@ from utils.decorators import token_required
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
+from services.ai_symbol_recommender import AISymbolRecommender
 from models.stock import Stock
 
 opportunities_bp = Blueprint('opportunities', __name__)
@@ -206,4 +207,25 @@ def get_market_movers(current_user):
     except Exception as e:
         current_app.logger.error(f"Error getting market movers: {e}", exc_info=True)
         return jsonify({'error': 'Failed to load market movers'}), 500
+
+@opportunities_bp.route('/ai-suggestions', methods=['GET'])
+@token_required
+def get_ai_suggestions(current_user):
+    """Get AI-powered personalized symbol recommendations"""
+    try:
+        limit = request.args.get('limit', 8, type=int)
+        recommender = AISymbolRecommender()
+        recommendations = recommender.get_personalized_recommendations(
+            current_user.id, 
+            limit=limit
+        )
+        
+        return jsonify({
+            'recommendations': recommendations,
+            'count': len(recommendations)
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting AI suggestions: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to load AI suggestions'}), 500
 

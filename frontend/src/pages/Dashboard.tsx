@@ -53,12 +53,15 @@ const Dashboard: React.FC = () => {
   const [marketMovers, setMarketMovers] = useState<any[]>([]);
   const [loadingMarketMovers, setLoadingMarketMovers] = useState(false);
   const [showOpportunities, setShowOpportunities] = useState(true);
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboardData();
     loadOpportunities();
     loadMarketMovers();
+    loadAiSuggestions();
     
     // Load user preference for showing opportunities
     const savedPreference = localStorage.getItem('showOpportunities');
@@ -253,6 +256,19 @@ const Dashboard: React.FC = () => {
       setMarketMovers([]);
     } finally {
       setLoadingMarketMovers(false);
+    }
+  };
+
+  const loadAiSuggestions = async () => {
+    setLoadingAiSuggestions(true);
+    try {
+      const response = await api.get('/opportunities/ai-suggestions?limit=8');
+      setAiSuggestions(response.data.recommendations || []);
+    } catch (error: any) {
+      console.error('Failed to load AI suggestions:', error);
+      setAiSuggestions([]);
+    } finally {
+      setLoadingAiSuggestions(false);
     }
   };
 
