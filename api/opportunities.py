@@ -100,3 +100,90 @@ def get_today_opportunities(current_user):
         current_app.logger.error(f"Error getting today's opportunities: {e}", exc_info=True)
         return jsonify({'error': 'Failed to load opportunities'}), 500
 
+@opportunities_bp.route('/quick-scan', methods=['POST'])
+@token_required
+def quick_scan(current_user):
+    """Quick scan of popular symbols for trading opportunities"""
+    try:
+        signal_generator = SignalGenerator()
+        
+        # Popular symbols to scan
+        popular_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NFLX']
+        
+        opportunities = []
+        max_opportunities = 5
+        
+        # Scan each symbol
+        for symbol in popular_symbols:
+            try:
+                # Generate signals with lower threshold for discovery
+                signals = signal_generator.generate_signals(
+                    symbol,
+                    {
+                        'min_confidence': 0.45,  # Lower threshold for quick scan
+                        'strategy_type': 'balanced'
+                    }
+                )
+                
+                if 'error' in signals:
+                    continue
+                
+                signal_data = signals.get('signals', {})
+                confidence = signal_data.get('confidence', 0)
+                
+                # Include if recommended or has decent confidence
+                if signal_data.get('recommended', False) or confidence >= 0.55:
+                    # Get quote info
+                    from services.tradier_connector import TradierConnector
+                    tradier = TradierConnector()
+                    quote = tradier.get_quote(symbol)
+                    current_price = None
+                    price_change = None
+                    if 'quotes' in quote and 'quote' in quote['quotes']:
+                        quote_data = quote['quotes']['quote']
+                        current_price = quote_data.get('last', 0)
+                        price_change = quote_data.get('change', 0)
+                    
+                    # Get IV metrics
+                    iv_metrics = signals.get('iv_metrics', {})
+                    iv_rank = iv_metrics.get('iv_rank', 0) if iv_metrics else 0
+                    
+                    opportunity = {
+                        'symbol': symbol,
+                        'current_price': current_price,
+                        'price_change': price_change,
+                        'signal_direction': signal_data.get('direction', 'neutral'),
+                        'confidence': confidence,
+                        'action': signal_data.get('action', 'hold'),
+                        'reason': signal_data.get('reason', ''),
+                        'iv_rank': iv_rank,
+                        'technical_indicators': {
+                            'rsi': signals.get('technical_analysis', {}).get('indicators', {}).get('rsi'),
+                            'trend': signal_data.get('trend', 'neutral')
+                        },
+                        'timestamp': signals.get('timestamp')
+                    }
+                    
+                    opportunities.append(opportunity)
+                    
+                    # Stop if we have enough
+                    if len(opportunities) >= max_opportunities:
+                        break
+                        
+            except Exception as e:
+                current_app.logger.warning(f"Error scanning {symbol} in quick scan: {e}")
+                continue
+        
+        # Sort by confidence (highest first)
+        opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+        
+        return jsonify({
+            'opportunities': opportunities[:max_opportunities],
+            'count': len(opportunities[:max_opportunities]),
+            'source': 'quick_scan'
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in quick scan: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to perform quick scan'}), 500
+
