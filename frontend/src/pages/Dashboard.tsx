@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tradesService } from '../services/trades';
 import { watchlistService } from '../services/watchlist';
 import api from '../services/api';
@@ -43,9 +44,13 @@ const Dashboard: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboardData();
+    loadOpportunities();
     
     // Check if user has seen onboarding
     const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');

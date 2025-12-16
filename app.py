@@ -91,6 +91,7 @@ def create_app(config_name=None):
     from api.options_flow import options_flow_bp
     from api.tax import tax_bp
     from api.feedback import feedback_bp
+    from api.opportunities import opportunities_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -106,6 +107,7 @@ def create_app(config_name=None):
     app.register_blueprint(options_flow_bp, url_prefix='/api/options-flow')
     app.register_blueprint(tax_bp, url_prefix='/api/tax')
     app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
+    app.register_blueprint(opportunities_bp, url_prefix='/api/opportunities')
     
     # Import all models to ensure they're registered with SQLAlchemy
     # This must happen before any database operations
