@@ -182,6 +182,62 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const loadOpportunities = async () => {
+    setLoadingOpportunities(true);
+    try {
+      const response = await api.get('/opportunities/today');
+      setOpportunities(response.data.opportunities || []);
+    } catch (error: any) {
+      // Silently fail - opportunities are optional
+      console.error('Failed to load opportunities:', error);
+      setOpportunities([]);
+    } finally {
+      setLoadingOpportunities(false);
+    }
+  };
+
+  const handleAnalyzeOpportunity = (symbol: string) => {
+    // Navigate to Options Analyzer with symbol pre-filled
+    navigate('/options-analyzer', { state: { symbol } });
+  };
+
+  const handleQuickScan = async () => {
+    setLoadingQuickScan(true);
+    try {
+      const response = await api.post('/opportunities/quick-scan');
+      const results = response.data.opportunities || [];
+      setQuickScanResults(results);
+      
+      if (results.length > 0) {
+        toast.success(`Found ${results.length} opportunity${results.length > 1 ? 'ies' : ''}!`, { duration: 3000 });
+        // Merge with existing opportunities (avoid duplicates)
+        const existingSymbols = new Set(opportunities.map(o => o.symbol));
+        const newOpportunities = results.filter((r: any) => !existingSymbols.has(r.symbol));
+        setOpportunities([...opportunities, ...newOpportunities]);
+      } else {
+        toast.info('No opportunities found in popular symbols. Try adding symbols to your watchlist.', { duration: 4000 });
+      }
+    } catch (error: any) {
+      console.error('Quick scan failed:', error);
+      toast.error('Quick scan failed. Please try again.', { duration: 3000 });
+    } finally {
+      setLoadingQuickScan(false);
+    }
+  };
+
+  const loadMarketMovers = async () => {
+    setLoadingMarketMovers(true);
+    try {
+      const response = await api.get('/opportunities/market-movers?limit=8');
+      setMarketMovers(response.data.movers || []);
+    } catch (error: any) {
+      console.error('Failed to load market movers:', error);
+      setMarketMovers([]);
+    } finally {
+      setLoadingMarketMovers(false);
+    }
+  };
+
   const refreshData = async () => {
     // Force update prices when manually refreshing
     setForcePriceUpdate(true);
