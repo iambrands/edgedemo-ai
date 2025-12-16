@@ -771,8 +771,19 @@ const Dashboard: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8">
+            {loadingMarketMovers ? (
+              <p className="text-gray-500 text-sm">Loading market movers...</p>
+            ) : (
+              <div>
+                <p className="text-gray-500 text-sm mb-2">No market movers found at this time.</p>
+                <p className="text-gray-400 text-xs">Click "Refresh" to scan again.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Active Positions */}
       <div className="bg-white rounded-lg shadow">
