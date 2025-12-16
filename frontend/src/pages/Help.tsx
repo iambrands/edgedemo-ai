@@ -432,8 +432,18 @@ const Help: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Help & Documentation</h1>
-          <p className="text-gray-600">Everything you need to know about IAB OptionsBot</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Help & Documentation</h1>
+              <p className="text-gray-600">Everything you need to know about IAB OptionsBot</p>
+            </div>
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
+            >
+              💬 Send Feedback
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
