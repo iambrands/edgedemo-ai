@@ -199,10 +199,41 @@ class TradeExecutor:
         db.session.add(trade)
         
         # Update position
-        self._update_position(user_id, symbol, action, quantity, price, option_symbol,
+        position_created = self._update_position(user_id, symbol, action, quantity, price, option_symbol,
                             strike, expiration_date, contract_type, delta, gamma, theta, vega, iv)
         
         db.session.commit()
+        
+        # If a new position was created, update its current price immediately
+        if position_created and action.lower() == 'buy':
+            try:
+                from services.position_monitor import PositionMonitor
+                monitor = PositionMonitor()
+                # Get the position we just created
+                if option_symbol:
+                    position = db.session.query(Position).filter_by(
+                        user_id=user_id,
+                        option_symbol=option_symbol,
+                        status='open'
+                    ).order_by(Position.entry_date.desc()).first()
+                else:
+                    position = db.session.query(Position).filter_by(
+                        user_id=user_id,
+                        symbol=symbol,
+                        option_symbol=None,
+                        status='open'
+                    ).order_by(Position.entry_date.desc()).first()
+                
+                if position:
+                    monitor.update_position_data(position)
+                    db.session.refresh(position)
+                    db.session.commit()
+            except Exception as e:
+                # Log but don't fail the trade
+                try:
+                    current_app.logger.warning(f"Failed to update position price after creation: {e}")
+                except RuntimeError:
+                    pass
         
         # Log audit
         log_audit(
@@ -321,8 +352,12 @@ class TradeExecutor:
                         price: float, option_symbol: str = None, strike: float = None,
                         expiration_date: str = None, contract_type: str = None,
                         delta: float = None, gamma: float = None, theta: float = None,
-                        vega: float = None, iv: float = None):
-        """Update position based on trade"""
+                        vega: float = None, iv: float = None) -> bool:
+        """Update position based on trade
+        
+        Returns:
+            bool: True if a new position was created, False if existing position was updated
+        """
         db = self._get_db()
         
         if option_symbol:
@@ -345,6 +380,7 @@ class TradeExecutor:
                 total_cost = (position.quantity * position.entry_price) + (quantity * price)
                 position.quantity += quantity
                 position.entry_price = total_cost / position.quantity
+                return False  # Existing position updated
             else:
                 # Create new position
                 position = Position(
@@ -354,7 +390,7 @@ class TradeExecutor:
                     contract_type=contract_type,
                     quantity=quantity,
                     entry_price=price,
-                    current_price=price,
+                    current_price=price,  # Will be updated immediately after creation
                     strike_price=strike,
                     expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d').date() if expiration_date else None,
                     entry_delta=delta,
@@ -369,6 +405,7 @@ class TradeExecutor:
                     current_iv=iv
                 )
                 db.session.add(position)
+                return True  # New position created
         elif action.lower() == 'sell':
             if position:
                 if position.quantity <= quantity:
