@@ -66,6 +66,14 @@ class Config:
     
     # CORS Configuration
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:6002,http://localhost:4000,http://localhost:3000,http://127.0.0.1:6002,http://127.0.0.1:4000,http://127.0.0.1:3000').split(',')
+    
+    # Email configuration (for feedback notifications)
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
+    FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@iabadvisors.com')
+    DEFAULT_FEEDBACK_EMAIL = os.environ.get('DEFAULT_FEEDBACK_EMAIL', 'leslie@iabadvisors.com')
 
 class DevelopmentConfig(Config):
     DEBUG = True
