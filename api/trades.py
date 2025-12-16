@@ -17,26 +17,47 @@ def execute_trade(current_user):
     if not data or not data.get('symbol') or not data.get('action') or not data.get('quantity'):
         return jsonify({'error': 'Missing required fields'}), 400
     
-    symbol = data['symbol'].upper()
-    if not validate_symbol(symbol):
-        return jsonify({'error': 'Invalid symbol'}), 400
-    
     try:
-        current_app.logger.info(f'Executing trade: {data}')
+        # Import sanitization functions
+        from utils.helpers import sanitize_symbol, sanitize_input, sanitize_int, sanitize_float
+        
+        # Sanitize and validate inputs
+        symbol = sanitize_symbol(data.get('symbol', ''))
+        if not symbol:
+            return jsonify({'error': 'Invalid symbol'}), 400
+        
+        action = sanitize_input(data.get('action', ''), max_length=10).lower()
+        if action not in ['buy', 'sell']:
+            return jsonify({'error': 'Invalid action. Must be "buy" or "sell"'}), 400
+        
+        quantity = sanitize_int(data.get('quantity'), min_val=1, max_val=10000)
+        if not quantity:
+            return jsonify({'error': 'Invalid quantity. Must be between 1 and 10000'}), 400
+        
+        option_symbol = sanitize_input(data.get('option_symbol', ''), max_length=50) if data.get('option_symbol') else None
+        strike = sanitize_float(data.get('strike'), min_val=0.01, max_val=100000.0) if data.get('strike') else None
+        expiration_date = sanitize_input(data.get('expiration_date', ''), max_length=10) if data.get('expiration_date') else None
+        contract_type = sanitize_input(data.get('contract_type', ''), max_length=10).lower() if data.get('contract_type') else None
+        price = sanitize_float(data.get('price'), min_val=0.0, max_val=100000.0) if data.get('price') else None
+        strategy_source = sanitize_input(data.get('strategy_source', 'manual'), max_length=20)
+        automation_id = sanitize_int(data.get('automation_id'), min_val=1) if data.get('automation_id') else None
+        notes = sanitize_input(data.get('notes', ''), max_length=500) if data.get('notes') else None
+        
+        current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}')
         trade_executor = get_trade_executor()
         result = trade_executor.execute_trade(
             user_id=current_user.id,
             symbol=symbol,
-            action=data['action'],
-            quantity=int(data['quantity']),
-            option_symbol=data.get('option_symbol'),
-            strike=data.get('strike'),
-            expiration_date=data.get('expiration_date'),
-            contract_type=data.get('contract_type'),
-            price=data.get('price'),
-            strategy_source=data.get('strategy_source', 'manual'),
-            automation_id=data.get('automation_id'),
-            notes=data.get('notes')
+            action=action,
+            quantity=quantity,
+            option_symbol=option_symbol,
+            strike=strike,
+            expiration_date=expiration_date,
+            contract_type=contract_type,
+            price=price,
+            strategy_source=strategy_source,
+            automation_id=automation_id,
+            notes=notes
         )
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201

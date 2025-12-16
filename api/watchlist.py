@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from services.stock_manager import StockManager
 from utils.decorators import token_required
-from utils.helpers import validate_symbol
+from utils.helpers import validate_symbol, sanitize_input, sanitize_symbol
 
 watchlist_bp = Blueprint('watchlist', __name__)
 
@@ -31,14 +31,23 @@ def add_to_watchlist(current_user):
     if not data or not data.get('symbol'):
         return jsonify({'error': 'Symbol required'}), 400
     
-    symbol = data['symbol'].upper()
-    if not validate_symbol(symbol):
+    # Sanitize inputs
+    symbol = sanitize_symbol(data.get('symbol', ''))
+    if not symbol:
         return jsonify({'error': 'Invalid symbol'}), 400
+    
+    # Sanitize tags and notes
+    tags = []
+    if data.get('tags'):
+        if isinstance(data['tags'], list):
+            tags = [sanitize_input(tag, max_length=50) for tag in data['tags'] if tag]
+        else:
+            tags = [sanitize_input(str(data['tags']), max_length=50)]
+    
+    notes = sanitize_input(data.get('notes', ''), max_length=1000) if data.get('notes') else None
     
     try:
         stock_manager = get_stock_manager()
-        tags = data.get('tags', [])
-        notes = data.get('notes')
         stock = stock_manager.add_to_watchlist(
             user_id=current_user.id,
             symbol=symbol,
@@ -71,8 +80,8 @@ def refresh_watchlist(current_user):
 @token_required
 def remove_from_watchlist(current_user, symbol):
     """Remove stock from watchlist"""
-    symbol = symbol.upper()
-    if not validate_symbol(symbol):
+    symbol = sanitize_symbol(symbol)
+    if not symbol:
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
@@ -89,12 +98,12 @@ def remove_from_watchlist(current_user, symbol):
 @token_required
 def update_notes(current_user, symbol):
     """Update notes for a stock"""
-    symbol = symbol.upper()
-    if not validate_symbol(symbol):
+    symbol = sanitize_symbol(symbol)
+    if not symbol:
         return jsonify({'error': 'Invalid symbol'}), 400
     
     data = request.get_json()
-    notes = data.get('notes', '') if data else ''
+    notes = sanitize_input(data.get('notes', ''), max_length=1000) if data and data.get('notes') else ''
     
     try:
         stock_manager = get_stock_manager()
@@ -113,12 +122,17 @@ def update_notes(current_user, symbol):
 @token_required
 def update_tags(current_user, symbol):
     """Update tags for a stock"""
-    symbol = symbol.upper()
-    if not validate_symbol(symbol):
+    symbol = sanitize_symbol(symbol)
+    if not symbol:
         return jsonify({'error': 'Invalid symbol'}), 400
     
     data = request.get_json()
-    tags = data.get('tags', []) if data else []
+    tags = []
+    if data and data.get('tags'):
+        if isinstance(data['tags'], list):
+            tags = [sanitize_input(tag, max_length=50) for tag in data['tags'] if tag]
+        else:
+            tags = [sanitize_input(str(data['tags']), max_length=50)]
     
     try:
         stock_manager = get_stock_manager()

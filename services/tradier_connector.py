@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from flask import current_app
 import random
+import time
+from utils.rate_limiter import tradier_rate_limiter
 
 class TradierConnector:
     """Tradier API integration with mock data support and alternative data sources"""
@@ -58,16 +60,41 @@ class TradierConnector:
             'Accept': 'application/json'
         }
     
+    @tradier_rate_limiter
     def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
-        """Make API request or return mock data"""
+        """Make API request or return mock data (rate limited)"""
         if self.use_mock:
             return self._get_mock_data(endpoint, params)
         
         url = f"{self.base_url}/{endpoint}"
         try:
             response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+            
+            # Check for rate limit errors (429)
+            if response.status_code == 429:
+                try:
+                    current_app.logger.warning(f"Tradier API rate limit hit for {endpoint}. Waiting and retrying...")
+                except RuntimeError:
+                    pass
+                # Wait a bit longer and retry once
+                time.sleep(2)
+                response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+            
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                try:
+                    current_app.logger.error(f"Tradier API rate limit exceeded for {endpoint}. Using fallback.")
+                except RuntimeError:
+                    pass
+            else:
+                try:
+                    current_app.logger.error(f"Tradier API error: {str(e)}")
+                except RuntimeError:
+                    pass
+            # Fallback to mock data on error
+            return self._get_mock_data(endpoint, params)
         except Exception as e:
             try:
                 current_app.logger.error(f"Tradier API error: {str(e)}")

@@ -33,34 +33,60 @@ def create_automation(current_user):
     if not data or not data.get('name') or not data.get('symbol'):
         return jsonify({'error': 'Name and symbol required'}), 400
     
-    symbol = data['symbol'].upper()
-    if not validate_symbol(symbol):
-        return jsonify({'error': 'Invalid symbol'}), 400
-    
     try:
+        # Import sanitization functions
+        from utils.helpers import sanitize_input, sanitize_symbol, sanitize_float, sanitize_int
+        
+        # Sanitize all inputs
+        name = sanitize_input(data.get('name'), max_length=100)
+        description = sanitize_input(data.get('description', ''), max_length=1000) if data.get('description') else None
+        symbol = sanitize_symbol(data.get('symbol', ''))
+        
+        # Validate required fields
+        if not name or len(name) < 1:
+            return jsonify({'error': 'Name is required'}), 400
+        
+        if not symbol:
+            return jsonify({'error': 'Invalid symbol'}), 400
+        
+        # Sanitize numeric inputs
+        min_confidence = sanitize_float(data.get('min_confidence'), min_val=0.0, max_val=1.0) or 0.70
+        profit_target_percent = sanitize_float(data.get('profit_target_percent'), min_val=0.0, max_val=1000.0) or 50.0
+        stop_loss_percent = sanitize_float(data.get('stop_loss_percent'), min_val=0.0, max_val=100.0) or 15.0
+        max_days_to_hold = sanitize_int(data.get('max_days_to_hold'), min_val=1, max_val=365) or None
+        preferred_dte = sanitize_int(data.get('preferred_dte'), min_val=1, max_val=365) or 30
+        min_dte = sanitize_int(data.get('min_dte'), min_val=0, max_val=365) or 21
+        max_dte = sanitize_int(data.get('max_dte'), min_val=1, max_val=1095) or 60
+        target_delta = sanitize_float(data.get('target_delta'), min_val=-1.0, max_val=1.0) if data.get('target_delta') else None
+        min_delta = sanitize_float(data.get('min_delta'), min_val=-1.0, max_val=1.0) if data.get('min_delta') else None
+        max_delta = sanitize_float(data.get('max_delta'), min_val=-1.0, max_val=1.0) if data.get('max_delta') else None
+        min_volume = sanitize_int(data.get('min_volume'), min_val=0, max_val=1000000) or 20
+        min_open_interest = sanitize_int(data.get('min_open_interest'), min_val=0, max_val=10000000) or 100
+        max_spread_percent = sanitize_float(data.get('max_spread_percent'), min_val=0.0, max_val=100.0) or 15.0
+        
         db = get_db()
         automation = Automation(
             user_id=current_user.id,
-            name=data['name'],
-            description=data.get('description'),
+            name=name,
+            description=description,
             symbol=symbol,
-            strategy_type=data.get('strategy_type', 'covered_call'),
-            target_delta=data.get('target_delta'),
-            min_delta=data.get('min_delta'),
-            max_delta=data.get('max_delta'),
-            preferred_dte=data.get('preferred_dte', 30),
-            min_dte=data.get('min_dte', 21),
-            max_dte=data.get('max_dte', 60),
-            entry_condition=data.get('entry_condition'),
-            entry_value=data.get('entry_value'),
-            min_confidence=data.get('min_confidence', 0.70),
-            min_volume=data.get('min_volume', 20),
-            min_open_interest=data.get('min_open_interest', 100),
-            max_spread_percent=data.get('max_spread_percent', 15.0),
-            profit_target_percent=data.get('profit_target_percent', 50.0),
-            profit_target_1=data.get('profit_target_percent', 50.0),  # Set profit_target_1 from profit_target_percent
-            stop_loss_percent=-abs(data.get('stop_loss_percent', 15.0)) if data.get('stop_loss_percent') else -15.0,  # Normalize to negative
-            max_days_to_hold=data.get('max_days_to_hold'),
+            strategy_type=sanitize_input(data.get('strategy_type', 'covered_call'), max_length=50),
+            target_delta=target_delta,
+            min_delta=min_delta,
+            max_delta=max_delta,
+            preferred_dte=preferred_dte,
+            min_dte=min_dte,
+            max_dte=max_dte,
+            entry_condition=sanitize_input(data.get('entry_condition'), max_length=50) if data.get('entry_condition') else None,
+            entry_value=sanitize_float(data.get('entry_value')) if data.get('entry_value') else None,
+            min_confidence=min_confidence,
+            min_volume=min_volume,
+            min_open_interest=min_open_interest,
+            max_spread_percent=max_spread_percent,
+            profit_target_percent=profit_target_percent,
+            profit_target_1=profit_target_percent,  # Set profit_target_1 from profit_target_percent
+            stop_loss_percent=-abs(stop_loss_percent),  # Normalize to negative
+            max_days_to_hold=max_days_to_hold,
             exit_at_profit_target=data.get('exit_at_profit_target', True),
             exit_at_stop_loss=data.get('exit_at_stop_loss', True),
             exit_at_max_days=data.get('exit_at_max_days', True),

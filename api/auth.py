@@ -28,24 +28,42 @@ def register():
         return jsonify({'error': 'Missing required fields'}), 400
     
     try:
+        # Import sanitization functions
+        from utils.helpers import sanitize_input, sanitize_email
+        
+        # Sanitize all inputs
+        username = sanitize_input(data.get('username'), max_length=80)
+        email = sanitize_email(data.get('email'))
+        password = data.get('password', '')
+        
+        # Validate inputs
+        if not username or len(username) < 3:
+            return jsonify({'error': 'Username must be at least 3 characters'}), 400
+        
+        if not email:
+            return jsonify({'error': 'Invalid email address'}), 400
+        
+        if not password or len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
         # Get db from current_app extensions
         db = get_db()
         
         # Use db.session.query() instead of User.query to avoid app context issues
-        if db.session.query(User).filter_by(username=data['username']).first():
+        if db.session.query(User).filter_by(username=username).first():
             return jsonify({'error': 'Username already exists'}), 400
         
-        if db.session.query(User).filter_by(email=data['email']).first():
+        if db.session.query(User).filter_by(email=email).first():
             return jsonify({'error': 'Email already exists'}), 400
         
-        # Create new user
+        # Create new user with sanitized inputs
         user = User(
-            username=data['username'],
-            email=data['email'],
-            default_strategy=data.get('default_strategy', 'balanced'),
-            risk_tolerance=data.get('risk_tolerance', 'moderate')
+            username=username,
+            email=email,
+            default_strategy=sanitize_input(data.get('default_strategy', 'balanced'), max_length=20),
+            risk_tolerance=sanitize_input(data.get('risk_tolerance', 'moderate'), max_length=20)
         )
-        user.set_password(data['password'])
+        user.set_password(password)
         
         db.session.add(user)
         db.session.commit()

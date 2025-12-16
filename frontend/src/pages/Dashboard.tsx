@@ -474,57 +474,58 @@ const Dashboard: React.FC = () => {
 
       {/* Active Positions */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-secondary">Active Positions</h2>
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <h2 className="text-lg md:text-xl font-bold text-secondary">Active Positions</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('symbol')}
                 >
                   Symbol <SortArrow column="symbol" />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Type</th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 hidden md:table-cell"
                   onClick={() => handleSort('quantity')}
                 >
-                  Quantity <SortArrow column="quantity" />
+                  Qty <SortArrow column="quantity" />
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 hidden lg:table-cell"
                   onClick={() => handleSort('entry_price')}
                 >
-                  Entry Price <SortArrow column="entry_price" />
+                  Entry <SortArrow column="entry_price" />
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('current_price')}
                 >
-                  Current Price <SortArrow column="current_price" />
+                  Current <SortArrow column="current_price" />
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 hidden lg:table-cell"
                   onClick={() => handleSort('expiration')}
                 >
-                  Expiration <SortArrow column="expiration" />
+                  Exp <SortArrow column="expiration" />
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('pnl')}
                 >
                   P/L <SortArrow column="pnl" />
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                  className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 hidden md:table-cell"
                   onClick={() => handleSort('pnl_percent')}
                 >
                   P/L % <SortArrow column="pnl_percent" />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -539,31 +540,32 @@ const Dashboard: React.FC = () => {
                   const dte = calculateDTE(position.expiration_date);
                   return (
                     <tr key={position.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {position.symbol}
                         {position.strike_price && (
                           <span className="text-xs text-gray-500 block">${position.strike_price}</span>
                         )}
+                        <span className="text-xs text-gray-500 sm:hidden block">{position.contract_type?.toUpperCase() || 'STOCK'}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
                         {position.contract_type?.toUpperCase() || 'STOCK'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                         {position.quantity}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden lg:table-cell">
                         ${position.entry_price.toFixed(2)}
                         {position.contract_type && (
                           <span className="text-xs text-gray-500 ml-1">(premium)</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         ${position.current_price?.toFixed(2) || 'N/A'}
                         {position.contract_type && (
-                          <span className="text-xs text-gray-500 ml-1">(premium)</span>
+                          <span className="text-xs text-gray-500 ml-1 hidden lg:inline">(premium)</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden lg:table-cell">
                         {position.expiration_date ? (
                           <div>
                             <div>{formatDate(position.expiration_date)}</div>
@@ -577,17 +579,18 @@ const Dashboard: React.FC = () => {
                           <span className="text-gray-400">N/A</span>
                         )}
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                      <td className={`px-3 md:px-6 py-4 whitespace-nowrap text-sm font-medium ${
                         (position.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
                       }`}>
                         ${(position.unrealized_pnl || 0).toFixed(2)}
+                        <span className="text-xs md:hidden block">({(position.unrealized_pnl_percent || 0).toFixed(2)}%)</span>
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                      <td className={`px-3 md:px-6 py-4 whitespace-nowrap text-sm font-medium hidden md:table-cell ${
                         (position.unrealized_pnl_percent || 0) >= 0 ? 'text-success' : 'text-error'
                       }`}>
                         {(position.unrealized_pnl_percent || 0).toFixed(2)}%
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm space-x-1 md:space-x-2">
                         <button
                           onClick={() => setSelectedPosition(position)}
                           className="text-primary hover:text-indigo-700 font-medium"
@@ -654,11 +657,12 @@ const Dashboard: React.FC = () => {
 
       {/* Recent Trades */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-secondary">Recent Trades</h2>
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <h2 className="text-lg md:text-xl font-bold text-secondary">Recent Trades</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -757,8 +761,8 @@ const Dashboard: React.FC = () => {
 
       {/* Position Details Modal */}
       {selectedPosition && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 w-full h-full md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto md:mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-secondary">
                 Position Details: {selectedPosition.symbol} {selectedPosition.contract_type?.toUpperCase()}
@@ -1075,8 +1079,8 @@ const Dashboard: React.FC = () => {
 
       {/* Trade Details Modal */}
       {selectedTrade && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 w-full h-full md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto md:mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-secondary">
                 Trade Details: {selectedTrade.symbol} {selectedTrade.contract_type?.toUpperCase()}
