@@ -52,6 +52,7 @@ const Dashboard: React.FC = () => {
   const [loadingQuickScan, setLoadingQuickScan] = useState(false);
   const [marketMovers, setMarketMovers] = useState<any[]>([]);
   const [loadingMarketMovers, setLoadingMarketMovers] = useState(false);
+  const [showOpportunities, setShowOpportunities] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {

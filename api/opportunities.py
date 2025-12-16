@@ -49,8 +49,9 @@ def get_today_opportunities(current_user):
                 
                 signal_data = signals.get('signals', {})
                 
-                # Only include if recommended or has good confidence
-                if signal_data.get('recommended', False) or signal_data.get('confidence', 0) >= 0.60:
+                # Only include if recommended or has high confidence (70%+)
+                confidence = signal_data.get('confidence', 0)
+                if signal_data.get('recommended', False) or confidence >= 0.70:
                     # Get basic quote info
                     from services.tradier_connector import TradierConnector
                     tradier = TradierConnector()
