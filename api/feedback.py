@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
 from utils.helpers import sanitize_input
+from utils.email_service import get_email_service
 from models.feedback import Feedback
 from datetime import datetime
 
@@ -47,6 +48,17 @@ def submit_feedback(current_user):
         
         db.session.add(feedback)
         db.session.commit()
+        
+        # Send email notification to default recipient
+        try:
+            email_service = get_email_service()
+            if email_service:
+                feedback_dict = feedback.to_dict()
+                feedback_dict['user_id'] = current_user.id
+                email_service.send_feedback_email(feedback_dict)
+        except Exception as email_error:
+            # Don't fail the request if email fails
+            current_app.logger.warning(f'Failed to send feedback email: {email_error}')
         
         current_app.logger.info(f'Feedback submitted by user {current_user.id}: {feedback_type} - {title}')
         
