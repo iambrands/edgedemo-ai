@@ -46,6 +46,8 @@ const Dashboard: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
+  const [quickScanResults, setQuickScanResults] = useState<any[]>([]);
+  const [loadingQuickScan, setLoadingQuickScan] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -419,15 +421,34 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
-        <button
-          onClick={refreshData}
-          disabled={forcePriceUpdate}
-          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {forcePriceUpdate ? 'Updating Prices...' : 'Refresh'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleQuickScan}
+            disabled={loadingQuickScan}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+          >
+            {loadingQuickScan ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>Scanning...</span>
+              </>
+            ) : (
+              <>
+                <span>⚡</span>
+                <span>Quick Scan</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={refreshData}
+            disabled={forcePriceUpdate}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {forcePriceUpdate ? 'Updating Prices...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Today's Opportunities Widget */}
