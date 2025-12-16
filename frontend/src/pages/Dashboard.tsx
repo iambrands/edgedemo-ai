@@ -47,6 +47,15 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardData();
     
+    // Check if user has seen onboarding
+    const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');
+    if (!hasSeenOnboarding) {
+      // Show onboarding after a short delay to let dashboard load
+      setTimeout(() => {
+        setShowOnboarding(true);
+      }, 1000);
+    }
+    
     // Auto-refresh when page becomes visible (user navigates back to Dashboard)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
