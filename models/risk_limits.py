@@ -34,7 +34,7 @@ class RiskLimits(db.Model):
     
     # Other limits
     min_dte = db.Column(db.Integer, default=7)  # Minimum days to expiration
-    max_dte = db.Column(db.Integer, default=60)  # Maximum days to expiration
+    max_dte = db.Column(db.Integer, default=1095)  # Maximum days to expiration (3 years for LEAPS)
     min_iv_rank = db.Column(db.Float)  # Minimum IV rank to enter (optional)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
