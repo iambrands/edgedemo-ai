@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import FeedbackModal from '../components/FeedbackModal';
 
 interface HelpSection {
   id: string;
@@ -9,6 +10,7 @@ interface HelpSection {
 const Help: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const sections: HelpSection[] = [
     {

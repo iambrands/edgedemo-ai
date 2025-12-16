@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import FeedbackModal from '../components/FeedbackModal';
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -12,6 +13,7 @@ const Settings: React.FC = () => {
   const [loadingLimits, setLoadingLimits] = useState(false);
   const [showRiskCustomization, setShowRiskCustomization] = useState(false);
   const [resettingBalance, setResettingBalance] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -326,6 +328,27 @@ const Settings: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Feedback Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-secondary mb-4">Feedback & Support</h2>
+        <p className="text-gray-600 mb-4">
+          Help us improve IAB OptionsBot! Share your feedback, report bugs, or suggest new features.
+        </p>
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium transition-all shadow-lg hover:shadow-xl"
+        >
+          💬 Send Feedback
+        </button>
+      </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        initialPageUrl="/settings"
+      />
     </div>
   );
 };

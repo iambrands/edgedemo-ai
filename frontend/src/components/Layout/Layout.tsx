@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import FloatingFeedbackButton from '../FloatingFeedbackButton';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -75,6 +76,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="ml-64">
         <main className="p-8">{children}</main>
       </div>
+
+      {/* Floating Feedback Button */}
+      <FloatingFeedbackButton />
     </div>
   );
 };

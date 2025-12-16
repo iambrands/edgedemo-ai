@@ -90,6 +90,7 @@ def create_app(config_name=None):
     from api.earnings import earnings_bp
     from api.options_flow import options_flow_bp
     from api.tax import tax_bp
+    from api.feedback import feedback_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -104,6 +105,7 @@ def create_app(config_name=None):
     app.register_blueprint(earnings_bp, url_prefix='/api/earnings')
     app.register_blueprint(options_flow_bp, url_prefix='/api/options-flow')
     app.register_blueprint(tax_bp, url_prefix='/api/tax')
+    app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     
     # Import all models to ensure they're registered with SQLAlchemy
     # This must happen before any database operations
@@ -121,6 +123,7 @@ def create_app(config_name=None):
     from models.alert import Alert
     from models.alert_filters import AlertFilters
     from models.earnings import EarningsCalendar
+    from models.feedback import Feedback
     
     # Verify AI API configuration (non-blocking)
     openai_key = os.environ.get('OPENAI_API_KEY', '')
