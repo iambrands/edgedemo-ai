@@ -19,6 +19,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Alerts', href: '/alerts', icon: '🔔' },
     { name: 'History', href: '/history', icon: '📜' },
     { name: 'Settings', href: '/settings', icon: '⚙️' },
+    { name: 'Help', href: '/help', icon: '❓' },
   ];
 
   const isActive = (path: string) => location.pathname === path;

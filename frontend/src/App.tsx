@@ -10,6 +10,7 @@ import History from './pages/History';
 import Alerts from './pages/Alerts';
 import Trade from './pages/Trade';
 import Settings from './pages/Settings';
+import Help from './pages/Help';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
@@ -87,6 +88,7 @@ function AppRoutes() {
                   <Route path="/history" element={<History />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/help" element={<Help />} />
                 </Routes>
               </Layout>
             ) : (
