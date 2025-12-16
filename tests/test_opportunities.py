@@ -14,7 +14,7 @@ class TestOpportunities:
     
     def test_quick_scan(self, client, auth_headers):
         """Test quick scan feature"""
-        response = client.get('/api/opportunities/quick-scan', headers=auth_headers)
+        response = client.post('/api/opportunities/quick-scan', headers=auth_headers)
         assert response.status_code == 200
         data = response.json
         assert 'opportunities' in data

@@ -67,6 +67,7 @@ def auth_headers(client, test_user):
 @pytest.fixture(scope='function')
 def test_position(app, test_user):
     """Create a test position"""
+    from datetime import date
     with app.app_context():
         position = Position(
             user_id=test_user.id,
@@ -76,7 +77,7 @@ def test_position(app, test_user):
             entry_price=5.50,
             current_price=6.00,
             strike_price=150.0,
-            expiration_date='2025-12-31',
+            expiration_date=date(2025, 12, 31),  # Use date object, not string
             status='open'
         )
         db.session.add(position)
@@ -95,6 +96,7 @@ def test_automation(app, test_user):
             strategy_type='long_call',
             is_active=True,
             profit_target_1=25.0,
+            profit_target_percent=25.0,  # Required field
             stop_loss_percent=10.0,
             exit_at_stop_loss=True,
             min_confidence=0.50

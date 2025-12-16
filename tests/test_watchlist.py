@@ -6,7 +6,7 @@ class TestWatchlist:
     
     def test_add_stock(self, client, auth_headers):
         """Test adding stock to watchlist"""
-        response = client.post('/api/watchlist', json={
+        response = client.post('/api/watchlist/add', json={
             'symbol': 'TSLA',
             'notes': 'Test stock',
             'tags': 'tech,ev'
@@ -22,14 +22,14 @@ class TestWatchlist:
         response = client.get('/api/watchlist', headers=auth_headers)
         assert response.status_code == 200
         data = response.json
-        assert 'stocks' in data
-        assert len(data['stocks']) > 0
+        assert 'watchlist' in data
+        assert len(data['watchlist']) > 0
     
     def test_update_stock(self, client, auth_headers, test_stock):
         """Test updating stock in watchlist"""
-        response = client.put(f'/api/watchlist/{test_stock.id}', json={
-            'notes': 'Updated notes',
-            'tags': 'updated,tech'
+        # Update notes
+        response = client.put(f'/api/watchlist/{test_stock.symbol}/notes', json={
+            'notes': 'Updated notes'
         }, headers=auth_headers)
         
         assert response.status_code == 200
@@ -38,11 +38,11 @@ class TestWatchlist:
     
     def test_delete_stock(self, client, auth_headers, test_stock):
         """Test deleting stock from watchlist"""
-        response = client.delete(f'/api/watchlist/{test_stock.id}', headers=auth_headers)
+        response = client.delete(f'/api/watchlist/{test_stock.symbol}', headers=auth_headers)
         assert response.status_code == 200
         
         # Verify it's deleted
         get_response = client.get('/api/watchlist', headers=auth_headers)
-        stock_ids = [s['id'] for s in get_response.json['stocks']]
-        assert test_stock.id not in stock_ids
+        stock_symbols = [s['symbol'] for s in get_response.json['watchlist']]
+        assert test_stock.symbol not in stock_symbols
 
