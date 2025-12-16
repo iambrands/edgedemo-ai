@@ -60,6 +60,12 @@ const Dashboard: React.FC = () => {
     loadOpportunities();
     loadMarketMovers();
     
+    // Load user preference for showing opportunities
+    const savedPreference = localStorage.getItem('showOpportunities');
+    if (savedPreference !== null) {
+      setShowOpportunities(savedPreference === 'true');
+    }
+    
     // Check if user has seen onboarding
     const hasSeenOnboarding = localStorage.getItem('has_seen_onboarding');
     if (!hasSeenOnboarding) {
@@ -523,15 +529,28 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Today's Opportunities Widget */}
-      {opportunities.length > 0 && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-secondary">🎯 Today's Opportunities</h2>
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-secondary">🎯 Today's Opportunities</h2>
+            {opportunities.length > 0 && (
               <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                {opportunities.length} found
+                {opportunities.length} high-confidence signal{opportunities.length > 1 ? 's' : ''} (70%+)
               </span>
-            </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                const newValue = !showOpportunities;
+                setShowOpportunities(newValue);
+                localStorage.setItem('showOpportunities', String(newValue));
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+              title={showOpportunities ? 'Hide opportunities' : 'Show opportunities'}
+            >
+              {showOpportunities ? '👁️ Hide' : '👁️‍🗨️ Show'}
+            </button>
             <button
               onClick={loadOpportunities}
               disabled={loadingOpportunities}
@@ -540,6 +559,10 @@ const Dashboard: React.FC = () => {
               {loadingOpportunities ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
+        </div>
+        
+        {showOpportunities && (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {opportunities.map((opp, idx) => (
               <div
