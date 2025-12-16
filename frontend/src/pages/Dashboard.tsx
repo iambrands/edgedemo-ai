@@ -801,6 +801,110 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* AI-Powered Suggestions Widget */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border border-purple-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-secondary">🤖 AI-Powered Suggestions</h2>
+            {aiSuggestions.length > 0 && (
+              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                {aiSuggestions.length} personalized recommendation{aiSuggestions.length > 1 ? 's' : ''}
+              </span>
+            )}
+            {aiSuggestions.length === 0 && !loadingAiSuggestions && (
+              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                Based on your trading patterns
+              </span>
+            )}
+          </div>
+          <button
+            onClick={loadAiSuggestions}
+            disabled={loadingAiSuggestions}
+            className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
+          >
+            {loadingAiSuggestions ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        {aiSuggestions.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {aiSuggestions.map((suggestion, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleAnalyzeOpportunity(suggestion.symbol)}
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-bold text-lg text-secondary">{suggestion.symbol}</h3>
+                    {suggestion.current_price && (
+                      <p className="text-sm text-gray-600">${suggestion.current_price.toFixed(2)}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
+                      suggestion.risk_level === 'high_opportunity' 
+                        ? 'bg-green-100 text-green-800' 
+                        : suggestion.risk_level === 'moderate_opportunity'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {suggestion.risk_level === 'high_opportunity' ? 'HIGH' : 
+                       suggestion.risk_level === 'moderate_opportunity' ? 'MOD' : 'LOW'}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      Score: {suggestion.score}/100
+                    </div>
+                  </div>
+                </div>
+                {suggestion.match_reasons && suggestion.match_reasons.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Why this symbol:</p>
+                    <ul className="text-xs text-gray-600 space-y-0.5">
+                      {suggestion.match_reasons.slice(0, 2).map((reason: string, i: number) => (
+                        <li key={i} className="flex items-start">
+                          <span className="text-purple-500 mr-1">•</span>
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {suggestion.iv_rank !== undefined && suggestion.iv_rank > 0 && (
+                  <div className="mb-2">
+                    <span className={`px-2 py-0.5 rounded text-xs ${
+                      suggestion.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
+                      suggestion.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      IV Rank: {suggestion.iv_rank.toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs mt-2">
+                  <span className="text-gray-500">
+                    {suggestion.confidence ? `${(suggestion.confidence * 100).toFixed(0)}% confidence` : 'Analyzing...'}
+                  </span>
+                  <button className="text-primary font-medium hover:text-indigo-700">
+                    Analyze →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            {loadingAiSuggestions ? (
+              <p className="text-gray-500 text-sm">Analyzing your trading patterns...</p>
+            ) : (
+              <div>
+                <p className="text-gray-500 text-sm mb-2">No personalized suggestions available yet.</p>
+                <p className="text-gray-400 text-xs">Start trading to get AI-powered recommendations based on your patterns.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Active Positions */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 md:p-6 border-b border-gray-200">
