@@ -291,26 +291,36 @@ const Dashboard: React.FC = () => {
     setCheckingExits(true);
     try {
       const result = await tradesService.checkPositionExits();
-      const { exits_triggered, positions_checked, errors } = result.results;
+      const { exits_triggered, positions_checked, errors, monitored } = result.results;
       
       if (exits_triggered > 0) {
         toast.success(`${exits_triggered} position${exits_triggered > 1 ? 's' : ''} closed based on exit conditions`, { duration: 5000 });
         // Reload dashboard data to show updated positions
         await loadDashboardData();
       } else {
-        toast('No positions met exit conditions. All positions are within your risk parameters.', { 
+        const message = monitored > 0 
+          ? `Checked ${monitored} position${monitored > 1 ? 's' : ''}. No positions met exit conditions.`
+          : 'No open positions to check.';
+        toast(message, { 
           duration: 4000,
           icon: 'ℹ️'
         });
       }
       
-      if (errors.length > 0) {
+      if (errors && errors.length > 0) {
         console.error('Errors checking positions:', errors);
-        toast.error(`${errors.length} error${errors.length > 1 ? 's' : ''} occurred while checking positions`, { duration: 5000 });
+        const errorMsg = errors.length === 1 
+          ? errors[0] 
+          : `${errors.length} errors occurred. Check console for details.`;
+        toast.error(errorMsg, { duration: 6000 });
       }
     } catch (error: any) {
       console.error('Failed to check position exits:', error);
-      toast.error(error.response?.data?.error || 'Failed to check position exits. Please try again.', { duration: 5000 });
+      const errorMessage = error.response?.data?.error 
+        || error.message 
+        || error.toString() 
+        || 'Failed to check position exits. Please try again.';
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setCheckingExits(false);
     }
