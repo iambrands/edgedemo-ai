@@ -220,6 +220,7 @@ def check_position_exits(current_user):
     
     try:
         from services.position_monitor import PositionMonitor
+        from models.position import Position
         
         position_monitor = PositionMonitor()
         
@@ -241,6 +242,8 @@ def check_position_exits(current_user):
         for position in user_positions:
             try:
                 exit_triggered = position_monitor.check_and_exit_position(position)
+                # Refresh position from DB to get updated values
+                db.session.refresh(position)
                 position_info = {
                     'position_id': position.id,
                     'symbol': position.symbol,
@@ -251,12 +254,18 @@ def check_position_exits(current_user):
                 if exit_triggered:
                     user_results['exits_triggered'] += 1
             except Exception as e:
-                user_results['errors'].append(f"Error checking position {position.id}: {str(e)}")
+                import traceback
+                error_msg = f"Error checking position {position.id}: {str(e)}"
+                user_results['errors'].append(error_msg)
+                current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
         
         return jsonify({
             'message': 'Position exit check completed',
             'results': user_results
         }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        error_msg = f"Failed to check position exits: {str(e)}"
+        current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        return jsonify({'error': error_msg}), 500
 
