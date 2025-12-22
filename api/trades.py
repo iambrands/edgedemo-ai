@@ -241,9 +241,35 @@ def check_position_exits(current_user):
         # Check each user position individually
         for position in user_positions:
             try:
-                exit_triggered = position_monitor.check_and_exit_position(position)
-                # Refresh position from DB to get updated values
+                # Refresh position data first to ensure we have current prices
                 db.session.refresh(position)
+                
+                # Skip positions without required price data
+                if not position.entry_price:
+                    user_results['errors'].append(f"Position {position.id} missing entry_price")
+                    continue
+                
+                # Update position data to get current prices
+                try:
+                    position_monitor.update_position_data(position)
+                    db.session.commit()
+                except Exception as update_error:
+                    # If price update fails, log but continue
+                    current_app.logger.warning(f"Failed to update position {position.id} prices: {str(update_error)}")
+                    # If no current_price, skip this position
+                    if not position.current_price:
+                        user_results['errors'].append(f"Position {position.id} has no current_price after update attempt")
+                        continue
+                
+                # Now check exit conditions
+                exit_triggered = position_monitor.check_and_exit_position(position)
+                
+                # Refresh position from DB again to get updated values after check
+                try:
+                    db.session.refresh(position)
+                except:
+                    pass  # Position might have been deleted if closed
+                
                 position_info = {
                     'position_id': position.id,
                     'symbol': position.symbol,
@@ -255,9 +281,11 @@ def check_position_exits(current_user):
                     user_results['exits_triggered'] += 1
             except Exception as e:
                 import traceback
-                error_msg = f"Error checking position {position.id}: {str(e)}"
+                error_msg = f"Error checking position {position.id if position else 'unknown'}: {str(e)}"
+                error_trace = traceback.format_exc()
                 user_results['errors'].append(error_msg)
-                current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                current_app.logger.error(f"{error_msg}\n{error_trace}")
+                # Continue with next position even if one fails
         
         return jsonify({
             'message': 'Position exit check completed',
