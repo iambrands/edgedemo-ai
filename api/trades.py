@@ -210,3 +210,53 @@ def close_position(current_user, position_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@trades_bp.route('/positions/check-exits', methods=['POST', 'OPTIONS'])
+@token_required
+def check_position_exits(current_user):
+    """Manually check all positions for exit conditions and trigger exits if needed"""
+    # OPTIONS is handled by token_required decorator
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    try:
+        from services.position_monitor import PositionMonitor
+        
+        position_monitor = PositionMonitor()
+        
+        # Get all open positions for this user
+        db = current_app.extensions['sqlalchemy']
+        user_positions = db.session.query(Position).filter_by(
+            user_id=current_user.id,
+            status='open'
+        ).all()
+        
+        user_results = {
+            'monitored': len(user_positions),
+            'exits_triggered': 0,
+            'positions_checked': [],
+            'errors': []
+        }
+        
+        # Check each user position individually
+        for position in user_positions:
+            try:
+                exit_triggered = position_monitor.check_and_exit_position(position)
+                position_info = {
+                    'position_id': position.id,
+                    'symbol': position.symbol,
+                    'unrealized_pnl_percent': position.unrealized_pnl_percent or 0,
+                    'exit_triggered': exit_triggered
+                }
+                user_results['positions_checked'].append(position_info)
+                if exit_triggered:
+                    user_results['exits_triggered'] += 1
+            except Exception as e:
+                user_results['errors'].append(f"Error checking position {position.id}: {str(e)}")
+        
+        return jsonify({
+            'message': 'Position exit check completed',
+            'results': user_results
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

@@ -497,10 +497,27 @@ class PositionMonitor:
         if not position.current_price or not position.entry_price:
             return (False, "Missing price data")
         
+        # Calculate profit/loss percentages
+        profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
+        loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
+        
+        # If no automation, try to find one for this symbol or use user defaults
+        if not automation and position.automation_id:
+            db = self._get_db()
+            automation = db.session.query(Automation).get(position.automation_id)
+        
+        # If still no automation, try to find active automation for this symbol
+        if not automation:
+            db = self._get_db()
+            automation = db.session.query(Automation).filter_by(
+                user_id=position.user_id,
+                symbol=position.symbol,
+                is_active=True,
+                is_paused=False
+            ).first()
+        
         # Check profit targets (profit_target_1 and profit_target_2)
         if automation:
-            profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
-            
             # Check profit target 1 (partial exit)
             if automation.profit_target_1 and profit_percent >= automation.profit_target_1:
                 if automation.partial_exit_percent and automation.partial_exit_profit_target:
@@ -522,14 +539,22 @@ class PositionMonitor:
                 if automation.exit_at_profit_target:
                     return (True, f"Profit target reached ({profit_percent:.2f}%)")
         
-        # Check stop loss
+        # Check stop loss (for both automation and default)
+        stop_loss_threshold = None
         if automation and automation.stop_loss_percent and automation.exit_at_stop_loss:
-            loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
             # Normalize stop_loss_percent - it might be stored as positive (10) or negative (-10)
             # We always compare as positive loss percentages
             stop_loss_threshold = abs(automation.stop_loss_percent)
-            if loss_percent >= stop_loss_threshold:
-                return (True, f"Stop loss triggered ({loss_percent:.2f}% loss, threshold: {stop_loss_threshold}%)")
+        elif not automation:
+            # Use default stop loss if no automation (5-10% range, use 10% as default)
+            stop_loss_threshold = 10.0  # Default 10% stop loss
+        
+        if stop_loss_threshold and loss_percent >= stop_loss_threshold:
+            return (True, f"Stop loss triggered ({loss_percent:.2f}% loss, threshold: {stop_loss_threshold}%)")
+        
+        # If no automation found, also check default profit target (25-30% range, use 25% as default)
+        if not automation and profit_percent >= 25.0:
+            return (True, f"Profit target reached ({profit_percent:.2f}%, default: 25%)")
         
         # Check max days to hold
         if automation and automation.max_days_to_hold and automation.exit_at_max_days:

@@ -55,6 +55,7 @@ const Dashboard: React.FC = () => {
   const [showOpportunities, setShowOpportunities] = useState(true);
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
+  const [checkingExits, setCheckingExits] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -136,12 +137,12 @@ const Dashboard: React.FC = () => {
         try {
           return await Promise.race([promise, timeout as Promise<T>]);
         } catch (error) {
-          console.error(`Failed to load ${name}:`, error);
-          // Only show toast for critical failures, not for timeouts during initial load
-          // This prevents spam of error messages
-          if (updatePrices && name !== 'positions') {
-            toast.error(`Failed to load ${name}. Using default values.`, { duration: 3000 });
+          // Silently handle timeouts - don't log as errors if it's just a background operation
+          // Only log if it's a manual refresh or critical operation
+          if (updatePrices || name === 'positions') {
+            console.warn(`Timeout loading ${name}, using cached/default data`);
           }
+          // Don't show error toasts for background timeouts - they're expected in slow network conditions
           return defaultValue;
         }
       };
@@ -216,7 +217,8 @@ const Dashboard: React.FC = () => {
 
   const handleAnalyzeOpportunity = (symbol: string) => {
     // Navigate to Options Analyzer with symbol pre-filled
-    navigate('/options-analyzer', { state: { symbol } });
+    // Use immediate navigation to prevent any blocking
+    navigate('/analyzer', { state: { symbol }, replace: false });
   };
 
   const handleQuickScan = async () => {
@@ -282,6 +284,35 @@ const Dashboard: React.FC = () => {
       toast.error('Failed to update positions. Please try again.', { duration: 5000 });
     } finally {
       setForcePriceUpdate(false);
+    }
+  };
+
+  const checkPositionExits = async () => {
+    setCheckingExits(true);
+    try {
+      const result = await tradesService.checkPositionExits();
+      const { exits_triggered, positions_checked, errors } = result.results;
+      
+      if (exits_triggered > 0) {
+        toast.success(`${exits_triggered} position${exits_triggered > 1 ? 's' : ''} closed based on exit conditions`, { duration: 5000 });
+        // Reload dashboard data to show updated positions
+        await loadDashboardData();
+      } else {
+        toast('No positions met exit conditions. All positions are within your risk parameters.', { 
+          duration: 4000,
+          icon: 'ℹ️'
+        });
+      }
+      
+      if (errors.length > 0) {
+        console.error('Errors checking positions:', errors);
+        toast.error(`${errors.length} error${errors.length > 1 ? 's' : ''} occurred while checking positions`, { duration: 5000 });
+      }
+    } catch (error: any) {
+      console.error('Failed to check position exits:', error);
+      toast.error(error.response?.data?.error || 'Failed to check position exits. Please try again.', { duration: 5000 });
+    } finally {
+      setCheckingExits(false);
     }
   };
 
@@ -518,6 +549,24 @@ const Dashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
         <div className="flex gap-3">
           <button
+            onClick={checkPositionExits}
+            disabled={checkingExits}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+            title="Check all positions for exit conditions (profit targets and stop losses)"
+          >
+            {checkingExits ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>Checking...</span>
+              </>
+            ) : (
+              <>
+                <span>🛡️</span>
+                <span>Check Exits</span>
+              </>
+            )}
+          </button>
+          <button
             onClick={handleQuickScan}
             disabled={loadingQuickScan}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
@@ -621,7 +670,13 @@ const Dashboard: React.FC = () => {
                       IV Rank: {opp.iv_rank.toFixed(0)}%
                     </span>
                   )}
-                  <button className="text-primary font-medium hover:text-indigo-700">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAnalyzeOpportunity(opp.symbol);
+                    }}
+                    className="text-primary font-medium hover:text-indigo-700"
+                  >
                     Analyze Options →
                   </button>
                 </div>
@@ -780,7 +835,13 @@ const Dashboard: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <button className="text-primary font-medium hover:text-indigo-700 text-xs">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAnalyzeOpportunity(mover.symbol);
+                    }}
+                    className="text-primary font-medium hover:text-indigo-700 text-xs"
+                  >
                     Analyze →
                   </button>
                 </div>
@@ -884,7 +945,13 @@ const Dashboard: React.FC = () => {
                   <span className="text-gray-500">
                     {suggestion.confidence ? `${(suggestion.confidence * 100).toFixed(0)}% confidence` : 'Analyzing...'}
                   </span>
-                  <button className="text-primary font-medium hover:text-indigo-700">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAnalyzeOpportunity(suggestion.symbol);
+                    }}
+                    className="text-primary font-medium hover:text-indigo-700"
+                  >
                     Analyze →
                   </button>
                 </div>

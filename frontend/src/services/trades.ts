@@ -45,5 +45,23 @@ export const tradesService = {
     });
     return response.data;
   },
+
+  checkPositionExits: async (): Promise<{
+    message: string;
+    results: {
+      monitored: number;
+      exits_triggered: number;
+      positions_checked: Array<{
+        position_id: number;
+        symbol: string;
+        unrealized_pnl_percent: number;
+        exit_triggered: boolean;
+      }>;
+      errors: string[];
+    };
+  }> => {
+    const response = await api.post('/trades/positions/check-exits');
+    return response.data;
+  },
 };
 
