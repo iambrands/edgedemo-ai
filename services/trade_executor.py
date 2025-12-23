@@ -143,12 +143,70 @@ class TradeExecutor:
         
         # Get execution price (use provided price or fetch from order)
         if price is None:
-            # In real implementation, get from order execution
-            quote = self.tradier.get_quote(symbol)
-            if 'quotes' in quote and 'quote' in quote['quotes']:
-                price = quote['quotes']['quote']['last']
+            # For options, we MUST get the option price, not the stock price
+            if option_symbol:
+                # Try to get option price from options chain
+                try:
+                    if expiration_date:
+                        expiration_str = expiration_date
+                        options_chain = self.tradier.get_options_chain(symbol, expiration_str)
+                        
+                        # Find matching option
+                        for option in options_chain:
+                            option_strike = option.get('strike') or option.get('strike_price')
+                            option_type = (option.get('type') or option.get('contract_type') or '').lower()
+                            contract_type_lower = (contract_type or '').lower()
+                            
+                            # Match strike and type
+                            if (strike and abs(float(option_strike) - float(strike)) < 0.01 and
+                                (option_type == contract_type_lower or 
+                                 contract_type_lower == 'option' or
+                                 not contract_type_lower)):
+                                # Use mid price if available
+                                bid = option.get('bid', 0) or 0
+                                ask = option.get('ask', 0) or 0
+                                last = option.get('last', 0) or option.get('lastPrice', 0) or 0
+                                
+                                if bid > 0 and ask > 0:
+                                    price = (bid + ask) / 2
+                                elif last > 0:
+                                    price = last
+                                else:
+                                    price = 0.0
+                                break
+                        
+                        if price is None or price == 0.0:
+                            # Fallback: try direct quote for option symbol
+                            option_quote = self.tradier.get_quote(option_symbol)
+                            if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
+                                quote_data = option_quote['quotes']['quote']
+                                bid = quote_data.get('bid', 0) or 0
+                                ask = quote_data.get('ask', 0) or 0
+                                last = quote_data.get('last', 0) or 0
+                                
+                                if bid > 0 and ask > 0:
+                                    price = (bid + ask) / 2
+                                elif last > 0:
+                                    price = last
+                                else:
+                                    price = 0.0
+                            else:
+                                price = 0.0
+                    else:
+                        price = 0.0
+                except Exception as e:
+                    try:
+                        current_app.logger.warning(f"Failed to fetch option price: {e}")
+                    except RuntimeError:
+                        pass
+                    price = 0.0
             else:
-                price = 0.0
+                # For stocks, get stock price
+                quote = self.tradier.get_quote(symbol)
+                if 'quotes' in quote and 'quote' in quote['quotes']:
+                    price = quote['quotes']['quote']['last']
+                else:
+                    price = 0.0
         
         # Get Greeks if options trade
         delta = gamma = theta = vega = iv = None
