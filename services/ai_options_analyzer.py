@@ -14,7 +14,8 @@ class AIOptionsAnalyzer:
         self.openai_api_key = os.environ.get('OPENAI_API_KEY')
         self.anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         self.use_openai = bool(self.openai_api_key)
-        self.use_claude = bool(self.anthropic_api_key)
+        # Only enable Claude if API key is present AND non-empty
+        self.use_claude = bool(self.anthropic_api_key and self.anthropic_api_key.strip())
         self.quota_exceeded = False  # Track if OpenAI quota is exceeded
         self.claude_quota_exceeded = False  # Track if Claude quota is exceeded
         
@@ -371,24 +372,46 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             except RuntimeError:
                 pass  # Outside application context
             
+            # Check error type and handle appropriately
+            status_code = getattr(e, 'status_code', None)
+            if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
+                status_code = e.response.status_code
+            
             # Check if it's a quota exceeded error (429)
-            if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower() or (hasattr(e, 'status_code') and e.status_code == 429):
+            if status_code == 429 or '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
                 self.claude_quota_exceeded = True
                 try:
                     from flask import current_app
                     current_app.logger.warning("⚠️ Claude quota exceeded - falling back to rule-based analysis")
                 except RuntimeError:
                     pass
-            elif '401' in error_str or 'authentication' in error_str.lower() or (hasattr(e, 'status_code') and e.status_code == 401):
+            # Check for 404 (invalid endpoint or API key) or 401 (authentication failed)
+            elif status_code == 404 or '404' in error_str or 'not found' in error_str.lower():
+                # Disable Claude permanently if we get 404s (invalid API key or endpoint)
+                self.use_claude = False
+                self.claude_quota_exceeded = True
                 try:
                     from flask import current_app
-                    current_app.logger.error("❌ Claude API authentication failed - check ANTHROPIC_API_KEY")
+                    current_app.logger.warning("⚠️ Claude API endpoint not found (404) - disabling Claude. Check ANTHROPIC_API_KEY or API endpoint.")
+                except RuntimeError:
+                    pass
+            elif status_code == 401 or '401' in error_str or 'authentication' in error_str.lower():
+                # Disable Claude if authentication fails
+                self.use_claude = False
+                self.claude_quota_exceeded = True
+                try:
+                    from flask import current_app
+                    current_app.logger.error("❌ Claude API authentication failed - disabling Claude. Check ANTHROPIC_API_KEY")
                 except RuntimeError:
                     pass
             else:
+                # For other errors, log but don't disable (might be temporary)
                 try:
                     from flask import current_app
-                    current_app.logger.error(f"❌ Claude analysis failed: {error_type}: {error_str}")
+                    # Only log once per error type to reduce noise
+                    if not hasattr(self, '_last_claude_error') or self._last_claude_error != error_type:
+                        current_app.logger.warning(f"⚠️ Claude analysis failed: {error_type}: {error_str[:100]}")
+                        self._last_claude_error = error_type
                 except RuntimeError:
                     pass  # Outside application context
             return None
