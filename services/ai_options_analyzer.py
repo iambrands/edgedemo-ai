@@ -483,7 +483,8 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                         pass  # Outside application context
         
         # Try Claude if OpenAI is unavailable or quota exceeded
-        if self.use_claude and not self.claude_quota_exceeded:
+        # Only try if Claude is enabled and not quota exceeded
+        if self.use_claude and not self.claude_quota_exceeded and self.anthropic_api_key and self.anthropic_api_key.strip():
             try:
                 try:
                     from flask import current_app
