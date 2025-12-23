@@ -1636,7 +1636,14 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Value:</span>
-                    <span className="font-medium">${(selectedTrade.price * selectedTrade.quantity).toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${(() => {
+                        const isOption = selectedTrade.contract_type && 
+                          ['call', 'put', 'option'].includes(selectedTrade.contract_type.toLowerCase());
+                        const multiplier = isOption ? 100 : 1;
+                        return (selectedTrade.price * selectedTrade.quantity * multiplier).toFixed(2);
+                      })()}
+                    </span>
                   </div>
                   {selectedTrade.strike_price && (
                     <div className="flex justify-between">
