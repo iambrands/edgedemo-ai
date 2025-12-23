@@ -1,6 +1,24 @@
 # How to Revert Incorrect SELL Trades from 12/23/25
 
-## Option 1: Using Browser Console (Easiest)
+## ⚠️ IMPORTANT: The trades are in PRODUCTION database, not local
+
+You need to run the revert on the production server. Here are your options:
+
+## Option 1: Using Railway One-Off Command (Recommended)
+
+1. **Go to Railway Dashboard**: https://railway.app
+2. **Select your project** → **Web Service**
+3. **Click "Deployments"** tab
+4. **Click "New"** → **"One-off Command"**
+5. **Enter this command:**
+   ```bash
+   python execute_revert_now.py
+   ```
+6. **Click "Run"**
+7. **Watch the logs** - you'll see the revert process
+8. **Check the output** - it will show how many trades were reverted
+
+## Option 2: Using Browser Console (Easiest)
 
 1. **Log into your app** at https://web-production-8b7ae.up.railway.app
 2. **Open Browser DevTools** (Press F12)
