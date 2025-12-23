@@ -302,7 +302,7 @@ def check_position_exits(current_user):
 def revert_incorrect_sells(current_user):
     """Revert incorrect SELL trades from 12/23/25 and reopen positions"""
     # Get db early to avoid scope issues
-    db = current_app.extensions['sqlalchemy'].db
+    db = current_app.extensions['sqlalchemy']
     
     try:
         from models.trade import Trade
