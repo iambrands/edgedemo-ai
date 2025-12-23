@@ -297,3 +297,154 @@ def check_position_exits(current_user):
         current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
         return jsonify({'error': error_msg}), 500
 
+@trades_bp.route('/revert-incorrect-sells', methods=['POST'])
+@token_required
+def revert_incorrect_sells(current_user):
+    """Revert incorrect SELL trades from 12/23/25 and reopen positions"""
+    try:
+        from models.trade import Trade
+        from models.position import Position
+        from models.user import User
+        from datetime import date, datetime
+        from sqlalchemy import func
+        
+        data = request.get_json() or {}
+        target_date = data.get('date', '2025-12-23')
+        trade_ids = data.get('trade_ids')  # Optional: specific trade IDs
+        
+        # Parse date
+        try:
+            if isinstance(target_date, str):
+                target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        # Find SELL trades
+        query = current_app.extensions['sqlalchemy'].db.session.query(Trade).filter(
+            Trade.action == 'sell'
+        )
+        
+        if trade_ids:
+            query = query.filter(Trade.id.in_(trade_ids))
+        else:
+            query = query.filter(func.date(Trade.trade_date) == target_date)
+        
+        sell_trades = query.order_by(Trade.trade_date).all()
+        
+        if not sell_trades:
+            return jsonify({
+                'message': 'No SELL trades found for the specified criteria',
+                'reverted': 0,
+                'positions_reopened': 0
+            }), 200
+        
+        db = current_app.extensions['sqlalchemy'].db
+        positions_reopened = []
+        trades_reverted = []
+        balance_adjustments = {}
+        
+        for sell_trade in sell_trades:
+            # Find corresponding closed position
+            if sell_trade.option_symbol:
+                position = db.session.query(Position).filter(
+                    Position.user_id == sell_trade.user_id,
+                    Position.option_symbol == sell_trade.option_symbol,
+                    Position.status == 'closed'
+                ).order_by(Position.entry_date.desc()).first()
+            else:
+                position = db.session.query(Position).filter(
+                    Position.user_id == sell_trade.user_id,
+                    Position.symbol == sell_trade.symbol,
+                    Position.option_symbol == None,
+                    Position.status == 'closed'
+                ).order_by(Position.entry_date.desc()).first()
+            
+            if position:
+                # Reopen position
+                position.status = 'open'
+                position.unrealized_pnl = None
+                position.unrealized_pnl_percent = None
+                position.current_price = position.entry_price
+                positions_reopened.append(position.id)
+            else:
+                # Try to recreate from BUY trade
+                buy_trade = db.session.query(Trade).filter(
+                    Trade.user_id == sell_trade.user_id,
+                    Trade.symbol == sell_trade.symbol,
+                    Trade.option_symbol == sell_trade.option_symbol,
+                    Trade.action == 'buy',
+                    Trade.trade_date < sell_trade.trade_date
+                ).order_by(Trade.trade_date.desc()).first()
+                
+                if buy_trade:
+                    new_position = Position(
+                        user_id=buy_trade.user_id,
+                        symbol=buy_trade.symbol,
+                        option_symbol=buy_trade.option_symbol,
+                        contract_type=buy_trade.contract_type,
+                        quantity=buy_trade.quantity,
+                        entry_price=buy_trade.price,
+                        current_price=buy_trade.price,
+                        strike_price=buy_trade.strike_price,
+                        expiration_date=buy_trade.expiration_date,
+                        entry_delta=buy_trade.delta,
+                        entry_gamma=buy_trade.gamma,
+                        entry_theta=buy_trade.theta,
+                        entry_vega=buy_trade.vega,
+                        entry_iv=buy_trade.implied_volatility,
+                        current_delta=buy_trade.delta,
+                        current_gamma=buy_trade.gamma,
+                        current_theta=buy_trade.theta,
+                        current_vega=buy_trade.vega,
+                        current_iv=buy_trade.implied_volatility,
+                        status='open'
+                    )
+                    db.session.add(new_position)
+                    db.session.flush()
+                    positions_reopened.append(new_position.id)
+            
+            # Clear realized P/L
+            trades_reverted.append(sell_trade.id)
+            sell_trade.realized_pnl = None
+            sell_trade.realized_pnl_percent = None
+            sell_trade.notes = (sell_trade.notes or '') + ' [REVERTED - Incorrect sell]'
+            
+            # Calculate balance adjustment
+            is_option = (
+                sell_trade.contract_type and 
+                sell_trade.contract_type.lower() in ['call', 'put', 'option']
+            ) or bool(sell_trade.option_symbol)
+            
+            contract_multiplier = 100 if is_option else 1
+            sell_proceeds = sell_trade.price * sell_trade.quantity * contract_multiplier
+            
+            if sell_trade.user_id not in balance_adjustments:
+                balance_adjustments[sell_trade.user_id] = 0
+            balance_adjustments[sell_trade.user_id] -= sell_proceeds
+        
+        # Apply balance adjustments
+        for user_id, adjustment in balance_adjustments.items():
+            user = db.session.query(User).get(user_id)
+            if user:
+                user.paper_balance += adjustment
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Successfully reverted incorrect SELL trades',
+            'reverted': len(trades_reverted),
+            'positions_reopened': len(positions_reopened),
+            'trade_ids': trades_reverted,
+            'position_ids': positions_reopened,
+            'balance_adjustments': {
+                str(uid): float(adj) for uid, adj in balance_adjustments.items()
+            }
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"Failed to revert incorrect sells: {str(e)}"
+        current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        db.session.rollback()
+        return jsonify({'error': error_msg}), 500
+
