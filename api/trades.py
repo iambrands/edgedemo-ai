@@ -364,8 +364,18 @@ def revert_incorrect_sells(current_user):
                 position.status = 'open'
                 position.unrealized_pnl = None
                 position.unrealized_pnl_percent = None
+                # Set current_price to entry_price initially, will be updated by monitor
                 position.current_price = position.entry_price
                 positions_reopened.append(position.id)
+                
+                # Update position with current market price
+                try:
+                    from services.position_monitor import PositionMonitor
+                    monitor = PositionMonitor()
+                    monitor.update_position_data(position)
+                    db.session.refresh(position)
+                except Exception as e:
+                    current_app.logger.warning(f"Could not update position {position.id} price: {e}")
             else:
                 # Try to recreate from BUY trade
                 buy_trade = db.session.query(Trade).filter(
@@ -402,6 +412,15 @@ def revert_incorrect_sells(current_user):
                     db.session.add(new_position)
                     db.session.flush()
                     positions_reopened.append(new_position.id)
+                    
+                    # Update position with current market price
+                    try:
+                        from services.position_monitor import PositionMonitor
+                        monitor = PositionMonitor()
+                        monitor.update_position_data(new_position)
+                        db.session.refresh(new_position)
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not update new position {new_position.id} price: {e}")
             
             # Clear realized P/L
             trades_reverted.append(sell_trade.id)
