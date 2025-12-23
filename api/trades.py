@@ -301,6 +301,9 @@ def check_position_exits(current_user):
 @token_required
 def revert_incorrect_sells(current_user):
     """Revert incorrect SELL trades from 12/23/25 and reopen positions"""
+    # Get db early to avoid scope issues
+    db = current_app.extensions['sqlalchemy'].db
+    
     try:
         from models.trade import Trade
         from models.position import Position
@@ -320,7 +323,7 @@ def revert_incorrect_sells(current_user):
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
         
         # Find SELL trades
-        query = current_app.extensions['sqlalchemy'].db.session.query(Trade).filter(
+        query = db.session.query(Trade).filter(
             Trade.action == 'sell'
         )
         
@@ -337,8 +340,6 @@ def revert_incorrect_sells(current_user):
                 'reverted': 0,
                 'positions_reopened': 0
             }), 200
-        
-        db = current_app.extensions['sqlalchemy'].db
         positions_reopened = []
         trades_reverted = []
         balance_adjustments = {}
