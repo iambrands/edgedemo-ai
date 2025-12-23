@@ -109,6 +109,84 @@ def create_app(config_name=None):
     app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     app.register_blueprint(opportunities_bp, url_prefix='/api/opportunities')
     
+    # Start automatic position monitoring on app startup
+    # This ensures positions are checked and closed when thresholds are hit
+    def start_position_monitoring():
+        """Start automatic position monitoring in background"""
+        try:
+            import threading
+            import time
+            from services.position_monitor import PositionMonitor
+            
+            def monitor_positions_loop():
+                """Background loop to check positions every 5 minutes"""
+                # Wait for app to fully initialize
+                time.sleep(10)
+                
+                app.logger.info("🛡️ Starting automatic position monitoring (checks every 5 minutes)...")
+                
+                position_monitor = PositionMonitor()
+                check_interval = 300  # 5 minutes
+                
+                while True:
+                    try:
+                        with app.app_context():
+                            # Check all positions for exit conditions
+                            results = position_monitor.monitor_all_positions()
+                            
+                            if results['exits_triggered'] > 0:
+                                app.logger.info(f"✅ Auto-closed {results['exits_triggered']} position(s) based on exit conditions")
+                            
+                            if results['errors']:
+                                app.logger.warning(f"⚠️ Position monitoring errors: {results['errors']}")
+                            
+                            # Log status every hour
+                            if results['monitored'] > 0:
+                                app.logger.debug(f"Monitored {results['monitored']} positions")
+                            
+                    except Exception as e:
+                        app.logger.error(f"Error in position monitoring loop: {e}", exc_info=True)
+                    
+                    # Wait before next check
+                    time.sleep(check_interval)
+            
+            # Start monitoring in background thread
+            monitor_thread = threading.Thread(target=monitor_positions_loop, daemon=True)
+            monitor_thread.start()
+            app.logger.info("✅ Automatic position monitoring started")
+            
+        except Exception as e:
+            app.logger.error(f"Error starting position monitoring: {e}", exc_info=True)
+    
+    # Start position monitoring automatically when app is created
+    # Use a delayed start to ensure app is fully initialized
+    import threading
+    def delayed_start():
+        import time
+        time.sleep(3)  # Wait 3 seconds for app to initialize
+        start_position_monitoring()
+    
+    threading.Thread(target=delayed_start, daemon=True).start()
+    
+    # Also start the full automation engine if enabled
+    # This handles both position monitoring AND new opportunity scanning
+    auto_start_engine = os.environ.get('AUTO_START_ENGINE', 'true').lower() == 'true'
+    if auto_start_engine:
+        def start_full_engine():
+            import time
+            from services.master_controller import AutomationMasterController
+            time.sleep(15)  # Wait longer for full engine (after position monitoring starts)
+            try:
+                with app.app_context():
+                    controller = AutomationMasterController()
+                    if not controller.is_running:
+                        app.logger.info("🚀 Starting full automation engine...")
+                        controller.start()
+            except Exception as e:
+                app.logger.error(f"Failed to start automation engine: {e}", exc_info=True)
+        
+        threading.Thread(target=start_full_engine, daemon=True).start()
+    
     # Import all models to ensure they're registered with SQLAlchemy
     # This must happen before any database operations
     from models import User, Stock, Position, Automation, Trade, AlertFilters

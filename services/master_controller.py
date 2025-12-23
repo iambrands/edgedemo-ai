@@ -45,25 +45,20 @@ class AutomationMasterController:
         while self.is_running:
             try:
                 if MarketHours.is_market_open():
-                    # Run every 15 minutes during market hours
+                    # Run every 5 minutes during market hours for faster position monitoring
                     logger.info("Market is open - running automation cycle")
                     self.run_automation_cycle()
-                    time.sleep(900)  # 15 minutes
+                    time.sleep(300)  # 5 minutes (reduced from 15 for faster exit checks)
                 elif MarketHours.is_trading_hours():
-                    # Pre-market or after-hours - check less frequently
+                    # Pre-market or after-hours - check every 10 minutes
                     logger.info("Extended hours - running light cycle")
                     self.run_light_cycle()
-                    time.sleep(1800)  # 30 minutes
+                    time.sleep(600)  # 10 minutes (reduced from 30)
                 else:
-                    # Outside trading hours - check hourly
-                    logger.info("Market closed - waiting for next market open")
-                    next_open = MarketHours.get_next_market_open()
-                    wait_seconds = (next_open - datetime.now()).total_seconds()
-                    if wait_seconds > 0:
-                        # Wait until market opens, but check every hour
-                        time.sleep(min(3600, wait_seconds))
-                    else:
-                        time.sleep(3600)  # 1 hour
+                    # Outside trading hours - check every 15 minutes (still monitor positions)
+                    logger.info("Market closed - running light cycle to monitor positions")
+                    self.run_light_cycle()
+                    time.sleep(900)  # 15 minutes (reduced from 60 minutes)
             except KeyboardInterrupt:
                 logger.info("Received stop signal - shutting down")
                 self.stop()
