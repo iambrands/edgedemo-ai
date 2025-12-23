@@ -52,17 +52,29 @@ def token_required(f):
         except Exception as e:
             import traceback
             # Log the actual error for debugging
+            error_type = type(e).__name__
             error_msg = str(e)
+            
+            # Clean up error message - remove variable names that might leak
+            if error_msg and len(error_msg) < 5 and error_msg.isalpha():
+                # If error message is just a short word like "db", it's likely a variable name leak
+                error_msg = f"{error_type}: {error_msg}"
+            
             try:
-                current_app.logger.error(f"Token validation error: {error_msg}\n{traceback.format_exc()}")
+                current_app.logger.error(f"Token validation error ({error_type}): {error_msg}\n{traceback.format_exc()}")
             except:
                 pass
+            
             # Provide more specific error message
-            if 'expired' in error_msg.lower():
-                return jsonify({'error': f'Token expired: {error_msg}'}), 401
-            elif 'invalid' in error_msg.lower() or 'malformed' in error_msg.lower():
-                return jsonify({'error': f'Invalid token: {error_msg}'}), 401
+            if 'expired' in error_msg.lower() or 'expired' in error_type.lower():
+                return jsonify({'error': 'Token expired. Please log in again.'}), 401
+            elif 'invalid' in error_msg.lower() or 'malformed' in error_msg.lower() or 'invalid' in error_type.lower():
+                return jsonify({'error': 'Invalid token. Please log in again.'}), 401
+            elif 'name' in error_msg.lower() and 'not defined' in error_msg.lower():
+                # NameError - don't expose variable names
+                return jsonify({'error': 'Authentication error. Please log in again.'}), 401
             else:
-                return jsonify({'error': f'Invalid or missing token: {error_msg}'}), 401
+                # Generic error - don't expose internal details
+                return jsonify({'error': 'Authentication failed. Please log in again.'}), 401
     return decorated
 

@@ -465,6 +465,10 @@ def revert_incorrect_sells(current_user):
         import traceback
         error_msg = f"Failed to revert incorrect sells: {str(e)}"
         current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
-        db.session.rollback()
+        try:
+            if 'db' in locals() and db:
+                db.session.rollback()
+        except Exception as rollback_error:
+            current_app.logger.warning(f"Could not rollback: {rollback_error}")
         return jsonify({'error': error_msg}), 500
 
