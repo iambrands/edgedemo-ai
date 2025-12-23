@@ -374,11 +374,6 @@ def revert_incorrect_sells(current_user):
                 original_automation_id = position.automation_id
                 position.automation_id = None
                 
-                # Add note to track this was reverted
-                if not position.notes:
-                    position.notes = ''
-                position.notes += f' [REVERTED on {datetime.utcnow().strftime("%Y-%m-%d")} - automation disabled]'
-                
                 positions_reopened.append(position.id)
                 
                 # Update position with current market price (but don't check exits yet)
@@ -425,7 +420,6 @@ def revert_incorrect_sells(current_user):
                         status='open',
                         automation_id=None  # Don't link to automation to prevent auto-closing
                     )
-                    new_position.notes = f'[REVERTED on {datetime.utcnow().strftime("%Y-%m-%d")} - recreated from BUY trade]'
                     db.session.add(new_position)
                     db.session.flush()
                     positions_reopened.append(new_position.id)
