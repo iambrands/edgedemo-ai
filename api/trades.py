@@ -367,14 +367,28 @@ def revert_incorrect_sells(current_user):
                 position.unrealized_pnl_percent = None
                 # Set current_price to entry_price initially, will be updated by monitor
                 position.current_price = position.entry_price
+                
+                # IMPORTANT: Clear automation_id to prevent immediate re-closing
+                # The automation engine will close positions that meet exit conditions
+                # By clearing the automation_id, we prevent automatic monitoring
+                original_automation_id = position.automation_id
+                position.automation_id = None
+                
+                # Add note to track this was reverted
+                if not position.notes:
+                    position.notes = ''
+                position.notes += f' [REVERTED on {datetime.utcnow().strftime("%Y-%m-%d")} - automation disabled]'
+                
                 positions_reopened.append(position.id)
                 
-                # Update position with current market price
+                # Update position with current market price (but don't check exits yet)
                 try:
                     from services.position_monitor import PositionMonitor
                     monitor = PositionMonitor()
+                    # Only update price data, don't check exit conditions
                     monitor.update_position_data(position)
                     db.session.refresh(position)
+                    current_app.logger.info(f"Reopened position {position.id} (automation {original_automation_id} disabled)")
                 except Exception as e:
                     current_app.logger.warning(f"Could not update position {position.id} price: {e}")
             else:
