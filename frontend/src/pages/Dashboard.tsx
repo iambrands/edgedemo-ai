@@ -122,9 +122,9 @@ const Dashboard: React.FC = () => {
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
-      // Create timeout promise (20 seconds for normal, 45 seconds if updating prices)
-      // Increased timeouts to handle slower API responses
-      const timeoutMs = updatePrices ? 45000 : 20000;
+      // Create timeout promise (30 seconds for normal, 60 seconds if updating prices)
+      // Increased timeouts to handle slower API responses, especially for positions
+      const timeoutMs = updatePrices ? 60000 : 30000;
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
       });
@@ -158,7 +158,7 @@ const Dashboard: React.FC = () => {
           api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
           'positions',
-          updatePrices ? 45000 : 20000 // Longer timeout if updating prices
+          updatePrices ? 60000 : 30000 // Longer timeout for positions (30s normal, 60s with price updates)
         ),
         fetchWithTimeout(
           tradesService.getHistory({ start_date: thirtyDaysAgo }),
