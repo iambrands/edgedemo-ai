@@ -422,18 +422,21 @@ def revert_incorrect_sells(current_user):
                         current_theta=buy_trade.theta,
                         current_vega=buy_trade.vega,
                         current_iv=buy_trade.implied_volatility,
-                        status='open'
+                        status='open',
+                        automation_id=None  # Don't link to automation to prevent auto-closing
                     )
+                    new_position.notes = f'[REVERTED on {datetime.utcnow().strftime("%Y-%m-%d")} - recreated from BUY trade]'
                     db.session.add(new_position)
                     db.session.flush()
                     positions_reopened.append(new_position.id)
                     
-                    # Update position with current market price
+                    # Update position with current market price (but don't check exits)
                     try:
                         from services.position_monitor import PositionMonitor
                         monitor = PositionMonitor()
                         monitor.update_position_data(new_position)
                         db.session.refresh(new_position)
+                        current_app.logger.info(f"Recreated position {new_position.id} from BUY trade")
                     except Exception as e:
                         current_app.logger.warning(f"Could not update new position {new_position.id} price: {e}")
             
