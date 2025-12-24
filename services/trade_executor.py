@@ -551,49 +551,39 @@ class TradeExecutor:
         if not position:
             return {'error': 'Position not found'}
         
+        # CRITICAL: Determine if this is an option position BEFORE fetching price
+        is_option_position = (
+            (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+            (position.expiration_date and position.strike_price is not None) or
+            bool(position.option_symbol)
+        )
+        
         if exit_price is None:
-            # Try to update position to get current price (handles options correctly)
-            # But don't fail if Tradier API is unavailable
-            try:
-                monitor = PositionMonitor()
-                monitor.update_position_data(position)
-                exit_price = position.current_price
-                
-                # CRITICAL: Check if current_price is actually a stock price (too high for option premium)
-                is_option_position = (
-                    (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
-                    (position.expiration_date and position.strike_price is not None) or
-                    bool(position.option_symbol)
-                )
-                
-                # If exit_price looks like stock price (>$50 for an option), reject it
-                if is_option_position and exit_price and exit_price > 50:
-                    try:
-                        from flask import current_app
-                        current_app.logger.error(
-                            f"CRITICAL: position.current_price ${exit_price:.2f} looks like stock price for option position {position.id}. "
-                            f"Re-fetching option premium..."
-                        )
-                    except:
-                        pass
-                    exit_price = None  # Force re-fetch below
-            except Exception as e:
-                # If update fails (e.g., Tradier API unavailable), log but continue
+            # FOR OPTIONS: ALWAYS re-fetch the option premium, NEVER trust current_price
+            # This is critical because current_price might be a stock price from a previous failed lookup
+            if is_option_position:
+                exit_price = None  # Force fresh fetch below - don't use current_price
                 try:
                     from flask import current_app
-                    current_app.logger.warning(f"Could not update position data for close: {str(e)}")
+                    current_app.logger.info(
+                        f"Closing option position {position.id} ({position.symbol}): "
+                        f"Re-fetching option premium (ignoring current_price=${position.current_price})"
+                    )
                 except:
                     pass
-                exit_price = position.current_price or position.entry_price
-                
-                # Also check if this looks like stock price
-                is_option_position = (
-                    (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
-                    (position.expiration_date and position.strike_price is not None) or
-                    bool(position.option_symbol)
-                )
-                if is_option_position and exit_price and exit_price > 50:
-                    exit_price = None  # Force re-fetch below
+            else:
+                # For stocks, try to update position to get current price
+                try:
+                    monitor = PositionMonitor()
+                    monitor.update_position_data(position)
+                    exit_price = position.current_price
+                except Exception as e:
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(f"Could not update position data for close: {str(e)}")
+                    except:
+                        pass
+                    exit_price = position.current_price or position.entry_price
             
             # If still no price, try to get it (but handle errors gracefully)
             # CRITICAL: Check if this is an option position BEFORE falling back to stock price
@@ -689,20 +679,35 @@ class TradeExecutor:
                     except:
                         pass
                 
-                # Final fallback: use entry price or current price
-                # BUT: If exit_price looks like a stock price (>$50 for an option), reject it
-                if is_option_position and exit_price and exit_price > 50:
-                    try:
-                        from flask import current_app
-                        current_app.logger.error(
-                            f"CRITICAL: exit_price ${exit_price:.2f} looks like stock price for option position {position.id}. "
-                            f"Rejecting and using entry_price ${position.entry_price:.2f} instead."
-                        )
-                    except:
-                        pass
-                    exit_price = position.entry_price  # Use entry price as safer fallback
-                elif not exit_price or exit_price <= 0:
-                    exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
+                # Final validation: NEVER accept stock price for options
+                if is_option_position:
+                    # If exit_price looks like stock price (>$50 for an option), it's WRONG
+                    if exit_price and exit_price > 50:
+                        try:
+                            from flask import current_app
+                            current_app.logger.error(
+                                f"CRITICAL ERROR: exit_price ${exit_price:.2f} is STOCK PRICE for option position {position.id} "
+                                f"({position.symbol} {position.contract_type} ${position.strike_price} {position.expiration_date}). "
+                                f"REJECTING and using entry_price ${position.entry_price:.2f} as fallback. "
+                                f"This should NEVER happen - option lookup failed!"
+                            )
+                        except:
+                            pass
+                        exit_price = position.entry_price  # Use entry price as safer fallback
+                    elif not exit_price or exit_price <= 0:
+                        # No price found - use entry price
+                        exit_price = position.entry_price
+                        try:
+                            from flask import current_app
+                            current_app.logger.warning(
+                                f"Could not fetch option premium for position {position.id}. Using entry_price ${exit_price:.2f}"
+                            )
+                        except:
+                            pass
+                else:
+                    # For stocks, use current_price or entry_price
+                    if not exit_price or exit_price <= 0:
+                        exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
         
         # Execute sell trade (skip risk checks for exits)
         result = self.execute_trade(
