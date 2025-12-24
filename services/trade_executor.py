@@ -63,14 +63,6 @@ class TradeExecutor:
         if not user:
             raise ValueError("User not found")
         
-        # Get execution price
-        if price is None:
-            quote = self.tradier.get_quote(symbol)
-            if 'quotes' in quote and 'quote' in quote['quotes']:
-                price = quote['quotes']['quote']['last']
-            else:
-                price = 0.0
-        
         # Risk validation (skip for exits)
         if not skip_risk_check and action.lower() == 'buy':
             # Calculate position size if not provided
