@@ -122,28 +122,35 @@ const Dashboard: React.FC = () => {
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
-      // Create timeout promise (30 seconds for normal, 60 seconds if updating prices)
-      // Increased timeouts to handle slower API responses, especially for positions
-      const timeoutMs = updatePrices ? 60000 : 30000;
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
-      });
-
+      // Create timeout promise (60 seconds for normal, 90 seconds if updating prices)
+      // Increased timeouts significantly to handle large datasets and slow API responses
+      const timeoutMs = updatePrices ? 90000 : 60000;
+      
       // Fetch all data with individual error handling
       const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string, customTimeout?: number): Promise<T> => {
-        const timeout = customTimeout ? new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), customTimeout);
-        }) : timeoutPromise;
+        const timeoutDuration = customTimeout || timeoutMs;
+        const timeout = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`Request timeout for ${name}`)), timeoutDuration);
+        });
+        
         try {
-          return await Promise.race([promise, timeout as Promise<T>]);
-        } catch (error) {
-          // Silently handle timeouts - don't log as errors if it's just a background operation
-          // Only log if it's a manual refresh or critical operation
-          if (updatePrices || name === 'positions') {
-            console.warn(`Timeout loading ${name}, using cached/default data`);
+          return await Promise.race([promise, timeout]);
+        } catch (error: any) {
+          // Handle timeouts gracefully - don't throw uncaught errors
+          const errorMessage = error?.message || 'Unknown error';
+          if (errorMessage.includes('timeout')) {
+            // Silently handle timeouts - don't log as errors if it's just a background operation
+            // Only log if it's a manual refresh or critical operation
+            if (updatePrices || name === 'positions') {
+              console.warn(`⏱️ Timeout loading ${name} (${timeoutDuration}ms), using cached/default data`);
+            }
+            // Don't show error toasts for background timeouts - they're expected in slow network conditions
+            return defaultValue;
+          } else {
+            // For non-timeout errors, log but still return default
+            console.warn(`⚠️ Error loading ${name}:`, errorMessage);
+            return defaultValue;
           }
-          // Don't show error toasts for background timeouts - they're expected in slow network conditions
-          return defaultValue;
         }
       };
 
@@ -158,7 +165,7 @@ const Dashboard: React.FC = () => {
           api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
           'positions',
-          updatePrices ? 60000 : 30000 // Longer timeout for positions (30s normal, 60s with price updates)
+          updatePrices ? 90000 : 60000 // Longer timeout for positions (60s normal, 90s with price updates)
         ),
         fetchWithTimeout(
           tradesService.getHistory({ start_date: thirtyDaysAgo }),
