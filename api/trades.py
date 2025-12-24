@@ -327,6 +327,7 @@ def revert_incorrect_sells(current_user):
         target_date = data.get('date', '2025-12-23')
         target_dates = data.get('dates', [])  # Optional: multiple dates
         trade_ids = data.get('trade_ids')  # Optional: specific trade IDs
+        target_symbol = data.get('symbol')  # Optional: filter by symbol (e.g., 'SPY')
         
         # Support both single date and multiple dates
         dates_to_process = []
@@ -362,6 +363,10 @@ def revert_incorrect_sells(current_user):
                 query = query.filter(func.date(Trade.trade_date) == parsed_dates[0])
             else:
                 query = query.filter(func.date(Trade.trade_date).in_(parsed_dates))
+        
+        # Optional: filter by symbol if provided
+        if target_symbol:
+            query = query.filter(Trade.symbol == target_symbol.upper())
         
         sell_trades = query.order_by(Trade.trade_date).all()
         
