@@ -398,6 +398,8 @@ const Dashboard: React.FC = () => {
   };
 
   const refreshData = async () => {
+    // Clear cache when manually refreshing
+    sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
     // Force update prices when manually refreshing
     setForcePriceUpdate(true);
     try {
