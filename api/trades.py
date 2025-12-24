@@ -313,14 +313,28 @@ def revert_incorrect_sells(current_user):
         
         data = request.get_json() or {}
         target_date = data.get('date', '2025-12-23')
+        target_dates = data.get('dates', [])  # Optional: multiple dates
         trade_ids = data.get('trade_ids')  # Optional: specific trade IDs
         
-        # Parse date
-        try:
-            if isinstance(target_date, str):
-                target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        # Support both single date and multiple dates
+        dates_to_process = []
+        if target_dates and isinstance(target_dates, list):
+            dates_to_process = target_dates
+        elif target_date:
+            dates_to_process = [target_date]
+        
+        # Parse dates
+        parsed_dates = []
+        for date_str in dates_to_process:
+            try:
+                if isinstance(date_str, str):
+                    parsed_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    parsed_dates.append(parsed_date)
+            except ValueError:
+                return jsonify({'error': f'Invalid date format: {date_str}. Use YYYY-MM-DD'}), 400
+        
+        if not parsed_dates:
+            return jsonify({'error': 'No valid dates provided'}), 400
         
         # Find SELL trades for current user only
         query = db.session.query(Trade).filter(
@@ -331,12 +345,16 @@ def revert_incorrect_sells(current_user):
         if trade_ids:
             query = query.filter(Trade.id.in_(trade_ids))
         else:
-            query = query.filter(func.date(Trade.trade_date) == target_date)
+            # Filter by date(s) - use IN clause for multiple dates
+            if len(parsed_dates) == 1:
+                query = query.filter(func.date(Trade.trade_date) == parsed_dates[0])
+            else:
+                query = query.filter(func.date(Trade.trade_date).in_(parsed_dates))
         
         sell_trades = query.order_by(Trade.trade_date).all()
         
         current_app.logger.info(
-            f"Found {len(sell_trades)} SELL trades for user {current_user.id} on {target_date}"
+            f"Found {len(sell_trades)} SELL trades for user {current_user.id} on date(s): {[str(d) for d in parsed_dates]}"
         )
         
         if not sell_trades:
