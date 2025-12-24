@@ -166,30 +166,34 @@ const Dashboard: React.FC = () => {
         ? '/trades/positions?update_prices=true' 
         : '/trades/positions';
       
+      // Use shorter timeouts for initial load (new accounts have no data, should be fast)
+      // Only use longer timeouts when explicitly updating prices
+      const initialLoadTimeout = updatePrices ? 90000 : 10000; // 10s for initial load, 90s for price updates
+      
       const [positionsData, tradesData, watchlistData, userDataResponse] = await Promise.all([
         fetchWithTimeout(
           api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
           'positions',
-          updatePrices ? 90000 : 60000 // Longer timeout for positions (60s normal, 90s with price updates)
+          updatePrices ? 90000 : initialLoadTimeout
         ),
         fetchWithTimeout(
           tradesService.getHistory({ start_date: thirtyDaysAgo }),
           { trades: [], count: 0 },
           'trade history',
-          20000 // 20 second timeout
+          initialLoadTimeout
         ),
         fetchWithTimeout(
           watchlistService.getWatchlist(),
           { watchlist: [], count: 0 },
           'watchlist',
-          20000 // 20 second timeout
+          initialLoadTimeout
         ),
         fetchWithTimeout(
           api.get('/auth/user').catch(() => ({ data: { user: { paper_balance: 100000 } } } as any)),
           { data: { user: { paper_balance: 100000 } } } as any,
           'user data',
-          20000 // 20 second timeout
+          initialLoadTimeout
         ),
       ]);
       
@@ -217,11 +221,24 @@ const Dashboard: React.FC = () => {
   const loadOpportunities = async () => {
     setLoadingOpportunities(true);
     try {
-      const response = await api.get('/opportunities/today');
-      setOpportunities(response.data.opportunities || []);
+      // Use shorter timeout for opportunities (optional feature)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 8000); // 8 second timeout
+      });
+      
+      const response = await Promise.race([
+        api.get('/opportunities/today'),
+        timeoutPromise
+      ]) as any;
+      
+      if (response && response.data && response.data.opportunities) {
+        setOpportunities(response.data.opportunities);
+      }
     } catch (error: any) {
       // Silently fail - opportunities are optional
-      console.error('Failed to load opportunities:', error);
+      if (!error?.message?.includes('Timeout')) {
+        console.error('Failed to load opportunities:', error);
+      }
       setOpportunities([]);
     } finally {
       setLoadingOpportunities(false);
@@ -264,10 +281,23 @@ const Dashboard: React.FC = () => {
   const loadMarketMovers = async () => {
     setLoadingMarketMovers(true);
     try {
-      const response = await api.get('/opportunities/market-movers?limit=8');
-      setMarketMovers(response.data.movers || []);
+      // Use shorter timeout for market movers (optional feature)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 8000); // 8 second timeout
+      });
+      
+      const response = await Promise.race([
+        api.get('/opportunities/market-movers?limit=8'),
+        timeoutPromise
+      ]) as any;
+      
+      if (response && response.data && response.data.movers) {
+        setMarketMovers(response.data.movers);
+      }
     } catch (error: any) {
-      console.error('Failed to load market movers:', error);
+      if (!error?.message?.includes('Timeout')) {
+        console.error('Failed to load market movers:', error);
+      }
       setMarketMovers([]);
     } finally {
       setLoadingMarketMovers(false);
@@ -277,10 +307,23 @@ const Dashboard: React.FC = () => {
   const loadAiSuggestions = async () => {
     setLoadingAiSuggestions(true);
     try {
-      const response = await api.get('/opportunities/ai-suggestions?limit=8');
-      setAiSuggestions(response.data.recommendations || []);
+      // Use shorter timeout for AI suggestions (optional feature)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 8000); // 8 second timeout
+      });
+      
+      const response = await Promise.race([
+        api.get('/opportunities/ai-suggestions?limit=8'),
+        timeoutPromise
+      ]) as any;
+      
+      if (response && response.data && response.data.recommendations) {
+        setAiSuggestions(response.data.recommendations);
+      }
     } catch (error: any) {
-      console.error('Failed to load AI suggestions:', error);
+      if (!error?.message?.includes('Timeout')) {
+        console.error('Failed to load AI suggestions:', error);
+      }
       setAiSuggestions([]);
     } finally {
       setLoadingAiSuggestions(false);
