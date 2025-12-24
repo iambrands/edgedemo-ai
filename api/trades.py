@@ -361,12 +361,70 @@ def revert_incorrect_sells(current_user):
                 ).order_by(Position.entry_date.desc()).first()
             
             if position:
+                # Check if entry_price looks wrong (too high for option premium)
+                # If entry_price > $50, it's likely a stock price, not option premium
+                is_option = (
+                    position.contract_type and 
+                    position.contract_type.lower() in ['call', 'put', 'option']
+                ) or bool(position.option_symbol) or (position.expiration_date and position.strike_price)
+                
+                entry_price_corrected = False
+                if is_option and position.entry_price and position.entry_price > 50:
+                    # Likely stored stock price instead of option premium - fetch correct premium
+                    try:
+                        from services.tradier_connector import TradierConnector
+                        tradier = TradierConnector()
+                        
+                        if position.expiration_date and position.strike_price:
+                            expiration_str = position.expiration_date.strftime('%Y-%m-%d')
+                            options_chain = tradier.get_options_chain(position.symbol, expiration_str)
+                            
+                            # Find matching option
+                            contract_type = (position.contract_type or '').lower()
+                            if contract_type == 'option':
+                                # Try to infer from delta if available
+                                contract_type = 'put' if (position.entry_delta or 0) < 0 else 'call'
+                            
+                            matching_option = None
+                            for opt in options_chain:
+                                opt_strike = float(opt.get('strike', 0))
+                                opt_type = (opt.get('type', '') or '').lower()
+                                if abs(opt_strike - position.strike_price) < 0.01 and opt_type == contract_type:
+                                    matching_option = opt
+                                    break
+                            
+                            if matching_option:
+                                # Use mid price if available, otherwise last price
+                                bid = float(matching_option.get('bid', 0) or 0)
+                                ask = float(matching_option.get('ask', 0) or 0)
+                                last = float(matching_option.get('last', 0) or 0)
+                                
+                                if bid > 0 and ask > 0:
+                                    correct_premium = (bid + ask) / 2
+                                elif last > 0:
+                                    correct_premium = last
+                                else:
+                                    correct_premium = None
+                                
+                                if correct_premium and correct_premium > 0:
+                                    old_price = position.entry_price
+                                    position.entry_price = correct_premium
+                                    position.current_price = correct_premium
+                                    entry_price_corrected = True
+                                    current_app.logger.info(
+                                        f"Corrected position {position.id} entry_price from ${old_price:.2f} "
+                                        f"(stock price) to ${correct_premium:.2f} (option premium)"
+                                    )
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not correct entry_price for position {position.id}: {e}")
+                
                 # Reopen position
                 position.status = 'open'
                 position.unrealized_pnl = None
                 position.unrealized_pnl_percent = None
-                # Set current_price to entry_price initially, will be updated by monitor
-                position.current_price = position.entry_price
+                if not entry_price_corrected:
+                    # Set current_price to entry_price initially, will be updated by monitor
+                    position.current_price = position.entry_price
                 
                 # IMPORTANT: Clear automation_id to prevent immediate re-closing
                 # The automation engine will close positions that meet exit conditions
@@ -397,14 +455,72 @@ def revert_incorrect_sells(current_user):
                 ).order_by(Trade.trade_date.desc()).first()
                 
                 if buy_trade:
+                    # Check if BUY trade price looks wrong (too high for option premium)
+                    is_option = (
+                        buy_trade.contract_type and 
+                        buy_trade.contract_type.lower() in ['call', 'put', 'option']
+                    ) or bool(buy_trade.option_symbol)
+                    
+                    buy_price = buy_trade.price
+                    buy_price_corrected = False
+                    
+                    if is_option and buy_trade.price and buy_trade.price > 50:
+                        # Likely stored stock price instead of option premium - fetch correct premium
+                        try:
+                            from services.tradier_connector import TradierConnector
+                            tradier = TradierConnector()
+                            
+                            if buy_trade.expiration_date and buy_trade.strike_price:
+                                expiration_str = buy_trade.expiration_date.strftime('%Y-%m-%d')
+                                options_chain = tradier.get_options_chain(buy_trade.symbol, expiration_str)
+                                
+                                # Find matching option
+                                contract_type = (buy_trade.contract_type or '').lower()
+                                if contract_type == 'option':
+                                    # Try to infer from delta if available
+                                    contract_type = 'put' if (buy_trade.delta or 0) < 0 else 'call'
+                                
+                                matching_option = None
+                                for opt in options_chain:
+                                    opt_strike = float(opt.get('strike', 0))
+                                    opt_type = (opt.get('type', '') or '').lower()
+                                    if abs(opt_strike - buy_trade.strike_price) < 0.01 and opt_type == contract_type:
+                                        matching_option = opt
+                                        break
+                                
+                                if matching_option:
+                                    # Use mid price if available, otherwise last price
+                                    bid = float(matching_option.get('bid', 0) or 0)
+                                    ask = float(matching_option.get('ask', 0) or 0)
+                                    last = float(matching_option.get('last', 0) or 0)
+                                    
+                                    if bid > 0 and ask > 0:
+                                        correct_premium = (bid + ask) / 2
+                                    elif last > 0:
+                                        correct_premium = last
+                                    else:
+                                        correct_premium = None
+                                    
+                                    if correct_premium and correct_premium > 0:
+                                        old_price = buy_trade.price
+                                        buy_price = correct_premium
+                                        buy_trade.price = correct_premium  # Update the BUY trade too
+                                        buy_price_corrected = True
+                                        current_app.logger.info(
+                                            f"Corrected BUY trade {buy_trade.id} price from ${old_price:.2f} "
+                                            f"(stock price) to ${correct_premium:.2f} (option premium)"
+                                        )
+                        except Exception as e:
+                            current_app.logger.warning(f"Could not correct BUY trade {buy_trade.id} price: {e}")
+                    
                     new_position = Position(
                         user_id=buy_trade.user_id,
                         symbol=buy_trade.symbol,
                         option_symbol=buy_trade.option_symbol,
                         contract_type=buy_trade.contract_type,
                         quantity=buy_trade.quantity,
-                        entry_price=buy_trade.price,
-                        current_price=buy_trade.price,
+                        entry_price=buy_price,  # Use corrected price
+                        current_price=buy_price,  # Use corrected price
                         strike_price=buy_trade.strike_price,
                         expiration_date=buy_trade.expiration_date,
                         entry_delta=buy_trade.delta,
