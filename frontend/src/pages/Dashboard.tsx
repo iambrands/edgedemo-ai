@@ -741,109 +741,44 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Today's Opportunities Widget */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-secondary">🎯 Today's Opportunities</h2>
-            {opportunities.length > 0 && (
-              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                {opportunities.length} high-confidence signal{opportunities.length > 1 ? 's' : ''} (70%+)
-              </span>
-            )}
-          </div>
+      {/* Quick Links to Discovery Pages */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <a
+          href="/discover"
+          className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200 hover:shadow-lg transition-shadow cursor-pointer"
+        >
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                const newValue = !showOpportunities;
-                setShowOpportunities(newValue);
-                localStorage.setItem('showOpportunities', String(newValue));
-              }}
-              className="text-sm text-gray-600 hover:text-gray-800 font-medium"
-              title={showOpportunities ? 'Hide opportunities' : 'Show opportunities'}
-            >
-              {showOpportunities ? '👁️ Hide' : '👁️‍🗨️ Show'}
-            </button>
-            <button
-              onClick={loadOpportunities}
-              disabled={loadingOpportunities}
-              className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
-            >
-              {loadingOpportunities ? 'Refreshing...' : 'Refresh'}
-            </button>
+            <span className="text-3xl">🎯</span>
+            <div>
+              <h3 className="text-lg font-bold text-secondary">Discover Opportunities</h3>
+              <p className="text-sm text-gray-600">High-confidence trading signals</p>
+            </div>
           </div>
-        </div>
-        
-        {showOpportunities && (
-          <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {opportunities.map((opp, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleAnalyzeOpportunity(opp.symbol)}
-                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg text-secondary">{opp.symbol}</h3>
-                    {opp.current_price && (
-                      <p className="text-sm text-gray-600">${opp.current_price.toFixed(2)}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
-                      opp.signal_direction === 'bullish' 
-                        ? 'bg-green-100 text-green-800' 
-                        : opp.signal_direction === 'bearish'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {opp.signal_direction?.toUpperCase() || 'NEUTRAL'}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {(opp.confidence * 100).toFixed(0)}% confidence
-                    </div>
-                  </div>
-                </div>
-                {opp.reason && (
-                  <p className="text-xs text-gray-600 line-clamp-2 mb-2">{opp.reason}</p>
-                )}
-                <div className="flex items-center justify-between text-xs">
-                  {opp.iv_rank !== undefined && (
-                    <span className={`px-2 py-1 rounded ${
-                      opp.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
-                      opp.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      IV Rank: {opp.iv_rank.toFixed(0)}%
-                    </span>
-                  )}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAnalyzeOpportunity(opp.symbol);
-                    }}
-                    className="text-primary font-medium hover:text-indigo-700"
-                  >
-                    Analyze Options →
-                  </button>
-                </div>
-              </div>
-            ))}
+        </a>
+        <a
+          href="/market"
+          className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">📈</span>
+            <div>
+              <h3 className="text-lg font-bold text-secondary">Market Movers</h3>
+              <p className="text-sm text-gray-600">High volume & volatility stocks</p>
+            </div>
           </div>
-          {opportunities.length === 0 && !loadingOpportunities && (
-            <p className="text-center text-gray-500 text-sm py-4">
-              No high-confidence opportunities (70%+) found. Add symbols to your watchlist or try Quick Scan.
-            </p>
-          )}
-          </>
-        )}
-        
-        {!showOpportunities && (
-          <p className="text-center text-gray-500 text-sm py-4 italic">
-            Opportunities hidden. Click "Show" to display.
-          </p>
-        )}
+        </a>
+        <a
+          href="/recommendations"
+          className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🤖</span>
+            <div>
+              <h3 className="text-lg font-bold text-secondary">AI Recommendations</h3>
+              <p className="text-sm text-gray-600">Personalized suggestions</p>
+            </div>
+          </div>
+        </a>
       </div>
 
       {/* Account Balance Card */}
@@ -921,203 +856,6 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Market Movers Widget */}
-      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-secondary">📈 Market Movers</h2>
-            {marketMovers.length > 0 && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                {marketMovers.length} high-activity stocks
-              </span>
-            )}
-            {marketMovers.length === 0 && !loadingMarketMovers && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                High volume & volatility
-              </span>
-            )}
-          </div>
-          <button
-            onClick={loadMarketMovers}
-            disabled={loadingMarketMovers}
-            className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
-          >
-            {loadingMarketMovers ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-        {marketMovers.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-            {marketMovers.map((mover, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleAnalyzeOpportunity(mover.symbol)}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg text-secondary">{mover.symbol}</h3>
-                    <p className="text-sm text-gray-600">${mover.current_price?.toFixed(2) || 'N/A'}</p>
-                  </div>
-                  <div className={`text-right ${mover.movement_type === 'up' ? 'text-green-600' : mover.movement_type === 'down' ? 'text-red-600' : 'text-gray-600'}`}>
-                    <div className="text-sm font-semibold">
-                      {mover.change_percent > 0 ? '+' : ''}{mover.change_percent?.toFixed(2) || 0}%
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs mt-2">
-                  <div className="flex flex-col gap-1">
-                    {mover.volume_ratio > 1 && (
-                      <span className="text-gray-600">
-                        Vol: {mover.volume_ratio.toFixed(1)}x avg
-                      </span>
-                    )}
-                    {mover.iv_rank > 0 && (
-                      <span className={`px-2 py-0.5 rounded ${
-                        mover.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
-                        mover.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        IV: {mover.iv_rank.toFixed(0)}%
-                      </span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAnalyzeOpportunity(mover.symbol);
-                    }}
-                    className="text-primary font-medium hover:text-indigo-700 text-xs"
-                  >
-                    Analyze →
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            {loadingMarketMovers ? (
-              <p className="text-gray-500 text-sm">Loading market movers...</p>
-            ) : (
-              <div>
-                <p className="text-gray-500 text-sm mb-2">No market movers found at this time.</p>
-                <p className="text-gray-400 text-xs">Click "Refresh" to scan again.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* AI-Powered Suggestions Widget */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border border-purple-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-secondary">🤖 AI-Powered Suggestions</h2>
-            {aiSuggestions.length > 0 && (
-              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                {aiSuggestions.length} personalized recommendation{aiSuggestions.length > 1 ? 's' : ''}
-              </span>
-            )}
-            {aiSuggestions.length === 0 && !loadingAiSuggestions && (
-              <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
-                Based on your trading patterns
-              </span>
-            )}
-          </div>
-          <button
-            onClick={loadAiSuggestions}
-            disabled={loadingAiSuggestions}
-            className="text-sm text-primary hover:text-indigo-700 font-medium disabled:opacity-50"
-          >
-            {loadingAiSuggestions ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-        {aiSuggestions.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {aiSuggestions.map((suggestion, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleAnalyzeOpportunity(suggestion.symbol)}
-                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-lg text-secondary">{suggestion.symbol}</h3>
-                    {suggestion.current_price && (
-                      <p className="text-sm text-gray-600">${suggestion.current_price.toFixed(2)}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className={`px-2 py-1 rounded text-xs font-semibold ${
-                      suggestion.risk_level === 'high_opportunity' 
-                        ? 'bg-green-100 text-green-800' 
-                        : suggestion.risk_level === 'moderate_opportunity'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {suggestion.risk_level === 'high_opportunity' ? 'HIGH' : 
-                       suggestion.risk_level === 'moderate_opportunity' ? 'MOD' : 'LOW'}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      Score: {suggestion.score}/100
-                    </div>
-                  </div>
-                </div>
-                {suggestion.match_reasons && suggestion.match_reasons.length > 0 && (
-                  <div className="mb-2">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Why this symbol:</p>
-                    <ul className="text-xs text-gray-600 space-y-0.5">
-                      {suggestion.match_reasons.slice(0, 2).map((reason: string, i: number) => (
-                        <li key={i} className="flex items-start">
-                          <span className="text-purple-500 mr-1">•</span>
-                          <span>{reason}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {suggestion.iv_rank !== undefined && suggestion.iv_rank > 0 && (
-                  <div className="mb-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      suggestion.iv_rank > 70 ? 'bg-orange-100 text-orange-800' :
-                      suggestion.iv_rank > 30 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      IV Rank: {suggestion.iv_rank.toFixed(0)}%
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-xs mt-2">
-                  <span className="text-gray-500">
-                    {suggestion.confidence ? `${(suggestion.confidence * 100).toFixed(0)}% confidence` : 'Analyzing...'}
-                  </span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAnalyzeOpportunity(suggestion.symbol);
-                    }}
-                    className="text-primary font-medium hover:text-indigo-700"
-                  >
-                    Analyze →
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            {loadingAiSuggestions ? (
-              <p className="text-gray-500 text-sm">Analyzing your trading patterns...</p>
-            ) : (
-              <div>
-                <p className="text-gray-500 text-sm mb-2">No personalized suggestions available yet.</p>
-                <p className="text-gray-400 text-xs">Start trading to get AI-powered recommendations based on your patterns.</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Active Positions */}
