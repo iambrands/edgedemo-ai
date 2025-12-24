@@ -222,8 +222,8 @@ class RiskManager:
             if abs(new_portfolio_delta) > risk_limits.max_portfolio_delta:
                 return (False, f"Portfolio delta ({new_portfolio_delta}) would exceed limit ({risk_limits.max_portfolio_delta})")
         
-        # Check buying power
-        if action.lower() == 'buy':
+        # Check buying power (only if price is provided)
+        if action.lower() == 'buy' and price is not None and price > 0:
             trade_cost = price * quantity * (100 if option_symbol else 1)
             if user.trading_mode == 'paper':
                 if trade_cost > user.paper_balance:
