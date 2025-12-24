@@ -33,6 +33,45 @@ ChartJS.register(
   Filler
 );
 
+// Cache for dashboard data to prevent unnecessary reloads
+const DASHBOARD_CACHE_KEY = 'dashboard_data_cache';
+const CACHE_DURATION = 30000; // 30 seconds - data is fresh for 30s
+
+interface CachedData {
+  positions: Position[];
+  trades: Trade[];
+  watchlist: Stock[];
+  balance: number;
+  timestamp: number;
+}
+
+const getCachedData = (): CachedData | null => {
+  try {
+    const cached = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      const age = Date.now() - data.timestamp;
+      if (age < CACHE_DURATION) {
+        return data;
+      }
+    }
+  } catch (e) {
+    // Ignore cache errors
+  }
+  return null;
+};
+
+const setCachedData = (data: CachedData) => {
+  try {
+    sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
+      ...data,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    // Ignore cache errors
+  }
+};
+
 const Dashboard: React.FC = () => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
@@ -56,11 +95,22 @@ const Dashboard: React.FC = () => {
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [checkingExits, setCheckingExits] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState<number>(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load core dashboard data first (this sets loading to false when done)
-    loadDashboardData();
+    // Check cache first - if data is fresh, use it immediately
+    const cached = getCachedData();
+    if (cached) {
+      setPositions(cached.positions || []);
+      setAllTrades(cached.trades || []);
+      setRecentTrades((cached.trades || []).slice(0, 10));
+      setWatchlist(cached.watchlist || []);
+      setAccountBalance(cached.balance || 100000);
+      setLoading(false);
+      setLastLoadTime(cached.timestamp);
+      console.log('✅ Using cached dashboard data');
+    }
     
     // Load user preference for showing opportunities
     const savedPreference = localStorage.getItem('showOpportunities');
@@ -77,48 +127,44 @@ const Dashboard: React.FC = () => {
       }, 1000);
     }
     
-    // Load optional widgets in background (non-blocking)
-    // These don't block the page from rendering
+    // Load fresh data in background (only if cache is stale or missing)
+    const shouldReload = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
+    if (shouldReload) {
+      loadDashboardData();
+    }
+    
+    // Load optional widgets in background (non-blocking, with longer delay)
+    // These are expensive and can be loaded lazily
     setTimeout(() => {
-      loadOpportunities();
+      // Only load widgets if they're enabled/visible
+      if (showOpportunities) {
+        loadOpportunities();
+      }
       loadMarketMovers();
       loadAiSuggestions();
-    }, 100); // Small delay to let core data load first
+    }, 500); // Longer delay - let core data render first
     
-    // Auto-refresh when page becomes visible (user navigates back to Dashboard)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadDashboardData();
-      }
-    };
-    
-    // Listen for custom event when a trade is executed
+    // Listen for custom event when a trade is executed (force reload)
     const handleTradeExecuted = () => {
+      // Clear cache and reload
+      sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
       loadDashboardData();
     };
     
-    // Listen for focus event (user switches back to tab)
-    const handleFocus = () => {
-      loadDashboardData();
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('tradeExecuted', handleTradeExecuted);
-    window.addEventListener('focus', handleFocus);
     
-    // Also check sessionStorage for trade execution flag
+    // Check sessionStorage for trade execution flag (less frequent)
     const checkTradeFlag = setInterval(() => {
       const tradeExecuted = sessionStorage.getItem('tradeExecuted');
       if (tradeExecuted === 'true') {
         sessionStorage.removeItem('tradeExecuted');
+        sessionStorage.removeItem(DASHBOARD_CACHE_KEY); // Clear cache
         loadDashboardData();
       }
-    }, 1000); // Check every second
+    }, 2000); // Check every 2 seconds (less frequent)
     
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('tradeExecuted', handleTradeExecuted);
-      window.removeEventListener('focus', handleFocus);
       clearInterval(checkTradeFlag);
     };
   }, []);
@@ -199,11 +245,27 @@ const Dashboard: React.FC = () => {
       
       const userData = userDataResponse;
 
-      setPositions(positionsData.positions || []);
-      setAllTrades(tradesData.trades || []); // Store all trades for performance trend
-      setRecentTrades((tradesData.trades || []).slice(0, 10)); // Show only 10 in table
-      setWatchlist(watchlistData.watchlist || []);
-      setAccountBalance(userData.data?.user?.paper_balance || 100000);
+      const positionsList = positionsData.positions || [];
+      const tradesList = tradesData.trades || [];
+      const watchlistList = watchlistData.watchlist || [];
+      const balance = userData.data?.user?.paper_balance || 100000;
+      
+      setPositions(positionsList);
+      setAllTrades(tradesList); // Store all trades for performance trend
+      setRecentTrades(tradesList.slice(0, 10)); // Show only 10 in table
+      setWatchlist(watchlistList);
+      setAccountBalance(balance);
+      
+      // Cache the data for fast reloads
+      setCachedData({
+        positions: positionsList,
+        trades: tradesList,
+        watchlist: watchlistList,
+        balance: balance,
+        timestamp: Date.now()
+      });
+      
+      setLastLoadTime(Date.now());
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
       toast.error('Failed to load some dashboard data. Please refresh the page.', { duration: 5000 });
