@@ -59,10 +59,8 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Load core dashboard data first (this sets loading to false when done)
     loadDashboardData();
-    loadOpportunities();
-    loadMarketMovers();
-    loadAiSuggestions();
     
     // Load user preference for showing opportunities
     const savedPreference = localStorage.getItem('showOpportunities');
@@ -78,6 +76,14 @@ const Dashboard: React.FC = () => {
         setShowOnboarding(true);
       }, 1000);
     }
+    
+    // Load optional widgets in background (non-blocking)
+    // These don't block the page from rendering
+    setTimeout(() => {
+      loadOpportunities();
+      loadMarketMovers();
+      loadAiSuggestions();
+    }, 100); // Small delay to let core data load first
     
     // Auto-refresh when page becomes visible (user navigates back to Dashboard)
     const handleVisibilityChange = () => {
