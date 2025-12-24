@@ -42,13 +42,18 @@
     return;
   }
   
-  // Step 2: Get today's date
+  // Step 2: Get dates - include today and 12/24/2025 (when the bug occurred)
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const bugDate = '2025-12-24'; // Known date when bug occurred
   
-  console.log(`📅 Reverting SPY sells from ${yesterday} and ${today}...`);
+  const datesToRevert = [today, yesterday, bugDate];
+  // Remove duplicates
+  const uniqueDates = [...new Set(datesToRevert)];
   
-  // Step 3: Revert trades for today and yesterday (covers recent sells)
+  console.log(`📅 Reverting SPY sells from: ${uniqueDates.join(', ')}...`);
+  
+  // Step 3: Revert trades for all specified dates
   try {
     const response = await fetch(`${API_BASE}/api/trades/revert-incorrect-sells`, {
       method: 'POST',
@@ -57,7 +62,7 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        dates: [today, yesterday],
+        dates: uniqueDates,
         symbol: 'SPY' // Filter by SPY only
       })
     });
