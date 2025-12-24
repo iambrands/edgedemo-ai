@@ -558,6 +558,25 @@ class TradeExecutor:
                 monitor = PositionMonitor()
                 monitor.update_position_data(position)
                 exit_price = position.current_price
+                
+                # CRITICAL: Check if current_price is actually a stock price (too high for option premium)
+                is_option_position = (
+                    (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                    (position.expiration_date and position.strike_price is not None) or
+                    bool(position.option_symbol)
+                )
+                
+                # If exit_price looks like stock price (>$50 for an option), reject it
+                if is_option_position and exit_price and exit_price > 50:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"CRITICAL: position.current_price ${exit_price:.2f} looks like stock price for option position {position.id}. "
+                            f"Re-fetching option premium..."
+                        )
+                    except:
+                        pass
+                    exit_price = None  # Force re-fetch below
             except Exception as e:
                 # If update fails (e.g., Tradier API unavailable), log but continue
                 try:
@@ -566,27 +585,99 @@ class TradeExecutor:
                 except:
                     pass
                 exit_price = position.current_price or position.entry_price
+                
+                # Also check if this looks like stock price
+                is_option_position = (
+                    (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                    (position.expiration_date and position.strike_price is not None) or
+                    bool(position.option_symbol)
+                )
+                if is_option_position and exit_price and exit_price > 50:
+                    exit_price = None  # Force re-fetch below
             
             # If still no price, try to get it (but handle errors gracefully)
+            # CRITICAL: Check if this is an option position BEFORE falling back to stock price
+            is_option_position = (
+                (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                (position.expiration_date and position.strike_price is not None) or
+                bool(position.option_symbol)
+            )
+            
             if not exit_price or exit_price <= 0:
                 try:
-                    if position.option_symbol and position.expiration_date and position.strike_price:
-                        # For options, get from options chain
-                        expiration_str = position.expiration_date.strftime('%Y-%m-%d')
-                        options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
-                        if options_chain and isinstance(options_chain, dict) and 'options' in options_chain:
-                            options_list = options_chain['options'].get('option', [])
-                            if not isinstance(options_list, list):
-                                options_list = [options_list] if options_list else []
+                    if is_option_position:
+                        # For options, ALWAYS get from options chain or direct quote
+                        # Never fall back to stock price for options!
+                        
+                        # First try direct quote if option_symbol is available
+                        if position.option_symbol:
+                            try:
+                                option_quote = self.tradier.get_quote(position.option_symbol)
+                                if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
+                                    quote_data = option_quote['quotes']['quote']
+                                    bid = quote_data.get('bid', 0) or 0
+                                    ask = quote_data.get('ask', 0) or 0
+                                    last = quote_data.get('last', 0) or 0
+                                    
+                                    if bid > 0 and ask > 0:
+                                        exit_price = (bid + ask) / 2
+                                    elif last > 0:
+                                        exit_price = last
+                            except Exception as e:
+                                try:
+                                    from flask import current_app
+                                    current_app.logger.warning(f"Direct option quote failed for {position.option_symbol}: {e}")
+                                except:
+                                    pass
+                        
+                        # If direct quote didn't work, try options chain
+                        if (not exit_price or exit_price <= 0) and position.expiration_date and position.strike_price:
+                            expiration_str = position.expiration_date.strftime('%Y-%m-%d')
+                            options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                            
+                            # Handle both dict and list formats
+                            if isinstance(options_chain, dict) and 'options' in options_chain:
+                                options_list = options_chain['options'].get('option', [])
+                                if not isinstance(options_list, list):
+                                    options_list = [options_list] if options_list else []
+                            elif isinstance(options_chain, list):
+                                options_list = options_chain
+                            else:
+                                options_list = []
+                            
+                            position_contract_type = (position.contract_type or '').lower()
+                            position_strike = float(position.strike_price)
+                            
                             for option in options_list:
-                                if (option.get('strike') == position.strike_price and 
-                                    option.get('type') == position.contract_type):
-                                    bid = option.get('bid', 0)
-                                    ask = option.get('ask', 0)
-                                    exit_price = (bid + ask) / 2 if (bid > 0 and ask > 0) else option.get('last', 0)
+                                option_strike = option.get('strike') or option.get('strike_price')
+                                option_type = (option.get('type') or option.get('contract_type') or '').lower()
+                                
+                                try:
+                                    option_strike_float = float(option_strike) if option_strike is not None else None
+                                except (ValueError, TypeError):
+                                    continue
+                                
+                                # Match strike and contract type
+                                strike_match = (option_strike_float is not None and 
+                                             abs(option_strike_float - position_strike) < 0.01)
+                                type_match = (
+                                    option_type == position_contract_type or
+                                    (position_contract_type == 'option' and option_type in ['call', 'put']) or
+                                    (not position_contract_type and option_type in ['call', 'put'])
+                                )
+                                
+                                if strike_match and type_match:
+                                    bid = option.get('bid', 0) or 0
+                                    ask = option.get('ask', 0) or 0
+                                    last = option.get('last', 0) or option.get('lastPrice', 0) or 0
+                                    
+                                    if bid > 0 and ask > 0:
+                                        exit_price = (bid + ask) / 2
+                                    elif last > 0:
+                                        exit_price = last
                                     break
                     else:
-                        # For stocks, get stock price
+                        # For stocks ONLY (not options), get stock price
                         quote = self.tradier.get_quote(position.symbol)
                         if 'quotes' in quote and 'quote' in quote['quotes']:
                             exit_price = quote['quotes']['quote'].get('last', 0)
@@ -599,7 +690,18 @@ class TradeExecutor:
                         pass
                 
                 # Final fallback: use entry price or current price
-                if not exit_price or exit_price <= 0:
+                # BUT: If exit_price looks like a stock price (>$50 for an option), reject it
+                if is_option_position and exit_price and exit_price > 50:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"CRITICAL: exit_price ${exit_price:.2f} looks like stock price for option position {position.id}. "
+                            f"Rejecting and using entry_price ${position.entry_price:.2f} instead."
+                        )
+                    except:
+                        pass
+                    exit_price = position.entry_price  # Use entry price as safer fallback
+                elif not exit_price or exit_price <= 0:
                     exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
         
         # Execute sell trade (skip risk checks for exits)
