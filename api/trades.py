@@ -322,9 +322,10 @@ def revert_incorrect_sells(current_user):
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
         
-        # Find SELL trades
+        # Find SELL trades for current user only
         query = db.session.query(Trade).filter(
-            Trade.action == 'sell'
+            Trade.action == 'sell',
+            Trade.user_id == current_user.id  # CRITICAL: Only revert current user's trades
         )
         
         if trade_ids:
@@ -333,6 +334,10 @@ def revert_incorrect_sells(current_user):
             query = query.filter(func.date(Trade.trade_date) == target_date)
         
         sell_trades = query.order_by(Trade.trade_date).all()
+        
+        current_app.logger.info(
+            f"Found {len(sell_trades)} SELL trades for user {current_user.id} on {target_date}"
+        )
         
         if not sell_trades:
             return jsonify({
