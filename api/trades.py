@@ -562,17 +562,88 @@ def revert_incorrect_sells(current_user):
             sell_trade.notes = (sell_trade.notes or '') + ' [REVERTED - Incorrect sell]'
             
             # Calculate balance adjustment
+            # We need to subtract the sell proceeds (which were incorrectly added)
+            # AND add back the buy cost (which was incorrectly deducted)
             is_option = (
                 sell_trade.contract_type and 
                 sell_trade.contract_type.lower() in ['call', 'put', 'option']
             ) or bool(sell_trade.option_symbol)
             
             contract_multiplier = 100 if is_option else 1
+            
+            # Find the corresponding BUY trade to get the correct buy price
+            buy_trade_for_balance = None
+            if sell_trade.option_symbol:
+                buy_trade_for_balance = db.session.query(Trade).filter(
+                    Trade.user_id == sell_trade.user_id,
+                    Trade.option_symbol == sell_trade.option_symbol,
+                    Trade.action == 'buy',
+                    Trade.trade_date < sell_trade.trade_date
+                ).order_by(Trade.trade_date.desc()).first()
+            else:
+                buy_trade_for_balance = db.session.query(Trade).filter(
+                    Trade.user_id == sell_trade.user_id,
+                    Trade.symbol == sell_trade.symbol,
+                    Trade.option_symbol == None,
+                    Trade.action == 'buy',
+                    Trade.trade_date < sell_trade.trade_date
+                ).order_by(Trade.trade_date.desc()).first()
+            
+            # Calculate adjustments
+            # Subtract the incorrect sell proceeds (what was added when sold)
             sell_proceeds = sell_trade.price * sell_trade.quantity * contract_multiplier
+            
+            # Add back the buy cost (what was deducted when bought)
+            # Use the corrected buy price if available, otherwise use the stored price
+            buy_cost = 0
+            if buy_trade_for_balance:
+                # If buy price was corrected earlier in this loop, use that
+                # Otherwise, if it's suspiciously high (>$50 for options), we'll need to correct it
+                buy_price = buy_trade_for_balance.price
+                if is_option and buy_price and buy_price > 50:
+                    # Try to get correct premium (similar to what we did for positions)
+                    try:
+                        from services.tradier_connector import TradierConnector
+                        tradier = TradierConnector()
+                        if buy_trade_for_balance.expiration_date and buy_trade_for_balance.strike_price:
+                            expiration_str = buy_trade_for_balance.expiration_date.strftime('%Y-%m-%d')
+                            options_chain = tradier.get_options_chain(buy_trade_for_balance.symbol, expiration_str)
+                            
+                            contract_type = (buy_trade_for_balance.contract_type or '').lower()
+                            if contract_type == 'option':
+                                contract_type = 'put' if (buy_trade_for_balance.delta or 0) < 0 else 'call'
+                            
+                            matching_option = None
+                            for opt in options_chain:
+                                opt_strike = float(opt.get('strike', 0))
+                                opt_type = (opt.get('type', '') or '').lower()
+                                if abs(opt_strike - buy_trade_for_balance.strike_price) < 0.01 and opt_type == contract_type:
+                                    matching_option = opt
+                                    break
+                            
+                            if matching_option:
+                                bid = float(matching_option.get('bid', 0) or 0)
+                                ask = float(matching_option.get('ask', 0) or 0)
+                                if bid > 0 and ask > 0:
+                                    buy_price = (bid + ask) / 2
+                                    buy_trade_for_balance.price = buy_price  # Update the trade record
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not correct buy price for balance calc: {e}")
+                
+                buy_cost = buy_price * buy_trade_for_balance.quantity * contract_multiplier
+            
+            # Net adjustment: subtract sell proceeds, add back buy cost
+            net_adjustment = -sell_proceeds + buy_cost
             
             if sell_trade.user_id not in balance_adjustments:
                 balance_adjustments[sell_trade.user_id] = 0
-            balance_adjustments[sell_trade.user_id] -= sell_proceeds
+            balance_adjustments[sell_trade.user_id] += net_adjustment
+            
+            current_app.logger.info(
+                f"Balance adjustment for trade {sell_trade.id}: "
+                f"sell_proceeds=${sell_proceeds:.2f}, buy_cost=${buy_cost:.2f}, "
+                f"net=${net_adjustment:.2f}"
+            )
         
         # Apply balance adjustments
         for user_id, adjustment in balance_adjustments.items():
