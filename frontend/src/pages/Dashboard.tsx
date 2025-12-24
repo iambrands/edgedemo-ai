@@ -135,14 +135,19 @@ const Dashboard: React.FC = () => {
     
     // Load optional widgets in background (non-blocking, with longer delay)
     // These are expensive and can be loaded lazily
-    setTimeout(() => {
-      // Only load widgets if they're enabled/visible
-      if (showOpportunities) {
-        loadOpportunities();
-      }
-      loadMarketMovers();
-      loadAiSuggestions();
-    }, 500); // Longer delay - let core data render first
+    // Check if user has disabled widgets for performance
+    const widgetsEnabled = localStorage.getItem('dashboard_widgets_enabled') !== 'false';
+    
+    if (widgetsEnabled) {
+      setTimeout(() => {
+        // Only load widgets if they're enabled/visible
+        if (showOpportunities) {
+          loadOpportunities();
+        }
+        loadMarketMovers();
+        loadAiSuggestions();
+      }, 1000); // Even longer delay - let core data render and settle first
+    }
     
     // Listen for custom event when a trade is executed (force reload)
     const handleTradeExecuted = () => {
@@ -715,8 +720,21 @@ const Dashboard: React.FC = () => {
             onClick={refreshData}
             disabled={forcePriceUpdate}
             className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh all data (clears cache)"
           >
             {forcePriceUpdate ? 'Updating Prices...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => {
+              const widgetsEnabled = localStorage.getItem('dashboard_widgets_enabled') !== 'false';
+              localStorage.setItem('dashboard_widgets_enabled', String(!widgetsEnabled));
+              toast.success(widgetsEnabled ? 'Widgets disabled for better performance' : 'Widgets enabled');
+              window.location.reload();
+            }}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium text-sm"
+            title={localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? 'Disable widgets for faster loading' : 'Enable widgets'}
+          >
+            {localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? '⚡ Fast Mode' : '📊 Full Mode'}
           </button>
         </div>
       </div>
