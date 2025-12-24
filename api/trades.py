@@ -69,7 +69,18 @@ def execute_trade(current_user):
         automation_id = sanitize_int(data.get('automation_id'), min_val=1) if data.get('automation_id') else None
         notes = sanitize_input(data.get('notes', ''), max_length=500) if data.get('notes') else None
         
-        current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}, strike={strike}, expiration={expiration_date}, contract_type={contract_type}, price={price}')
+        current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}, strike={strike}, expiration={expiration_date}, contract_type={contract_type}, price={price}, option_symbol={option_symbol}')
+        
+        # Validate that options trades have required fields
+        is_option = bool(option_symbol) or (contract_type and contract_type.lower() in ['call', 'put', 'option']) or (expiration_date and strike is not None)
+        if is_option:
+            if not strike or strike <= 0:
+                return jsonify({'error': 'Strike price is required for options trades'}), 400
+            if not expiration_date:
+                return jsonify({'error': 'Expiration date is required for options trades'}), 400
+            if not contract_type or contract_type.lower() not in ['call', 'put', 'option']:
+                return jsonify({'error': 'Contract type (call/put) is required for options trades'}), 400
+        
         trade_executor = get_trade_executor()
         result = trade_executor.execute_trade(
             user_id=current_user.id,
@@ -88,9 +99,10 @@ def execute_trade(current_user):
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
     except ValueError as e:
-        # Validation errors - return 400
-        current_app.logger.warning(f'Trade validation error: {str(e)}')
-        return jsonify({'error': str(e)}), 400
+        # Validation errors - return 400 with detailed error message
+        error_msg = str(e)
+        current_app.logger.warning(f'Trade validation error: {error_msg}')
+        return jsonify({'error': error_msg}), 400
     except Exception as e:
         # Other errors - return 500 with detailed logging
         import traceback
