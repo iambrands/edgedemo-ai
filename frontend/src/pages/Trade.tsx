@@ -208,7 +208,10 @@ const Trade: React.FC = () => {
       setQuantity(1);
       setPrice(null);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Trade execution failed');
+      const errorMessage = error.response?.data?.error || error.message || 'Trade execution failed';
+      console.error('Trade execution error:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setLoading(false);
     }
