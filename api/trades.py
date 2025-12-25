@@ -768,3 +768,150 @@ def recalculate_balance(current_user):
         db.session.rollback()
         return jsonify({'error': error_msg}), 500
 
+@trades_bp.route('/cleanup-and-recalculate', methods=['POST'])
+@token_required
+def cleanup_and_recalculate(current_user):
+    """Delete bogus trades and recalculate balance based on valid trades and active positions"""
+    db = current_app.extensions['sqlalchemy']
+    
+    try:
+        from models.trade import Trade
+        from models.position import Position
+        from models.user import User
+        from datetime import datetime, date
+        from sqlalchemy import func
+        
+        data = request.get_json() or {}
+        delete_dates = data.get('dates', [])  # Dates to delete trades from (e.g., ['2025-12-24', '2025-12-25'])
+        delete_symbols = data.get('symbols', [])  # Optional: specific symbols to delete (e.g., ['SPY', 'QQQ'])
+        
+        deleted_trades = []
+        starting_balance = 100000.0
+        
+        # Step 1: Delete bogus trades
+        if delete_dates:
+            query = db.session.query(Trade).filter(
+                Trade.user_id == current_user.id,
+                Trade.action == 'sell'  # Only delete SELL trades (the bogus ones)
+            )
+            
+            # Filter by dates
+            parsed_dates = []
+            for date_str in delete_dates:
+                try:
+                    parsed_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    parsed_dates.append(parsed_date)
+                except ValueError:
+                    continue
+            
+            if parsed_dates:
+                if len(parsed_dates) == 1:
+                    query = query.filter(func.date(Trade.trade_date) == parsed_dates[0])
+                else:
+                    query = query.filter(func.date(Trade.trade_date).in_(parsed_dates))
+            
+            # Optional: filter by symbols
+            if delete_symbols:
+                query = query.filter(Trade.symbol.in_([s.upper() for s in delete_symbols]))
+            
+            bogus_trades = query.all()
+            
+            for trade in bogus_trades:
+                # Check if price looks like stock price (for options)
+                is_option = (
+                    trade.contract_type and 
+                    trade.contract_type.lower() in ['call', 'put', 'option']
+                ) or bool(trade.option_symbol)
+                
+                # If it's an option and price > $50, it's likely a bogus trade
+                if is_option and trade.price and trade.price > 50:
+                    deleted_trades.append({
+                        'id': trade.id,
+                        'symbol': trade.symbol,
+                        'action': trade.action,
+                        'price': trade.price,
+                        'quantity': trade.quantity,
+                        'date': trade.trade_date.isoformat() if trade.trade_date else None
+                    })
+                    db.session.delete(trade)
+                elif not is_option:
+                    # For stocks, delete if it's in the date range (user specified)
+                    deleted_trades.append({
+                        'id': trade.id,
+                        'symbol': trade.symbol,
+                        'action': trade.action,
+                        'price': trade.price,
+                        'quantity': trade.quantity,
+                        'date': trade.trade_date.isoformat() if trade.trade_date else None
+                    })
+                    db.session.delete(trade)
+            
+            db.session.flush()  # Flush deletions before recalculating
+        
+        # Step 2: Recalculate balance from remaining valid trades
+        all_trades = db.session.query(Trade).filter(
+            Trade.user_id == current_user.id
+        ).order_by(Trade.trade_date).all()
+        
+        calculated_balance = starting_balance
+        
+        for trade in all_trades:
+            is_option = (
+                trade.contract_type and 
+                trade.contract_type.lower() in ['call', 'put', 'option']
+            ) or bool(trade.option_symbol)
+            
+            contract_multiplier = 100 if is_option else 1
+            trade_cost = trade.price * trade.quantity * contract_multiplier
+            
+            if trade.action.lower() == 'buy':
+                calculated_balance -= trade_cost
+            else:  # sell
+                calculated_balance += trade_cost
+        
+        # Step 3: Account for active positions (unrealized P/L)
+        # The balance should reflect: starting balance - all buy costs + all sell proceeds
+        # Active positions are already accounted for (we bought them, haven't sold)
+        # So the balance is correct as calculated above
+        
+        # Update user balance
+        old_balance = current_user.paper_balance
+        current_user.paper_balance = calculated_balance
+        
+        db.session.commit()
+        
+        # Get active positions info
+        active_positions = db.session.query(Position).filter(
+            Position.user_id == current_user.id,
+            Position.status == 'open'
+        ).all()
+        
+        return jsonify({
+            'message': 'Cleanup and recalculation completed successfully',
+            'deleted_trades': deleted_trades,
+            'trades_deleted': len(deleted_trades),
+            'old_balance': float(old_balance),
+            'new_balance': float(calculated_balance),
+            'difference': float(calculated_balance - old_balance),
+            'valid_trades_processed': len(all_trades),
+            'active_positions': len(active_positions),
+            'active_positions_details': [
+                {
+                    'id': p.id,
+                    'symbol': p.symbol,
+                    'quantity': p.quantity,
+                    'entry_price': float(p.entry_price) if p.entry_price else None,
+                    'current_price': float(p.current_price) if p.current_price else None,
+                    'unrealized_pnl': float(p.unrealized_pnl) if p.unrealized_pnl else None
+                }
+                for p in active_positions
+            ]
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"Failed to cleanup and recalculate: {str(e)}"
+        current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        db.session.rollback()
+        return jsonify({'error': error_msg}), 500
+
