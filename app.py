@@ -92,6 +92,7 @@ def create_app(config_name=None):
     from api.tax import tax_bp
     from api.feedback import feedback_bp
     from api.opportunities import opportunities_bp
+    from api.account import account_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -108,6 +109,7 @@ def create_app(config_name=None):
     app.register_blueprint(tax_bp, url_prefix='/api/tax')
     app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     app.register_blueprint(opportunities_bp, url_prefix='/api/opportunities')
+    app.register_blueprint(account_bp, url_prefix='/api/account')
     
     # Start automatic position monitoring on app startup
     # This ensures positions are checked and closed when thresholds are hit

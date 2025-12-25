@@ -122,30 +122,87 @@ class TradierConnector:
     
     def get_quote(self, symbol: str) -> Dict:
         """Get real-time stock quote - tries Yahoo/Polygon first if enabled"""
+        # CRITICAL: Log when fetching quotes for index options
+        is_index_option = symbol in ['SPY', 'QQQ', 'IWM', 'DIA'] or any(symbol.startswith(s) for s in ['SPY', 'QQQ', 'IWM', 'DIA'])
+        is_option_symbol = len(symbol) > 15 and (symbol[-9:-1].isdigit() or 'C' in symbol[-10:] or 'P' in symbol[-10:])
+        
+        try:
+            from flask import current_app
+            if is_index_option or is_option_symbol:
+                current_app.logger.info(
+                    f"🔍 TRADIER get_quote called for: {symbol} "
+                    f"(is_index_option={is_index_option}, is_option_symbol={is_option_symbol})"
+                )
+        except:
+            pass
+        
         # Try Yahoo Finance first if enabled
         if self.use_yahoo and self.yahoo:
             quote = self.yahoo.get_quote(symbol)
             if quote:
+                try:
+                    from flask import current_app
+                    if is_index_option or is_option_symbol:
+                        current_app.logger.info(f"✅ TRADIER: Using Yahoo quote for {symbol}: {quote}")
+                except:
+                    pass
                 return quote
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
             quote = self.polygon.get_quote(symbol)
             if quote:
+                try:
+                    from flask import current_app
+                    if is_index_option or is_option_symbol:
+                        current_app.logger.info(f"✅ TRADIER: Using Polygon quote for {symbol}: {quote}")
+                except:
+                    pass
                 return quote
         
         # Fall back to mock or Tradier
         if self.use_mock:
-            return self._mock_quote(symbol)
+            result = self._mock_quote(symbol)
+            try:
+                from flask import current_app
+                if is_index_option or is_option_symbol:
+                    current_app.logger.warning(f"⚠️ TRADIER: Using MOCK quote for {symbol} (not real data!)")
+            except:
+                pass
+            return result
         
         endpoint = 'markets/quotes'
         params = {'symbols': symbol}
         response = self._make_request(endpoint, params)
+        
+        try:
+            from flask import current_app
+            if is_index_option or is_option_symbol:
+                current_app.logger.info(
+                    f"🔍 TRADIER API response for {symbol}: {response}"
+                )
+        except:
+            pass
+        
         # Always return the full structure to match mock data format
         if 'quotes' in response and 'quote' in response['quotes']:
             quote = response['quotes']['quote']
             if isinstance(quote, list):
                 quote = quote[0]
+            
+            # CRITICAL VALIDATION: Check if this looks like stock price for an option
+            if is_option_symbol and quote.get('last'):
+                last_price = float(quote.get('last', 0))
+                if last_price > 50:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"🚨 CRITICAL: Tradier get_quote returned STOCK PRICE ${last_price:.2f} "
+                            f"for option symbol {symbol}! This is WRONG for options!"
+                        )
+                    except:
+                        pass
+            
             # Return in the same format as mock data
             return {
                 'quotes': {
