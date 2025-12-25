@@ -57,7 +57,29 @@ class PositionMonitor:
         if should_exit:
             # Execute exit
             try:
-                exit_price = position.current_price
+                # CRITICAL: NEVER use position.current_price for options - it might be stock price!
+                # Let close_position fetch the option premium fresh
+                is_option = (
+                    (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                    (position.expiration_date and position.strike_price is not None) or
+                    bool(position.option_symbol)
+                )
+                
+                if is_option:
+                    # For options, pass None to force fresh fetch (never trust current_price)
+                    try:
+                        from flask import current_app
+                        current_app.logger.info(
+                            f"🚨 AUTOMATIC EXIT: Closing option position {position.id} ({position.symbol}). "
+                            f"NOT using current_price=${position.current_price} - forcing fresh option premium fetch."
+                        )
+                    except:
+                        pass
+                    exit_price = None  # Force fresh fetch
+                else:
+                    # For stocks, current_price is fine
+                    exit_price = position.current_price
+                
                 result = self.trade_executor.close_position(
                     user_id=position.user_id,
                     position_id=position.id,
