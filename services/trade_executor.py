@@ -699,12 +699,24 @@ class TradeExecutor:
                                 from flask import current_app
                                 current_app.logger.info(
                                     f"🔍 CLOSE POSITION: Direct quote failed, trying options chain for "
-                                    f"{position.symbol} exp={expiration_str}"
+                                    f"{position.symbol} exp={expiration_str} strike=${position.strike_price} "
+                                    f"type={position.contract_type} option_symbol={position.option_symbol}"
                                 )
                             except:
                                 pass
                             
-                            options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                            try:
+                                options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                            except Exception as e:
+                                try:
+                                    from flask import current_app
+                                    current_app.logger.error(
+                                        f"❌ CLOSE POSITION: Options chain fetch FAILED for {position.symbol} "
+                                        f"exp={expiration_str}: {e}"
+                                    )
+                                except:
+                                    pass
+                                options_chain = []
                             
                             try:
                                 from flask import current_app
