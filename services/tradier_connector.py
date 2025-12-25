@@ -312,20 +312,56 @@ class TradierConnector:
     
     def get_options_chain(self, symbol: str, expiration: str) -> List[Dict]:
         """Get options chain for symbol and expiration - tries Yahoo/Polygon first if enabled"""
+        # CRITICAL: Log index options specifically
+        is_index = symbol in ['SPY', 'QQQ', 'IWM', 'DIA']
+        
+        try:
+            from flask import current_app
+            if is_index:
+                current_app.logger.info(
+                    f"🔍 TRADIER get_options_chain called for INDEX: {symbol} exp={expiration}"
+                )
+        except:
+            pass
+        
         # Try Yahoo Finance first if enabled
         if self.use_yahoo and self.yahoo:
             chain = self.yahoo.get_options_chain(symbol, expiration)
             if chain:
+                try:
+                    from flask import current_app
+                    if is_index:
+                        current_app.logger.info(
+                            f"✅ TRADIER: Using Yahoo options chain for {symbol}, found {len(chain)} options"
+                        )
+                except:
+                    pass
                 return chain
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
             chain = self.polygon.get_options_chain(symbol, expiration)
             if chain:
+                try:
+                    from flask import current_app
+                    if is_index:
+                        current_app.logger.info(
+                            f"✅ TRADIER: Using Polygon options chain for {symbol}, found {len(chain)} options"
+                        )
+                except:
+                    pass
                 return chain
         
         # Fall back to mock or Tradier
         if self.use_mock:
+            try:
+                from flask import current_app
+                if is_index:
+                    current_app.logger.warning(
+                        f"⚠️ TRADIER: Using MOCK options chain for {symbol} (not real data!)"
+                    )
+            except:
+                pass
             chain_data = self._mock_options_chain(symbol, expiration)
             if 'options' in chain_data and 'option' in chain_data['options']:
                 options = chain_data['options']['option']
@@ -335,9 +371,42 @@ class TradierConnector:
         endpoint = 'markets/options/chains'
         params = {'symbol': symbol, 'expiration': expiration, 'greeks': 'true'}
         response = self._make_request(endpoint, params)
+        
+        try:
+            from flask import current_app
+            if is_index:
+                current_app.logger.info(
+                    f"🔍 TRADIER API options chain response for {symbol}: "
+                    f"has_options={('options' in response)}, "
+                    f"response_keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
+                )
+        except:
+            pass
+        
         if 'options' in response and 'option' in response['options']:
             options = response['options']['option']
-            return options if isinstance(options, list) else [options]
+            options_list = options if isinstance(options, list) else [options]
+            
+            try:
+                from flask import current_app
+                if is_index:
+                    current_app.logger.info(
+                        f"✅ TRADIER: Parsed {len(options_list)} options from chain for {symbol}"
+                    )
+                    # Log first few option prices to verify they're premiums, not stock prices
+                    for i, opt in enumerate(options_list[:3]):
+                        bid = opt.get('bid', 0) or 0
+                        ask = opt.get('ask', 0) or 0
+                        last = opt.get('last', 0) or 0
+                        strike = opt.get('strike', 0)
+                        opt_type = opt.get('type', '')
+                        current_app.logger.info(
+                            f"   Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
+                        )
+            except:
+                pass
+            
+            return options_list
         return []
     
     def _mock_options_chain(self, symbol: str, expiration: str) -> Dict:
