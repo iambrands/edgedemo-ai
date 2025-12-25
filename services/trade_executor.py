@@ -134,7 +134,9 @@ class TradeExecutor:
             )
         
         # Get execution price (use provided price or fetch from order)
-        if price is None:
+        # CRITICAL: If price is provided and valid (> 0), use it - don't overwrite it!
+        # Only fetch if price is None or 0
+        if price is None or price == 0:
             # For options, we MUST get the option price, not the stock price
             if option_symbol:
                 # Try to get option price from options chain
@@ -873,6 +875,40 @@ class TradeExecutor:
                     if not exit_price or exit_price <= 0:
                         exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
         
+        # CRITICAL: Validate exit_price before executing trade
+        # NEVER allow 0 or None for option positions - use entry_price as absolute fallback
+        if is_option_position:
+            if not exit_price or exit_price <= 0:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f"🚨 CRITICAL: exit_price is {exit_price} for option position {position.id}. "
+                        f"Using entry_price ${position.entry_price:.2f} as absolute fallback."
+                    )
+                except:
+                    pass
+                exit_price = position.entry_price if position.entry_price and position.entry_price > 0 else 0.01
+            # Double-check: if exit_price still looks like stock price, reject it
+            if exit_price > 50:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f"🚨 CRITICAL: exit_price ${exit_price:.2f} still looks like stock price. "
+                        f"Using entry_price ${position.entry_price:.2f} instead."
+                    )
+                except:
+                    pass
+                exit_price = position.entry_price if position.entry_price and position.entry_price > 0 else 0.01
+        
+        # Log final exit_price before trade execution
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"✅ CLOSE POSITION: Final exit_price for position {position.id} ({position.symbol}): ${exit_price:.2f}"
+            )
+        except:
+            pass
+        
         # Execute sell trade (skip risk checks for exits)
         result = self.execute_trade(
             user_id=user_id,
@@ -883,7 +919,7 @@ class TradeExecutor:
             strike=position.strike_price,
             expiration_date=position.expiration_date.isoformat() if position.expiration_date else None,
             contract_type=position.contract_type,
-            price=exit_price,
+            price=exit_price,  # CRITICAL: This must be a valid option premium, not 0 or stock price
             strategy_source='manual',
             notes='Position close',
             skip_risk_check=True
