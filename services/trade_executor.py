@@ -854,8 +854,30 @@ class TradeExecutor:
                                     from flask import current_app
                                     current_app.logger.error(
                                         f"❌ CLOSE POSITION: No matching option found in chain for "
-                                        f"{position.symbol} strike=${position.strike_price} type={position.contract_type}"
+                                        f"{position.symbol} strike=${position.strike_price} type={position.contract_type} "
+                                        f"exp={expiration_str}. Chain had {len(options_list)} options."
                                     )
+                                    # Log sample options and available strikes for debugging
+                                    if options_list:
+                                        available_strikes = set()
+                                        sample_options = options_list[:10]
+                                        for opt in sample_options:
+                                            opt_strike = opt.get('strike') or opt.get('strike_price')
+                                            opt_type = opt.get('type') or opt.get('contract_type')
+                                            if opt_strike:
+                                                available_strikes.add(float(opt_strike))
+                                            current_app.logger.info(
+                                                f"   Sample: strike=${opt_strike}, type={opt_type}, "
+                                                f"bid=${opt.get('bid', 0):.2f}, ask=${opt.get('ask', 0):.2f}"
+                                            )
+                                        
+                                        if available_strikes:
+                                            closest_strike = min(available_strikes, key=lambda x: abs(x - position_strike))
+                                            current_app.logger.warning(
+                                                f"   Available strikes: {sorted(list(available_strikes))[:15]}. "
+                                                f"Closest to ${position.strike_price}: ${closest_strike:.2f} "
+                                                f"(diff: ${abs(closest_strike - position_strike):.2f})"
+                                            )
                                 except:
                                     pass
                     else:
