@@ -27,6 +27,7 @@ def reset_account(current_user):
         
         # Delete in correct order to handle foreign key constraints
         # 1. Delete audit logs that reference trades (must be deleted first)
+        audit_logs_count = 0
         try:
             from models.audit_log import AuditLog
             audit_logs_count = db.session.query(AuditLog).filter_by(user_id=current_user.id).count()
@@ -39,6 +40,7 @@ def reset_account(current_user):
             current_app.logger.warning(f"Could not delete audit logs: {e}")
         
         # 2. Delete error logs that might reference trades/positions
+        error_logs_count = 0
         try:
             from models.error_log import ErrorLog
             error_logs_count = db.session.query(ErrorLog).filter_by(user_id=current_user.id).count()
@@ -49,13 +51,25 @@ def reset_account(current_user):
         except Exception as e:
             current_app.logger.warning(f"Could not delete error logs: {e}")
         
-        # 3. Delete all positions (may reference trades)
+        # 3. Delete alerts that reference trades/positions
+        alerts_count = 0
+        try:
+            from models.alert import Alert
+            alerts_count = db.session.query(Alert).filter_by(user_id=current_user.id).count()
+            db.session.query(Alert).filter_by(user_id=current_user.id).delete()
+            current_app.logger.info(f"Deleted {alerts_count} alerts for user {current_user.id}")
+        except ImportError:
+            pass
+        except Exception as e:
+            current_app.logger.warning(f"Could not delete alerts: {e}")
+        
+        # 4. Delete all positions (may reference trades)
         db.session.query(Position).filter_by(user_id=current_user.id).delete()
         
-        # 4. Delete all trades (now safe - no foreign key references)
+        # 5. Delete all trades (now safe - no foreign key references)
         db.session.query(Trade).filter_by(user_id=current_user.id).delete()
         
-        # 5. Delete all automations
+        # 6. Delete all automations
         db.session.query(Automation).filter_by(user_id=current_user.id).delete()
         
         # Reset balance to starting amount
@@ -73,7 +87,10 @@ def reset_account(current_user):
             'deleted': {
                 'positions': positions_count,
                 'trades': trades_count,
-                'automations': automations_count
+                'automations': automations_count,
+                'audit_logs': audit_logs_count,
+                'error_logs': error_logs_count,
+                'alerts': alerts_count
             },
             'new_balance': float(user.paper_balance)
         }), 200
