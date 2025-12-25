@@ -387,26 +387,57 @@ class TradierConnector:
             options = response['options']['option']
             options_list = options if isinstance(options, list) else [options]
             
+            # CRITICAL: Validate and filter out options with stock prices instead of premiums
+            validated_options = []
+            rejected_count = 0
+            
+            for opt in options_list:
+                bid = opt.get('bid', 0) or 0
+                ask = opt.get('ask', 0) or 0
+                last = opt.get('last', 0) or 0
+                strike = opt.get('strike', 0) or opt.get('strike_price', 0)
+                
+                # CRITICAL VALIDATION: Option premiums should NEVER be > $50
+                # If bid/ask/last are > $50, this is likely a stock price, not an option premium
+                max_price = max(bid, ask, last) if (bid or ask or last) else 0
+                
+                if max_price > 50:
+                    rejected_count += 1
+                    try:
+                        from flask import current_app
+                        if is_index and rejected_count <= 3:  # Log first 3 rejections
+                            current_app.logger.warning(
+                                f"🚨 TRADIER: REJECTED option with stock price: "
+                                f"strike=${strike}, bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f} "
+                                f"(max=${max_price:.2f} > $50 threshold)"
+                            )
+                    except:
+                        pass
+                    continue  # Skip this option - it has stock prices, not premiums
+                
+                validated_options.append(opt)
+            
             try:
                 from flask import current_app
                 if is_index:
                     current_app.logger.info(
-                        f"✅ TRADIER: Parsed {len(options_list)} options from chain for {symbol}"
+                        f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
+                        f"(rejected {rejected_count} with stock prices)"
                     )
-                    # Log first few option prices to verify they're premiums, not stock prices
-                    for i, opt in enumerate(options_list[:3]):
+                    # Log first few VALIDATED option prices
+                    for i, opt in enumerate(validated_options[:3]):
                         bid = opt.get('bid', 0) or 0
                         ask = opt.get('ask', 0) or 0
                         last = opt.get('last', 0) or 0
-                        strike = opt.get('strike', 0)
+                        strike = opt.get('strike', 0) or opt.get('strike_price', 0)
                         opt_type = opt.get('type', '')
                         current_app.logger.info(
-                            f"   Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
+                            f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
                         )
             except:
                 pass
             
-            return options_list
+            return validated_options
         return []
     
     def _mock_options_chain(self, symbol: str, expiration: str) -> Dict:

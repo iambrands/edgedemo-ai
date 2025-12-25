@@ -769,11 +769,25 @@ class TradeExecutor:
                                 )
                                 
                                 if strike_match and type_match:
-                                    matching_options.append(option)
                                     bid = option.get('bid', 0) or 0
                                     ask = option.get('ask', 0) or 0
                                     last = option.get('last', 0) or option.get('lastPrice', 0) or 0
                                     
+                                    # CRITICAL: Validate that prices are option premiums, not stock prices
+                                    max_price = max(bid, ask, last) if (bid or ask or last) else 0
+                                    if max_price > 50:
+                                        try:
+                                            from flask import current_app
+                                            current_app.logger.error(
+                                                f"🚨 CLOSE POSITION: Found matching option but prices are STOCK PRICES! "
+                                                f"strike=${position.strike_price}, bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f} "
+                                                f"(max=${max_price:.2f} > $50). REJECTING."
+                                            )
+                                        except:
+                                            pass
+                                        continue  # Skip this option - it has stock prices
+                                    
+                                    matching_options.append(option)
                                     try:
                                         from flask import current_app
                                         current_app.logger.info(
