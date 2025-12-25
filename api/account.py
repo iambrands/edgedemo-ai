@@ -25,13 +25,37 @@ def reset_account(current_user):
         trades_count = db.session.query(Trade).filter_by(user_id=current_user.id).count()
         automations_count = db.session.query(Automation).filter_by(user_id=current_user.id).count()
         
-        # Delete all positions
+        # Delete in correct order to handle foreign key constraints
+        # 1. Delete audit logs that reference trades (must be deleted first)
+        try:
+            from models.audit_log import AuditLog
+            audit_logs_count = db.session.query(AuditLog).filter_by(user_id=current_user.id).count()
+            db.session.query(AuditLog).filter_by(user_id=current_user.id).delete()
+            current_app.logger.info(f"Deleted {audit_logs_count} audit logs for user {current_user.id}")
+        except ImportError:
+            # AuditLog model might not exist
+            pass
+        except Exception as e:
+            current_app.logger.warning(f"Could not delete audit logs: {e}")
+        
+        # 2. Delete error logs that might reference trades/positions
+        try:
+            from models.error_log import ErrorLog
+            error_logs_count = db.session.query(ErrorLog).filter_by(user_id=current_user.id).count()
+            db.session.query(ErrorLog).filter_by(user_id=current_user.id).delete()
+            current_app.logger.info(f"Deleted {error_logs_count} error logs for user {current_user.id}")
+        except ImportError:
+            pass
+        except Exception as e:
+            current_app.logger.warning(f"Could not delete error logs: {e}")
+        
+        # 3. Delete all positions (may reference trades)
         db.session.query(Position).filter_by(user_id=current_user.id).delete()
         
-        # Delete all trades
+        # 4. Delete all trades (now safe - no foreign key references)
         db.session.query(Trade).filter_by(user_id=current_user.id).delete()
         
-        # Delete all automations
+        # 5. Delete all automations
         db.session.query(Automation).filter_by(user_id=current_user.id).delete()
         
         # Reset balance to starting amount
