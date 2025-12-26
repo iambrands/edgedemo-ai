@@ -873,7 +873,7 @@ const Dashboard: React.FC = () => {
               {sortedPositions.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
-                    No active positions. <a href="/trade" className="text-primary hover:underline">Start trading</a> or create an automation.
+                    No active positions. <a href="/trade" className="text-primary hover:underline">Start trading</a> or <a href="/automations" className="text-primary hover:underline">create an automation</a>.
                   </td>
                 </tr>
               ) : (
