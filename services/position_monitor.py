@@ -45,6 +45,7 @@ class PositionMonitor:
         
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate exits due to mock data or stale prices
+        # MUST check cooldown BEFORE updating prices to prevent bad data from triggering exits
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
             cooldown_minutes = 5  # 5 minute cooldown before checking exits
@@ -54,13 +55,15 @@ class PositionMonitor:
                     current_app.logger.info(
                         f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
                         f"Created {time_since_creation.total_seconds():.0f}s ago. "
-                        f"Skipping exit check for {cooldown_minutes} minutes."
+                        f"Skipping exit check for {cooldown_minutes} minutes. "
+                        f"NOT updating prices to prevent false exits."
                     )
                 except:
                     pass
-                return False  # Don't check exits during cooldown
+                return False  # Don't check exits during cooldown - also don't update prices
         
-        # Update position Greeks and prices
+        # Update position Greeks and prices (only if past cooldown)
+        # This ensures we don't set bad prices that trigger false exits
         self.update_position_data(position)
         
         # Get automation if exists
