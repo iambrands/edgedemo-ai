@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import FloatingFeedbackButton from '../FloatingFeedbackButton';
@@ -7,24 +7,64 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+interface NavSection {
+  title: string;
+  items: Array<{ name: string; href: string; icon: string }>;
+  defaultOpen?: boolean;
+}
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    trading: true,
+    discovery: false,
+    management: false,
+    account: false,
+  });
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: '📊' },
-    { name: 'Trade', href: '/trade', icon: '💰' },
-    { name: 'Options Analyzer', href: '/analyzer', icon: '📈' },
-    { name: 'Discover', href: '/discover', icon: '🎯' },
-    { name: 'Market', href: '/market', icon: '📈' },
-    { name: 'Recommendations', href: '/recommendations', icon: '🤖' },
-    { name: 'Watchlist', href: '/watchlist', icon: '⭐' },
-    { name: 'Automations', href: '/automations', icon: '⚙️' },
-    { name: 'Alerts', href: '/alerts', icon: '🔔' },
-    { name: 'History', href: '/history', icon: '📜' },
-    { name: 'Settings', href: '/settings', icon: '⚙️' },
-    { name: 'Help', href: '/help', icon: '❓' },
+  const navigationSections: NavSection[] = [
+    {
+      title: 'Trading',
+      items: [
+        { name: 'Dashboard', href: '/', icon: '📊' },
+        { name: 'Trade', href: '/trade', icon: '💰' },
+        { name: 'Options Analyzer', href: '/analyzer', icon: '📈' },
+      ],
+      defaultOpen: true,
+    },
+    {
+      title: 'Discovery',
+      items: [
+        { name: 'Discover', href: '/discover', icon: '🎯' },
+        { name: 'Market', href: '/market', icon: '📈' },
+        { name: 'Recommendations', href: '/recommendations', icon: '🤖' },
+      ],
+    },
+    {
+      title: 'Management',
+      items: [
+        { name: 'Watchlist', href: '/watchlist', icon: '⭐' },
+        { name: 'Automations', href: '/automations', icon: '⚙️' },
+        { name: 'Alerts', href: '/alerts', icon: '🔔' },
+      ],
+    },
+    {
+      title: 'Account',
+      items: [
+        { name: 'History', href: '/history', icon: '📜' },
+        { name: 'Settings', href: '/settings', icon: '⚙️' },
+        { name: 'Help', href: '/help', icon: '❓' },
+      ],
+    },
   ];
+
+  const toggleSection = (title: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [title.toLowerCase()]: !prev[title.toLowerCase()],
+    }));
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -39,36 +79,62 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <p className="text-sm text-gray-400 mt-1">Intelligent Trading</p>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-primary text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                }`}
-              >
-                <span className="mr-3 text-xl">{item.icon}</span>
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            ))}
+          {/* Navigation - Scrollable */}
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+            {navigationSections.map((section) => {
+              const sectionKey = section.title.toLowerCase();
+              const isOpen = openSections[sectionKey] ?? section.defaultOpen ?? false;
+              
+              return (
+                <div key={section.title} className="mb-2">
+                  {/* Section Header */}
+                  <button
+                    onClick={() => toggleSection(section.title)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-300 transition-colors"
+                  >
+                    <span>{section.title}</span>
+                    <span className={`transform transition-transform ${isOpen ? 'rotate-90' : ''}`}>
+                      ▶
+                    </span>
+                  </button>
+                  
+                  {/* Section Items */}
+                  {isOpen && (
+                    <div className="mt-1 space-y-1">
+                      {section.items.map((item) => (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          className={`flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${
+                            isActive(item.href)
+                              ? 'bg-primary text-white'
+                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          }`}
+                        >
+                          <span className="mr-2 text-lg">{item.icon}</span>
+                          <span className="font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
-          {/* User Section */}
-          <div className="p-4 border-t border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-white">{user?.username}</p>
-                <p className="text-xs text-gray-400">{user?.email}</p>
+          {/* User Section - Always Visible */}
+          <div className="p-4 border-t border-gray-700 bg-secondary flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">{user?.username}</p>
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={logout}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium"
+              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center"
             >
+              <span className="mr-2">🚪</span>
               Logout
             </button>
           </div>
