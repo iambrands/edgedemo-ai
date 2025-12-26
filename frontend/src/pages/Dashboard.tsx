@@ -671,6 +671,28 @@ const Dashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
         <div className="flex gap-3">
           <button
+            onClick={async () => {
+              toast.loading('Refreshing dashboard data...', { id: 'refresh' });
+              await loadDashboardData(true); // Update prices on manual refresh
+              toast.success('Dashboard refreshed!', { id: 'refresh' });
+            }}
+            disabled={loading}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+            title="Manually refresh dashboard data and update position prices"
+          >
+            {loading ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>Refreshing...</span>
+              </>
+            ) : (
+              <>
+                <span>🔄</span>
+                <span>Refresh</span>
+              </>
+            )}
+          </button>
+          <button
             onClick={checkPositionExits}
             disabled={checkingExits}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
