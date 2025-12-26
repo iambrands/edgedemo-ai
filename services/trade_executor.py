@@ -109,8 +109,9 @@ class TradeExecutor:
             trade_cost = price * quantity * (100 if is_option else 1)
             
             try:
+                from flask import current_app
                 current_app.logger.info(f'Paper trade cost calculation: price={price}, quantity={quantity}, contract_type={contract_type}, option_symbol={option_symbol}, expiration_date={expiration_date}, strike={strike}, is_option={is_option}, trade_cost={trade_cost}, balance_before={user.paper_balance}')
-            except RuntimeError:
+            except (RuntimeError, ImportError):
                 pass
             
             if action.lower() == 'buy':
@@ -119,8 +120,9 @@ class TradeExecutor:
                 user.paper_balance += trade_cost
             
             try:
+                from flask import current_app
                 current_app.logger.info(f'Balance after trade: {user.paper_balance}')
-            except RuntimeError:
+            except (RuntimeError, ImportError):
                 pass
         else:
             # Live trading - place real order
