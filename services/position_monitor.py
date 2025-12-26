@@ -46,9 +46,10 @@ class PositionMonitor:
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate exits due to mock data or stale prices
         # MUST check cooldown BEFORE updating prices to prevent bad data from triggering exits
+        # INCREASED to 10 minutes to give more time for prices to stabilize
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 5  # 5 minute cooldown before checking exits
+            cooldown_minutes = 10  # 10 minute cooldown before checking exits (increased from 5)
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
@@ -197,9 +198,10 @@ class PositionMonitor:
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate price updates that could trigger false exits
         # This is called from get_positions(update_prices=True) which bypasses check_and_exit_position
+        # INCREASED to 10 minutes to give more time for prices to stabilize
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 5  # 5 minute cooldown before updating prices
+            cooldown_minutes = 10  # 10 minute cooldown before updating prices (increased from 5)
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
@@ -556,9 +558,10 @@ class PositionMonitor:
         """
         # CRITICAL: Double-check cooldown here as well (defense in depth)
         # Even though check_and_exit_position checks cooldown, this provides extra protection
+        # INCREASED to 10 minutes to match other cooldown checks
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 5
+            cooldown_minutes = 10  # Increased from 5 to 10 minutes
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
@@ -573,30 +576,75 @@ class PositionMonitor:
         if not position.current_price or not position.entry_price:
             return (False, "Missing price data")
         
-        # Calculate profit/loss percentages
-        profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
-        loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
-        
-        # CRITICAL: Validate that current_price is reasonable for options
-        # If current_price is suspiciously high (likely a stock price), reject it
+        # CRITICAL: Validate that current_price is reasonable BEFORE calculating P/L
+        # This prevents false exits due to incorrect prices
         is_option = (
             (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
             (position.expiration_date and position.strike_price is not None) or
             bool(position.option_symbol)
         )
         
-        if is_option and position.current_price and position.current_price > 50:
-            # Option premiums rarely exceed $50 - this is likely a stock price
-            try:
-                from flask import current_app
-                current_app.logger.error(
-                    f"🚨 Position {position.id} ({position.symbol}): "
-                    f"current_price=${position.current_price:.2f} is suspiciously high for an option! "
-                    f"Likely a stock price. Rejecting exit check to prevent false exit."
-                )
-            except:
-                pass
-            return (False, f"Suspicious price data (${position.current_price:.2f} too high for option)")
+        if is_option:
+            # For options, validate price is reasonable
+            # 1. Check if price is suspiciously high (>$50 is almost always wrong for options)
+            if position.current_price > 50:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f"🚨 Position {position.id} ({position.symbol}): "
+                        f"current_price=${position.current_price:.2f} is suspiciously high for an option! "
+                        f"Entry price was ${position.entry_price:.2f}. Likely a stock price. Rejecting exit check."
+                    )
+                except:
+                    pass
+                return (False, f"Suspicious price data (${position.current_price:.2f} too high for option)")
+            
+            # 2. Check if price change is suspiciously large (e.g., entry=$5, current=$200 = 3900% change)
+            # This catches cases where price is wrong but still <$50
+            if position.entry_price > 0:
+                price_ratio = position.current_price / position.entry_price
+                # If current price is more than 10x entry price, it's likely wrong
+                # (options rarely move 1000%+ in a short time unless it's a meme stock)
+                if price_ratio > 10:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"🚨 Position {position.id} ({position.symbol}): "
+                            f"Suspicious price ratio: current=${position.current_price:.2f} vs entry=${position.entry_price:.2f} "
+                            f"(ratio={price_ratio:.1f}x). This is likely incorrect price data. Rejecting exit check."
+                        )
+                    except:
+                        pass
+                    return (False, f"Suspicious price ratio ({price_ratio:.1f}x change - likely incorrect data)")
+                
+                # 3. Check if price dropped to near zero suspiciously fast (e.g., entry=$5, current=$0.01)
+                # This catches cases where price was incorrectly set to a very low value
+                if position.current_price < (position.entry_price * 0.01) and position.entry_price > 1:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"🚨 Position {position.id} ({position.symbol}): "
+                            f"Suspicious price drop: current=${position.current_price:.2f} vs entry=${position.entry_price:.2f} "
+                            f"(99%+ drop). This is likely incorrect price data. Rejecting exit check."
+                        )
+                    except:
+                        pass
+                    return (False, f"Suspicious price drop (99%+ - likely incorrect data)")
+        
+        # Calculate profit/loss percentages (only after validation passes)
+        profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
+        loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
+        
+        # Log the prices being used for exit check (for debugging)
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"🔍 Position {position.id} ({position.symbol}): Exit check - "
+                f"entry=${position.entry_price:.2f}, current=${position.current_price:.2f}, "
+                f"P/L={profit_percent:.2f}%"
+            )
+        except:
+            pass
         
         # If no automation, try to find one for this symbol or use user defaults
         if not automation and position.automation_id:
