@@ -487,7 +487,29 @@ class TradeExecutor:
             update_prices: If True, update position prices (slow). If False, return cached prices (fast).
         """
         db = self._get_db()
+        
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"🔍 TradeExecutor.get_positions - user_id={user_id}, update_prices={update_prices}"
+            )
+        except:
+            pass
+        
         positions = db.session.query(Position).filter_by(user_id=user_id, status='open').all()
+        
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"📊 Found {len(positions)} open positions for user {user_id}"
+            )
+            for pos in positions:
+                current_app.logger.info(
+                    f"   Position {pos.id}: {pos.symbol} {pos.contract_type} "
+                    f"qty={pos.quantity} entry=${pos.entry_price:.2f} current=${pos.current_price or 0:.2f}"
+                )
+        except:
+            pass
         
         # Only update prices if explicitly requested (for performance)
         if update_prices and positions:
@@ -521,7 +543,17 @@ class TradeExecutor:
         
         # Always return positions - use the ones we have (they should be updated in memory)
         # If update_prices was True, they've been refreshed, otherwise they're cached
-        return [p.to_dict() for p in positions]
+        result = [p.to_dict() for p in positions]
+        
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"✅ TradeExecutor.get_positions - returning {len(result)} positions"
+            )
+        except:
+            pass
+        
+        return result
     
     def get_trade_history(self, user_id: int, symbol: str = None, 
                          start_date: str = None, end_date: str = None,
