@@ -9,6 +9,7 @@ interface Expiration {
 
 const Trade: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [symbol, setSymbol] = useState('');
   const [expiration, setExpiration] = useState('');
   const [expirations, setExpirations] = useState<Expiration[]>([]);
@@ -194,10 +195,6 @@ const Trade: React.FC = () => {
 
       toast.success(`${action === 'buy' ? 'Bought' : 'Sold'} ${quantity} ${contractType} contract(s)`);
       
-      // Signal that a trade was executed (for Dashboard auto-refresh)
-      sessionStorage.setItem('tradeExecuted', 'true');
-      window.dispatchEvent(new CustomEvent('tradeExecuted'));
-      
       // Reload balance
       await loadAccountBalance();
       
@@ -207,6 +204,12 @@ const Trade: React.FC = () => {
       setStrike('');
       setQuantity(1);
       setPrice(null);
+      
+      // Navigate to Dashboard after successful trade
+      // Don't trigger auto-refresh - let user manually refresh or wait 5 minutes
+      setTimeout(() => {
+        navigate('/');
+      }, 1000); // Small delay to show success toast
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Trade execution failed';
       console.error('Trade execution error:', error);

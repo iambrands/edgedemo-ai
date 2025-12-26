@@ -149,28 +149,15 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // Listen for custom event when a trade is executed (force reload)
-    const handleTradeExecuted = () => {
-      // Clear cache and reload
-      sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
-      loadDashboardData();
-    };
-    
-    window.addEventListener('tradeExecuted', handleTradeExecuted);
-    
-    // Check sessionStorage for trade execution flag (less frequent)
-    const checkTradeFlag = setInterval(() => {
-      const tradeExecuted = sessionStorage.getItem('tradeExecuted');
-      if (tradeExecuted === 'true') {
-        sessionStorage.removeItem('tradeExecuted');
-        sessionStorage.removeItem(DASHBOARD_CACHE_KEY); // Clear cache
-        loadDashboardData();
-      }
-    }, 2000); // Check every 2 seconds (less frequent)
+    // Optional: Auto-refresh every 5 minutes (300000ms)
+    // User can also manually refresh for immediate updates
+    const autoRefreshInterval = setInterval(() => {
+      console.log('⏰ Auto-refreshing dashboard data (5-minute interval)');
+      loadDashboardData(false); // Don't update prices on auto-refresh
+    }, 300000); // 5 minutes
     
     return () => {
-      window.removeEventListener('tradeExecuted', handleTradeExecuted);
-      clearInterval(checkTradeFlag);
+      clearInterval(autoRefreshInterval);
     };
   }, []);
 
