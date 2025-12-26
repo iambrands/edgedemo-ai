@@ -45,8 +45,8 @@ class PositionMonitor:
         
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate exits due to mock data or stale prices
-        if position.created_at:
-            time_since_creation = datetime.utcnow() - position.created_at
+        if position.entry_date:
+            time_since_creation = datetime.utcnow() - position.entry_date
             cooldown_minutes = 5  # 5 minute cooldown before checking exits
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
