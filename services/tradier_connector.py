@@ -212,24 +212,51 @@ class TradierConnector:
         return {'quotes': {'quote': {}}}
     
     def _mock_quote(self, symbol: str) -> Dict:
-        """Mock stock quote"""
-        base_price = random.uniform(50, 500)
-        change = random.uniform(-5, 5)
-        return {
-            'quotes': {
-                'quote': {
-                    'symbol': symbol,
-                    'description': f'{symbol} Inc.',
-                    'last': round(base_price, 2),
-                    'change': round(change, 2),
-                    'volume': random.randint(1000000, 10000000),
-                    'open': round(base_price - change * 0.5, 2),
-                    'high': round(base_price + abs(change), 2),
-                    'low': round(base_price - abs(change), 2),
-                    'close': round(base_price - change, 2)
+        """Mock stock quote - returns option premiums for option symbols, stock prices for stocks"""
+        # Check if this is an option symbol (long symbol with C/P and date)
+        is_option_symbol = len(symbol) > 15 and (symbol[-9:-1].isdigit() or 'C' in symbol[-10:] or 'P' in symbol[-10:])
+        
+        if is_option_symbol:
+            # For options, return realistic option premiums (typically $0.01 to $50)
+            # Use a more realistic range based on typical option pricing
+            base_price = random.uniform(0.10, 25.0)  # Option premiums are usually < $50
+            change = random.uniform(-0.50, 0.50)
+            return {
+                'quotes': {
+                    'quote': {
+                        'symbol': symbol,
+                        'description': f'{symbol} Option',
+                        'last': round(base_price, 2),
+                        'change': round(change, 2),
+                        'volume': random.randint(100, 10000),
+                        'open': round(base_price - change * 0.5, 2),
+                        'high': round(base_price + abs(change), 2),
+                        'low': round(base_price - abs(change), 2),
+                        'close': round(base_price - change, 2),
+                        'bid': round(max(0.01, base_price - 0.10), 2),
+                        'ask': round(base_price + 0.10, 2)
+                    }
                 }
             }
-        }
+        else:
+            # For stocks, return stock prices
+            base_price = random.uniform(50, 500)
+            change = random.uniform(-5, 5)
+            return {
+                'quotes': {
+                    'quote': {
+                        'symbol': symbol,
+                        'description': f'{symbol} Inc.',
+                        'last': round(base_price, 2),
+                        'change': round(change, 2),
+                        'volume': random.randint(1000000, 10000000),
+                        'open': round(base_price - change * 0.5, 2),
+                        'high': round(base_price + abs(change), 2),
+                        'low': round(base_price - abs(change), 2),
+                        'close': round(base_price - change, 2)
+                    }
+                }
+            }
     
     def get_options_expirations(self, symbol: str) -> List[str]:
         """Get available option expiration dates - tries Yahoo/Polygon first if enabled"""

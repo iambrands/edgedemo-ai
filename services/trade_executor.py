@@ -762,11 +762,30 @@ class TradeExecutor:
                                 # Match strike and contract type
                                 strike_match = (option_strike_float is not None and 
                                              abs(option_strike_float - position_strike) < 0.01)
-                                type_match = (
-                                    option_type == position_contract_type or
-                                    (position_contract_type == 'option' and option_type in ['call', 'put']) or
-                                    (not position_contract_type and option_type in ['call', 'put'])
-                                )
+                                
+                                # Handle contract_type='option' - it should match both 'call' and 'put'
+                                # But we need to know which one. Check option_symbol or infer from delta
+                                if position_contract_type == 'option':
+                                    # If we have option_symbol, check if it's C or P
+                                    if position.option_symbol:
+                                        is_call = 'C' in position.option_symbol[-10:]
+                                        is_put = 'P' in position.option_symbol[-10:]
+                                        if is_call:
+                                            type_match = option_type == 'call'
+                                        elif is_put:
+                                            type_match = option_type == 'put'
+                                        else:
+                                            # Can't determine, match either
+                                            type_match = option_type in ['call', 'put']
+                                    else:
+                                        # No option_symbol, match either call or put
+                                        type_match = option_type in ['call', 'put']
+                                else:
+                                    # Normal matching: call matches call, put matches put
+                                    type_match = (
+                                        option_type == position_contract_type or
+                                        (not position_contract_type and option_type in ['call', 'put'])
+                                    )
                                 
                                 if strike_match and type_match:
                                     bid = option.get('bid', 0) or 0
