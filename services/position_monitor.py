@@ -303,78 +303,14 @@ class PositionMonitor:
                     except RuntimeError:
                         pass
             
-            # Try direct quote first if option_symbol is available (faster and more reliable)
+            # CRITICAL: Tradier's get_quote endpoint often returns STOCK PRICE for option symbols
+            # Instead of direct quote, ALWAYS use options chain lookup which is reliable
+            # Skip direct quote entirely to avoid getting stock prices
             option_found = None
-            if position.option_symbol:
-                try:
-                    try:
-                        from flask import current_app
-                        current_app.logger.info(
-                            f"Position {position.id} ({position.symbol}): "
-                            f"Trying direct quote for option_symbol: {position.option_symbol}"
-                        )
-                    except RuntimeError:
-                        pass
-                    
-                    option_quote = self.tradier.get_quote(position.option_symbol)
-                    if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
-                        quote_data = option_quote['quotes']['quote']
-                        bid = quote_data.get('bid', 0) or 0
-                        ask = quote_data.get('ask', 0) or 0
-                        last = quote_data.get('last', 0) or 0
-                        
-                        try:
-                            from flask import current_app
-                            current_app.logger.info(
-                                f"Position {position.id} ({position.symbol}): "
-                                f"Direct quote result - bid={bid}, ask={ask}, last={last}"
-                            )
-                        except RuntimeError:
-                            pass
-                        
-                        # If we have valid pricing data, use it
-                        if bid > 0 and ask > 0:
-                            position.current_price = (bid + ask) / 2
-                            # Mark as found so we skip chain lookup
-                            option_found = {'direct_quote': True, 'bid': bid, 'ask': ask, 'last': last}
-                            try:
-                                from flask import current_app
-                                current_app.logger.info(
-                                    f"Position {position.id} ({position.symbol}): "
-                                    f"Updated price from direct quote: ${position.current_price:.2f}"
-                                )
-                            except RuntimeError:
-                                pass
-                        elif last > 0:
-                            position.current_price = last
-                            option_found = {'direct_quote': True, 'last': last}
-                            try:
-                                from flask import current_app
-                                current_app.logger.info(
-                                    f"Position {position.id} ({position.symbol}): "
-                                    f"Updated price from direct quote (last): ${position.current_price:.2f}"
-                                )
-                            except RuntimeError:
-                                pass
-                        else:
-                            try:
-                                from flask import current_app
-                                current_app.logger.warning(
-                                    f"Position {position.id} ({position.symbol}): "
-                                    f"Direct quote returned no valid prices (bid={bid}, ask={ask}, last={last})"
-                                )
-                            except RuntimeError:
-                                pass
-                except Exception as e:
-                    # Log but continue to chain lookup
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning(
-                            f"Position {position.id} ({position.symbol}): "
-                            f"Direct quote failed for {position.option_symbol}: {e}. Trying chain lookup."
-                        )
-                    except RuntimeError:
-                        pass
+            
+            # NOTE: We skip direct quote because Tradier's /markets/quotes endpoint
+            # returns the underlying stock price for option symbols, not the option premium
+            # This is why positions were closing with incorrect prices
             
             # If direct quote didn't work, try options chain lookup
             if not option_found:

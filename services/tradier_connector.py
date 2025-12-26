@@ -160,7 +160,22 @@ class TradierConnector:
                     pass
                 return quote
         
-        # Try Tradier API first (unless mock is explicitly enabled)
+        # CRITICAL: Tradier's /markets/quotes endpoint returns STOCK PRICE for option symbols, not option premium!
+        # For option symbols, we MUST use get_options_chain instead - NEVER use get_quote for options
+        if is_option_symbol:
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"🚨 CRITICAL: get_quote called for option symbol {symbol}! "
+                    f"Tradier's quotes endpoint returns STOCK PRICE, not option premium. "
+                    f"Use get_options_chain instead. Returning empty quote to force chain lookup."
+                )
+            except:
+                pass
+            # Return empty quote to force caller to use options chain
+            return {'quotes': {'quote': {}}}
+        
+        # Try Tradier API first (unless mock is explicitly enabled) - ONLY for stock symbols
         if not self.use_mock:
             endpoint = 'markets/quotes'
             params = {'symbols': symbol}
@@ -173,9 +188,21 @@ class TradierConnector:
                     if isinstance(quote, list):
                         quote = quote[0]
                     
+                    # Check for unmatched_symbols (Tradier returns this when symbol not found)
+                    if 'unmatched_symbols' in response.get('quotes', {}):
+                        try:
+                            from flask import current_app
+                            current_app.logger.warning(
+                                f"⚠️ TRADIER: Symbol {symbol} not found (unmatched_symbols). "
+                                f"Returning empty quote."
+                            )
+                        except:
+                            pass
+                        return {'quotes': {'quote': {}}}
+                    
                     try:
                         from flask import current_app
-                        if is_index_option or is_option_symbol:
+                        if is_index_option:
                             current_app.logger.info(f"✅ TRADIER: Using REAL Tradier quote for {symbol}")
                     except:
                         pass

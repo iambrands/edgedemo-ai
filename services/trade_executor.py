@@ -169,23 +169,19 @@ class TradeExecutor:
                                     price = 0.0
                                 break
                         
+                        # CRITICAL: Tradier's get_quote returns STOCK PRICE for option symbols, not option premium!
+                        # Do NOT use get_quote for options - it will return the wrong price
+                        # If price is still None/0, we couldn't find it in the chain - that's okay, let it be 0
                         if price is None or price == 0.0:
-                            # Fallback: try direct quote for option symbol
-                            option_quote = self.tradier.get_quote(option_symbol)
-                            if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
-                                quote_data = option_quote['quotes']['quote']
-                                bid = quote_data.get('bid', 0) or 0
-                                ask = quote_data.get('ask', 0) or 0
-                                last = quote_data.get('last', 0) or 0
-                                
-                                if bid > 0 and ask > 0:
-                                    price = (bid + ask) / 2
-                                elif last > 0:
-                                    price = last
-                                else:
-                                    price = 0.0
-                            else:
-                                price = 0.0
+                            try:
+                                from flask import current_app
+                                current_app.logger.warning(
+                                    f"⚠️ Could not find option price in chain for {option_symbol}. "
+                                    f"Price will be set to 0.0 (user should provide price manually)."
+                                )
+                            except:
+                                pass
+                            price = 0.0
                     else:
                         price = 0.0
                 except Exception as e:
@@ -630,101 +626,13 @@ class TradeExecutor:
             if not exit_price or exit_price <= 0:
                 try:
                     if is_option_position:
-                        # For options, ALWAYS get from options chain or direct quote
-                        # Never fall back to stock price for options!
+                        # CRITICAL: Tradier's /markets/quotes endpoint returns STOCK PRICE for option symbols!
+                        # NEVER use get_quote for options - it returns the underlying stock price, not the option premium
+                        # ALWAYS use get_options_chain to get the correct option premium
                         
-                        # First try direct quote if option_symbol is available
-                        if position.option_symbol:
-                            try:
-                                try:
-                                    from flask import current_app
-                                    current_app.logger.info(
-                                        f"🔍 CLOSE POSITION: Fetching option premium for {position.symbol} "
-                                        f"(position_id={position.id}, option_symbol={position.option_symbol}, "
-                                        f"strike=${position.strike_price}, exp={position.expiration_date})"
-                                    )
-                                except:
-                                    pass
-                                
-                                option_quote = self.tradier.get_quote(position.option_symbol)
-                                
-                                try:
-                                    from flask import current_app
-                                    current_app.logger.info(
-                                        f"🔍 CLOSE POSITION: Tradier quote response for {position.option_symbol}: {option_quote}"
-                                    )
-                                except:
-                                    pass
-                                
-                                if 'quotes' in option_quote and 'quote' in option_quote['quotes']:
-                                    quote_data = option_quote['quotes']['quote']
-                                    bid = quote_data.get('bid', 0) or 0
-                                    ask = quote_data.get('ask', 0) or 0
-                                    last = quote_data.get('last', 0) or 0
-                                    
-                                    try:
-                                        from flask import current_app
-                                        current_app.logger.info(
-                                            f"🔍 CLOSE POSITION: Quote data - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
-                                        )
-                                    except:
-                                        pass
-                                    
-                                    # CRITICAL VALIDATION: If price looks like stock price, REJECT IT
-                                    if bid > 0 and ask > 0:
-                                        potential_price = (bid + ask) / 2
-                                        if potential_price > 50:
-                                            try:
-                                                from flask import current_app
-                                                current_app.logger.error(
-                                                    f"🚨 CRITICAL: Direct quote returned STOCK PRICE ${potential_price:.2f} "
-                                                    f"for option {position.option_symbol}! REJECTING."
-                                                )
-                                            except:
-                                                pass
-                                            exit_price = None  # Reject, try chain lookup
-                                        else:
-                                            exit_price = potential_price
-                                            try:
-                                                from flask import current_app
-                                                current_app.logger.info(
-                                                    f"✅ CLOSE POSITION: Using option premium ${exit_price:.2f} from direct quote"
-                                                )
-                                            except:
-                                                pass
-                                    elif last > 0:
-                                        if last > 50:
-                                            try:
-                                                from flask import current_app
-                                                current_app.logger.error(
-                                                    f"🚨 CRITICAL: Direct quote 'last' is STOCK PRICE ${last:.2f} "
-                                                    f"for option {position.option_symbol}! REJECTING."
-                                                )
-                                            except:
-                                                pass
-                                            exit_price = None  # Reject, try chain lookup
-                                        else:
-                                            exit_price = last
-                                            try:
-                                                from flask import current_app
-                                                current_app.logger.info(
-                                                    f"✅ CLOSE POSITION: Using option premium ${exit_price:.2f} from direct quote (last)"
-                                                )
-                                            except:
-                                                pass
-                            except Exception as e:
-                                try:
-                                    from flask import current_app
-                                    current_app.logger.error(
-                                        f"❌ CLOSE POSITION: Direct option quote failed for {position.option_symbol}: {e}\n"
-                                        f"   Position details: symbol={position.symbol}, strike=${position.strike_price}, "
-                                        f"exp={position.expiration_date}, contract_type={position.contract_type}"
-                                    )
-                                except:
-                                    pass
-                        
-                        # If direct quote didn't work, try options chain
-                        if (not exit_price or exit_price <= 0) and position.expiration_date and position.strike_price:
+                        # Skip direct quote entirely - go straight to options chain lookup
+                        # This is the ONLY reliable way to get option premiums from Tradier
+                        if position.expiration_date and position.strike_price:
                             expiration_str = position.expiration_date.strftime('%Y-%m-%d')
                             
                             try:
