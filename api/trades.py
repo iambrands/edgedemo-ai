@@ -153,14 +153,26 @@ def get_positions(current_user):
         # Get positions (fast - without price updates by default)
         # Only update prices if update_prices parameter is true (default: false for speed)
         update_prices = request.args.get('update_prices', 'false').lower() == 'true'
+        
+        current_app.logger.info(
+            f"📊 GET /api/trades/positions - user_id={current_user.id}, update_prices={update_prices}"
+        )
+        
         positions = trade_executor.get_positions(current_user.id, update_prices=update_prices)
+        
+        current_app.logger.info(
+            f"✅ GET /api/trades/positions - returning {len(positions)} positions for user {current_user.id}"
+        )
         
         return jsonify({
             'positions': positions,
             'count': len(positions)
         }), 200
     except Exception as e:
-        current_app.logger.error(f"Error getting positions: {str(e)}", exc_info=True)
+        import traceback
+        current_app.logger.error(
+            f"❌ Error getting positions for user {current_user.id}: {str(e)}\n{traceback.format_exc()}"
+        )
         return jsonify({'error': str(e)}), 500
 
 @trades_bp.route('/positions/<int:position_id>/refresh', methods=['POST', 'OPTIONS'])
