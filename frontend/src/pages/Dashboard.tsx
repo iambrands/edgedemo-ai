@@ -728,14 +728,6 @@ const Dashboard: React.FC = () => {
             )}
           </button>
           <button
-            onClick={refreshData}
-            disabled={forcePriceUpdate}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Refresh all data (clears cache)"
-          >
-            {forcePriceUpdate ? 'Updating Prices...' : 'Refresh'}
-          </button>
-          <button
             onClick={() => {
               const widgetsEnabled = localStorage.getItem('dashboard_widgets_enabled') !== 'false';
               localStorage.setItem('dashboard_widgets_enabled', String(!widgetsEnabled));
