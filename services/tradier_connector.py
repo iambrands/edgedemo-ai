@@ -160,7 +160,38 @@ class TradierConnector:
                     pass
                 return quote
         
-        # Fall back to mock or Tradier
+        # Try Tradier API first (unless mock is explicitly enabled)
+        if not self.use_mock:
+            endpoint = 'markets/quotes'
+            params = {'symbols': symbol}
+            try:
+                response = self._make_request(endpoint, params)
+                
+                # Check if we got valid data
+                if 'quotes' in response and 'quote' in response['quotes']:
+                    quote = response['quotes']['quote']
+                    if isinstance(quote, list):
+                        quote = quote[0]
+                    
+                    try:
+                        from flask import current_app
+                        if is_index_option or is_option_symbol:
+                            current_app.logger.info(f"✅ TRADIER: Using REAL Tradier quote for {symbol}")
+                    except:
+                        pass
+                    return {
+                        'quotes': {
+                            'quote': quote
+                        }
+                    }
+            except Exception as e:
+                try:
+                    from flask import current_app
+                    current_app.logger.warning(f"Tradier API call failed for {symbol}, falling back to mock: {e}")
+                except:
+                    pass
+        
+        # Fall back to mock only if explicitly enabled OR if Tradier API failed
         if self.use_mock:
             result = self._mock_quote(symbol)
             try:
@@ -171,9 +202,14 @@ class TradierConnector:
                 pass
             return result
         
-        endpoint = 'markets/quotes'
-        params = {'symbols': symbol}
-        response = self._make_request(endpoint, params)
+        # If we get here, Tradier API failed and mock is disabled
+        # Return empty quote structure
+        try:
+            from flask import current_app
+            current_app.logger.error(f"❌ TRADIER: API failed for {symbol} and mock data is disabled. No data available.")
+        except:
+            pass
+        return {'quotes': {'quote': {}}}
         
         try:
             from flask import current_app

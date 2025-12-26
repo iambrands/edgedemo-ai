@@ -50,7 +50,8 @@ class Config:
     TRADIER_SANDBOX = os.environ.get('TRADIER_SANDBOX', 'true').lower() == 'true'
     
     # Application Settings
-    USE_MOCK_DATA = os.environ.get('USE_MOCK_DATA', 'true').lower() == 'true'
+    # Default to False - only use mock data if explicitly enabled or if Tradier API fails
+    USE_MOCK_DATA = os.environ.get('USE_MOCK_DATA', 'false').lower() == 'true'
     USE_YAHOO_DATA = os.environ.get('USE_YAHOO_DATA', 'false').lower() == 'true'  # Yahoo Finance via yfinance
     USE_POLYGON_DATA = os.environ.get('USE_POLYGON_DATA', 'false').lower() == 'true'  # Polygon.io API
     POLYGON_API_KEY = os.environ.get('POLYGON_API_KEY', '')
