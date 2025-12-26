@@ -103,11 +103,13 @@ const Help: React.FC = () => {
           </p>
           
           <h4 className="text-xl font-semibold text-gray-900 mt-4">Discovery Features</h4>
+          <p className="text-gray-700 mb-3">
+            Discovery features have been moved to dedicated pages for better organization and performance:
+          </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            <li><strong>Today's Opportunities:</strong> High-confidence trading signals (70%+) from your watchlist. Shows top 5 opportunities with confidence scores, signal direction, and IV rank. Toggle to show/hide.</li>
-            <li><strong>Quick Scan:</strong> One-click button in the header to instantly scan 10 popular symbols for trading opportunities. Results merge with Today's Opportunities.</li>
-            <li><strong>Market Movers:</strong> Top 8 stocks with high volume and volatility. Shows price change %, volume ratio, and IV rank. Always visible.</li>
-            <li><strong>AI-Powered Suggestions:</strong> Personalized symbol recommendations based on your trading patterns, risk tolerance, and current market signals. Shows top 8 suggestions with scores, match reasons, and risk levels.</li>
+            <li><strong>Discover Page:</strong> Access "Today's Opportunities" (high-confidence signals 70%+) and "Quick Scan" to instantly scan 10 popular symbols for trading opportunities. Navigate via the Discovery section in the sidebar.</li>
+            <li><strong>Market Page:</strong> View "Market Movers" - top stocks with high volume and volatility, showing price change %, volume ratio, and IV rank.</li>
+            <li><strong>Recommendations Page:</strong> Get AI-powered personalized symbol recommendations based on your trading patterns, risk tolerance, and current market signals.</li>
           </ul>
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-purple-800">
@@ -122,6 +124,8 @@ const Help: React.FC = () => {
             <li><strong>Performance Metrics:</strong> Total positions, unrealized P/L, realized P/L, and win rate</li>
             <li><strong>Performance Charts:</strong> Visual representation of your trading performance</li>
             <li><strong>Recent Trades:</strong> Your most recent trading activity</li>
+            <li><strong>Refresh Button:</strong> Manually refresh dashboard data and update position prices</li>
+            <li><strong>Check Exits Button:</strong> Manually trigger exit condition checks for all positions</li>
           </ul>
 
           <h4 className="text-xl font-semibold text-gray-900 mt-6">Position Details</h4>
@@ -137,7 +141,13 @@ const Help: React.FC = () => {
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-yellow-800">
-              <strong>💡 Tip:</strong> Use the "Refresh Price" button to manually update position prices. Prices also update automatically every 15 minutes.
+              <strong>💡 Tip:</strong> Use the "Refresh" button in the Dashboard header to manually update position prices. Prices also update automatically when the automation engine is running.
+            </p>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-blue-800">
+              <strong>⏳ Position Cooldown:</strong> Newly created positions have a 5-minute cooldown period. During this time, prices won't be updated and exit conditions won't be checked. This prevents false exits due to stale or incorrect price data immediately after opening a position.
             </p>
           </div>
         </div>
@@ -286,8 +296,9 @@ const Help: React.FC = () => {
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             <li>The system scans for opportunities every 15 minutes during market hours</li>
             <li>When entry conditions are met, trades are executed automatically</li>
-            <li>Positions are monitored continuously</li>
+            <li>Positions are monitored continuously (after a 5-minute cooldown period for new positions)</li>
             <li>When exit conditions are met, positions are closed automatically</li>
+            <li>New positions have a 5-minute cooldown before price updates and exit checks begin</li>
           </ul>
 
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
@@ -407,7 +418,27 @@ const Help: React.FC = () => {
           <div>
             <h4 className="text-lg font-semibold text-gray-900">Q: How often do prices update?</h4>
             <p className="text-gray-700 mt-2">
-              A: Position prices update automatically every 15 minutes when the automation engine is running. You can also manually refresh prices using the "Refresh Price" button.
+              A: Position prices update automatically when the automation engine is running. You can also manually refresh prices using the "Refresh" button in the Dashboard header. Note: Newly created positions have a 5-minute cooldown period before prices are updated to prevent false exits.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why aren't my new positions showing updated prices immediately?</h4>
+            <p className="text-gray-700 mt-2">
+              A: New positions have a 5-minute cooldown period to prevent false exits due to stale or incorrect price data. After 5 minutes, prices will update automatically and exit conditions will be checked. This ensures accurate position monitoring and prevents premature exits.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Where can I find Quick Scan and discovery features?</h4>
+            <p className="text-gray-700 mt-2">
+              A: Discovery features have been moved to dedicated pages for better organization:
+              <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                <li><strong>Discover Page:</strong> Today's Opportunities and Quick Scan</li>
+                <li><strong>Market Page:</strong> Market Movers</li>
+                <li><strong>Recommendations Page:</strong> AI-Powered Suggestions</li>
+              </ul>
+              Access these via the "Discovery" section in the sidebar navigation.
             </p>
           </div>
 
