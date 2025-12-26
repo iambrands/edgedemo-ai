@@ -43,6 +43,23 @@ class PositionMonitor:
         """Check exit conditions for a position and exit if needed"""
         db = self._get_db()
         
+        # CRITICAL: Add cooldown period for newly created positions
+        # Prevent immediate exits due to mock data or stale prices
+        if position.created_at:
+            time_since_creation = datetime.utcnow() - position.created_at
+            cooldown_minutes = 5  # 5 minute cooldown before checking exits
+            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
+                        f"Created {time_since_creation.total_seconds():.0f}s ago. "
+                        f"Skipping exit check for {cooldown_minutes} minutes."
+                    )
+                except:
+                    pass
+                return False  # Don't check exits during cooldown
+        
         # Update position Greeks and prices
         self.update_position_data(position)
         
