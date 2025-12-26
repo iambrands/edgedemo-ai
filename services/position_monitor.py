@@ -194,6 +194,24 @@ class PositionMonitor:
         """Update position with current prices and Greeks"""
         db = self._get_db()
         
+        # CRITICAL: Add cooldown period for newly created positions
+        # Prevent immediate price updates that could trigger false exits
+        # This is called from get_positions(update_prices=True) which bypasses check_and_exit_position
+        if position.entry_date:
+            time_since_creation = datetime.utcnow() - position.entry_date
+            cooldown_minutes = 5  # 5 minute cooldown before updating prices
+            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
+                        f"Created {time_since_creation.total_seconds():.0f}s ago. "
+                        f"Skipping price update for {cooldown_minutes} minutes to prevent false exits."
+                    )
+                except:
+                    pass
+                return  # Skip price update during cooldown
+        
         # Check if current_price is suspiciously low (likely a bug) and needs correction
         # If current_price is less than 1% of entry_price, it's probably wrong
         needs_correction = (
@@ -536,12 +554,49 @@ class PositionMonitor:
         Returns:
             Tuple of (should_exit, reason)
         """
+        # CRITICAL: Double-check cooldown here as well (defense in depth)
+        # Even though check_and_exit_position checks cooldown, this provides extra protection
+        if position.entry_date:
+            time_since_creation = datetime.utcnow() - position.entry_date
+            cooldown_minutes = 5
+            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"⏳ Position {position.id} ({position.symbol}) in cooldown - skipping exit check. "
+                        f"Created {time_since_creation.total_seconds():.0f}s ago."
+                    )
+                except:
+                    pass
+                return (False, f"Position in {cooldown_minutes}-minute cooldown period")
+        
         if not position.current_price or not position.entry_price:
             return (False, "Missing price data")
         
         # Calculate profit/loss percentages
         profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
         loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
+        
+        # CRITICAL: Validate that current_price is reasonable for options
+        # If current_price is suspiciously high (likely a stock price), reject it
+        is_option = (
+            (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+            (position.expiration_date and position.strike_price is not None) or
+            bool(position.option_symbol)
+        )
+        
+        if is_option and position.current_price and position.current_price > 50:
+            # Option premiums rarely exceed $50 - this is likely a stock price
+            try:
+                from flask import current_app
+                current_app.logger.error(
+                    f"🚨 Position {position.id} ({position.symbol}): "
+                    f"current_price=${position.current_price:.2f} is suspiciously high for an option! "
+                    f"Likely a stock price. Rejecting exit check to prevent false exit."
+                )
+            except:
+                pass
+            return (False, f"Suspicious price data (${position.current_price:.2f} too high for option)")
         
         # If no automation, try to find one for this symbol or use user defaults
         if not automation and position.automation_id:

@@ -87,8 +87,6 @@ const Dashboard: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loadingOpportunities, setLoadingOpportunities] = useState(false);
-  const [quickScanResults, setQuickScanResults] = useState<any[]>([]);
-  const [loadingQuickScan, setLoadingQuickScan] = useState(false);
   const [marketMovers, setMarketMovers] = useState<any[]>([]);
   const [loadingMarketMovers, setLoadingMarketMovers] = useState(false);
   const [showOpportunities, setShowOpportunities] = useState(true);
@@ -303,33 +301,6 @@ const Dashboard: React.FC = () => {
     // Navigate to Options Analyzer with symbol pre-filled
     // Use immediate navigation to prevent any blocking
     navigate('/analyzer', { state: { symbol }, replace: false });
-  };
-
-  const handleQuickScan = async () => {
-    setLoadingQuickScan(true);
-    try {
-      const response = await api.post('/opportunities/quick-scan');
-      const results = response.data.opportunities || [];
-      setQuickScanResults(results);
-      
-      if (results.length > 0) {
-        toast.success(`Found ${results.length} opportunity${results.length > 1 ? 'ies' : ''}!`, { duration: 3000 });
-        // Merge with existing opportunities (avoid duplicates)
-        const existingSymbols = new Set(opportunities.map(o => o.symbol));
-        const newOpportunities = results.filter((r: any) => !existingSymbols.has(r.symbol));
-        setOpportunities([...opportunities, ...newOpportunities]);
-      } else {
-        toast('No opportunities found in popular symbols. Try adding symbols to your watchlist.', { 
-          duration: 4000,
-          icon: 'ℹ️'
-        });
-      }
-    } catch (error: any) {
-      console.error('Quick scan failed:', error);
-      toast.error('Quick scan failed. Please try again.', { duration: 3000 });
-    } finally {
-      setLoadingQuickScan(false);
-    }
   };
 
   const loadMarketMovers = async () => {
@@ -707,23 +678,6 @@ const Dashboard: React.FC = () => {
               <>
                 <span>🛡️</span>
                 <span>Check Exits</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleQuickScan}
-            disabled={loadingQuickScan}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
-          >
-            {loadingQuickScan ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span>Scanning...</span>
-              </>
-            ) : (
-              <>
-                <span>⚡</span>
-                <span>Quick Scan</span>
               </>
             )}
           </button>
