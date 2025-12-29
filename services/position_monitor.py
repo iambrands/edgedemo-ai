@@ -78,6 +78,22 @@ class PositionMonitor:
         if should_exit:
             # Execute exit
             try:
+                # CRITICAL: Log the exit reason BEFORE executing
+                # Calculate P/L for logging (recalculate here since we're in a different scope)
+                try:
+                    from flask import current_app
+                    profit_pct = ((position.current_price - position.entry_price) / position.entry_price) * 100 if position.entry_price else 0
+                    loss_pct = ((position.entry_price - position.current_price) / position.entry_price) * 100 if position.entry_price else 0
+                    current_app.logger.warning(
+                        f"🚨 EXIT TRIGGERED: Position {position.id} ({position.symbol}) - "
+                        f"Reason: {reason}, "
+                        f"Entry=${position.entry_price:.2f}, Current=${position.current_price:.2f}, "
+                        f"Profit={profit_pct:.2f}%, Loss={loss_pct:.2f}%, "
+                        f"Automation={automation.id if automation else 'None'}"
+                    )
+                except:
+                    pass
+                
                 # CRITICAL: NEVER use position.current_price for options - it might be stock price!
                 # Let close_position fetch the option premium fresh
                 is_option = (
@@ -422,10 +438,30 @@ class PositionMonitor:
                     last = option_found.get('last', 0) or option_found.get('lastPrice', 0) or 0
                     
                     # Use mid price if available, otherwise use last price
+                    # CRITICAL: Validate that the price is reasonable for an option premium
+                    candidate_price = None
                     if bid > 0 and ask > 0:
-                        position.current_price = (bid + ask) / 2
+                        candidate_price = (bid + ask) / 2
                     elif last > 0:
-                        position.current_price = last
+                        candidate_price = last
+                    
+                    # CRITICAL VALIDATION: Option premiums should NEVER exceed $50
+                    # If the price is >$50, it's likely a stock price, not an option premium
+                    if candidate_price and candidate_price > 50:
+                        try:
+                            from flask import current_app
+                            current_app.logger.error(
+                                f"🚨 Position {position.id} ({position.symbol}): "
+                                f"Options chain returned suspiciously high price ${candidate_price:.2f} "
+                                f"(entry=${position.entry_price:.2f}). This is likely a stock price, not option premium. "
+                                f"Using entry_price instead."
+                            )
+                        except:
+                            pass
+                        # Reject the suspicious price and use entry_price instead
+                        position.current_price = position.entry_price
+                    elif candidate_price:
+                        position.current_price = candidate_price
                     else:
                         # Fallback to entry price if no current price available
                         position.current_price = position.entry_price
@@ -571,13 +607,28 @@ class PositionMonitor:
         profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
         loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
         
+        # CRITICAL: Additional validation - if profit_percent is suspiciously high (>1000%), 
+        # it's likely a stock price was used instead of option premium
+        if is_option and profit_percent > 1000:
+            try:
+                from flask import current_app
+                current_app.logger.error(
+                    f"🚨 Position {position.id} ({position.symbol}): "
+                    f"Suspicious profit calculation: {profit_percent:.2f}% "
+                    f"(entry=${position.entry_price:.2f}, current=${position.current_price:.2f}). "
+                    f"This is likely a stock price, not option premium. REJECTING EXIT."
+                )
+            except:
+                pass
+            return (False, f"Suspicious profit calculation ({profit_percent:.2f}% - likely stock price, not option premium)")
+        
         # Log the prices being used for exit check (for debugging)
         try:
             from flask import current_app
             current_app.logger.info(
                 f"🔍 Position {position.id} ({position.symbol}): Exit check - "
                 f"entry=${position.entry_price:.2f}, current=${position.current_price:.2f}, "
-                f"P/L={profit_percent:.2f}%"
+                f"P/L={profit_percent:.2f}%, loss={loss_percent:.2f}%"
             )
         except:
             pass
@@ -596,6 +647,24 @@ class PositionMonitor:
                 is_active=True,
                 is_paused=False
             ).first()
+        
+        # CRITICAL: Log automation details for debugging
+        try:
+            from flask import current_app
+            if automation:
+                current_app.logger.info(
+                    f"🔍 Position {position.id} ({position.symbol}): Using automation - "
+                    f"profit_target_1={automation.profit_target_1}, profit_target_2={automation.profit_target_2}, "
+                    f"profit_target_percent={automation.profit_target_percent}, stop_loss={automation.stop_loss_percent}, "
+                    f"exit_at_profit={automation.exit_at_profit_target}, exit_at_stop={automation.exit_at_stop_loss}"
+                )
+            else:
+                current_app.logger.info(
+                    f"🔍 Position {position.id} ({position.symbol}): No automation - using defaults - "
+                    f"profit_target=25%, stop_loss=10%"
+                )
+        except:
+            pass
         
         # Check profit targets (profit_target_1 and profit_target_2)
         if automation:
