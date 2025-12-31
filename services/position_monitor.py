@@ -622,6 +622,45 @@ class PositionMonitor:
                 pass
             return (False, f"Suspicious profit calculation ({profit_percent:.2f}% - likely stock price, not option premium)")
         
+        # CRITICAL: NEVER exit at exactly 0% profit/loss (entry_price = current_price)
+        # This indicates the price hasn't updated or is stale - don't exit based on stale data
+        # Only allow expiration-related exits when profit is 0%
+        price_unchanged = abs(profit_percent) < 0.01 and abs(loss_percent) < 0.01
+        
+        # Also check if position is very new (less than 1 hour old)
+        position_age_hours = 0
+        if position.entry_date:
+            position_age_hours = (datetime.utcnow() - position.entry_date).total_seconds() / 3600
+        
+        if price_unchanged:
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"🚨 Position {position.id} ({position.symbol}): "
+                    f"Price unchanged (entry=${position.entry_price:.2f} = current=${position.current_price:.2f}, "
+                    f"P/L=0%, age={position_age_hours:.2f} hours). This indicates stale price data. "
+                    f"REJECTING ALL EXITS except expiration."
+                )
+            except:
+                pass
+            # Store flag to only allow expiration exits
+            allow_only_expiration_exit = True
+        elif position_age_hours < 1.0 and abs(profit_percent) < 1.0 and abs(loss_percent) < 1.0:
+            # Position is less than 1 hour old and P/L is very small (<1%)
+            # This is likely due to price not updating properly - be extra cautious
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"⚠️ Position {position.id} ({position.symbol}): "
+                    f"Very new position ({position_age_hours:.2f} hours old) with minimal P/L ({profit_percent:.2f}%). "
+                    f"Price may not have updated. Being extra cautious with exits."
+                )
+            except:
+                pass
+            allow_only_expiration_exit = False  # Allow exits, but log warning
+        else:
+            allow_only_expiration_exit = False
+        
         # Log the prices being used for exit check (for debugging)
         try:
             from flask import current_app
@@ -666,45 +705,51 @@ class PositionMonitor:
         except:
             pass
         
-        # Check profit targets (profit_target_1 and profit_target_2)
-        if automation:
-            # Check profit target 1 (partial exit)
-            if automation.profit_target_1 and profit_percent >= automation.profit_target_1:
-                if automation.partial_exit_percent and automation.partial_exit_profit_target:
-                    # Partial exit
-                    if profit_percent >= automation.partial_exit_profit_target:
-                        return (True, f"Partial exit at profit target 1: {profit_percent:.2f}%")
-                else:
-                    # Full exit at target 1 if no partial exit configured
+        # CRITICAL: If price is unchanged (0% P/L), only allow expiration exits
+        # Don't check profit/loss targets with stale data
+        if allow_only_expiration_exit:
+            # Skip all profit/loss checks - only check expiration
+            pass
+        else:
+            # Check profit targets (profit_target_1 and profit_target_2)
+            if automation:
+                # Check profit target 1 (partial exit)
+                if automation.profit_target_1 and profit_percent >= automation.profit_target_1:
+                    if automation.partial_exit_percent and automation.partial_exit_profit_target:
+                        # Partial exit
+                        if profit_percent >= automation.partial_exit_profit_target:
+                            return (True, f"Partial exit at profit target 1: {profit_percent:.2f}%")
+                    else:
+                        # Full exit at target 1 if no partial exit configured
+                        if automation.exit_at_profit_target:
+                            return (True, f"Profit target 1 reached ({profit_percent:.2f}%)")
+                
+                # Check profit target 2 (full exit)
+                if automation.profit_target_2 and profit_percent >= automation.profit_target_2:
                     if automation.exit_at_profit_target:
-                        return (True, f"Profit target 1 reached ({profit_percent:.2f}%)")
+                        return (True, f"Profit target 2 reached ({profit_percent:.2f}%)")
+                
+                # Legacy profit_target_percent support
+                if automation.profit_target_percent and profit_percent >= automation.profit_target_percent:
+                    if automation.exit_at_profit_target:
+                        return (True, f"Profit target reached ({profit_percent:.2f}%)")
             
-            # Check profit target 2 (full exit)
-            if automation.profit_target_2 and profit_percent >= automation.profit_target_2:
-                if automation.exit_at_profit_target:
-                    return (True, f"Profit target 2 reached ({profit_percent:.2f}%)")
+            # Check stop loss (for both automation and default)
+            stop_loss_threshold = None
+            if automation and automation.stop_loss_percent and automation.exit_at_stop_loss:
+                # Normalize stop_loss_percent - it might be stored as positive (10) or negative (-10)
+                # We always compare as positive loss percentages
+                stop_loss_threshold = abs(automation.stop_loss_percent)
+            elif not automation:
+                # Use default stop loss if no automation (5-10% range, use 10% as default)
+                stop_loss_threshold = 10.0  # Default 10% stop loss
             
-            # Legacy profit_target_percent support
-            if automation.profit_target_percent and profit_percent >= automation.profit_target_percent:
-                if automation.exit_at_profit_target:
-                    return (True, f"Profit target reached ({profit_percent:.2f}%)")
-        
-        # Check stop loss (for both automation and default)
-        stop_loss_threshold = None
-        if automation and automation.stop_loss_percent and automation.exit_at_stop_loss:
-            # Normalize stop_loss_percent - it might be stored as positive (10) or negative (-10)
-            # We always compare as positive loss percentages
-            stop_loss_threshold = abs(automation.stop_loss_percent)
-        elif not automation:
-            # Use default stop loss if no automation (5-10% range, use 10% as default)
-            stop_loss_threshold = 10.0  # Default 10% stop loss
-        
-        if stop_loss_threshold and loss_percent >= stop_loss_threshold:
-            return (True, f"Stop loss triggered ({loss_percent:.2f}% loss, threshold: {stop_loss_threshold}%)")
-        
-        # If no automation found, also check default profit target (25-30% range, use 25% as default)
-        if not automation and profit_percent >= 25.0:
-            return (True, f"Profit target reached ({profit_percent:.2f}%, default: 25%)")
+            if stop_loss_threshold and loss_percent >= stop_loss_threshold:
+                return (True, f"Stop loss triggered ({loss_percent:.2f}% loss, threshold: {stop_loss_threshold}%)")
+            
+            # If no automation found, also check default profit target (25-30% range, use 25% as default)
+            if not automation and profit_percent >= 25.0:
+                return (True, f"Profit target reached ({profit_percent:.2f}%, default: 25%)")
         
         # Check max days to hold
         if automation and automation.max_days_to_hold and automation.exit_at_max_days:
