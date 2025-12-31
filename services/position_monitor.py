@@ -46,16 +46,16 @@ class PositionMonitor:
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate exits due to mock data or stale prices
         # MUST check cooldown BEFORE updating prices to prevent bad data from triggering exits
-        # INCREASED to 10 minutes to give more time for prices to stabilize
+        # INCREASED to 30 minutes to give more time for prices to stabilize and prevent premature exits
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 10  # 10 minute cooldown before checking exits (increased from 5)
+            cooldown_minutes = 30  # 30 minute cooldown before checking exits (increased from 10)
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
                     current_app.logger.info(
                         f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
-                        f"Created {time_since_creation.total_seconds():.0f}s ago. "
+                        f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago. "
                         f"Skipping exit check for {cooldown_minutes} minutes. "
                         f"NOT updating prices to prevent false exits."
                     )
@@ -214,16 +214,16 @@ class PositionMonitor:
         # CRITICAL: Add cooldown period for newly created positions
         # Prevent immediate price updates that could trigger false exits
         # This is called from get_positions(update_prices=True) which bypasses check_and_exit_position
-        # INCREASED to 10 minutes to give more time for prices to stabilize
+        # INCREASED to 30 minutes to give more time for prices to stabilize
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 10  # 10 minute cooldown before updating prices (increased from 5)
+            cooldown_minutes = 30  # 30 minute cooldown before updating prices (increased from 10)
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
                     current_app.logger.info(
                         f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
-                        f"Created {time_since_creation.total_seconds():.0f}s ago. "
+                        f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago. "
                         f"Skipping price update for {cooldown_minutes} minutes to prevent false exits."
                     )
                 except:
@@ -629,35 +629,39 @@ class PositionMonitor:
         
         # Also check if position is very new (less than 1 hour old)
         position_age_hours = 0
+        position_age_minutes = 0
         if position.entry_date:
-            position_age_hours = (datetime.utcnow() - position.entry_date).total_seconds() / 3600
+            time_since_creation = datetime.utcnow() - position.entry_date
+            position_age_hours = time_since_creation.total_seconds() / 3600
+            position_age_minutes = time_since_creation.total_seconds() / 60
         
+        # CRITICAL: If price is unchanged, NEVER exit (except expiration)
         if price_unchanged:
             try:
                 from flask import current_app
-                current_app.logger.warning(
-                    f"🚨 Position {position.id} ({position.symbol}): "
-                    f"Price unchanged (entry=${position.entry_price:.2f} = current=${position.current_price:.2f}, "
-                    f"P/L=0%, age={position_age_hours:.2f} hours). This indicates stale price data. "
-                    f"REJECTING ALL EXITS except expiration."
+                current_app.logger.error(
+                    f"🚨🚨🚨 Position {position.id} ({position.symbol}): "
+                    f"PRICE UNCHANGED - entry=${position.entry_price:.2f} = current=${position.current_price:.2f}, "
+                    f"P/L=0%, age={position_age_minutes:.1f} minutes. "
+                    f"THIS INDICATES STALE PRICE DATA. REJECTING ALL EXITS EXCEPT EXPIRATION."
                 )
             except:
                 pass
             # Store flag to only allow expiration exits
             allow_only_expiration_exit = True
-        elif position_age_hours < 1.0 and abs(profit_percent) < 1.0 and abs(loss_percent) < 1.0:
-            # Position is less than 1 hour old and P/L is very small (<1%)
+        elif position_age_minutes < 60 and abs(profit_percent) < 5.0 and abs(loss_percent) < 5.0:
+            # Position is less than 1 hour old and P/L is very small (<5%)
             # This is likely due to price not updating properly - be extra cautious
             try:
                 from flask import current_app
                 current_app.logger.warning(
                     f"⚠️ Position {position.id} ({position.symbol}): "
-                    f"Very new position ({position_age_hours:.2f} hours old) with minimal P/L ({profit_percent:.2f}%). "
-                    f"Price may not have updated. Being extra cautious with exits."
+                    f"Very new position ({position_age_minutes:.1f} minutes old) with minimal P/L ({profit_percent:.2f}%). "
+                    f"Price may not have updated. REJECTING EXITS to prevent premature closure."
                 )
             except:
                 pass
-            allow_only_expiration_exit = False  # Allow exits, but log warning
+            allow_only_expiration_exit = True  # Changed to True - reject exits for new positions with minimal P/L
         else:
             allow_only_expiration_exit = False
         
@@ -751,26 +755,38 @@ class PositionMonitor:
             if not automation and profit_percent >= 25.0:
                 return (True, f"Profit target reached ({profit_percent:.2f}%, default: 25%)")
         
-        # Check max days to hold
-        if automation and automation.max_days_to_hold and automation.exit_at_max_days:
-            days_held = (datetime.utcnow() - position.entry_date).days
-            if days_held >= automation.max_days_to_hold:
-                return (True, f"Max holding period reached ({days_held} days)")
+        # Check max days to hold (only if price has changed)
+        if not allow_only_expiration_exit:
+            if automation and automation.max_days_to_hold and automation.exit_at_max_days:
+                days_held = (datetime.utcnow() - position.entry_date).days
+                if days_held >= automation.max_days_to_hold:
+                    return (True, f"Max holding period reached ({days_held} days)")
+            
+            # Check min DTE exit (only if price has changed)
+            if automation and automation.min_dte_exit:
+                if position.expiration_date:
+                    days_to_exp = (position.expiration_date - datetime.now().date()).days
+                    if days_to_exp <= automation.min_dte_exit:
+                        return (True, f"Days to expiration ({days_to_exp}) below minimum ({automation.min_dte_exit})")
         
-        # Check min DTE exit
-        if automation and automation.min_dte_exit:
-            if position.expiration_date:
-                days_to_exp = (position.expiration_date - datetime.now().date()).days
-                if days_to_exp <= automation.min_dte_exit:
-                    return (True, f"Days to expiration ({days_to_exp}) below minimum ({automation.min_dte_exit})")
-        
-        # Check expiration (close before expiration)
+        # Check expiration (close before expiration) - ALWAYS check this, even if price unchanged
+        # This is the only exit condition allowed when price is stale
         if position.expiration_date:
             days_to_exp = (position.expiration_date - datetime.now().date()).days
             if days_to_exp <= 0:
                 return (True, "Position expired")
-            # Close if within 1 day of expiration
+            # Close if within 1 day of expiration (but log if price is unchanged)
             if days_to_exp <= 1:
+                if allow_only_expiration_exit:
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"⚠️ Position {position.id} ({position.symbol}): "
+                            f"Closing due to expiration ({days_to_exp} days) even though price is unchanged. "
+                            f"This is the ONLY exit allowed when price data is stale."
+                        )
+                    except:
+                        pass
                 return (True, f"Closing before expiration ({days_to_exp} days)")
         
         # Check trailing stop
