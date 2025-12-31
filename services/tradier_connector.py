@@ -15,10 +15,23 @@ class TradierConnector:
             self.api_secret = current_app.config.get('TRADIER_API_SECRET')
             self.account_id = current_app.config.get('TRADIER_ACCOUNT_ID')
             self.base_url = current_app.config.get('TRADIER_BASE_URL', 'https://api.tradier.com/v1')
-            self.use_mock = current_app.config.get('USE_MOCK_DATA', True)
+            # CRITICAL: Default to False for USE_MOCK_DATA - only use mock if explicitly enabled
+            # This prevents silent fallback to mock data which causes wrong prices
+            self.use_mock = current_app.config.get('USE_MOCK_DATA', False)
             self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
             self.use_polygon = current_app.config.get('USE_POLYGON_DATA', False)
             self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
+            
+            # Log configuration for debugging
+            try:
+                from flask import current_app
+                current_app.logger.info(
+                    f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo}, "
+                    f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
+                    f"api_key_present={bool(self.api_key)}, base_url={self.base_url}"
+                )
+            except:
+                pass
             
             # Initialize alternative data sources if enabled
             if self.use_yahoo:
@@ -46,7 +59,7 @@ class TradierConnector:
             self.api_secret = ''
             self.account_id = ''
             self.base_url = 'https://api.tradier.com/v1'
-            self.use_mock = True
+            self.use_mock = False  # Changed default to False - don't use mock outside app context
             self.use_yahoo = False
             self.use_polygon = False
             self.sandbox = True
@@ -90,18 +103,61 @@ class TradierConnector:
                     pass
             else:
                 try:
-                    current_app.logger.error(f"Tradier API error: {str(e)}")
+                    current_app.logger.error(
+                        f"🚨 TRADIER API HTTP ERROR for {endpoint}: {str(e)} "
+                        f"(status={e.response.status_code if hasattr(e, 'response') else 'N/A'})"
+                    )
                 except RuntimeError:
                     pass
-            # Fallback to mock data on error
-            return self._get_mock_data(endpoint, params)
+            # CRITICAL: Only fallback to mock if explicitly enabled
+            # Otherwise, return empty/error response to prevent wrong data
+            if self.use_mock:
+                try:
+                    current_app.logger.warning(
+                        f"⚠️ TRADIER API failed for {endpoint}, falling back to MOCK DATA "
+                        f"(USE_MOCK_DATA=True). This may cause incorrect prices!"
+                    )
+                except RuntimeError:
+                    pass
+                return self._get_mock_data(endpoint, params)
+            else:
+                # Return empty response - don't use mock data
+                try:
+                    current_app.logger.error(
+                        f"🚨🚨🚨 TRADIER API FAILED for {endpoint} and USE_MOCK_DATA=False. "
+                        f"Returning empty response to prevent wrong data."
+                    )
+                except RuntimeError:
+                    pass
+                return {}
         except Exception as e:
             try:
-                current_app.logger.error(f"Tradier API error: {str(e)}")
+                current_app.logger.error(
+                    f"🚨 TRADIER API EXCEPTION for {endpoint}: {str(e)} "
+                    f"(type={type(e).__name__})"
+                )
             except RuntimeError:
-                pass  # Outside application context
-            # Fallback to mock data on error
-            return self._get_mock_data(endpoint, params)
+                pass
+            # CRITICAL: Only fallback to mock if explicitly enabled
+            if self.use_mock:
+                try:
+                    current_app.logger.warning(
+                        f"⚠️ TRADIER API exception for {endpoint}, falling back to MOCK DATA. "
+                        f"This may cause incorrect prices!"
+                    )
+                except RuntimeError:
+                    pass
+                return self._get_mock_data(endpoint, params)
+            else:
+                # Return empty response - don't use mock data
+                try:
+                    current_app.logger.error(
+                        f"🚨🚨🚨 TRADIER API EXCEPTION for {endpoint} and USE_MOCK_DATA=False. "
+                        f"Returning empty response."
+                    )
+                except RuntimeError:
+                    pass
+                return {}
     
     def _get_mock_data(self, endpoint: str, params: Dict = None) -> Dict:
         """Generate mock data for development"""
