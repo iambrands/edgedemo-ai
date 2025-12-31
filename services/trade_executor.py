@@ -813,39 +813,64 @@ class TradeExecutor:
                             if not exit_price and matching_options:
                                 try:
                                     from flask import current_app
-                                    current_app.logger.warning(
-                                        f"⚠️ CLOSE POSITION: Found {len(matching_options)} matching options but all had invalid prices"
+                                    current_app.logger.error(
+                                        f"🚨 CLOSE POSITION: Found {len(matching_options)} matching options but ALL had invalid prices "
+                                        f"(likely stock prices >$50). Position {position.id} ({position.symbol}) "
+                                        f"strike=${position.strike_price} type={position.contract_type} exp={expiration_str}. "
+                                        f"Cannot close - no valid option premium found."
                                     )
+                                    # Log the matching options for debugging
+                                    for i, opt in enumerate(matching_options[:5]):
+                                        bid = opt.get('bid', 0) or 0
+                                        ask = opt.get('ask', 0) or 0
+                                        last = opt.get('last', 0) or opt.get('lastPrice', 0) or 0
+                                        current_app.logger.error(
+                                            f"   Match {i+1}: strike=${opt.get('strike')}, bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
+                                        )
                                 except:
                                     pass
                             elif not matching_options:
                                 try:
                                     from flask import current_app
                                     current_app.logger.error(
-                                        f"❌ CLOSE POSITION: No matching option found in chain for "
-                                        f"{position.symbol} strike=${position.strike_price} type={position.contract_type} "
-                                        f"exp={expiration_str}. Chain had {len(options_list)} options."
+                                        f"🚨🚨🚨 CLOSE POSITION: No matching option found in chain for "
+                                        f"position {position.id} ({position.symbol}) "
+                                        f"strike=${position.strike_price} type={position.contract_type} "
+                                        f"exp={expiration_str}. Chain had {len(options_list)} options. "
+                                        f"Cannot close - option not found in chain."
                                     )
                                     # Log sample options and available strikes for debugging
                                     if options_list:
                                         available_strikes = set()
-                                        sample_options = options_list[:10]
+                                        available_types = set()
+                                        sample_options = options_list[:20]  # Check more options
                                         for opt in sample_options:
                                             opt_strike = opt.get('strike') or opt.get('strike_price')
-                                            opt_type = opt.get('type') or opt.get('contract_type')
+                                            opt_type = opt.get('type') or opt.get('contract_type') or opt.get('option_type')
                                             if opt_strike:
-                                                available_strikes.add(float(opt_strike))
-                                            current_app.logger.info(
-                                                f"   Sample: strike=${opt_strike}, type={opt_type}, "
-                                                f"bid=${opt.get('bid', 0):.2f}, ask=${opt.get('ask', 0):.2f}"
-                                            )
+                                                try:
+                                                    available_strikes.add(float(opt_strike))
+                                                except:
+                                                    pass
+                                            if opt_type:
+                                                available_types.add(str(opt_type).lower())
+                                            if len(sample_options) <= 5:  # Only log details for first 5
+                                                current_app.logger.info(
+                                                    f"   Sample: strike=${opt_strike}, type={opt_type}, "
+                                                    f"bid=${opt.get('bid', 0):.2f}, ask=${opt.get('ask', 0):.2f}, "
+                                                    f"last=${opt.get('last', 0) or opt.get('lastPrice', 0):.2f}"
+                                                )
                                         
                                         if available_strikes:
                                             closest_strike = min(available_strikes, key=lambda x: abs(x - position_strike))
                                             current_app.logger.warning(
-                                                f"   Available strikes: {sorted(list(available_strikes))[:15]}. "
+                                                f"   Available strikes: {sorted(list(available_strikes))[:20]}. "
                                                 f"Closest to ${position.strike_price}: ${closest_strike:.2f} "
                                                 f"(diff: ${abs(closest_strike - position_strike):.2f})"
+                                            )
+                                        if available_types:
+                                            current_app.logger.warning(
+                                                f"   Available types: {available_types}. Looking for: {position.contract_type}"
                                             )
                                 except:
                                     pass
@@ -863,59 +888,86 @@ class TradeExecutor:
                         pass
                 
                 # Final validation: NEVER accept stock price for options
+                # CRITICAL: NEVER use entry_price as fallback - this causes SELL at BUY price!
                 if is_option_position:
                     # If exit_price looks like stock price (>$50 for an option), it's WRONG
                     if exit_price and exit_price > 50:
                         try:
                             from flask import current_app
                             current_app.logger.error(
-                                f"CRITICAL ERROR: exit_price ${exit_price:.2f} is STOCK PRICE for option position {position.id} "
+                                f"🚨🚨🚨 CRITICAL ERROR: exit_price ${exit_price:.2f} is STOCK PRICE for option position {position.id} "
                                 f"({position.symbol} {position.contract_type} ${position.strike_price} {position.expiration_date}). "
-                                f"REJECTING and using entry_price ${position.entry_price:.2f} as fallback. "
-                                f"This should NEVER happen - option lookup failed!"
+                                f"REJECTING - will NOT close position with stock price!"
                             )
                         except:
                             pass
-                        exit_price = position.entry_price  # Use entry price as safer fallback
+                        exit_price = None  # Reject stock price - don't use entry_price fallback
                     elif not exit_price or exit_price <= 0:
-                        # No price found - use entry price
-                        exit_price = position.entry_price
+                        # No price found - DO NOT use entry_price - this causes SELL at BUY price!
                         try:
                             from flask import current_app
-                            current_app.logger.warning(
-                                f"Could not fetch option premium for position {position.id}. Using entry_price ${exit_price:.2f}"
+                            current_app.logger.error(
+                                f"🚨🚨🚨 CRITICAL: Could not fetch option premium for position {position.id}. "
+                                f"Options chain lookup FAILED. Will NOT close position with entry_price fallback "
+                                f"(this causes SELL at BUY price bug)."
                             )
                         except:
                             pass
+                        exit_price = None  # Don't use entry_price - this is the bug!
                 else:
                     # For stocks, use current_price or entry_price
                     if not exit_price or exit_price <= 0:
                         exit_price = position.current_price if position.current_price and position.current_price > 0 else position.entry_price
         
         # CRITICAL: Validate exit_price before executing trade
-        # NEVER allow 0 or None for option positions - use entry_price as absolute fallback
+        # NEVER allow 0, None, or entry_price for option positions - this causes SELL at BUY price bug!
         if is_option_position:
+            # CRITICAL CHECK: If exit_price equals entry_price, this is the bug - reject it!
+            if exit_price and position.entry_price and abs(exit_price - position.entry_price) < 0.01:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f"🚨🚨🚨 CRITICAL BUG DETECTED: exit_price ${exit_price:.2f} equals entry_price ${position.entry_price:.2f} "
+                        f"for option position {position.id} ({position.symbol}). "
+                        f"This would cause SELL at BUY price! REJECTING and aborting close."
+                    )
+                except:
+                    pass
+                return {
+                    'error': f'Cannot close position: exit_price (${exit_price:.2f}) equals entry_price. '
+                             f'Options chain lookup failed - cannot determine current option premium. '
+                             f'Please try again later or close manually with correct price.'
+                }
+            
             if not exit_price or exit_price <= 0:
                 try:
                     from flask import current_app
                     current_app.logger.error(
-                        f"🚨 CRITICAL: exit_price is {exit_price} for option position {position.id}. "
-                        f"Using entry_price ${position.entry_price:.2f} as absolute fallback."
+                        f"🚨🚨🚨 CRITICAL: exit_price is {exit_price} for option position {position.id}. "
+                        f"Options chain lookup FAILED. Will NOT use entry_price fallback (this causes SELL at BUY price bug). "
+                        f"ABORTING close."
                     )
                 except:
                     pass
-                exit_price = position.entry_price if position.entry_price and position.entry_price > 0 else 0.01
+                return {
+                    'error': f'Cannot close position: Could not fetch current option premium from Tradier. '
+                             f'Options chain lookup failed. Please try again later or close manually with correct price.'
+                }
+            
             # Double-check: if exit_price still looks like stock price, reject it
             if exit_price > 50:
                 try:
                     from flask import current_app
                     current_app.logger.error(
-                        f"🚨 CRITICAL: exit_price ${exit_price:.2f} still looks like stock price. "
-                        f"Using entry_price ${position.entry_price:.2f} instead."
+                        f"🚨🚨🚨 CRITICAL: exit_price ${exit_price:.2f} still looks like stock price for option. "
+                        f"REJECTING - will NOT close position with stock price."
                     )
                 except:
                     pass
-                exit_price = position.entry_price if position.entry_price and position.entry_price > 0 else 0.01
+                return {
+                    'error': f'Cannot close position: exit_price (${exit_price:.2f}) appears to be stock price, not option premium. '
+                             f'Options chain lookup returned invalid data. Please try again later.'
+                }
         
         # Log final exit_price before trade execution
         try:
