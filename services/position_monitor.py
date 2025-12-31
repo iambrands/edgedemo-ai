@@ -530,16 +530,16 @@ class PositionMonitor:
         """
         # CRITICAL: Double-check cooldown here as well (defense in depth)
         # Even though check_and_exit_position checks cooldown, this provides extra protection
-        # INCREASED to 10 minutes to match other cooldown checks
+        # INCREASED to 30 minutes to match other cooldown checks
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 10  # Increased from 5 to 10 minutes
+            cooldown_minutes = 30  # Increased to 30 minutes
             if time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
                     current_app.logger.info(
                         f"⏳ Position {position.id} ({position.symbol}) in cooldown - skipping exit check. "
-                        f"Created {time_since_creation.total_seconds():.0f}s ago."
+                        f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago."
                     )
                 except:
                     pass
