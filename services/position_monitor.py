@@ -207,18 +207,29 @@ class PositionMonitor:
         
         return f"{position.symbol}{expiration_str}{option_type}{strike_encoded}"
     
-    def update_position_data(self, position: Position):
-        """Update position with current prices and Greeks"""
+    def update_position_data(self, position: Position, force_update: bool = False):
+        """Update position with current prices and Greeks
+        
+        Args:
+            position: Position to update
+            force_update: If True, bypass cooldown (used for initial price fetch after creation)
+        """
         db = self._get_db()
         
         # CRITICAL: Add cooldown period for newly created positions
-        # Prevent immediate price updates that could trigger false exits
-        # This is called from get_positions(update_prices=True) which bypasses check_and_exit_position
-        # INCREASED to 30 minutes to give more time for prices to stabilize
-        if position.entry_date:
+        # BUT: Allow forced updates (e.g., immediately after creation) to fetch real prices
+        # This prevents stale prices while still allowing initial price fetch
+        if not force_update and position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 30  # 30 minute cooldown before updating prices (increased from 10)
-            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
+            cooldown_minutes = 5  # 5 minute cooldown for automatic updates (reduced from 30)
+            # Only apply cooldown if current_price has been updated at least once
+            # If current_price == entry_price, it means it hasn't been updated yet - allow update
+            price_never_updated = (
+                position.current_price is None or 
+                abs(position.current_price - position.entry_price) < 0.01
+            )
+            
+            if not price_never_updated and time_since_creation.total_seconds() < (cooldown_minutes * 60):
                 try:
                     from flask import current_app
                     current_app.logger.info(

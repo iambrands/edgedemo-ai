@@ -275,9 +275,17 @@ class TradeExecutor:
                     ).order_by(Position.entry_date.desc()).first()
                 
                 if position:
-                    monitor.update_position_data(position)
+                    # Force update to bypass cooldown and fetch real price immediately
+                    monitor.update_position_data(position, force_update=True)
                     db.session.refresh(position)
                     db.session.commit()
+                    try:
+                        current_app.logger.info(
+                            f"✅ Updated position {position.id} ({position.symbol}) price: "
+                            f"entry=${position.entry_price:.2f}, current=${position.current_price:.2f}"
+                        )
+                    except RuntimeError:
+                        pass
             except Exception as e:
                 # Log but don't fail the trade
                 try:
