@@ -123,6 +123,19 @@ class PositionMonitor:
                     exit_price=exit_price
                 )
                 
+                # CRITICAL: Check if close_position returned an error
+                if result and 'error' in result:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"🚨🚨🚨 FAILED TO CLOSE POSITION {position.id} ({position.symbol}): {result['error']}. "
+                            f"Exit reason was: {reason}. Position will remain open."
+                        )
+                    except:
+                        pass
+                    # Don't close the position - return False to keep it open
+                    return False
+                
                 # Log exit
                 if automation:
                     automation.execution_count += 1
