@@ -394,6 +394,7 @@ class TradierConnector:
         if self.use_mock:
             mock_data = self._mock_expirations(symbol)
             try:
+                from flask import current_app
                 current_app.logger.info(f'Mock expirations for {symbol}: {mock_data}')
             except RuntimeError:
                 pass
@@ -403,6 +404,7 @@ class TradierConnector:
         params = {'symbol': symbol}
         response = self._make_request(endpoint, params)
         try:
+            from flask import current_app
             current_app.logger.info(f'Tradier expirations response for {symbol}: {response}')
         except RuntimeError:
             pass
@@ -429,6 +431,7 @@ class TradierConnector:
                 # If Tradier returns empty, fall back to mock data
                 if not result:
                     try:
+                        from flask import current_app
                         current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
                     except RuntimeError:
                         pass
@@ -437,6 +440,7 @@ class TradierConnector:
         
         # If no expirations in response, fall back to mock data
         try:
+            from flask import current_app
             current_app.logger.warning(f'No expirations in Tradier response for {symbol}, falling back to mock data')
         except RuntimeError:
             pass
