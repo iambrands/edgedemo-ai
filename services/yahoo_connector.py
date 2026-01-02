@@ -4,58 +4,155 @@ Completely free, no API key needed
 """
 from typing import Dict, List, Optional
 from flask import current_app
-from datetime import datetime
+from datetime import datetime, timedelta
 import yfinance as yf
+import time
+from functools import lru_cache
 
 class YahooConnector:
     """Yahoo Finance integration for options data (via yfinance)"""
     
     def __init__(self):
         try:
+            from flask import current_app
             self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
         except RuntimeError:
             self.use_yahoo = False
+        
+        # Rate limiting: Yahoo Finance has no official limits, but be respectful
+        # Limit to ~2 calls per second to avoid 429 errors
+        self.min_call_interval = 0.5  # 500ms between calls
+        self.last_call_time = {}
+        
+        # Cache for quotes (5 minutes)
+        self.quote_cache = {}
+        self.cache_duration = timedelta(minutes=5)
+        
+        # Track rate limit errors
+        self.rate_limit_until = None
+        self.rate_limit_duration = timedelta(minutes=1)  # Wait 1 minute after 429
+    
+    def _rate_limit(self, symbol: str = None):
+        """Respect rate limits"""
+        # If we're in a rate limit cooldown, wait
+        if self.rate_limit_until and datetime.utcnow() < self.rate_limit_until:
+            wait_seconds = (self.rate_limit_until - datetime.utcnow()).total_seconds()
+            if wait_seconds > 0:
+                time.sleep(min(wait_seconds, 60))  # Max 60 second wait
+        
+        # Check per-symbol rate limiting
+        cache_key = symbol or 'default'
+        if cache_key in self.last_call_time:
+            time_since_last = time.time() - self.last_call_time[cache_key]
+            if time_since_last < self.min_call_interval:
+                time.sleep(self.min_call_interval - time_since_last)
+        
+        self.last_call_time[cache_key] = time.time()
+    
+    def _get_cached_quote(self, symbol: str) -> Optional[Dict]:
+        """Get cached quote if still valid"""
+        if symbol in self.quote_cache:
+            cached_data, cached_time = self.quote_cache[symbol]
+            if datetime.utcnow() - cached_time < self.cache_duration:
+                return cached_data
+            else:
+                # Remove expired cache
+                del self.quote_cache[symbol]
+        return None
     
     def get_quote(self, symbol: str) -> Dict:
-        """Get real-time stock quote"""
+        """Get real-time stock quote with rate limiting and caching"""
         if not self.use_yahoo:
             return {}
         
+        # Check cache first
+        cached = self._get_cached_quote(symbol)
+        if cached:
+            try:
+                from flask import current_app
+                current_app.logger.debug(f"Yahoo Finance: Using cached quote for {symbol}")
+            except:
+                pass
+            return cached
+        
+        # Check if we're in rate limit cooldown
+        if self.rate_limit_until and datetime.utcnow() < self.rate_limit_until:
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"Yahoo Finance: Rate limit cooldown active for {symbol}, "
+                    f"returning empty (will retry in {(self.rate_limit_until - datetime.utcnow()).total_seconds():.0f}s)"
+                )
+            except:
+                pass
+            return {}
+        
+        # Apply rate limiting
+        self._rate_limit(symbol)
+        
         try:
             ticker = yf.Ticker(symbol)
-            info = ticker.info
-            history = ticker.history(period='1d')
+            # Use faster method - just get history, skip info if possible
+            history = ticker.history(period='1d', interval='1m')
             
             if not history.empty:
-                last_price = history['Close'].iloc[-1]
-                prev_close = history['Close'].iloc[-2] if len(history) > 1 else last_price
+                last_price = float(history['Close'].iloc[-1])
+                prev_close = float(history['Close'].iloc[-2]) if len(history) > 1 else last_price
                 change = last_price - prev_close
                 change_percent = (change / prev_close * 100) if prev_close > 0 else 0
-                volume = history['Volume'].iloc[-1]
+                volume = int(history['Volume'].iloc[-1]) if 'Volume' in history.columns else 0
             else:
-                last_price = info.get('currentPrice', 0)
-                prev_close = info.get('previousClose', last_price)
-                change = last_price - prev_close
-                change_percent = (change / prev_close * 100) if prev_close > 0 else 0
-                volume = info.get('volume', 0)
+                # Fallback to info if history fails
+                try:
+                    info = ticker.info
+                    last_price = float(info.get('currentPrice', 0))
+                    prev_close = float(info.get('previousClose', last_price))
+                    change = last_price - prev_close
+                    change_percent = (change / prev_close * 100) if prev_close > 0 else 0
+                    volume = int(info.get('volume', 0))
+                except:
+                    return {}
             
-            return {
+            result = {
                 'quotes': {
                     'quote': {
                         'symbol': symbol,
                         'last': last_price,
                         'change': change,
                         'close': prev_close,
-                        'volume': int(volume),
-                        'description': info.get('longName', symbol)
+                        'volume': volume,
+                        'description': symbol  # Skip longName to avoid extra API call
                     }
                 }
             }
+            
+            # Cache the result
+            self.quote_cache[symbol] = (result, datetime.utcnow())
+            
+            return result
+            
         except Exception as e:
-            try:
-                current_app.logger.error(f"Yahoo Finance error: {str(e)}")
-            except RuntimeError:
-                pass
+            error_str = str(e)
+            
+            # Check for 429 rate limit errors
+            if '429' in error_str or 'Too Many Requests' in error_str:
+                # Set rate limit cooldown
+                self.rate_limit_until = datetime.utcnow() + self.rate_limit_duration
+                try:
+                    from flask import current_app
+                    current_app.logger.warning(
+                        f"Yahoo Finance rate limit hit for {symbol}. "
+                        f"Entering {self.rate_limit_duration.total_seconds()}s cooldown."
+                    )
+                except:
+                    pass
+            else:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(f"Yahoo Finance error for {symbol}: {error_str}")
+                except:
+                    pass
+            
             return {}
     
     def get_options_expirations(self, symbol: str) -> List[str]:
