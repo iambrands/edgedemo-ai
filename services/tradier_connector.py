@@ -33,15 +33,18 @@ class TradierConnector:
                 pass
             
             # Initialize alternative data sources if enabled
-            if self.use_yahoo:
-                try:
-                    from services.yahoo_connector import YahooConnector
-                    self.yahoo = YahooConnector()
-                except ImportError:
-                    self.use_yahoo = False
-                    self.yahoo = None
-            else:
-                self.yahoo = None
+            # DISABLED: Yahoo Finance causes rate limiting issues - use Tradier directly
+            # if self.use_yahoo:
+            #     try:
+            #         from services.yahoo_connector import YahooConnector
+            #         self.yahoo = YahooConnector()
+            #     except ImportError:
+            #         self.use_yahoo = False
+            #         self.yahoo = None
+            # else:
+            #     self.yahoo = None
+            self.yahoo = None  # Disabled - use Tradier directly
+            self.use_yahoo = False  # Force disable
             
             if self.use_polygon:
                 try:
@@ -191,17 +194,18 @@ class TradierConnector:
         except:
             pass
         
+        # DISABLED: Yahoo Finance - use Tradier directly
         # Try Yahoo Finance first if enabled
-        if self.use_yahoo and self.yahoo:
-            quote = self.yahoo.get_quote(symbol)
-            if quote:
-                try:
-                    from flask import current_app
-                    if is_index_option or is_option_symbol:
-                        current_app.logger.info(f"✅ TRADIER: Using Yahoo quote for {symbol}: {quote}")
-                except:
-                    pass
-                return quote
+        # if self.use_yahoo and self.yahoo:
+        #     quote = self.yahoo.get_quote(symbol)
+        #     if quote:
+        #         try:
+        #             from flask import current_app
+        #             if is_index_option or is_option_symbol:
+        #                 current_app.logger.info(f"✅ TRADIER: Using Yahoo quote for {symbol}: {quote}")
+        #         except:
+        #             pass
+        #         return quote
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
@@ -378,11 +382,12 @@ class TradierConnector:
     
     def get_options_expirations(self, symbol: str) -> List[str]:
         """Get available option expiration dates - tries Yahoo/Polygon first if enabled"""
+        # DISABLED: Yahoo Finance - use Tradier directly
         # Try Yahoo Finance first if enabled
-        if self.use_yahoo and self.yahoo:
-            expirations = self.yahoo.get_options_expirations(symbol)
-            if expirations:
-                return expirations
+        # if self.use_yahoo and self.yahoo:
+        #     expirations = self.yahoo.get_options_expirations(symbol)
+        #     if expirations:
+        #         return expirations
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
@@ -473,19 +478,20 @@ class TradierConnector:
         except:
             pass
         
+        # DISABLED: Yahoo Finance - use Tradier directly
         # Try Yahoo Finance first if enabled
-        if self.use_yahoo and self.yahoo:
-            chain = self.yahoo.get_options_chain(symbol, expiration)
-            if chain:
-                try:
-                    from flask import current_app
-                    if is_index:
-                        current_app.logger.info(
-                            f"✅ TRADIER: Using Yahoo options chain for {symbol}, found {len(chain)} options"
-                        )
-                except:
-                    pass
-                return chain
+        # if self.use_yahoo and self.yahoo:
+        #     chain = self.yahoo.get_options_chain(symbol, expiration)
+        #     if chain:
+        #         try:
+        #             from flask import current_app
+        #             if is_index:
+        #                 current_app.logger.info(
+        #                     f"✅ TRADIER: Using Yahoo options chain for {symbol}, found {len(chain)} options"
+        #                 )
+        #         except:
+        #             pass
+        #         return chain
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
