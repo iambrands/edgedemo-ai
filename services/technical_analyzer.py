@@ -13,6 +13,7 @@ class TechnicalAnalyzer:
     def __init__(self):
         self.tradier = TradierConnector()
         try:
+            from flask import current_app
             self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
         except RuntimeError:
             self.use_yahoo = False
@@ -136,16 +137,33 @@ class TechnicalAnalyzer:
     
     def _calculate_simplified_indicators(self, current_price: float, quote_data: Dict) -> Dict:
         """Fallback simplified indicators when historical data not available"""
-        sma_20 = current_price * 0.98
-        sma_50 = current_price * 0.95
-        sma_200 = current_price * 0.90
-        rsi = 50.0
+        # Use quote data to generate more realistic indicators
+        change_percent = quote_data.get('change_percentage', 0) or quote_data.get('change_percent', 0) or 0
+        
+        # Calculate MAs based on price movement - if price is up, MAs are below
+        if change_percent > 0:
+            sma_20 = current_price * (1 - abs(change_percent) * 0.01)  # Slightly below if rising
+            sma_50 = current_price * (1 - abs(change_percent) * 0.02)
+            sma_200 = current_price * (1 - abs(change_percent) * 0.05)
+        else:
+            sma_20 = current_price * (1 + abs(change_percent) * 0.01)  # Slightly above if falling
+            sma_50 = current_price * (1 + abs(change_percent) * 0.02)
+            sma_200 = current_price * (1 + abs(change_percent) * 0.05)
+        
+        # Calculate RSI based on price change - more realistic
+        # If price is up significantly, RSI should be higher
+        if change_percent > 3:
+            rsi = min(75.0, 50.0 + (change_percent * 2))  # Cap at 75
+        elif change_percent < -3:
+            rsi = max(25.0, 50.0 + (change_percent * 2))  # Floor at 25
+        else:
+            rsi = 50.0 + (change_percent * 1.5)  # Moderate adjustment
+        
         volume = quote_data.get('volume', 0)
-        avg_volume = volume * 0.8
-        change = quote_data.get('change', 0)
-        change_percent = quote_data.get('change_percentage', 0)
-        high_52w = quote_data.get('high_52_week', current_price * 1.2)
-        low_52w = quote_data.get('low_52_week', current_price * 0.8)
+        avg_volume = quote_data.get('average_volume', volume * 0.8) or (volume * 0.8)
+        change = quote_data.get('change', 0) or (current_price * change_percent / 100)
+        high_52w = quote_data.get('high_52_week', current_price * 1.2) or quote_data.get('week_52_high', current_price * 1.2)
+        low_52w = quote_data.get('low_52_week', current_price * 0.8) or quote_data.get('week_52_low', current_price * 0.8)
         
         return {
             'sma_20': sma_20,

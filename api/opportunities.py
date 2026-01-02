@@ -28,7 +28,10 @@ def get_today_opportunities(current_user):
         # If watchlist is empty, use popular symbols as fallback
         if not symbols_to_scan:
             symbols_to_scan = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL']
-            current_app.logger.info(f"User {current_user.id} has empty watchlist, using popular symbols")
+            try:
+                current_app.logger.info(f"User {current_user.id} has empty watchlist, using popular symbols")
+            except:
+                pass
         
         opportunities = []
         max_opportunities = 5  # Limit to top 5
@@ -40,19 +43,23 @@ def get_today_opportunities(current_user):
                 signals = signal_generator.generate_signals(
                     symbol,
                     {
-                        'min_confidence': 0.50,  # Lower threshold for discovery
+                        'min_confidence': 0.40,  # Lower threshold for discovery (was 0.50)
                         'strategy_type': 'balanced'
                     }
                 )
                 
                 if 'error' in signals:
+                    try:
+                        current_app.logger.debug(f"Error generating signals for {symbol}: {signals.get('error')}")
+                    except:
+                        pass
                     continue
                 
                 signal_data = signals.get('signals', {})
                 
-                # Only include if recommended or has high confidence (70%+)
+                # Lower threshold to 60% to show more opportunities (was 70%+)
                 confidence = signal_data.get('confidence', 0)
-                if signal_data.get('recommended', False) or confidence >= 0.70:
+                if signal_data.get('recommended', False) or confidence >= 0.60:
                     # Get basic quote info
                     from services.tradier_connector import TradierConnector
                     tradier = TradierConnector()
@@ -100,8 +107,11 @@ def get_today_opportunities(current_user):
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error getting today's opportunities: {e}", exc_info=True)
-        return jsonify({'error': 'Failed to load opportunities'}), 500
+        try:
+            current_app.logger.error(f"Error getting today's opportunities: {e}", exc_info=True)
+        except:
+            pass
+        return jsonify({'error': 'Failed to load opportunities', 'details': str(e)}), 500
 
 @opportunities_bp.route('/quick-scan', methods=['POST'])
 @token_required
@@ -134,8 +144,8 @@ def quick_scan(current_user):
                 signal_data = signals.get('signals', {})
                 confidence = signal_data.get('confidence', 0)
                 
-                # Include if recommended or has decent confidence
-                if signal_data.get('recommended', False) or confidence >= 0.55:
+                # Lower threshold to show more opportunities (was 0.55)
+                if signal_data.get('recommended', False) or confidence >= 0.45:
                     # Get quote info
                     from services.tradier_connector import TradierConnector
                     tradier = TradierConnector()
@@ -187,8 +197,11 @@ def quick_scan(current_user):
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error in quick scan: {e}", exc_info=True)
-        return jsonify({'error': 'Failed to perform quick scan'}), 500
+        try:
+            current_app.logger.error(f"Error in quick scan: {e}", exc_info=True)
+        except:
+            pass
+        return jsonify({'error': 'Failed to perform quick scan', 'details': str(e)}), 500
 
 @opportunities_bp.route('/market-movers', methods=['GET'])
 @token_required
@@ -205,8 +218,11 @@ def get_market_movers(current_user):
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error getting market movers: {e}", exc_info=True)
-        return jsonify({'error': 'Failed to load market movers'}), 500
+        try:
+            current_app.logger.error(f"Error getting market movers: {e}", exc_info=True)
+        except:
+            pass
+        return jsonify({'error': 'Failed to load market movers', 'details': str(e)}), 500
 
 @opportunities_bp.route('/ai-suggestions', methods=['GET'])
 @token_required
@@ -226,6 +242,9 @@ def get_ai_suggestions(current_user):
         }), 200
         
     except Exception as e:
-        current_app.logger.error(f"Error getting AI suggestions: {e}", exc_info=True)
-        return jsonify({'error': 'Failed to load AI suggestions'}), 500
+        try:
+            current_app.logger.error(f"Error getting AI suggestions: {e}", exc_info=True)
+        except:
+            pass
+        return jsonify({'error': 'Failed to load AI suggestions', 'details': str(e)}), 500
 
