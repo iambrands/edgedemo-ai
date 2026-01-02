@@ -742,6 +742,7 @@ class TradierConnector:
             return response.json()
         except Exception as e:
             try:
+                from flask import current_app
                 current_app.logger.error(f"Order placement error: {str(e)}")
             except RuntimeError:
                 pass  # Outside application context
