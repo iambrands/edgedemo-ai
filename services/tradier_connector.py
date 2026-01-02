@@ -53,12 +53,12 @@ class TradierConnector:
             self.account_id = ''
             self.base_url = 'https://api.tradier.com/v1'
             self.use_mock = False  # Changed default to False - don't use mock outside app context
-                # FORCE DISABLE: Yahoo Finance removed
-                self.use_yahoo = False
-                self.use_polygon = False
-                self.sandbox = True
-                self.yahoo = None
-                self.polygon = None
+            # FORCE DISABLE: Yahoo Finance removed
+            self.use_yahoo = False
+            self.use_polygon = False
+            self.sandbox = True
+            self.yahoo = None
+            self.polygon = None
     
     def _get_headers(self) -> Dict:
         """Get API headers"""
