@@ -20,15 +20,20 @@ def get_ai_signals():
 @token_required
 def get_quote(current_user, symbol):
     """Get current quote for a symbol - uses Yahoo Finance if enabled, otherwise Tradier"""
-    from flask import current_app, request
-    current_app.logger.info(f'=== QUOTE ENDPOINT HIT ===')
-    current_app.logger.info(f'Method: {request.method}')
-    current_app.logger.info(f'Symbol: {symbol}')
-    current_app.logger.info(f'User: {current_user.username if current_user else "None"}')
+    try:
+        current_app.logger.info(f'=== QUOTE ENDPOINT HIT ===')
+        current_app.logger.info(f'Method: {request.method}')
+        current_app.logger.info(f'Symbol: {symbol}')
+        current_app.logger.info(f'User: {current_user.username if current_user else "None"}')
+    except:
+        pass
     
     symbol = symbol.upper()
     if not validate_symbol(symbol):
-        current_app.logger.error(f'Invalid symbol: {symbol}')
+        try:
+            current_app.logger.error(f'Invalid symbol: {symbol}')
+        except:
+            pass
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
@@ -56,18 +61,27 @@ def get_quote(current_user, symbol):
                             'open': None
                         }), 200
             except Exception as e:
-                pass
+                try:
+                    current_app.logger.warning(f'Yahoo Finance quote failed: {str(e)}')
+                except:
+                    pass
         
         # Fallback to Tradier
         from services.tradier_connector import TradierConnector
         tradier = TradierConnector()
         quote = tradier.get_quote(symbol)
         
-        current_app.logger.info(f'Tradier quote response: {quote}')
+        try:
+            current_app.logger.info(f'Tradier quote response: {quote}')
+        except:
+            pass
         
         if 'quotes' in quote and 'quote' in quote['quotes']:
             quote_data = quote['quotes']['quote']
-            current_app.logger.info(f'Quote data: {quote_data}')
+            try:
+                current_app.logger.info(f'Quote data: {quote_data}')
+            except:
+                pass
             current_price = quote_data.get('last')
             if current_price and current_price > 0:
                 return jsonify({
@@ -81,10 +95,18 @@ def get_quote(current_user, symbol):
                     'open': quote_data.get('open')
                 }), 200
         
-        current_app.logger.error(f'Quote not available for {symbol}. Response: {quote}')
+        try:
+            current_app.logger.error(f'Quote not available for {symbol}. Response: {quote}')
+        except:
+            pass
         return jsonify({'error': 'Quote not available'}), 404
     except Exception as e:
-        current_app.logger.error(f'Quote error: {str(e)}')
+        try:
+            current_app.logger.error(f'Quote error: {str(e)}')
+            import traceback
+            current_app.logger.error(traceback.format_exc())
+        except:
+            pass
         return jsonify({'error': str(e)}), 500
 
 @options_bp.route('/analyze', methods=['POST'])
@@ -160,24 +182,33 @@ def get_options_chain(current_user, symbol, expiration):
 @token_required
 def get_expirations(current_user, symbol):
     """Get available expiration dates for symbol"""
-    from flask import current_app
     symbol = symbol.upper()
     if not validate_symbol(symbol):
+        try:
+            current_app.logger.error(f'Invalid symbol: {symbol}')
+        except:
+            pass
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
         tradier = get_tradier()
         expirations = tradier.get_options_expirations(symbol)
-        current_app.logger.info(f'Expirations for {symbol}: {expirations}')
-        current_app.logger.info(f'Expirations type: {type(expirations)}, length: {len(expirations) if isinstance(expirations, list) else "N/A"}')
+        try:
+            current_app.logger.info(f'Expirations for {symbol}: {expirations}')
+            current_app.logger.info(f'Expirations type: {type(expirations)}, length: {len(expirations) if isinstance(expirations, list) else "N/A"}')
+        except:
+            pass
         return jsonify({
             'symbol': symbol,
             'expirations': expirations
         }), 200
     except Exception as e:
-        current_app.logger.error(f'Error getting expirations: {str(e)}')
-        import traceback
-        current_app.logger.error(traceback.format_exc())
+        try:
+            current_app.logger.error(f'Error getting expirations: {str(e)}')
+            import traceback
+            current_app.logger.error(traceback.format_exc())
+        except:
+            pass
         return jsonify({'error': str(e)}), 500
 
 @options_bp.route('/signals/<symbol>', methods=['GET'])

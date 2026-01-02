@@ -1,7 +1,6 @@
 import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from flask import current_app
 import random
 import time
 from utils.rate_limiter import tradier_rate_limiter
@@ -11,6 +10,7 @@ class TradierConnector:
     
     def __init__(self):
         try:
+            from flask import current_app
             self.api_key = current_app.config.get('TRADIER_API_KEY')
             self.api_secret = current_app.config.get('TRADIER_API_SECRET')
             self.account_id = current_app.config.get('TRADIER_ACCOUNT_ID')
@@ -24,7 +24,6 @@ class TradierConnector:
             
             # Log configuration for debugging
             try:
-                from flask import current_app
                 current_app.logger.info(
                     f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo}, "
                     f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
