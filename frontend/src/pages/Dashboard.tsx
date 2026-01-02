@@ -147,12 +147,18 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // Optional: Auto-refresh every 5 minutes (300000ms)
-    // User can also manually refresh for immediate updates
-    const autoRefreshInterval = setInterval(() => {
-      console.log('⏰ Auto-refreshing dashboard data (5-minute interval)');
-      loadDashboardData(false); // Don't update prices on auto-refresh
-    }, 300000); // 5 minutes
+    // Auto-refresh prices every 2 minutes (120000ms) - traders need to see current P/L
+    // This updates prices without full page reload
+    const priceRefreshInterval = setInterval(() => {
+      console.log('⏰ Auto-refreshing prices (2-minute interval)');
+      loadDashboardData(true); // Update prices every 2 minutes
+    }, 120000); // 2 minutes
+    
+    // Optional: Full data refresh every 10 minutes (600000ms)
+    const fullRefreshInterval = setInterval(() => {
+      console.log('⏰ Full dashboard refresh (10-minute interval)');
+      loadDashboardData(false); // Full refresh without price update (prices already updated above)
+    }, 600000); // 10 minutes // 5 minutes
     
     return () => {
       clearInterval(autoRefreshInterval);

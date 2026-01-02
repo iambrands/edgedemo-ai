@@ -43,29 +43,29 @@ class PositionMonitor:
         """Check exit conditions for a position and exit if needed"""
         db = self._get_db()
         
-        # CRITICAL: Add cooldown period for newly created positions
+        # CRITICAL: Update prices FIRST (always, regardless of cooldown)
+        # Prices should update frequently so traders can see current P/L
+        # The cooldown only applies to EXIT CHECKS, not price updates
+        self.update_position_data(position, force_update=False)
+        
+        # CRITICAL: Add cooldown period for EXIT CHECKS only (not price updates)
         # Prevent immediate exits due to mock data or stale prices
-        # MUST check cooldown BEFORE updating prices to prevent bad data from triggering exits
         # INCREASED to 30 minutes to give more time for prices to stabilize and prevent premature exits
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 30  # 30 minute cooldown before checking exits (increased from 10)
-            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
+            exit_cooldown_minutes = 30  # 30 minute cooldown before checking exits
+            if time_since_creation.total_seconds() < (exit_cooldown_minutes * 60):
                 try:
                     from flask import current_app
                     current_app.logger.info(
-                        f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
+                        f"⏳ Position {position.id} ({position.symbol}) is in exit cooldown period. "
                         f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago. "
-                        f"Skipping exit check for {cooldown_minutes} minutes. "
-                        f"NOT updating prices to prevent false exits."
+                        f"Skipping exit check for {exit_cooldown_minutes} minutes. "
+                        f"Prices updated, but exits disabled during cooldown."
                     )
                 except:
                     pass
-                return False  # Don't check exits during cooldown - also don't update prices
-        
-        # Update position Greeks and prices (only if past cooldown)
-        # This ensures we don't set bad prices that trigger false exits
-        self.update_position_data(position)
+                return False  # Don't check exits during cooldown, but prices were already updated
         
         # Get automation if exists
         automation = None
