@@ -158,10 +158,11 @@ const Dashboard: React.FC = () => {
     const fullRefreshInterval = setInterval(() => {
       console.log('⏰ Full dashboard refresh (10-minute interval)');
       loadDashboardData(false); // Full refresh without price update (prices already updated above)
-    }, 600000); // 10 minutes // 5 minutes
+    }, 600000); // 10 minutes
     
     return () => {
-      clearInterval(autoRefreshInterval);
+      clearInterval(priceRefreshInterval);
+      clearInterval(fullRefreshInterval);
     };
   }, []);
 

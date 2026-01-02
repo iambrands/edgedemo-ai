@@ -160,6 +160,22 @@ def get_positions(current_user):
         
         positions = trade_executor.get_positions(current_user.id, update_prices=update_prices)
         
+        # If update_prices is true, force update all positions immediately (bypass cooldown)
+        if update_prices:
+            monitor = PositionMonitor()
+            for pos_dict in positions:
+                # Find the position in DB and force update
+                position = db.session.query(Position).filter_by(
+                    id=pos_dict.get('id'),
+                    user_id=current_user.id
+                ).first()
+                if position:
+                    monitor.update_position_data(position, force_update=True)
+                    db.session.refresh(position)
+                    # Update the dict with fresh data
+                    pos_dict.update(position.to_dict())
+            db.session.commit()
+        
         current_app.logger.info(
             f"✅ GET /api/trades/positions - returning {len(positions)} positions for user {current_user.id}"
         )

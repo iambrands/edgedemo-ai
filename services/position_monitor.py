@@ -229,12 +229,13 @@ class PositionMonitor:
         """
         db = self._get_db()
         
-        # CRITICAL: Add cooldown period for newly created positions
-        # BUT: Allow forced updates (e.g., immediately after creation) to fetch real prices
-        # This prevents stale prices while still allowing initial price fetch
+        # CRITICAL: Reduced cooldown for price updates to 2 minutes
+        # Prices need to update frequently so traders can see current P/L
+        # Only apply cooldown if current_price has been updated at least once
+        # If current_price == entry_price, it means it hasn't been updated yet - allow update
         if not force_update and position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 5  # 5 minute cooldown for automatic updates (reduced from 30)
+            price_update_cooldown_minutes = 2  # 2 minute cooldown for price updates (reduced from 5)
             # Only apply cooldown if current_price has been updated at least once
             # If current_price == entry_price, it means it hasn't been updated yet - allow update
             price_never_updated = (
@@ -242,13 +243,14 @@ class PositionMonitor:
                 abs(position.current_price - position.entry_price) < 0.01
             )
             
-            if not price_never_updated and time_since_creation.total_seconds() < (cooldown_minutes * 60):
+            # Allow immediate first update, then apply 2-minute cooldown
+            if not price_never_updated and time_since_creation.total_seconds() < (price_update_cooldown_minutes * 60):
                 try:
                     from flask import current_app
-                    current_app.logger.info(
-                        f"⏳ Position {position.id} ({position.symbol}) is in cooldown period. "
-                        f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago. "
-                        f"Skipping price update for {cooldown_minutes} minutes to prevent false exits."
+                    current_app.logger.debug(
+                        f"⏳ Position {position.id} ({position.symbol}) price update cooldown. "
+                        f"Last updated {time_since_creation.total_seconds()/60:.1f} minutes ago. "
+                        f"Will update again in {price_update_cooldown_minutes} minutes."
                     )
                 except:
                     pass
