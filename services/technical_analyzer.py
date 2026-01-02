@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 from services.tradier_connector import TradierConnector
 from flask import current_app
 import statistics
-import yfinance as yf
+# REMOVED: yfinance - causes performance issues and rate limiting
+# import yfinance as yf
 import pandas as pd
 import numpy as np
 
@@ -12,11 +13,8 @@ class TechnicalAnalyzer:
     
     def __init__(self):
         self.tradier = TradierConnector()
-        try:
-            from flask import current_app
-            self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
-        except RuntimeError:
-            self.use_yahoo = False
+        # FORCE DISABLE: Yahoo Finance removed - use Tradier only
+        self.use_yahoo = False
     
     def analyze(self, symbol: str, lookback_days: int = 50, custom_filters: Dict = None) -> Dict:
         """
@@ -54,30 +52,13 @@ class TechnicalAnalyzer:
         }
     
     def _calculate_indicators(self, symbol: str, current_price: float, lookback_days: int) -> Dict:
-        """Calculate technical indicators using real historical data from yfinance"""
+        """Calculate technical indicators using Tradier quote data"""
         quote = self.tradier.get_quote(symbol)
         quote_data = quote.get('quotes', {}).get('quote', {}) if 'quotes' in quote else {}
         
-        # Try to get real historical data from yfinance
-        historical_data = None
-        if self.use_yahoo:
-            try:
-                ticker = yf.Ticker(symbol)
-                # Get enough data for 200-day SMA (need at least 200 trading days)
-                period_days = max(lookback_days, 250)
-                historical_data = ticker.history(period=f"{period_days}d")
-            except Exception as e:
-                try:
-                    current_app.logger.warning(f"Failed to get yfinance data for {symbol}: {e}")
-                except RuntimeError:
-                    pass
-        
-        # If we have historical data, calculate real indicators
-        if historical_data is not None and not historical_data.empty:
-            return self._calculate_real_indicators(historical_data, current_price, quote_data)
-        else:
-            # Fallback to simplified indicators if yfinance not available
-            return self._calculate_simplified_indicators(current_price, quote_data)
+        # REMOVED: yfinance - use simplified indicators based on Tradier quote data only
+        # This is faster and more reliable than yfinance which causes rate limiting issues
+        return self._calculate_simplified_indicators(current_price, quote_data)
     
     def _calculate_real_indicators(self, df: pd.DataFrame, current_price: float, quote_data: Dict) -> Dict:
         """Calculate real technical indicators from historical data"""

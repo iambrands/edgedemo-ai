@@ -52,7 +52,9 @@ class Config:
     # Application Settings
     # Default to False - only use mock data if explicitly enabled or if Tradier API fails
     USE_MOCK_DATA = os.environ.get('USE_MOCK_DATA', 'false').lower() == 'true'
-    USE_YAHOO_DATA = os.environ.get('USE_YAHOO_DATA', 'false').lower() == 'true'  # Yahoo Finance via yfinance (DISABLED - use Tradier instead)
+    # REMOVED: USE_YAHOO_DATA - Yahoo Finance causes performance issues and rate limiting
+    # Force to False regardless of environment variable
+    USE_YAHOO_DATA = False  # Yahoo Finance removed - use Tradier only
     USE_POLYGON_DATA = os.environ.get('USE_POLYGON_DATA', 'false').lower() == 'true'  # Polygon.io API
     POLYGON_API_KEY = os.environ.get('POLYGON_API_KEY', '')
     MARKET_HOURS_START = '09:30'

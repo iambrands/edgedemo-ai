@@ -18,31 +18,22 @@ class TradierConnector:
             # CRITICAL: Default to False for USE_MOCK_DATA - only use mock if explicitly enabled
             # This prevents silent fallback to mock data which causes wrong prices
             self.use_mock = current_app.config.get('USE_MOCK_DATA', False)
-            self.use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
+            # FORCE DISABLE: Yahoo Finance removed - causes performance issues and rate limiting
+            self.use_yahoo = False
             self.use_polygon = current_app.config.get('USE_POLYGON_DATA', False)
             self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
             
             # Log configuration for debugging
             try:
                 current_app.logger.info(
-                    f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo}, "
+                    f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo} (FORCED OFF), "
                     f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
                     f"api_key_present={bool(self.api_key)}, base_url={self.base_url}"
                 )
             except:
                 pass
             
-            # Initialize alternative data sources if enabled
-            # DISABLED: Yahoo Finance causes rate limiting issues - use Tradier directly
-            # if self.use_yahoo:
-            #     try:
-            #         from services.yahoo_connector import YahooConnector
-            #         self.yahoo = YahooConnector()
-            #     except ImportError:
-            #         self.use_yahoo = False
-            #         self.yahoo = None
-            # else:
-            #     self.yahoo = None
+            # REMOVED: Yahoo Finance integration - causes performance issues
             self.yahoo = None  # Disabled - use Tradier directly
             self.use_yahoo = False  # Force disable
             
@@ -62,11 +53,12 @@ class TradierConnector:
             self.account_id = ''
             self.base_url = 'https://api.tradier.com/v1'
             self.use_mock = False  # Changed default to False - don't use mock outside app context
-            self.use_yahoo = False
-            self.use_polygon = False
-            self.sandbox = True
-            self.yahoo = None
-            self.polygon = None
+                # FORCE DISABLE: Yahoo Finance removed
+                self.use_yahoo = False
+                self.use_polygon = False
+                self.sandbox = True
+                self.yahoo = None
+                self.polygon = None
     
     def _get_headers(self) -> Dict:
         """Get API headers"""
