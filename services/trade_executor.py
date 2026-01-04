@@ -504,10 +504,110 @@ class TradeExecutor:
         
         positions = db.session.query(Position).filter_by(user_id=user_id, status='open').all()
         
+        # Check for and close expired options positions
+        from datetime import date
+        today = date.today()
+        expired_positions = []
+        active_positions = []
+        
+        for position in positions:
+            # Check if this is an options position with an expiration date
+            is_option = (
+                (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                bool(position.option_symbol) or
+                (position.expiration_date and position.strike_price is not None)
+            )
+            
+            if is_option and position.expiration_date:
+                # Check if option has expired (expiration_date is in the past)
+                if position.expiration_date < today:
+                    expired_positions.append(position)
+                    try:
+                        from flask import current_app
+                        current_app.logger.info(
+                            f"⏰ Auto-closing expired option position {position.id}: "
+                            f"{position.symbol} {position.contract_type} "
+                            f"expired on {position.expiration_date} (today: {today})"
+                        )
+                    except:
+                        pass
+                else:
+                    active_positions.append(position)
+            else:
+                # Stock positions or options without expiration dates remain active
+                active_positions.append(position)
+        
+        # Close expired options with $0 value
+        if expired_positions:
+            for position in expired_positions:
+                try:
+                    # Set current price to $0 for expired options
+                    position.current_price = 0.0
+                    position.status = 'closed'
+                    
+                    # Calculate final P/L (100% loss for expired options)
+                    is_option = (
+                        (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                        bool(position.option_symbol) or
+                        (position.expiration_date and position.strike_price is not None)
+                    )
+                    contract_multiplier = 100 if is_option else 1
+                    position.unrealized_pnl = -position.entry_price * position.quantity * contract_multiplier
+                    position.unrealized_pnl_percent = -100.0
+                    
+                    # Create a trade record for the expiration
+                    expiration_trade = Trade(
+                        user_id=position.user_id,
+                        symbol=position.symbol,
+                        option_symbol=position.option_symbol,
+                        action='sell',
+                        quantity=position.quantity,
+                        price=0.0,
+                        strike_price=position.strike_price,
+                        expiration_date=position.expiration_date,
+                        contract_type=position.contract_type,
+                        strategy_source='expiration',
+                        notes=f'Auto-closed: Option expired on {position.expiration_date}',
+                        trade_date=datetime.utcnow()
+                    )
+                    db.session.add(expiration_trade)
+                    
+                except Exception as e:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(f"Error closing expired position {position.id}: {e}")
+                    except:
+                        pass
+                    # Still add to active_positions if closing failed
+                    active_positions.append(position)
+            
+            try:
+                db.session.commit()
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"✅ Auto-closed {len(expired_positions)} expired option positions"
+                    )
+                except:
+                    pass
+            except Exception as e:
+                db.session.rollback()
+                try:
+                    from flask import current_app
+                    current_app.logger.error(f"Failed to commit expired position closures: {e}")
+                except:
+                    pass
+                # On error, include expired positions in results (they'll remain open)
+                active_positions.extend(expired_positions)
+        
+        # Use only active positions for the rest of the method
+        positions = active_positions
+        
         try:
             from flask import current_app
             current_app.logger.info(
-                f"📊 Found {len(positions)} open positions for user {user_id}"
+                f"📊 Found {len(positions)} open positions for user {user_id} "
+                f"(closed {len(expired_positions)} expired options)"
             )
             for pos in positions:
                 current_app.logger.info(
