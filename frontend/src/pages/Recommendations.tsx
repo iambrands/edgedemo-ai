@@ -15,9 +15,9 @@ const Recommendations: React.FC = () => {
   const loadAiSuggestions = async () => {
     setLoading(true);
     try {
-      // Use shorter timeout for AI suggestions
+      // Use longer timeout for AI suggestions (may need to analyze multiple symbols)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 15000); // 15 second timeout
+        setTimeout(() => reject(new Error('Timeout')), 30000); // 30 second timeout
       });
       
       const response = await Promise.race([
@@ -79,8 +79,8 @@ const Recommendations: React.FC = () => {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-bold text-lg text-secondary">{suggestion.symbol}</h3>
-                    {suggestion.reason && (
-                      <p className="text-xs text-gray-500 mt-1">{suggestion.reason}</p>
+                    {(suggestion.reason || suggestion.reasoning) && (
+                      <p className="text-xs text-gray-500 mt-1">{suggestion.reason || suggestion.reasoning}</p>
                     )}
                   </div>
                   {suggestion.confidence && (

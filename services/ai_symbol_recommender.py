@@ -51,7 +51,7 @@ class AISymbolRecommender:
         watchlist = db.session.query(Stock).filter_by(user_id=user_id).all()
         watchlist_symbols = [stock.symbol for stock in watchlist]
         
-        # 2. Popular symbols that match user's risk profile
+        # 2. Popular symbols that match user's risk profile (always return these as fallback)
         popular_symbols = self._get_risk_appropriate_symbols(risk_tolerance)
         
         # 3. Symbols similar to user's successful trades
@@ -60,20 +60,26 @@ class AISymbolRecommender:
         # Combine all candidates (remove duplicates)
         all_candidates = list(set(watchlist_symbols + popular_symbols + similar_symbols))
         
-        # Limit to avoid timeout
-        all_candidates = all_candidates[:30]
+        # Always ensure we have at least the popular symbols (fallback)
+        if not all_candidates:
+            all_candidates = popular_symbols
         
-        # Score each candidate
+        # Limit to avoid timeout - use fewer symbols for faster response
+        all_candidates = all_candidates[:10]
+        
+        # Score each candidate (with timeout protection)
         recommendations = []
         for symbol in all_candidates:
             try:
-                score_data = self._score_symbol(symbol, user, user_patterns, risk_tolerance)
+                # Quick scoring - skip slow signal generation for speed
+                score_data = self._score_symbol_fast(symbol, user, user_patterns, risk_tolerance)
                 if score_data['score'] > 0:
                     recommendations.append({
                         'symbol': symbol,
                         'score': score_data['score'],
                         'confidence': score_data['confidence'],
-                        'reasoning': score_data['reasoning'],
+                        'reason': score_data.get('reason', score_data.get('reasoning', 'Good match for your risk profile')),
+                        'strategy': score_data.get('strategy', 'balanced'),
                         'risk_level': score_data['risk_level'],
                         'signal_direction': score_data.get('signal_direction', 'neutral'),
                         'iv_rank': score_data.get('iv_rank', 0),
@@ -82,10 +88,39 @@ class AISymbolRecommender:
                     })
             except Exception as e:
                 current_app.logger.warning(f"Error scoring symbol {symbol}: {e}")
+                # Add symbol anyway with default score if scoring fails
+                recommendations.append({
+                    'symbol': symbol,
+                    'score': 50,
+                    'confidence': 0.6,
+                    'reason': f'Recommended based on your {risk_tolerance} risk tolerance',
+                    'strategy': 'balanced',
+                    'risk_level': 'moderate_opportunity',
+                    'signal_direction': 'neutral',
+                    'iv_rank': 0,
+                    'current_price': None,
+                    'match_reasons': [f'Matches {risk_tolerance} risk profile']
+                })
                 continue
         
         # Sort by score (highest first)
         recommendations.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Always return at least the popular symbols if we have no recommendations
+        if not recommendations:
+            for symbol in popular_symbols[:limit]:
+                recommendations.append({
+                    'symbol': symbol,
+                    'score': 50,
+                    'confidence': 0.6,
+                    'reason': f'Recommended based on your {risk_tolerance} risk tolerance',
+                    'strategy': 'balanced',
+                    'risk_level': 'moderate_opportunity',
+                    'signal_direction': 'neutral',
+                    'iv_rank': 0,
+                    'current_price': None,
+                    'match_reasons': [f'Matches {risk_tolerance} risk profile']
+                })
         
         return recommendations[:limit]
     
@@ -158,6 +193,84 @@ class AISymbolRecommender:
         # For now, return empty - could expand to sector/industry analysis
         # This would require additional data sources
         return []
+    
+    def _score_symbol_fast(self, symbol: str, user, user_patterns: Dict, risk_tolerance: str) -> Dict:
+        """Fast scoring without slow signal generation"""
+        score = 0
+        match_reasons = []
+        confidence = 0.6  # Default confidence
+        
+        try:
+            # Get quote (fast)
+            quote = self.tradier.get_quote(symbol)
+            current_price = None
+            if 'quotes' in quote and 'quote' in quote['quotes']:
+                current_price = quote['quotes']['quote'].get('last', 0)
+            
+            # Skip slow signal generation and IV rank for speed
+            # Just use basic scoring based on user patterns
+            
+            # 1. User's favorite symbols (0-40 points)
+            if symbol in user_patterns.get('favorite_symbols', []):
+                score += 40
+                match_reasons.append("You've traded this symbol before")
+                confidence = 0.8
+            
+            # 2. Risk alignment (0-30 points)
+            if risk_tolerance == 'low' and symbol in ['SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL']:
+                score += 30
+                match_reasons.append("Matches your conservative risk profile")
+            elif risk_tolerance == 'moderate' and symbol in ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'META']:
+                score += 30
+                match_reasons.append("Matches your moderate risk profile")
+            elif risk_tolerance == 'high' and symbol in ['TSLA', 'NVDA', 'AMD', 'NFLX', 'META', 'SQ', 'PLTR']:
+                score += 30
+                match_reasons.append("Matches your aggressive risk profile")
+            
+            # 3. Default score for popular symbols (0-30 points)
+            if symbol in ['SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META']:
+                score += 30
+                match_reasons.append("High-volume, liquid stock - good for options")
+            
+            # Determine risk level
+            if score >= 60:
+                risk_level = 'high_opportunity'
+            elif score >= 40:
+                risk_level = 'moderate_opportunity'
+            else:
+                risk_level = 'low_opportunity'
+            
+            # Generate simple reasoning
+            reasons_text = ", ".join(match_reasons[:2]) if match_reasons else f"Good match for {risk_tolerance} risk tolerance"
+            reasoning = f"{symbol} is recommended based on your {risk_tolerance} risk profile. {reasons_text}."
+            
+            return {
+                'score': score if score > 0 else 50,  # Minimum score
+                'confidence': confidence,
+                'reasoning': reasoning,
+                'reason': reasoning,  # Alias for frontend
+                'strategy': 'balanced',
+                'risk_level': risk_level,
+                'signal_direction': 'neutral',
+                'iv_rank': 0,
+                'current_price': current_price,
+                'match_reasons': match_reasons
+            }
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in fast scoring for {symbol}: {e}")
+            return {
+                'score': 50,
+                'confidence': 0.6,
+                'reasoning': f'Recommended based on your {risk_tolerance} risk tolerance',
+                'reason': f'Recommended based on your {risk_tolerance} risk tolerance',
+                'strategy': 'balanced',
+                'risk_level': 'moderate_opportunity',
+                'signal_direction': 'neutral',
+                'iv_rank': 0,
+                'current_price': None,
+                'match_reasons': [f'Matches {risk_tolerance} risk profile']
+            }
     
     def _score_symbol(self, symbol: str, user, user_patterns: Dict, risk_tolerance: str) -> Dict:
         """Score a symbol based on multiple factors"""
