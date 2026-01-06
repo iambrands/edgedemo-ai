@@ -1,12 +1,11 @@
 # IAB OptionsBot - Complete User Instruction Manual
 
-**Version:** 1.1 Beta  
+**Version:** 1.2 Beta  
 **Last Updated:** January 2025
 
 ## 🌐 Access the Application
 
-**Live URL:** [Your Railway Deployment URL]  
-**Note:** Replace with your actual Railway deployment URL (e.g., `https://your-app-name.up.railway.app`)
+**Live URL:** https://web-production-8b7ae.up.railway.app
 
 **Status:** ✅ Live and Ready for Testing
 
@@ -2137,5 +2136,5 @@ When reporting problems, include:
 **Version:** 1.2 Beta  
 **Last Updated:** January 2025  
 **For:** IAB OptionsBot Beta Testers  
-**Live URL:** [Your Railway Deployment URL]
+**Live URL:** https://web-production-8b7ae.up.railway.app
 
