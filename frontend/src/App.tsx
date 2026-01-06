@@ -14,6 +14,7 @@ import Help from './pages/Help';
 import Discover from './pages/Discover';
 import Market from './pages/Market';
 import Recommendations from './pages/Recommendations';
+import Opportunities from './pages/Opportunities';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
@@ -92,9 +93,11 @@ function AppRoutes() {
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/help" element={<Help />} />
-                  <Route path="/discover" element={<Discover />} />
-                  <Route path="/market" element={<Market />} />
-                  <Route path="/recommendations" element={<Recommendations />} />
+                  <Route path="/opportunities" element={<Opportunities />} />
+                  {/* Legacy routes - redirect to unified Opportunities page */}
+                  <Route path="/discover" element={<Navigate to="/opportunities?tab=signals" replace />} />
+                  <Route path="/market" element={<Navigate to="/opportunities?tab=movers" replace />} />
+                  <Route path="/recommendations" element={<Navigate to="/opportunities?tab=for-you" replace />} />
                 </Routes>
               </Layout>
             ) : (

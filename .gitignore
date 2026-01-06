@@ -7,10 +7,7 @@ __pycache__/
 env/
 venv/
 ENV/
-# Python build artifacts (but not frontend/build)
-*.egg-info/
-*.egg
-dist/
+build/
 develop-eggs/
 dist/
 downloads/

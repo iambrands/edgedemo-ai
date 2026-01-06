@@ -36,9 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       title: 'Discovery',
       items: [
-        { name: 'Discover', href: '/discover', icon: '🎯' },
-        { name: 'Market', href: '/market', icon: '📈' },
-        { name: 'Recommendations', href: '/recommendations', icon: '🤖' },
+        { name: 'Opportunities', href: '/opportunities', icon: '🎯' },
       ],
     },
     {

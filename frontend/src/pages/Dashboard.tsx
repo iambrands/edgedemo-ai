@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { tradesService } from '../services/trades';
 import { watchlistService } from '../services/watchlist';
 import api from '../services/api';
@@ -703,22 +703,22 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Links to Discovery Pages */}
+      {/* Quick Links to Opportunities Page */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <a
-          href="/discover"
+        <Link
+          to="/opportunities?tab=signals"
           className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200 hover:shadow-lg transition-shadow cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <span className="text-3xl">🎯</span>
             <div>
-              <h3 className="text-lg font-bold text-secondary">Discover Opportunities</h3>
-              <p className="text-sm text-gray-600">High-confidence trading signals</p>
+              <h3 className="text-lg font-bold text-secondary">Trading Signals</h3>
+              <p className="text-sm text-gray-600">High-confidence opportunities</p>
             </div>
           </div>
-        </a>
-        <a
-          href="/market"
+        </Link>
+        <Link
+          to="/opportunities?tab=movers"
           className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
         >
           <div className="flex items-center gap-3">
@@ -728,19 +728,19 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-600">High volume & volatility stocks</p>
             </div>
           </div>
-        </a>
-        <a
-          href="/recommendations"
+        </Link>
+        <Link
+          to="/opportunities?tab=for-you"
           className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border border-purple-200 hover:shadow-lg transition-shadow cursor-pointer"
         >
           <div className="flex items-center gap-3">
             <span className="text-3xl">🤖</span>
             <div>
-              <h3 className="text-lg font-bold text-secondary">AI Recommendations</h3>
-              <p className="text-sm text-gray-600">Personalized suggestions</p>
+              <h3 className="text-lg font-bold text-secondary">For You</h3>
+              <p className="text-sm text-gray-600">Personalized recommendations</p>
             </div>
           </div>
-        </a>
+        </Link>
       </div>
 
       {/* Account Balance Card */}
