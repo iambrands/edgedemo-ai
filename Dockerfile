@@ -16,15 +16,14 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Build frontend
+# Copy frontend files and build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
+COPY frontend/ ./
 RUN npm install && npm run build
 
-# Return to app root
+# Return to app root and copy backend code
 WORKDIR /app
-
-# Copy application code (frontend/build is now included)
 COPY . .
 
 # Expose port
