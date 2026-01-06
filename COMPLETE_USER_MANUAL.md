@@ -45,12 +45,14 @@ IAB OptionsBot is an intelligent options trading platform that combines:
 
 ### Key Features
 
+✅ **Unified Opportunities Page** - Discover trading signals, market movers, and AI recommendations in one place  
 ✅ **Options Chain Analysis** - AI-powered scoring and recommendations  
-✅ **Automated Trading** - Set it and forget it strategies  
+✅ **Automated Trading** - Set it and forget it strategies with quantity control  
 ✅ **Real-Time Alerts** - Never miss an opportunity with customizable filters  
 ✅ **Performance Tracking** - Monitor your trading results  
 ✅ **Risk Management** - Protect your capital automatically  
 ✅ **Paper Trading** - Learn risk-free with $100,000 virtual balance  
+✅ **Automation Diagnostics** - See exactly why automations are or aren't executing  
 ✅ **Test Trade Feature** - Test automations instantly with one click  
 ✅ **Advanced Automation Controls** - Fine-tune expiration dates and strike prices  
 
