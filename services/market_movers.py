@@ -79,16 +79,14 @@ class MarketMoversService:
         max_errors = 20  # Increased to allow more errors before stopping
         scanned_count = 0
         
-        # Limit initial scan to first 20 symbols for speed (most liquid stocks)
-        # This ensures response within 10-15 seconds
-        # Focus on most liquid/high-volume stocks first: ETFs and mega-caps
+        # Limit to just 10 most liquid symbols for speed
+        # This ensures response within 5-10 seconds
+        # Focus on most liquid/high-volume stocks: ETFs and mega-caps
         symbols_to_scan_limited = [
-            # Top ETFs (always liquid)
-            'SPY', 'QQQ', 'IWM', 'DIA', 'VOO',
-            # Mega-cap tech (highest volume)
-            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA',
-            # Other high-volume stocks
-            'AMD', 'NFLX', 'DIS', 'JPM', 'BAC', 'WMT', 'HD', 'MCD'
+            # Top ETFs (always liquid, fast API)
+            'SPY', 'QQQ', 'IWM',
+            # Mega-cap tech (highest volume, fastest API)
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA'
         ]
         
         try:
@@ -127,9 +125,11 @@ class MarketMoversService:
                 # Calculate volume ratio
                 volume_ratio = (volume / avg_volume) if avg_volume > 0 else 0
                 
-                # Get IV rank (for options opportunities)
-                iv_metrics = self.iv_analyzer.get_current_iv_metrics(symbol)
-                iv_rank = iv_metrics.get('iv_rank', 0) if iv_metrics else 0
+                # Skip IV rank calculation for speed (it's slow and optional)
+                # We'll calculate it only if we have time, but for now skip it
+                iv_rank = 0  # Default to 0 - we can add this back later if needed
+                # iv_metrics = self.iv_analyzer.get_current_iv_metrics(symbol)
+                # iv_rank = iv_metrics.get('iv_rank', 0) if iv_metrics else 0
                 
                 # Calculate score based on multiple factors
                 score = 0
@@ -155,15 +155,16 @@ class MarketMoversService:
                 elif volume_ratio > 1.0:
                     score += 5
                 
-                # IV rank (0-20 points) - high IV = more options opportunities
-                if iv_rank > 70:
-                    score += 20
-                elif iv_rank > 50:
-                    score += 15
-                elif iv_rank > 30:
-                    score += 10
-                elif iv_rank > 20:
-                    score += 5
+                # IV rank (0-20 points) - SKIPPED for speed
+                # We'll add this back if we have time, but for now focus on volume/price movement
+                # if iv_rank > 70:
+                #     score += 20
+                # elif iv_rank > 50:
+                #     score += 15
+                # elif iv_rank > 30:
+                #     score += 10
+                # elif iv_rank > 20:
+                #     score += 5
                 
                 # Absolute volume (0-20 points) - very high volume stocks
                 if volume > 20_000_000:
@@ -175,10 +176,10 @@ class MarketMoversService:
                 elif volume > 1_000_000:
                     score += 5
                 
-                # Lower the threshold significantly to ensure we get results
-                # Changed from score >= 20 to score >= 5 to catch more opportunities
-                # This ensures we find stocks even on quiet days
-                if score >= 5:
+                # Lower the threshold to ensure we get results
+                # Since we removed IV rank scoring, threshold is lower
+                # Accept any stock with some activity (price movement or volume)
+                if score >= 3:
                     mover = {
                         'symbol': symbol,
                         'company_name': company_name,
