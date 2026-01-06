@@ -161,8 +161,10 @@ def get_positions(current_user):
         positions = trade_executor.get_positions(current_user.id, update_prices=update_prices)
         
         # If update_prices is true, force update all positions immediately (bypass cooldown)
+        # AND check exit conditions to enforce risk management limits
         if update_prices:
             monitor = PositionMonitor()
+            exits_triggered = 0
             for pos_dict in positions:
                 # Find the position in DB and force update
                 position = db.session.query(Position).filter_by(
@@ -172,9 +174,24 @@ def get_positions(current_user):
                 if position:
                     monitor.update_position_data(position, force_update=True)
                     db.session.refresh(position)
+                    
+                    # CRITICAL: Check exit conditions after updating prices
+                    # This ensures risk management limits are enforced
+                    exit_triggered = monitor.check_and_exit_position(position)
+                    if exit_triggered:
+                        exits_triggered += 1
+                        db.session.refresh(position)
+                    
                     # Update the dict with fresh data
                     pos_dict.update(position.to_dict())
             db.session.commit()
+            
+            if exits_triggered > 0:
+                current_app.logger.info(
+                    f"🛡️ Triggered {exits_triggered} position exits during price update for user {current_user.id}"
+                )
+                # Re-fetch positions to exclude closed ones
+                positions = trade_executor.get_positions(current_user.id, update_prices=False)
         
         current_app.logger.info(
             f"✅ GET /api/trades/positions - returning {len(positions)} positions for user {current_user.id}"
@@ -216,13 +233,27 @@ def refresh_position(current_user, position_id):
         
         # Update position data
         monitor = PositionMonitor()
-        monitor.update_position_data(position)
+        monitor.update_position_data(position, force_update=True)
         db.session.refresh(position)
         db.session.commit()
         
+        # CRITICAL: Also check exit conditions after updating prices
+        # This ensures risk management limits are enforced when refreshing
+        exit_triggered = monitor.check_and_exit_position(position)
+        
+        if exit_triggered:
+            db.session.refresh(position)
+            db.session.commit()
+            return jsonify({
+                'message': 'Position refreshed and closed due to exit condition',
+                'position': position.to_dict(),
+                'exit_triggered': True
+            }), 200
+        
         return jsonify({
             'message': 'Position refreshed',
-            'position': position.to_dict()
+            'position': position.to_dict(),
+            'exit_triggered': False
         }), 200
     except Exception as e:
         current_app.logger.error(f"Error refreshing position {position_id}: {str(e)}", exc_info=True)

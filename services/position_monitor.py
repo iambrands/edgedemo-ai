@@ -51,21 +51,23 @@ class PositionMonitor:
         # CRITICAL: Add cooldown period for EXIT CHECKS only (not price updates)
         # Prevent immediate exits due to mock data or stale prices
         # INCREASED to 30 minutes to give more time for prices to stabilize and prevent premature exits
+        # BUT: Risk management limits (stop loss) should ALWAYS be checked, even during cooldown
+        in_cooldown = False
         if position.entry_date:
             time_since_creation = datetime.utcnow() - position.entry_date
             exit_cooldown_minutes = 30  # 30 minute cooldown before checking exits
             if time_since_creation.total_seconds() < (exit_cooldown_minutes * 60):
+                in_cooldown = True
                 try:
                     from flask import current_app
                     current_app.logger.info(
                         f"⏳ Position {position.id} ({position.symbol}) is in exit cooldown period. "
                         f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago. "
-                        f"Skipping exit check for {exit_cooldown_minutes} minutes. "
-                        f"Prices updated, but exits disabled during cooldown."
+                        f"Will still check risk management limits (stop loss)."
                     )
                 except:
                     pass
-                return False  # Don't check exits during cooldown, but prices were already updated
+                # Don't return False here - we'll check risk limits even during cooldown
         
         # Get automation if exists
         automation = None
@@ -73,7 +75,8 @@ class PositionMonitor:
             automation = db.session.query(Automation).get(position.automation_id)
         
         # Check exit conditions
-        should_exit, reason = self.check_exit_conditions(position, automation)
+        # Pass in_cooldown flag so risk management limits are still checked
+        should_exit, reason = self.check_exit_conditions(position, automation, in_cooldown=in_cooldown)
         
         if should_exit:
             # Execute exit
@@ -547,7 +550,7 @@ class PositionMonitor:
         position.last_updated = datetime.utcnow()
         db.session.commit()
     
-    def check_exit_conditions(self, position: Position, automation: Automation = None) -> tuple:
+    def check_exit_conditions(self, position: Position, automation: Automation = None, in_cooldown: bool = False) -> tuple:
         """
         Check if position should be exited
         
@@ -555,21 +558,18 @@ class PositionMonitor:
             Tuple of (should_exit, reason)
         """
         # CRITICAL: Double-check cooldown here as well (defense in depth)
-        # Even though check_and_exit_position checks cooldown, this provides extra protection
-        # INCREASED to 30 minutes to match other cooldown checks
-        if position.entry_date:
-            time_since_creation = datetime.utcnow() - position.entry_date
-            cooldown_minutes = 30  # Increased to 30 minutes
-            if time_since_creation.total_seconds() < (cooldown_minutes * 60):
-                try:
-                    from flask import current_app
-                    current_app.logger.info(
-                        f"⏳ Position {position.id} ({position.symbol}) in cooldown - skipping exit check. "
-                        f"Created {time_since_creation.total_seconds()/60:.1f} minutes ago."
-                    )
-                except:
-                    pass
-                return (False, f"Position in {cooldown_minutes}-minute cooldown period")
+        # BUT: Risk management limits (stop loss) should ALWAYS be checked, even during cooldown
+        # This ensures user's safety settings are always enforced
+        if in_cooldown:
+            try:
+                from flask import current_app
+                current_app.logger.info(
+                    f"⏳ Position {position.id} ({position.symbol}) in cooldown - "
+                    f"will still check risk management limits (stop loss from Settings)"
+                )
+            except:
+                pass
+            # Don't return here - we'll check risk limits even during cooldown
         
         if not position.current_price or not position.entry_price:
             return (False, "Missing price data")
@@ -735,10 +735,65 @@ class PositionMonitor:
         except:
             pass
         
+        # CRITICAL: Check user's risk management limits FIRST (from Settings)
+        # This MUST always run, even during cooldown or if price is unchanged
+        # Risk management limits are safety features that should always be enforced
+        from services.risk_manager import RiskManager
+        risk_manager = RiskManager()
+        risk_limits = risk_manager.get_risk_limits(position.user_id)
+        
+        # Check if position loss exceeds user's risk management stop loss
+        # Use max_daily_loss_percent as per-position stop loss if set
+        if risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0:
+            # Use the daily loss limit as a per-position stop loss
+            risk_stop_loss = risk_limits.max_daily_loss_percent
+            if loss_percent >= risk_stop_loss:
+                try:
+                    from flask import current_app
+                    current_app.logger.warning(
+                        f"🛡️ Position {position.id} ({position.symbol}): "
+                        f"Risk management stop loss triggered - {loss_percent:.2f}% loss "
+                        f"exceeds user limit of {risk_stop_loss}% (from Settings)"
+                    )
+                except:
+                    pass
+                return (True, f"Risk management stop loss triggered ({loss_percent:.2f}% loss, limit: {risk_stop_loss}% from Settings)")
+        
+        # Also check daily loss limit - if user is approaching/exceeding daily loss, close losing positions
+        if risk_limits and risk_limits.max_daily_loss_percent:
+            daily_loss = risk_manager._calculate_daily_loss(position.user_id)
+            from models.user import User
+            db = self._get_db()
+            user = db.session.query(User).get(position.user_id)
+            
+            if user and daily_loss < 0:  # Only if there's a loss
+                # Calculate max daily loss based on starting balance
+                if user.trading_mode == 'paper':
+                    starting_balance = 100000.0
+                    account_balance = max(starting_balance, user.paper_balance)
+                else:
+                    account_balance = user.paper_balance
+                
+                max_daily_loss = account_balance * (risk_limits.max_daily_loss_percent / 100.0)
+                current_daily_loss = abs(daily_loss)
+                
+                # If we're at or exceeding daily loss limit, close all losing positions
+                if current_daily_loss >= max_daily_loss and loss_percent > 0:
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"🛡️ Position {position.id} ({position.symbol}): "
+                            f"Daily loss limit reached (${current_daily_loss:.2f} >= ${max_daily_loss:.2f}). "
+                            f"Closing losing position ({loss_percent:.2f}% loss)."
+                        )
+                    except:
+                        pass
+                    return (True, f"Daily loss limit reached - closing position ({loss_percent:.2f}% loss, daily loss: ${current_daily_loss:.2f})")
+        
         # CRITICAL: If price is unchanged (0% P/L), only allow expiration exits
         # Don't check profit/loss targets with stale data
         if allow_only_expiration_exit:
-            # Skip all profit/loss checks - only check expiration
+            # Skip profit/loss checks - only check expiration
             pass
         else:
             # Check profit targets (profit_target_1 and profit_target_2)
