@@ -5,6 +5,7 @@ from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
 from services.ai_symbol_recommender import AISymbolRecommender
 from models.stock import Stock
+from datetime import datetime
 
 opportunities_bp = Blueprint('opportunities', __name__)
 
@@ -15,95 +16,108 @@ def get_db():
 @opportunities_bp.route('/today', methods=['GET'])
 @token_required
 def get_today_opportunities(current_user):
-    """Get today's top trading opportunities for the user"""
+    """Get today's top trading opportunities - optimized for speed"""
     try:
         db = get_db()
-        scanner = OpportunityScanner()
-        signal_generator = SignalGenerator()
         
         # Get user's watchlist
         watchlist = db.session.query(Stock).filter_by(user_id=current_user.id).all()
-        symbols_to_scan = [stock.symbol for stock in watchlist]
+        watchlist_symbols = [stock.symbol for stock in watchlist]
         
-        # If watchlist is empty, use popular symbols as fallback
-        if not symbols_to_scan:
-            symbols_to_scan = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL']
+        # Use hardcoded list of 10 high-volume symbols (same as Market Movers for consistency)
+        # If user has watchlist, prioritize those, but limit to 10 for speed
+        curated_symbols = [
+            'SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL'
+        ]
+        
+        # Combine watchlist with curated symbols, prioritize watchlist
+        if watchlist_symbols:
+            # Use watchlist symbols first, then fill with curated if needed
+            symbols_to_scan = (watchlist_symbols + curated_symbols)[:10]
+            source = 'watchlist'
+        else:
+            symbols_to_scan = curated_symbols[:10]
+            source = 'popular_symbols'
             try:
-                current_app.logger.info(f"User {current_user.id} has empty watchlist, using popular symbols")
+                current_app.logger.info(f"User {current_user.id} has empty watchlist, using curated symbols")
             except:
                 pass
         
         opportunities = []
-        max_opportunities = 5  # Limit to top 5
+        from services.tradier_connector import TradierConnector
+        tradier = TradierConnector()
         
-        # Scan each symbol for opportunities
-        for symbol in symbols_to_scan[:20]:  # Limit to first 20 symbols to avoid timeout
+        # Fast scan - just get quotes and calculate basic signals
+        for symbol in symbols_to_scan:
             try:
-                # Generate signals for this symbol
-                signals = signal_generator.generate_signals(
-                    symbol,
-                    {
-                        'min_confidence': 0.40,  # Lower threshold for discovery (was 0.50)
-                        'strategy_type': 'balanced'
-                    }
-                )
-                
-                if 'error' in signals:
-                    try:
-                        current_app.logger.debug(f"Error generating signals for {symbol}: {signals.get('error')}")
-                    except:
-                        pass
+                # Get quote (fast API call)
+                quote = tradier.get_quote(symbol)
+                if 'quotes' not in quote or 'quote' not in quote['quotes']:
                     continue
                 
-                signal_data = signals.get('signals', {})
+                quote_data = quote['quotes']['quote']
+                current_price = quote_data.get('last', 0)
+                change = quote_data.get('change', 0)
+                change_percent = quote_data.get('change_percentage', 0)
+                volume = quote_data.get('volume', 0)
                 
-                # Lower threshold to 60% to show more opportunities (was 70%+)
-                confidence = signal_data.get('confidence', 0)
-                if signal_data.get('recommended', False) or confidence >= 0.60:
-                    # Get basic quote info
-                    from services.tradier_connector import TradierConnector
-                    tradier = TradierConnector()
-                    quote = tradier.get_quote(symbol)
-                    current_price = None
-                    if 'quotes' in quote and 'quote' in quote['quotes']:
-                        current_price = quote['quotes']['quote'].get('last', 0)
-                    
-                    # Get IV metrics if available
-                    iv_metrics = signals.get('iv_metrics', {})
-                    iv_rank = iv_metrics.get('iv_rank', 0) if iv_metrics else 0
-                    
-                    opportunity = {
-                        'symbol': symbol,
-                        'current_price': current_price,
-                        'signal_direction': signal_data.get('direction', 'neutral'),
-                        'confidence': signal_data.get('confidence', 0),
-                        'action': signal_data.get('action', 'hold'),
-                        'reason': signal_data.get('reason', ''),
-                        'iv_rank': iv_rank,
-                        'technical_indicators': {
-                            'rsi': signals.get('technical_analysis', {}).get('indicators', {}).get('rsi'),
-                            'trend': signal_data.get('trend', 'neutral')
-                        },
-                        'timestamp': signals.get('timestamp')
-                    }
-                    
-                    opportunities.append(opportunity)
-                    
-                    # Stop if we have enough
-                    if len(opportunities) >= max_opportunities:
-                        break
+                if not current_price or current_price <= 0:
+                    continue
+                
+                # Fast signal calculation based on price movement and volume
+                # Skip slow technical analysis and IV rank for speed
+                confidence = 0.60  # Default moderate confidence
+                signal_direction = 'neutral'
+                reason = 'Active trading opportunity'
+                
+                # Boost confidence based on price movement
+                if abs(change_percent) > 2:
+                    confidence = 0.70
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Strong price movement ({change_percent:.2f}%)'
+                elif abs(change_percent) > 1:
+                    confidence = 0.65
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Moderate price movement ({change_percent:.2f}%)'
+                
+                # Boost confidence for high volume
+                if volume and volume > 10000000:  # 10M+ volume
+                    confidence = min(0.75, confidence + 0.05)
+                    reason += ' with high volume'
+                
+                opportunity = {
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'signal_direction': signal_direction,
+                    'confidence': confidence,
+                    'action': 'buy' if signal_direction == 'bullish' else 'sell' if signal_direction == 'bearish' else 'hold',
+                    'reason': reason,
+                    'iv_rank': 0,  # Not calculated for speed
+                    'technical_indicators': {
+                        'rsi': None,  # Not calculated for speed
+                        'trend': signal_direction
+                    },
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                
+                opportunities.append(opportunity)
                         
             except Exception as e:
-                current_app.logger.warning(f"Error scanning {symbol} for opportunities: {e}")
+                try:
+                    current_app.logger.warning(f"Error scanning {symbol} for opportunities: {e}")
+                except:
+                    pass
                 continue
         
         # Sort by confidence (highest first)
         opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
         
+        # Return top 5
+        max_opportunities = 5
         return jsonify({
             'opportunities': opportunities[:max_opportunities],
             'count': len(opportunities[:max_opportunities]),
-            'source': 'watchlist' if watchlist else 'popular_symbols'
+            'source': source
         }), 200
         
     except Exception as e:
@@ -116,80 +130,78 @@ def get_today_opportunities(current_user):
 @opportunities_bp.route('/quick-scan', methods=['POST'])
 @token_required
 def quick_scan(current_user):
-    """Quick scan of popular symbols for trading opportunities"""
+    """Quick scan of popular symbols - optimized for speed"""
     try:
-        signal_generator = SignalGenerator()
-        
-        # Popular symbols to scan
-        popular_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NFLX']
+        # Use same curated list as main opportunities endpoint
+        popular_symbols = ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL']
         
         opportunities = []
-        max_opportunities = 5
+        from services.tradier_connector import TradierConnector
+        tradier = TradierConnector()
         
-        # Scan each symbol
+        # Fast scan - just get quotes (same logic as /today endpoint)
         for symbol in popular_symbols:
             try:
-                # Generate signals with lower threshold for discovery
-                signals = signal_generator.generate_signals(
-                    symbol,
-                    {
-                        'min_confidence': 0.45,  # Lower threshold for quick scan
-                        'strategy_type': 'balanced'
-                    }
-                )
-                
-                if 'error' in signals:
+                quote = tradier.get_quote(symbol)
+                if 'quotes' not in quote or 'quote' not in quote['quotes']:
                     continue
                 
-                signal_data = signals.get('signals', {})
-                confidence = signal_data.get('confidence', 0)
+                quote_data = quote['quotes']['quote']
+                current_price = quote_data.get('last', 0)
+                change = quote_data.get('change', 0)
+                change_percent = quote_data.get('change_percentage', 0)
+                volume = quote_data.get('volume', 0)
                 
-                # Lower threshold to show more opportunities (was 0.55)
-                if signal_data.get('recommended', False) or confidence >= 0.45:
-                    # Get quote info
-                    from services.tradier_connector import TradierConnector
-                    tradier = TradierConnector()
-                    quote = tradier.get_quote(symbol)
-                    current_price = None
-                    price_change = None
-                    if 'quotes' in quote and 'quote' in quote['quotes']:
-                        quote_data = quote['quotes']['quote']
-                        current_price = quote_data.get('last', 0)
-                        price_change = quote_data.get('change', 0)
-                    
-                    # Get IV metrics
-                    iv_metrics = signals.get('iv_metrics', {})
-                    iv_rank = iv_metrics.get('iv_rank', 0) if iv_metrics else 0
-                    
-                    opportunity = {
-                        'symbol': symbol,
-                        'current_price': current_price,
-                        'price_change': price_change,
-                        'signal_direction': signal_data.get('direction', 'neutral'),
-                        'confidence': confidence,
-                        'action': signal_data.get('action', 'hold'),
-                        'reason': signal_data.get('reason', ''),
-                        'iv_rank': iv_rank,
-                        'technical_indicators': {
-                            'rsi': signals.get('technical_analysis', {}).get('indicators', {}).get('rsi'),
-                            'trend': signal_data.get('trend', 'neutral')
-                        },
-                        'timestamp': signals.get('timestamp')
-                    }
-                    
-                    opportunities.append(opportunity)
-                    
-                    # Stop if we have enough
-                    if len(opportunities) >= max_opportunities:
-                        break
+                if not current_price or current_price <= 0:
+                    continue
+                
+                # Fast signal calculation
+                confidence = 0.60
+                signal_direction = 'neutral'
+                reason = 'Quick scan opportunity'
+                
+                if abs(change_percent) > 2:
+                    confidence = 0.70
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Strong movement ({change_percent:.2f}%)'
+                elif abs(change_percent) > 1:
+                    confidence = 0.65
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Moderate movement ({change_percent:.2f}%)'
+                
+                if volume and volume > 10000000:
+                    confidence = min(0.75, confidence + 0.05)
+                    reason += ' with high volume'
+                
+                opportunity = {
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'price_change': change,
+                    'signal_direction': signal_direction,
+                    'confidence': confidence,
+                    'action': 'buy' if signal_direction == 'bullish' else 'sell' if signal_direction == 'bearish' else 'hold',
+                    'reason': reason,
+                    'iv_rank': 0,
+                    'technical_indicators': {
+                        'rsi': None,
+                        'trend': signal_direction
+                    },
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                
+                opportunities.append(opportunity)
                         
             except Exception as e:
-                current_app.logger.warning(f"Error scanning {symbol} in quick scan: {e}")
+                try:
+                    current_app.logger.warning(f"Error scanning {symbol} in quick scan: {e}")
+                except:
+                    pass
                 continue
         
         # Sort by confidence (highest first)
         opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
         
+        max_opportunities = 5
         return jsonify({
             'opportunities': opportunities[:max_opportunities],
             'count': len(opportunities[:max_opportunities]),
