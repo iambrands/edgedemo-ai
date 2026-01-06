@@ -60,9 +60,10 @@ def create_automation(current_user):
         target_delta = sanitize_float(data.get('target_delta'), min_val=-1.0, max_val=1.0) if data.get('target_delta') else None
         min_delta = sanitize_float(data.get('min_delta'), min_val=-1.0, max_val=1.0) if data.get('min_delta') else None
         max_delta = sanitize_float(data.get('max_delta'), min_val=-1.0, max_val=1.0) if data.get('max_delta') else None
-        min_volume = sanitize_int(data.get('min_volume'), min_val=0, max_val=1000000) or 20
-        min_open_interest = sanitize_int(data.get('min_open_interest'), min_val=0, max_val=10000000) or 100
-        max_spread_percent = sanitize_float(data.get('max_spread_percent'), min_val=0.0, max_val=100.0) or 15.0
+        min_volume = sanitize_int(data.get('min_volume'), min_val=0, max_val=1000000) or 5  # Lowered from 20
+        min_open_interest = sanitize_int(data.get('min_open_interest'), min_val=0, max_val=10000000) or 10  # Lowered from 100
+        max_spread_percent = sanitize_float(data.get('max_spread_percent'), min_val=0.0, max_val=100.0) or 30.0  # Increased from 15
+        quantity = sanitize_int(data.get('quantity'), min_val=1, max_val=100) or 1
         
         db = get_db()
         automation = Automation(
@@ -83,6 +84,7 @@ def create_automation(current_user):
             min_volume=min_volume,
             min_open_interest=min_open_interest,
             max_spread_percent=max_spread_percent,
+            quantity=quantity,
             profit_target_percent=profit_target_percent,
             profit_target_1=profit_target_percent,  # Set profit_target_1 from profit_target_percent
             stop_loss_percent=-abs(stop_loss_percent),  # Normalize to negative
@@ -136,6 +138,12 @@ def update_automation(current_user, automation_id):
         if 'stop_loss_percent' in data:
             # Normalize stop_loss_percent to always be negative
             automation.stop_loss_percent = -abs(data['stop_loss_percent'])
+        if 'quantity' in data:
+            from utils.helpers import sanitize_int
+            automation.quantity = sanitize_int(data['quantity'], min_val=1, max_val=100) or 1
+        if 'max_days_to_hold' in data:
+            from utils.helpers import sanitize_int
+            automation.max_days_to_hold = sanitize_int(data['max_days_to_hold'], min_val=1, max_val=365)
         
         db.session.commit()
         

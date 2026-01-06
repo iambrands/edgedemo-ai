@@ -182,12 +182,16 @@ class OpportunityScanner:
             automation
         )
         
+        # Get quantity from automation
+        quantity = getattr(automation, 'quantity', 1)
+        
         return {
             'symbol': symbol,
             'contract': best_contract,
             'signal': signals['signals'],
             'automation_id': automation.id,
             'user_id': automation.user_id,
+            'quantity': quantity,  # Include quantity in opportunity
             'entry_reason': entry_reason,
             'expiration': best_expiration,
             'dte': (datetime.strptime(best_expiration, '%Y-%m-%d').date() - datetime.now().date()).days
@@ -199,9 +203,9 @@ class OpportunityScanner:
         filtered = []
         
         max_premium = getattr(automation, 'max_premium', None)
-        min_volume = getattr(automation, 'min_volume', 20)
-        min_open_interest = getattr(automation, 'min_open_interest', 100)
-        max_spread_percent = getattr(automation, 'max_spread_percent', 15.0)
+        min_volume = getattr(automation, 'min_volume', 5)  # Lowered from 20
+        min_open_interest = getattr(automation, 'min_open_interest', 10)  # Lowered from 100
+        max_spread_percent = getattr(automation, 'max_spread_percent', 30.0)  # Increased from 15
         target_delta = getattr(automation, 'target_delta', None)
         min_delta = getattr(automation, 'min_delta', None)
         max_delta = getattr(automation, 'max_delta', None)

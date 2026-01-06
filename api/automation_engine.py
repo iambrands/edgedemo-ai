@@ -397,6 +397,9 @@ def test_trade_automation(current_user, automation_id):
             else:
                 signal_data['action'] = 'buy_call'  # Default to call
         
+        # Get quantity from automation
+        quantity = getattr(automation, 'quantity', 1)
+        
         # Create opportunity dict with all required fields
         opportunity = {
             'symbol': symbol,
@@ -404,6 +407,7 @@ def test_trade_automation(current_user, automation_id):
             'signal': signal_data,
             'automation_id': automation.id,
             'user_id': automation.user_id,
+            'quantity': quantity,  # Include quantity in opportunity
             'entry_reason': f'TEST TRADE - Manual trigger for testing automation {automation.name}',
             'expiration': best_expiration,
             'dte': (datetime.strptime(best_expiration, '%Y-%m-%d').date() - datetime.now().date()).days

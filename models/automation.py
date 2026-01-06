@@ -59,6 +59,7 @@ class Automation(db.Model):
     max_portfolio_exposure = db.Column(db.Float, default=0.20)  # Max % of portfolio at risk
     max_position_size = db.Column(db.Float, default=0.05)  # Max % of portfolio per position
     allow_multiple_positions = db.Column(db.Boolean, default=False)  # Allow multiple positions in same symbol
+    quantity = db.Column(db.Integer, default=1)  # Number of contracts to buy per trade
     
     # Status
     is_active = db.Column(db.Boolean, default=True)
@@ -112,6 +113,7 @@ class Automation(db.Model):
             'max_portfolio_exposure': self.max_portfolio_exposure,
             'max_position_size': self.max_position_size,
             'allow_multiple_positions': self.allow_multiple_positions,
+            'quantity': self.quantity,
             'is_active': self.is_active,
             'is_paused': self.is_paused,
             'created_at': self.created_at.isoformat() if self.created_at else None,

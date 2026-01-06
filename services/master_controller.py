@@ -260,8 +260,17 @@ class AutomationMasterController:
                 logger.error(f"Missing expiration date in contract: {contract}")
                 return False
             
-            # Calculate position size (would use risk manager)
-            quantity = 1  # Default, would calculate based on risk
+            # Get quantity from opportunity or automation
+            quantity = opportunity.get('quantity', 1)  # Check opportunity first
+            if quantity == 1 and automation_id:  # Only check automation if not in opportunity
+                try:
+                    db = self._get_db()
+                    from models.automation import Automation
+                    automation = db.session.query(Automation).get(automation_id)
+                    if automation and automation.quantity:
+                        quantity = automation.quantity
+                except Exception as e:
+                    logger.warning(f"Could not get quantity from automation {automation_id}: {e}")
             
             # Execute trade
             result = self.trade_executor.execute_trade(

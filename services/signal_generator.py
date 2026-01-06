@@ -95,21 +95,36 @@ class SignalGenerator:
         
         # Filter by minimum confidence if specified
         min_confidence = preferences.get('min_confidence', 0.0)
-        if final_confidence < min_confidence:
+        
+        # SIMPLIFIED: If min_confidence is low (<= 0.30), be more lenient
+        # For "set it and forget it", we want it to trigger more easily
+        effective_min_confidence = min_confidence
+        if min_confidence <= 0.30:
+            # Lower the bar - accept signals with at least 20% confidence if user set min to 30%
+            effective_min_confidence = max(0.15, min_confidence * 0.67)  # 67% of min_confidence, min 15%
+        
+        # SIMPLIFIED: If we have any direction signal, recommend it (more lenient)
+        # Only require confidence >= effective_min_confidence
+        if final_confidence < effective_min_confidence:
             return {
                 'action': 'hold',
-                'reason': f'Confidence ({final_confidence:.2f}) below minimum ({min_confidence:.2f})',
+                'reason': f'Confidence ({final_confidence:.2f}) below minimum ({effective_min_confidence:.2f})',
                 'confidence': final_confidence,
                 'direction': direction
             }
         
-        # Determine action
-        if direction == 'bullish' and final_confidence >= min_confidence:
+        # Determine action - be more lenient for low min_confidence settings
+        if direction == 'bullish' and final_confidence >= effective_min_confidence:
             action = 'buy_call'
             reason = f"Bullish signal with {final_confidence:.1%} confidence. {iv_reason}" if iv_reason else f"Bullish signal with {final_confidence:.1%} confidence"
-        elif direction == 'bearish' and final_confidence >= min_confidence:
+        elif direction == 'bearish' and final_confidence >= effective_min_confidence:
             action = 'buy_put'
             reason = f"Bearish signal with {final_confidence:.1%} confidence. {iv_reason}" if iv_reason else f"Bearish signal with {final_confidence:.1%} confidence"
+        elif direction == 'neutral' and final_confidence >= effective_min_confidence * 0.8:
+            # For neutral signals, accept if confidence is close to threshold
+            # Default to bullish (calls) for neutral signals
+            action = 'buy_call'
+            reason = f"Neutral signal with {final_confidence:.1%} confidence - defaulting to bullish. {iv_reason}" if iv_reason else f"Neutral signal with {final_confidence:.1%} confidence - defaulting to bullish"
         else:
             action = 'hold'
             reason = f"Neutral or low confidence signal ({final_confidence:.1%})"
@@ -122,6 +137,6 @@ class SignalGenerator:
             'technical_confidence': base_confidence,
             'iv_adjustment': iv_adjustment,
             'signal_count': overall_technical.get('signal_count', 0),
-            'recommended': final_confidence >= min_confidence
+            'recommended': final_confidence >= effective_min_confidence
         }
 

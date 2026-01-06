@@ -47,6 +47,9 @@ const Automations: React.FC = () => {
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
   const [activity, setActivity] = useState<AutomationActivity | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any[]>([]);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(true);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
   const [testingTrade, setTestingTrade] = useState<number | null>(null);
   const [startingEngine, setStartingEngine] = useState(false);
@@ -60,6 +63,7 @@ const Automations: React.FC = () => {
     profit_target_percent: 50,
     stop_loss_percent: 25,
     max_days_to_hold: 30,
+    quantity: 1,  // Number of contracts to buy
     // Expiration controls
     preferred_dte: 30,
     min_dte: 21,
@@ -75,13 +79,27 @@ const Automations: React.FC = () => {
     loadAutomations();
     loadEngineStatus();
     loadActivity();
+    loadDiagnostics();
     // Refresh status every 30 seconds
     const statusInterval = setInterval(() => {
       loadEngineStatus();
       loadActivity();
+      loadDiagnostics();
     }, 30000);
     return () => clearInterval(statusInterval);
   }, []);
+
+  const loadDiagnostics = async () => {
+    setLoadingDiagnostics(true);
+    try {
+      const response = await api.get('/automation_diagnostics/diagnostics');
+      setDiagnostics(response.data.diagnostics || []);
+    } catch (error: any) {
+      console.error('Failed to load diagnostics:', error);
+    } finally {
+      setLoadingDiagnostics(false);
+    }
+  };
 
   const loadAutomations = async () => {
     try {
@@ -227,6 +245,7 @@ const Automations: React.FC = () => {
       profit_target_percent: automation.profit_target_percent,
       stop_loss_percent: automation.stop_loss_percent || 25,
       max_days_to_hold: automation.max_days_to_hold || 30,
+      quantity: (automation as any).quantity || 1,
       preferred_dte: (automation as any).preferred_dte || 30,
       min_dte: (automation as any).min_dte || 21,
       max_dte: (automation as any).max_dte || 60,
@@ -704,6 +723,24 @@ const Automations: React.FC = () => {
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quantity (Number of Contracts)
+                  <span className="text-xs text-gray-500 ml-1">How many contracts to buy per trade</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Default: 1 contract. Increase to buy multiple contracts per trade.
+                </p>
+              </div>
 
               {/* Advanced Options - Expiration & Strike Controls */}
               <div className="border-t border-gray-200 pt-4">
@@ -855,6 +892,7 @@ const Automations: React.FC = () => {
                       profit_target_percent: 50,
                       stop_loss_percent: 25,
                       max_days_to_hold: 30,
+                      quantity: 1,
                       preferred_dte: 30,
                       min_dte: 21,
                       max_dte: 60,
@@ -870,6 +908,112 @@ const Automations: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Diagnostics Panel */}
+      {showDiagnostics && diagnostics.length > 0 && (
+        <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-gray-200 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-secondary">🔍 Automation Diagnostics</h2>
+            <button
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              {showDiagnostics ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            See why each automation is or isn't triggering trades. Updated every 30 seconds.
+          </p>
+          {loadingDiagnostics ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+              <p className="text-sm text-gray-500 mt-2">Loading diagnostics...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {diagnostics.map((diag: any) => {
+                const automation = automations.find(a => a.id === diag.automation_id);
+                if (!automation) return null;
+                
+                return (
+                  <div key={diag.automation_id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{diag.automation_name} ({diag.symbol})</h3>
+                        <p className="text-xs text-gray-500">Quantity: {diag.quantity || 1} contract(s)</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded text-xs font-semibold ${
+                        diag.status === 'ready' 
+                          ? 'bg-green-100 text-green-800'
+                          : diag.status === 'blocked'
+                          ? 'bg-red-100 text-red-800'
+                          : diag.status === 'no_options'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : diag.status === 'error'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {diag.status === 'ready' ? '✅ Ready to Trade' :
+                         diag.status === 'blocked' ? '🚫 Blocked' :
+                         diag.status === 'no_options' ? '⚠️ No Options' :
+                         diag.status === 'error' ? '❌ Error' :
+                         diag.status === 'inactive' ? '⚪ Inactive' :
+                         diag.status === 'paused' ? '⏸️ Paused' :
+                         '🔍 Checking'}
+                      </div>
+                    </div>
+                    
+                    {diag.signal_confidence !== null && (
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Signal Confidence:</span>
+                          <span className={`font-medium ${
+                            diag.signal_confidence >= diag.min_confidence 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            {(diag.signal_confidence * 100).toFixed(1)}% 
+                            {diag.signal_confidence >= diag.min_confidence ? ' ✅' : ` (need ${(diag.min_confidence * 100).toFixed(1)}%)`}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Signal Action:</span>
+                          <span className="font-medium">{diag.signal_action || 'hold'}</span>
+                        </div>
+                        {diag.signal_direction && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Direction:</span>
+                            <span className="font-medium capitalize">{diag.signal_direction}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {diag.blocking_reasons && diag.blocking_reasons.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold text-gray-700 mb-1">Why it's not trading:</p>
+                        <ul className="list-disc list-inside text-xs text-gray-600 space-y-1">
+                          {diag.blocking_reasons.map((reason: string, idx: number) => (
+                            <li key={idx}>{reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {diag.ready_to_trade && (
+                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        <p className="text-xs font-semibold text-green-800">
+                          ✅ Ready to trade! This automation should execute on the next cycle.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -912,6 +1056,10 @@ const Automations: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Profit Target:</span>
                   <span className="font-medium">{automation.profit_target_percent}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Quantity:</span>
+                  <span className="font-medium">{(automation as any).quantity || 1} contract(s)</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Executions:</span>
