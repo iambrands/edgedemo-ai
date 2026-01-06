@@ -34,11 +34,19 @@ const Help: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
+              <span className="text-gray-700">Unified Opportunities Page - Signals, Market Movers, and AI recommendations in one place</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500">✅</span>
               <span className="text-gray-700">Options Chain Analysis - AI-powered scoring and recommendations</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Automated Trading - Set it and forget it strategies</span>
+              <span className="text-gray-700">Automated Trading - Set it and forget it strategies with quantity control</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500">✅</span>
+              <span className="text-gray-700">Automation Diagnostics - See exactly why automations are or aren't executing</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
@@ -102,18 +110,18 @@ const Help: React.FC = () => {
             Your Dashboard is the central hub where you can see everything about your trading activity at a glance.
           </p>
           
-          <h4 className="text-xl font-semibold text-gray-900 mt-4">Discovery Features</h4>
+          <h4 className="text-xl font-semibold text-gray-900 mt-4">Opportunities Page</h4>
           <p className="text-gray-700 mb-3">
-            Discovery features have been moved to dedicated pages for better organization and performance:
+            The unified Opportunities page combines all discovery features into one fast, easy-to-use interface with three tabs:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            <li><strong>Discover Page:</strong> Access "Today's Opportunities" (high-confidence signals 70%+) and "Quick Scan" to instantly scan 10 popular symbols for trading opportunities. Navigate via the Discovery section in the sidebar.</li>
-            <li><strong>Market Page:</strong> View "Market Movers" - top stocks with high volume and volatility, showing price change %, volume ratio, and IV rank.</li>
-            <li><strong>Recommendations Page:</strong> Get AI-powered personalized symbol recommendations based on your trading patterns, risk tolerance, and current market signals.</li>
+            <li><strong>🎯 Signals Tab:</strong> High-confidence trading signals (60%+) from your watchlist and popular symbols. Includes Quick Scan feature to instantly find opportunities across 10 high-volume stocks.</li>
+            <li><strong>📈 Market Movers Tab:</strong> Pre-selected high-volume, high-volatility stocks and ETFs showing real-time price, volume, and change percentage. Always loads instantly.</li>
+            <li><strong>🤖 For You Tab:</strong> Personalized AI recommendations based on your trading patterns, risk tolerance, and preferences. Always provides relevant suggestions.</li>
           </ul>
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-purple-800">
-              <strong>💡 Tip:</strong> Click any opportunity, mover, or suggestion card to instantly analyze options for that symbol in the Options Analyzer!
+              <strong>💡 Tip:</strong> All tabs load quickly using optimized algorithms. Click any card to instantly analyze options for that symbol in the Options Analyzer!
             </p>
           </div>
 
@@ -275,6 +283,7 @@ const Help: React.FC = () => {
                 <li>Symbol: Stock to trade</li>
                 <li>Strategy Type: Long call, long put, covered call, etc.</li>
                 <li>Min Confidence: Minimum signal confidence (0-100%)</li>
+                <li>Quantity: Number of contracts to buy per trade (default: 1)</li>
                 <li>Preferred DTE: Days to expiration</li>
                 <li>Delta Range: Target delta range</li>
               </ul>
@@ -295,15 +304,33 @@ const Help: React.FC = () => {
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             <li>The system scans for opportunities every 15 minutes during market hours</li>
-            <li>When entry conditions are met, trades are executed automatically</li>
+            <li>When entry conditions are met, trades are executed automatically with your specified quantity</li>
             <li>Positions are monitored continuously (after a 5-minute cooldown period for new positions)</li>
             <li>When exit conditions are met, positions are closed automatically</li>
             <li>New positions have a 5-minute cooldown before price updates and exit checks begin</li>
           </ul>
 
+          <h4 className="text-xl font-semibold text-gray-900 mt-6">Automation Diagnostics</h4>
+          <p className="text-gray-700 mb-3">
+            The Automations page includes a Diagnostics panel that shows:
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+            <li>Whether each automation is ready to trade</li>
+            <li>Specific blocking reasons (if trades aren't executing):
+              <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
+                <li>Signal confidence too low → Lower min_confidence</li>
+                <li>Already have open position → Close position or enable multiple positions</li>
+                <li>Max positions reached → Close some positions</li>
+                <li>No suitable options found → Adjust DTE, delta, volume, or open interest settings</li>
+              </ul>
+            </li>
+            <li>Current signal confidence vs. minimum required</li>
+            <li>Whether suitable options were found</li>
+          </ul>
+
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-purple-800">
-              <strong>🤖 Automation Engine:</strong> Click "Start Engine" to begin automated trading. The engine runs continuously in the background.
+              <strong>🤖 Automation Engine:</strong> Click "Start Engine" to begin automated trading. Use the Diagnostics panel to understand why automations aren't executing trades.
             </p>
           </div>
         </div>
@@ -430,15 +457,15 @@ const Help: React.FC = () => {
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: Where can I find Quick Scan and discovery features?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Where can I find trading opportunities and discovery features?</h4>
             <p className="text-gray-700 mt-2">
-              A: Discovery features have been moved to dedicated pages for better organization:
+              A: All discovery features are now unified in the Opportunities page with three tabs:
               <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                <li><strong>Discover Page:</strong> Today's Opportunities and Quick Scan</li>
-                <li><strong>Market Page:</strong> Market Movers</li>
-                <li><strong>Recommendations Page:</strong> AI-Powered Suggestions</li>
+                <li><strong>Signals Tab:</strong> High-confidence trading signals and Quick Scan feature</li>
+                <li><strong>Market Movers Tab:</strong> Top high-volume, high-volatility stocks</li>
+                <li><strong>For You Tab:</strong> Personalized AI recommendations based on your patterns</li>
               </ul>
-              Access these via the "Discovery" section in the sidebar navigation.
+              Access via "Opportunities" in the Discovery section of the sidebar. All tabs load quickly with optimized performance.
             </p>
           </div>
 
@@ -452,7 +479,28 @@ const Help: React.FC = () => {
           <div>
             <h4 className="text-lg font-semibold text-gray-900">Q: Can I test an automation before enabling it?</h4>
             <p className="text-gray-700 mt-2">
-              A: Yes! Use the "Test Trade" button on any automation to see if it would execute a trade right now. This helps you verify your automation settings are correct.
+              A: Yes! Use the "🧪 Test Trade" button on any automation to see if it would execute a trade right now. This helps you verify your automation settings are correct. The test trade will use the quantity you specified.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why isn't my automation executing trades?</h4>
+            <p className="text-gray-700 mt-2">
+              A: Check the Diagnostics panel at the top of the Automations page. It shows exactly why each automation isn't executing. Common reasons:
+              <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                <li>Signal confidence too low → Lower min_confidence (try 0.30 for testing)</li>
+                <li>Already have open position → Close position or enable "allow multiple positions"</li>
+                <li>Max positions reached → Close some positions</li>
+                <li>No suitable options found → Adjust DTE settings, volume, or open interest filters</li>
+              </ul>
+              Use the "Run Cycle Now" button to see detailed diagnostics and blocking reasons.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: How many contracts does an automation buy per trade?</h4>
+            <p className="text-gray-700 mt-2">
+              A: When creating or editing an automation, you can specify the "Quantity" field (default: 1 contract). Each time the automation executes a trade, it will buy that many contracts. For example, setting quantity to 3 means each trade will buy 3 contracts.
             </p>
           </div>
 
