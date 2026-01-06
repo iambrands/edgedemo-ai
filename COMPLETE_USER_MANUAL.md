@@ -19,15 +19,16 @@
 3. [Dashboard - Your Trading Command Center](#dashboard)
 4. [Options Analyzer - Find the Best Trades](#options-analyzer)
 5. [Watchlist - Track Your Stocks](#watchlist)
-6. [Trade Execution - Place Your Trades](#trade-execution)
-7. [Automations - Automated Trading Strategies](#automations)
-8. [Alerts - Stay Informed](#alerts)
-9. [History - Review Your Trades](#history)
-10. [Settings - Customize Your Experience](#settings)
-11. [Understanding Options Trading](#understanding-options-trading)
-12. [Advanced Features](#advanced-features)
-13. [Troubleshooting](#troubleshooting)
-14. [FAQ](#faq)
+6. [Opportunities - Discover Trading Signals](#opportunities)
+7. [Trade Execution - Place Your Trades](#trade-execution)
+8. [Automations - Automated Trading Strategies](#automations)
+9. [Alerts - Stay Informed](#alerts)
+10. [History - Review Your Trades](#history)
+11. [Settings - Customize Your Experience](#settings)
+12. [Understanding Options Trading](#understanding-options-trading)
+13. [Advanced Features](#advanced-features)
+14. [Troubleshooting](#troubleshooting)
+15. [FAQ](#faq)
 
 ---
 
@@ -547,6 +548,223 @@ The Watchlist helps you monitor stocks you're interested in trading.
 
 ---
 
+## 🎯 Opportunities - Discover Trading Signals
+
+The Opportunities page is your centralized hub for discovering trading opportunities. It combines three powerful views into one convenient, fast-loading interface.
+
+### Accessing Opportunities
+
+**Ways to Access:**
+1. Click "Opportunities" in the Discovery section of the navigation menu
+2. From Dashboard → Click one of the quick link cards
+3. Direct URL: `/opportunities`
+
+### Understanding the Tabbed Interface
+
+The Opportunities page uses a tabbed interface with three distinct views:
+
+1. **🎯 Signals Tab** - High-confidence trading signals from your watchlist and popular symbols
+2. **📈 Market Movers Tab** - Stocks with high volume and volatility
+3. **🤖 For You Tab** - Personalized AI recommendations based on your trading patterns
+
+All tabs load quickly and efficiently using optimized, fast-scoring algorithms.
+
+### Signals Tab - Trading Signals
+
+**What It Shows:**
+- High-confidence trading signals (60%+ confidence)
+- Based on price movement and volume analysis
+- Prioritizes your watchlist symbols
+- Falls back to 10 curated high-volume symbols if watchlist is empty
+
+**How It Works:**
+1. **Automatic Loading:** Signals load automatically when you switch to this tab
+2. **Quick Scoring:** Uses fast quote-based scoring (no slow technical analysis)
+3. **Smart Filtering:** Shows opportunities with 60%+ confidence
+4. **Real-Time Data:** Updates with current market data
+
+**Understanding Signal Cards:**
+Each signal card shows:
+- **Symbol:** Stock ticker (e.g., AAPL, TSLA, SPY)
+- **Confidence:** Signal confidence percentage (shown as green badge)
+- **Reason:** Brief explanation of why this is an opportunity
+- **Contract Type:** CALL, PUT, or OPTION (generic)
+- **Analyze Options Button:** Click to analyze options for this symbol
+
+**Quick Scan Feature:**
+- Click "⚡ Quick Scan" button at the top
+- Scans 10 popular high-volume symbols instantly
+- Finds additional opportunities beyond your watchlist
+- Results appear in a separate section below
+
+**How to Use:**
+1. Switch to Signals tab
+2. Review the opportunities shown
+3. Click on any card to analyze options for that symbol
+4. Or click "Analyze Options" button on the card
+5. Use "Quick Scan" to find more opportunities
+
+**Best Practices:**
+- Check Signals tab daily for new opportunities
+- Focus on symbols with 70%+ confidence
+- Use Quick Scan to discover new stocks
+- Add interesting symbols to your watchlist
+
+### Market Movers Tab - High Volume & Volatility
+
+**What It Shows:**
+- 10 pre-selected high-volume, high-volatility stocks and ETFs
+- Real-time price, volume, and change percentage
+- Always available, loads instantly
+
+**How It Works:**
+1. **Curated List:** Uses 10 fixed, highly liquid symbols:
+   - ETFs: SPY, QQQ, IWM
+   - Mega-cap tech: AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA
+2. **Fast Loading:** Just fetches current quotes (no heavy analysis)
+3. **Sorted by Activity:** Most active movers shown first
+
+**Understanding Market Mover Cards:**
+Each card shows:
+- **Symbol:** Stock ticker
+- **Company Name:** Full company name (if available)
+- **Price Change %:** Color-coded change percentage
+  - Green = positive change
+  - Red = negative change
+- **Current Price:** Real-time stock price
+- **Volume:** Trading volume
+- **Analyze Options Button:** Click to analyze options
+
+**How to Use:**
+1. Switch to Market Movers tab
+2. Browse the high-volume stocks
+3. Look for significant price movements (±2%+)
+4. Click on any card to analyze options
+5. Use "Refresh" button to update prices
+
+**Best Practices:**
+- Check Market Movers for volatile trading opportunities
+- Focus on stocks with ±2%+ price movement
+- High volume means better liquidity for options
+- Combine with your own analysis
+
+### For You Tab - AI Recommendations
+
+**What It Shows:**
+- Personalized symbol recommendations based on your trading history
+- Matched to your risk tolerance profile
+- Always provides results, even for new users
+
+**How It Works:**
+1. **Personalization:** Analyzes your trading patterns and preferences
+2. **Risk Matching:** Recommends symbols matching your risk tolerance
+   - **Low Risk:** Conservative stocks (SPY, QQQ, AAPL, MSFT, etc.)
+   - **Moderate Risk:** Balanced portfolio (AAPL, TSLA, NVDA, etc.)
+   - **High Risk:** Volatile stocks (TSLA, NVDA, AMD, etc.)
+3. **Fast Scoring:** Uses optimized scoring algorithm
+4. **Fallback:** Always provides recommendations even if you're new
+
+**Understanding Recommendation Cards:**
+Each card shows:
+- **Symbol:** Stock ticker
+- **Confidence:** Recommendation confidence (purple badge)
+- **Reason/Reasoning:** Why this symbol was recommended
+- **Strategy:** Suggested strategy type
+- **Analyze Options Button:** Click to analyze options
+
+**Personalization Factors:**
+- Your watchlist symbols (prioritized)
+- Your trading history and successful trades
+- Your risk tolerance setting (from Settings)
+- Market activity and volume
+
+**How to Use:**
+1. Switch to For You tab
+2. Review personalized recommendations
+3. Read the reasoning for each recommendation
+4. Click on any card to analyze options
+5. Use "Refresh" to get updated recommendations
+
+**Best Practices:**
+- Check For You tab regularly for personalized picks
+- Pay attention to the reasoning for each recommendation
+- Consider adding recommended symbols to your watchlist
+- Review recommendations that match your risk profile
+
+### Tab Navigation
+
+**Switching Tabs:**
+- Click on any tab header to switch views
+- Current tab is highlighted in blue
+- Each tab loads its data independently
+- Data loads automatically when you switch tabs
+
+**URL Parameters:**
+You can link directly to a specific tab:
+- `/opportunities?tab=signals` - Opens Signals tab
+- `/opportunities?tab=movers` - Opens Market Movers tab
+- `/opportunities?tab=for-you` - Opens For You tab
+
+### Quick Actions
+
+**From Any Tab:**
+
+1. **Analyze Options:**
+   - Click on any card or the "Analyze Options" button
+   - Takes you to Options Analyzer with symbol pre-filled
+   - Start analyzing immediately
+
+2. **Refresh:**
+   - Click "Refresh" button at the top right
+   - Reloads current tab's data
+   - Updates with latest market information
+
+3. **Quick Scan (Signals tab only):**
+   - Click "⚡ Quick Scan" button
+   - Scans popular symbols instantly
+   - Adds new opportunities to the list
+
+### Performance & Speed
+
+**Optimized for Speed:**
+- All tabs use fast, optimized algorithms
+- No slow technical analysis or IV rank calculations
+- Loads in seconds, not minutes
+- No timeouts or loading delays
+
+**Efficient Data Loading:**
+- Only loads data when you view a tab
+- Caches data to reduce API calls
+- Smart refresh to minimize requests
+
+### Tips for Using Opportunities Page
+
+1. **Start with For You:** Check personalized recommendations first
+2. **Check Signals Daily:** Review high-confidence signals regularly
+3. **Watch Market Movers:** Monitor for volatile trading opportunities
+4. **Use Quick Actions:** Click cards to analyze options instantly
+5. **Combine with Watchlist:** Add interesting symbols to your watchlist
+6. **Refresh Regularly:** Use Refresh button to get latest data
+
+### Troubleshooting
+
+**No Opportunities Showing:**
+- **Signals Tab:** Try Quick Scan or add symbols to your watchlist
+- **Market Movers Tab:** Should always show 10 symbols, try Refresh
+- **For You Tab:** Should always show recommendations, try Refresh
+
+**Slow Loading:**
+- All tabs should load quickly (under 5 seconds)
+- If slow, check your internet connection
+- Try refreshing the page
+
+**Data Not Updating:**
+- Click Refresh button
+- Switch to another tab and back
+- Check if market is open
+
+---
+
 ## 💼 Trade Execution - Place Your Trades
 
 The Trade page is where you execute options trades manually.
@@ -816,6 +1034,12 @@ Automations let you create trading strategies that execute automatically based o
 - Example: 30 = close after 30 days regardless of P/L
 - Optional
 
+**Quantity:**
+- Number of contracts to buy when automation executes
+- Default: 1 contract
+- Example: 3 = will buy 3 contracts each time
+- **New Feature:** Specify how many contracts you want per trade
+
 3. **Advanced Options (Click to Expand):**
 
 **Expiration Date Controls (DTE):**
@@ -916,14 +1140,58 @@ Automations let you create trading strategies that execute automatically based o
    - Closes position when stop loss hit
    - Manages positions automatically
 
+### Automation Diagnostics
+
+**New Feature:** The Automations page now includes a Diagnostics panel!
+
+**Accessing Diagnostics:**
+- Located at the top of the Automations page
+- Shows detailed information about why automations are or aren't executing
+- Updates automatically when you load the page
+
+**What Diagnostics Shows:**
+
+For each active automation, you'll see:
+- **Automation Name & Symbol:** Which automation is being checked
+- **Strategy Type:** What type of strategy it is
+- **Quantity:** How many contracts it will buy (new feature!)
+- **Is Ready to Trade:** ✅ Yes or ❌ No indicator
+- **Blocking Reasons:** Specific reasons why trades aren't executing:
+  - Already have open position (if not allowing multiple positions)
+  - Max open positions reached
+  - Signal confidence too low (below minimum required)
+  - Signal not recommended
+  - No suitable options found (check DTE, delta, volume, open interest, spread)
+- **Signal Info:** Current signal confidence, direction, action
+- **Options Info:** Whether suitable options were found (contract type, strike, expiration, DTE)
+- **Risk Info:** Risk management status
+
+**How to Use Diagnostics:**
+1. Check the Diagnostics panel at the top of the page
+2. Look for automations marked "❌ Is Ready to Trade: No"
+3. Review the "Blocking Reasons" to understand what's preventing trades
+4. Adjust automation settings based on the feedback:
+   - Lower min_confidence if confidence is too low
+   - Close existing position or enable "allow multiple positions"
+   - Adjust DTE settings if no suitable options found
+   - Check volume and open interest requirements
+5. Click "Run Cycle Now" to test changes and see updated diagnostics
+
+**Example Blocking Reasons:**
+- "Signal confidence (0.45) below minimum required (0.70)" → Lower min_confidence to 0.30-0.40
+- "Already have open position in AAPL (ID: 123)" → Close position or enable multiple positions
+- "Max open positions reached (5/5)" → Close some positions
+- "No suitable options found (check DTE, delta, volume, open interest, spread)" → Adjust DTE settings or relax filters
+
 ### Testing Your Automation
 
 #### Test Trade Button
 
-**New Feature:** Each automation now has a "🧪 Test Trade" button!
+**Feature:** Each automation now has a "🧪 Test Trade" button!
 
 **What It Does:**
 - Forces a test trade execution for that automation
+- Uses the quantity you specified (new feature!)
 - Bypasses some checks (confidence threshold, strict filters) for testing
 - Shows you exactly what trade would be executed
 - Perfect for understanding how your automation works
@@ -1786,52 +2054,85 @@ When reporting problems, include:
 
 ---
 
-## 📝 Recent Updates (Version 1.1)
+## 📝 Recent Updates (Version 1.2)
 
 ### New Features Added:
+
+1. **🎯 Unified Opportunities Page**
+   - Combined Discover, Market Movers, and AI Recommendations into one page
+   - Three tabs: Signals, Market Movers, and For You
+   - Fast, optimized loading (no more timeouts!)
+   - Single entry point for all trading opportunities
+
+2. **⚡ Optimized Performance**
+   - All opportunity tabs now use fast quote-based scoring
+   - No slow technical analysis or IV rank calculations
+   - Loads in seconds instead of minutes
+   - Uses curated list of 10 high-volume symbols for consistency
+
+3. **📊 Automation Diagnostics Panel**
+   - New diagnostics panel at top of Automations page
+   - Shows exactly why automations aren't executing
+   - Lists specific blocking reasons (signal confidence, positions, options, etc.)
+   - Real-time feedback on automation readiness
+
+4. **🔢 Quantity Field for Automations**
+   - Specify how many contracts to buy per automation execution
+   - Default: 1 contract (can increase for larger positions)
+   - Applies to Test Trade and regular automation execution
+
+5. **🔧 Simplified Navigation**
+   - Single "Opportunities" link replaces three separate pages
+   - Cleaner Discovery section in navigation
+   - Direct tab navigation via URL parameters
+
+6. **🚀 Faster Signal Generation**
+   - Signals tab uses fast price-movement-based scoring
+   - Quick Scan feature for instant opportunity discovery
+   - Prioritizes user watchlist, falls back to curated symbols
+
+### Improvements:
+
+- **Speed:** All opportunity pages load in seconds instead of timing out
+- **Consistency:** All tabs use the same fast, optimized approach
+- **User Experience:** Unified interface is easier to navigate
+- **Diagnostics:** Better visibility into why automations don't execute
+- **Flexibility:** More control over automation quantity and execution
+
+---
+
+## 📝 Previous Updates (Version 1.1)
+
+### Features Added:
 
 1. **🧪 Test Trade Button**
    - Force test trade execution for any automation
    - Bypasses some checks for testing purposes
    - Shows exactly what trade would be executed
-   - Perfect for understanding automation behavior
 
 2. **⚙️ Advanced Automation Controls**
    - Expiration Date Controls (DTE): Set preferred, min, and max days to expiration
    - Strike Price Controls (Delta): Set target, min, and max delta values
-   - Accessible via "Advanced Options" in Create/Edit Automation modal
 
 3. **🔔 Custom Alert Filters**
    - Configure how alerts are generated
    - Customize RSI, MACD, Moving Average, and Volume thresholds
-   - Set minimum confidence and signal requirements
-   - Toggle between platform defaults and custom filters
 
 4. **📊 Enhanced Alert Display**
-   - Technical Indicators section showing RSI, MACD, SMAs, Volume
-   - Signals Triggered section listing all technical signals
-   - Color-coded indicator values (green=bullish, red=bearish)
-   - Dynamic confidence calculation based on indicator strength
+   - Technical Indicators section
+   - Signals Triggered section
+   - Color-coded indicator values
 
-5. **🔍 Improved Automation Diagnostics**
+5. **🔍 Automation Diagnostics**
    - Detailed diagnostics when running cycles
    - Shows why trades aren't executing
-   - Lists specific blocking reasons
-   - Signal confidence vs. minimum required comparison
 
-6. **⚡ Better Error Handling**
-   - Loading states for all async operations
-   - Detailed error messages with context
-   - Better user feedback during operations
-
-7. **📈 LEAPS Support**
+6. **📈 LEAPS Support**
    - Increased max DTE to 1095 days (3 years)
-   - Support for long-term options trading
-   - Configurable in Settings and Automation creation
 
 ---
 
-**Version:** 1.1 Beta  
+**Version:** 1.2 Beta  
 **Last Updated:** January 2025  
 **For:** IAB OptionsBot Beta Testers  
 **Live URL:** [Your Railway Deployment URL]
