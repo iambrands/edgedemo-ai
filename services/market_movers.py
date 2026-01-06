@@ -76,14 +76,27 @@ class MarketMoversService:
         symbols_to_scan = self._get_top_symbols_list()
         movers = []
         errors = 0
-        max_errors = 10  # Stop if too many errors
+        max_errors = 20  # Increased to allow more errors before stopping
+        scanned_count = 0
+        
+        # Limit initial scan to first 50 symbols for speed (can expand if needed)
+        # Focus on most liquid/high-volume stocks first
+        symbols_to_scan_limited = symbols_to_scan[:50]
+        
+        try:
+            from flask import current_app
+            current_app.logger.info(f"📈 Starting market movers scan: {len(symbols_to_scan_limited)} symbols (from {len(symbols_to_scan)} total)")
+        except (RuntimeError, AttributeError):
+            pass
         
         # Scan symbols (with error handling)
-        for symbol in symbols_to_scan:
+        for symbol in symbols_to_scan_limited:
+            scanned_count += 1
             if errors >= max_errors:
                 try:
+                    from flask import current_app
                     current_app.logger.warning(f"Too many errors ({errors}), stopping market movers scan")
-                except:
+                except (RuntimeError, AttributeError):
                     pass
                 break
             try:
@@ -154,9 +167,10 @@ class MarketMoversService:
                 elif volume > 1_000_000:
                     score += 5
                 
-                # Lower the threshold to include more stocks
-                # Changed from score >= 20 to score >= 10 to catch more opportunities
-                if score >= 10:
+                # Lower the threshold significantly to ensure we get results
+                # Changed from score >= 20 to score >= 5 to catch more opportunities
+                # This ensures we find stocks even on quiet days
+                if score >= 5:
                     mover = {
                         'symbol': symbol,
                         'company_name': company_name,
@@ -174,16 +188,18 @@ class MarketMoversService:
             except Exception as e:
                 errors += 1
                 try:
+                    from flask import current_app
                     current_app.logger.warning(f"Error getting market mover data for {symbol}: {e}")
-                except:
+                except (RuntimeError, AttributeError):
                     pass
                 continue
         
         # If we didn't find enough movers, try a fallback with lower threshold
         if len(movers) < limit:
             try:
+                from flask import current_app
                 current_app.logger.info(f"Found {len(movers)} movers, trying fallback with lower threshold")
-            except:
+            except (RuntimeError, AttributeError):
                 pass
             # Re-scan with lower score threshold
             for symbol in symbols_to_scan:
@@ -232,6 +248,61 @@ class MarketMoversService:
         
         # Sort by score (highest first)
         movers.sort(key=lambda x: x.get('score', 0), reverse=True)
+        
+        # If still no movers found, return top volume stocks as fallback
+        # This ensures the page always shows something
+        if len(movers) == 0:
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"⚠️ No market movers found with criteria. Returning top volume stocks as fallback."
+                )
+            except (RuntimeError, AttributeError):
+                pass
+            
+            # Fallback: return top 10 most liquid stocks (ETFs and mega-caps)
+            fallback_symbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'IWM']
+            for symbol in fallback_symbols[:limit]:
+                try:
+                    quote = self.tradier.get_quote(symbol)
+                    if 'quotes' not in quote or 'quote' not in quote['quotes']:
+                        continue
+                    
+                    quote_data = quote['quotes']['quote']
+                    last = quote_data.get('last', 0)
+                    change = quote_data.get('change', 0)
+                    change_percent = quote_data.get('change_percentage', 0)
+                    volume = quote_data.get('volume', 0)
+                    company_name = quote_data.get('description', symbol)
+                    
+                    if last and last > 0:
+                        movers.append({
+                            'symbol': symbol,
+                            'company_name': company_name,
+                            'current_price': last,
+                            'change': change,
+                            'change_percent': round(change_percent, 2) if change_percent else 0,
+                            'volume': volume,
+                            'volume_ratio': 1.0,  # Default
+                            'iv_rank': 0,  # Will be calculated if needed
+                            'score': 5,  # Minimum score for fallback
+                            'movement_type': 'up' if change > 0 else 'down' if change < 0 else 'neutral'
+                        })
+                except:
+                    continue
+        
+        # Log results
+        try:
+            from flask import current_app
+            current_app.logger.info(
+                f"📊 Market movers scan complete: {len(movers)} movers found "
+                f"(scanned {scanned_count} symbols, {errors} errors)"
+            )
+            if movers:
+                top_5 = [f"{m.get('symbol')} (score:{m.get('score')})" for m in movers[:5]]
+                current_app.logger.info(f"   Top 5: {', '.join(top_5)}")
+        except (RuntimeError, AttributeError):
+            pass
         
         # Return top movers
         return movers[:limit]

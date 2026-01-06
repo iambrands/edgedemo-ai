@@ -209,8 +209,16 @@ def get_market_movers(current_user):
     """Get market movers - high volume/volatility stocks"""
     try:
         limit = request.args.get('limit', 10, type=int)
+        current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {current_user.id}")
+        
         movers_service = MarketMoversService()
         movers = movers_service.get_market_movers(limit=limit)
+        
+        current_app.logger.info(f"✅ Found {len(movers)} market movers")
+        if movers:
+            current_app.logger.info(f"   Top movers: {[m.get('symbol') for m in movers[:5]]}")
+        else:
+            current_app.logger.warning("⚠️ No market movers found - all symbols may have failed or none met criteria")
         
         return jsonify({
             'movers': movers,
@@ -218,8 +226,9 @@ def get_market_movers(current_user):
         }), 200
         
     except Exception as e:
+        import traceback
         try:
-            current_app.logger.error(f"Error getting market movers: {e}", exc_info=True)
+            current_app.logger.error(f"❌ Error getting market movers: {e}\n{traceback.format_exc()}", exc_info=True)
         except:
             pass
         return jsonify({'error': 'Failed to load market movers', 'details': str(e)}), 500
