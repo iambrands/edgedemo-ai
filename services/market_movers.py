@@ -79,9 +79,17 @@ class MarketMoversService:
         max_errors = 20  # Increased to allow more errors before stopping
         scanned_count = 0
         
-        # Limit initial scan to first 50 symbols for speed (can expand if needed)
-        # Focus on most liquid/high-volume stocks first
-        symbols_to_scan_limited = symbols_to_scan[:50]
+        # Limit initial scan to first 20 symbols for speed (most liquid stocks)
+        # This ensures response within 10-15 seconds
+        # Focus on most liquid/high-volume stocks first: ETFs and mega-caps
+        symbols_to_scan_limited = [
+            # Top ETFs (always liquid)
+            'SPY', 'QQQ', 'IWM', 'DIA', 'VOO',
+            # Mega-cap tech (highest volume)
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA',
+            # Other high-volume stocks
+            'AMD', 'NFLX', 'DIS', 'JPM', 'BAC', 'WMT', 'HD', 'MCD'
+        ]
         
         try:
             from flask import current_app

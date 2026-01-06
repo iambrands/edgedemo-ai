@@ -15,9 +15,9 @@ const Market: React.FC = () => {
   const loadMarketMovers = async () => {
     setLoading(true);
     try {
-      // Use shorter timeout for market movers
+      // Use longer timeout for market movers (scanning multiple symbols)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 15000); // 15 second timeout
+        setTimeout(() => reject(new Error('Timeout')), 30000); // 30 second timeout
       });
       
       const response = await Promise.race([
@@ -29,9 +29,11 @@ const Market: React.FC = () => {
         setMarketMovers(response.data.movers);
       }
     } catch (error: any) {
-      if (!error?.message?.includes('Timeout')) {
-        console.error('Failed to load market movers:', error);
-        toast.error('Failed to load market movers. Please try again.');
+      console.error('Failed to load market movers:', error);
+      if (error?.message?.includes('Timeout')) {
+        toast.error('Market movers request timed out. The scan may be taking longer than expected. Please try again.');
+      } else {
+        toast.error(error?.response?.data?.error || 'Failed to load market movers. Please try again.');
       }
       setMarketMovers([]);
     } finally {
