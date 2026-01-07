@@ -57,6 +57,9 @@ class Config:
     USE_YAHOO_DATA = False  # Yahoo Finance removed - use Tradier only
     USE_POLYGON_DATA = os.environ.get('USE_POLYGON_DATA', 'false').lower() == 'true'  # Polygon.io API
     POLYGON_API_KEY = os.environ.get('POLYGON_API_KEY', '')
+    
+    # Finnhub API Configuration (for earnings calendar - free tier: 60 calls/minute)
+    FINNHUB_API_KEY = os.environ.get('FINNHUB_API_KEY', '')
     MARKET_HOURS_START = '09:30'
     MARKET_HOURS_END = '16:00'
     TIMEZONE = 'America/New_York'

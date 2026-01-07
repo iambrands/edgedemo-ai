@@ -4,6 +4,7 @@ from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
 from services.ai_symbol_recommender import AISymbolRecommender
+from services.opportunity_insights import OpportunityInsights
 from models.stock import Stock
 from datetime import datetime
 
@@ -85,6 +86,17 @@ def get_today_opportunities(current_user):
                     confidence = min(0.75, confidence + 0.05)
                     reason += ' with high volume'
                 
+                # Get insights (earnings, IV, unusual activity) - async would be better but keep simple for now
+                insights = None
+                try:
+                    insights_service = OpportunityInsights()
+                    insights = insights_service.get_symbol_insights(symbol, current_user.id)
+                except Exception as e:
+                    try:
+                        current_app.logger.warning(f"Error getting insights for {symbol}: {e}")
+                    except:
+                        pass
+                
                 opportunity = {
                     'symbol': symbol,
                     'current_price': current_price,
@@ -97,6 +109,7 @@ def get_today_opportunities(current_user):
                         'rsi': None,  # Not calculated for speed
                         'trend': signal_direction
                     },
+                    'insights': insights,  # Add insights (earnings, IV context, unusual activity)
                     'timestamp': datetime.utcnow().isoformat()
                 }
                 
@@ -173,6 +186,17 @@ def quick_scan(current_user):
                     confidence = min(0.75, confidence + 0.05)
                     reason += ' with high volume'
                 
+                # Get insights
+                insights = None
+                try:
+                    insights_service = OpportunityInsights()
+                    insights = insights_service.get_symbol_insights(symbol, current_user.id)
+                except Exception as e:
+                    try:
+                        current_app.logger.warning(f"Error getting insights for {symbol}: {e}")
+                    except:
+                        pass
+                
                 opportunity = {
                     'symbol': symbol,
                     'current_price': current_price,
@@ -186,6 +210,7 @@ def quick_scan(current_user):
                         'rsi': None,
                         'trend': signal_direction
                     },
+                    'insights': insights,  # Add insights
                     'timestamp': datetime.utcnow().isoformat()
                 }
                 
@@ -221,10 +246,32 @@ def get_market_movers(current_user):
     """Get market movers - high volume/volatility stocks"""
     try:
         limit = request.args.get('limit', 10, type=int)
+        include_insights = request.args.get('include_insights', 'false').lower() == 'true'
+        
         current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {current_user.id}")
         
         movers_service = MarketMoversService()
         movers = movers_service.get_market_movers(limit=limit)
+        
+        # Optionally add insights (can be slow, so make it optional)
+        if include_insights:
+            try:
+                insights_service = OpportunityInsights()
+                for mover in movers:
+                    symbol = mover.get('symbol')
+                    if symbol:
+                        try:
+                            mover['insights'] = insights_service.get_symbol_insights(symbol, current_user.id)
+                        except Exception as e:
+                            try:
+                                current_app.logger.warning(f"Error getting insights for {symbol}: {e}")
+                            except:
+                                pass
+            except Exception as e:
+                try:
+                    current_app.logger.warning(f"Error adding insights to market movers: {e}")
+                except:
+                    pass
         
         current_app.logger.info(f"✅ Found {len(movers)} market movers")
         if movers:

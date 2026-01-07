@@ -94,6 +94,7 @@ def create_app(config_name=None):
     from api.opportunities import opportunities_bp
     from api.account import account_bp
     from api.automation_diagnostics import automation_diagnostics_bp
+    from api.opportunity_insights import opportunity_insights_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -104,6 +105,7 @@ def create_app(config_name=None):
     app.register_blueprint(iv_bp, url_prefix='/api/iv')
     app.register_blueprint(automation_engine_bp, url_prefix='/api/automation_engine')
     app.register_blueprint(automation_diagnostics_bp, url_prefix='/api/automation_diagnostics')
+    app.register_blueprint(opportunity_insights_bp, url_prefix='/api/opportunity_insights')
     app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
     app.register_blueprint(performance_bp, url_prefix='/api/performance')
     app.register_blueprint(earnings_bp, url_prefix='/api/earnings')

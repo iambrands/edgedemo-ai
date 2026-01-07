@@ -3,6 +3,7 @@ from datetime import datetime, date, timedelta
 from flask import current_app
 from models.earnings import EarningsCalendar
 from models.automation import Automation
+import requests
 
 class EarningsCalendarService:
     """Service for managing earnings calendar and auto-pausing automations"""
@@ -45,12 +46,98 @@ class EarningsCalendarService:
         
         return earnings
     
-    def get_upcoming_earnings(self, days_ahead: int = 30, user_id: int = None) -> List[Dict]:
-        """Get upcoming earnings dates"""
+    def fetch_earnings_from_finnhub(self, symbol: str) -> Optional[Dict]:
+        """Fetch earnings date from Finnhub API (free tier)"""
+        try:
+            # Finnhub free tier - 60 API calls/minute
+            try:
+                api_key = current_app.config.get('FINNHUB_API_KEY', '')
+            except RuntimeError:
+                api_key = ''
+            
+            if not api_key:
+                return None
+            
+            url = f"https://finnhub.io/api/v1/calendar/earnings"
+            params = {
+                'symbol': symbol.upper(),
+                'token': api_key
+            }
+            
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if 'earningsCalendar' in data and len(data['earningsCalendar']) > 0:
+                    # Get next upcoming earnings
+                    today = date.today()
+                    upcoming = None
+                    for earnings in data['earningsCalendar']:
+                        earnings_date = datetime.strptime(earnings.get('date', ''), '%Y-%m-%d').date()
+                        if earnings_date >= today:
+                            upcoming = earnings
+                            break
+                    
+                    if upcoming:
+                        return {
+                            'symbol': symbol.upper(),
+                            'earnings_date': datetime.strptime(upcoming.get('date', ''), '%Y-%m-%d').date(),
+                            'earnings_time': 'after_market',  # Default
+                            'fiscal_quarter': upcoming.get('quarter'),
+                            'estimated_eps': upcoming.get('epsEstimate'),
+                            'actual_eps': upcoming.get('epsActual')
+                        }
+        except Exception as e:
+            try:
+                current_app.logger.warning(f"Error fetching earnings from Finnhub for {symbol}: {e}")
+            except:
+                pass
+        return None
+    
+    def get_or_fetch_earnings_for_symbol(self, symbol: str, user_id: int = None) -> Optional[Dict]:
+        """Get earnings from DB or fetch from API if not found"""
+        db = self._get_db()
+        today = date.today()
+        
+        # Check database first
+        existing = db.session.query(EarningsCalendar).filter(
+            EarningsCalendar.symbol == symbol.upper(),
+            EarningsCalendar.earnings_date >= today
+        ).order_by(EarningsCalendar.earnings_date).first()
+        
+        if existing:
+            return existing.to_dict()
+        
+        # Fetch from API if not in database
+        earnings_data = self.fetch_earnings_from_finnhub(symbol)
+        if earnings_data:
+            earnings = self.add_earnings_date(
+                symbol=earnings_data['symbol'],
+                earnings_date=earnings_data['earnings_date'],
+                earnings_time=earnings_data.get('earnings_time', 'after_market'),
+                fiscal_quarter=earnings_data.get('fiscal_quarter'),
+                user_id=user_id
+            )
+            return earnings.to_dict()
+        
+        return None
+    
+    def get_upcoming_earnings(self, days_ahead: int = 30, user_id: int = None, symbols: List[str] = None) -> List[Dict]:
+        """Get upcoming earnings dates, optionally fetching for specific symbols"""
         db = self._get_db()
         
         today = date.today()
         end_date = today + timedelta(days=days_ahead)
+        
+        # If symbols provided, fetch earnings for them first
+        if symbols:
+            for symbol in symbols:
+                try:
+                    self.get_or_fetch_earnings_for_symbol(symbol, user_id)
+                except Exception as e:
+                    try:
+                        current_app.logger.warning(f"Error fetching earnings for {symbol}: {e}")
+                    except:
+                        pass
         
         query = db.session.query(EarningsCalendar).filter(
             EarningsCalendar.earnings_date >= today,
@@ -64,7 +151,17 @@ class EarningsCalendarService:
         
         earnings = query.order_by(EarningsCalendar.earnings_date).all()
         
-        return [e.to_dict() for e in earnings]
+        # Enhance with days until earnings
+        result = []
+        for e in earnings:
+            earnings_dict = e.to_dict()
+            days_until = (e.earnings_date - today).days
+            earnings_dict['days_until'] = days_until
+            earnings_dict['is_this_week'] = days_until <= 7
+            earnings_dict['is_this_month'] = days_until <= 30
+            result.append(earnings_dict)
+        
+        return result
     
     def get_earnings_for_symbol(self, symbol: str, user_id: int = None) -> List[Dict]:
         """Get all earnings dates for a symbol"""

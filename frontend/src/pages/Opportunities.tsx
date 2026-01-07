@@ -197,6 +197,68 @@ const Opportunities: React.FC = () => {
     };
   };
 
+  const renderInsightsBadges = (insights: any) => {
+    if (!insights) return null;
+    
+    const badges = [];
+    
+    // Earnings badge
+    if (insights.earnings && insights.earnings.has_upcoming) {
+      const days = insights.earnings.days_until;
+      badges.push(
+        <span
+          key="earnings"
+          className={`text-xs font-semibold px-2 py-1 rounded ${
+            days <= 7
+              ? 'bg-red-100 text-red-800'
+              : days <= 30
+              ? 'bg-orange-100 text-orange-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}
+          title={`Earnings in ${days} days`}
+        >
+          📅 {days}d
+        </span>
+      );
+    }
+    
+    // IV Rank badge
+    if (insights.iv_context && insights.iv_context.iv_rank !== null) {
+      const ivRank = Math.round(insights.iv_context.iv_rank || 0);
+      const ivLevel = insights.iv_context.iv_level;
+      badges.push(
+        <span
+          key="iv"
+          className={`text-xs font-semibold px-2 py-1 rounded ${
+            ivLevel === 'high'
+              ? 'bg-purple-100 text-purple-800'
+              : ivLevel === 'low'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-gray-100 text-gray-800'
+          }`}
+          title={insights.iv_context.interpretation}
+        >
+          📊 IV {ivRank}%
+        </span>
+      );
+    }
+    
+    // Unusual activity badge
+    if (insights.unusual_activity && insights.unusual_activity.has_unusual_activity) {
+      badges.push(
+        <span
+          key="unusual"
+          className="text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-800"
+          title={`${insights.unusual_activity.unusual_volume_count} unusual volume options detected`}
+        >
+          🔥 Unusual
+        </span>
+      );
+    }
+    
+    return badges.length > 0 ? <div className="flex flex-wrap gap-1 mt-2">{badges}</div> : null;
+  };
+
   const renderCard = (item: any, idx: number) => {
     if (activeTab === 'signals') {
       return (
@@ -206,11 +268,12 @@ const Opportunities: React.FC = () => {
           className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200 hover:border-indigo-300"
         >
           <div className="flex items-start justify-between mb-2">
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-lg text-secondary">{item.symbol}</h3>
               <p className="text-xs text-gray-500">{item.reason || 'High-confidence signal'}</p>
+              {renderInsightsBadges(item.insights)}
             </div>
-            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
+            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded ml-2">
               {Math.round((item.confidence || 0) * 100)}%
             </span>
           </div>
@@ -240,14 +303,15 @@ const Opportunities: React.FC = () => {
           className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200 hover:border-indigo-300"
         >
           <div className="flex items-start justify-between mb-2">
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-lg text-secondary">{item.symbol}</h3>
               {item.company_name && (
                 <p className="text-xs text-gray-500 truncate">{item.company_name}</p>
               )}
+              {renderInsightsBadges(item.insights)}
             </div>
             {item.change_percent !== undefined && (
-              <span className={`text-xs font-semibold px-2 py-1 rounded ${
+              <span className={`text-xs font-semibold px-2 py-1 rounded ml-2 ${
                 item.change_percent >= 0 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-red-100 text-red-800'
@@ -291,14 +355,15 @@ const Opportunities: React.FC = () => {
         className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200 hover:border-purple-300"
       >
         <div className="flex items-start justify-between mb-2">
-          <div>
+          <div className="flex-1">
             <h3 className="font-bold text-lg text-secondary">{item.symbol}</h3>
             {(item.reason || item.reasoning) && (
               <p className="text-xs text-gray-500 mt-1">{item.reason || item.reasoning}</p>
             )}
+            {renderInsightsBadges(item.insights)}
           </div>
           {item.confidence && (
-            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded">
+            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded ml-2">
               {Math.round(item.confidence * 100)}%
             </span>
           )}
