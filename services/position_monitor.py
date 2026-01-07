@@ -490,6 +490,14 @@ class PositionMonitor:
                         # Reject the suspicious price and use entry_price instead
                         position.current_price = position.entry_price
                     elif candidate_price:
+                        # Store previous price for volatility checking
+                        if not hasattr(position, '_last_verified_price'):
+                            position._last_verified_price = position.current_price if position.current_price else None
+                        else:
+                            # Update last verified price
+                            if position.current_price and position.current_price != position.entry_price:
+                                position._last_verified_price = position.current_price
+                        
                         position.current_price = candidate_price
                     else:
                         # Fallback to entry price if no current price available
@@ -583,7 +591,7 @@ class PositionMonitor:
         )
         
         if is_option:
-            # For options, validate price is reasonable
+            # For options, validate price is reasonable with STRICTER checks
             # 1. Check if price is suspiciously high (>$50 is almost always wrong for options)
             if position.current_price > 50:
                 try:
@@ -597,13 +605,13 @@ class PositionMonitor:
                     pass
                 return (False, f"Suspicious price data (${position.current_price:.2f} too high for option)")
             
-            # 2. Check if price change is suspiciously large (e.g., entry=$5, current=$200 = 3900% change)
+            # 2. Check if price change is suspiciously large (STRICTER: >5x instead of 10x)
             # This catches cases where price is wrong but still <$50
             if position.entry_price > 0:
                 price_ratio = position.current_price / position.entry_price
-                # If current price is more than 10x entry price, it's likely wrong
-                # (options rarely move 1000%+ in a short time unless it's a meme stock)
-                if price_ratio > 10:
+                # STRICTER: If current price is more than 5x entry price, it's likely wrong
+                # (options rarely move 500%+ in a short time unless it's a meme stock)
+                if price_ratio > 5:
                     try:
                         from flask import current_app
                         current_app.logger.error(
@@ -615,27 +623,51 @@ class PositionMonitor:
                         pass
                     return (False, f"Suspicious price ratio ({price_ratio:.1f}x change - likely incorrect data)")
                 
-                # 3. Check if price dropped to near zero suspiciously fast (e.g., entry=$5, current=$0.01)
+                # 3. Check if price dropped to near zero suspiciously fast (STRICTER: <2% instead of 1%)
                 # This catches cases where price was incorrectly set to a very low value
-                if position.current_price < (position.entry_price * 0.01) and position.entry_price > 1:
+                if position.current_price < (position.entry_price * 0.02) and position.entry_price > 1:
                     try:
                         from flask import current_app
                         current_app.logger.error(
                             f"🚨 Position {position.id} ({position.symbol}): "
                             f"Suspicious price drop: current=${position.current_price:.2f} vs entry=${position.entry_price:.2f} "
-                            f"(99%+ drop). This is likely incorrect price data. Rejecting exit check."
+                            f"(98%+ drop). This is likely incorrect price data. Rejecting exit check."
                         )
                     except:
                         pass
-                    return (False, f"Suspicious price drop (99%+ - likely incorrect data)")
+                    return (False, f"Suspicious price drop (98%+ - likely incorrect data)")
+                
+                # 4. NEW: Check if price changed dramatically since last update (price volatility check)
+                # If we have a previous price stored, check if current price is dramatically different
+                # This catches cases where price jumps suddenly due to bad data
+                if hasattr(position, '_last_verified_price') and position._last_verified_price:
+                    last_price = position._last_verified_price
+                    if last_price > 0:
+                        price_change_ratio = abs(position.current_price - last_price) / last_price
+                        # If price changed by more than 50% since last check, require re-verification
+                        if price_change_ratio > 0.5:
+                            try:
+                                from flask import current_app
+                                current_app.logger.error(
+                                    f"🚨 Position {position.id} ({position.symbol}): "
+                                    f"Price volatility detected: current=${position.current_price:.2f} vs last verified=${last_price:.2f} "
+                                    f"({price_change_ratio*100:.1f}% change). Requiring re-verification before allowing exits."
+                                )
+                            except:
+                                pass
+                            # Force a fresh price update before allowing exit
+                            self.update_position_data(position, force_update=True)
+                            # Re-check price after update
+                            if abs(position.current_price - last_price) / last_price > 0.5:
+                                return (False, f"Price volatility too high ({price_change_ratio*100:.1f}% - requiring re-verification)")
         
         # Calculate profit/loss percentages (only after validation passes)
         profit_percent = ((position.current_price - position.entry_price) / position.entry_price) * 100
         loss_percent = ((position.entry_price - position.current_price) / position.entry_price) * 100
         
-        # CRITICAL: Additional validation - if profit_percent is suspiciously high (>1000%), 
+        # CRITICAL: Additional validation - if profit_percent is suspiciously high (STRICTER: >500% instead of 1000%), 
         # it's likely a stock price was used instead of option premium
-        if is_option and profit_percent > 1000:
+        if is_option and profit_percent > 500:
             try:
                 from flask import current_app
                 current_app.logger.error(
@@ -647,6 +679,21 @@ class PositionMonitor:
             except:
                 pass
             return (False, f"Suspicious profit calculation ({profit_percent:.2f}% - likely stock price, not option premium)")
+        
+        # CRITICAL: Additional validation - if loss_percent is suspiciously high (>95%), 
+        # it's likely incorrect price data (options rarely go to near-zero that fast)
+        if is_option and loss_percent > 95 and position.entry_price > 1:
+            try:
+                from flask import current_app
+                current_app.logger.error(
+                    f"🚨 Position {position.id} ({position.symbol}): "
+                    f"Suspicious loss calculation: {loss_percent:.2f}% "
+                    f"(entry=${position.entry_price:.2f}, current=${position.current_price:.2f}). "
+                    f"This is likely incorrect price data. REJECTING EXIT."
+                )
+            except:
+                pass
+            return (False, f"Suspicious loss calculation ({loss_percent:.2f}% - likely incorrect price data)")
         
         # CRITICAL: NEVER exit at exactly 0% profit/loss (entry_price = current_price)
         # This indicates the price hasn't updated or is stale - don't exit based on stale data
@@ -735,16 +782,26 @@ class PositionMonitor:
         except:
             pass
         
-        # CRITICAL: Check user's risk management limits FIRST (from Settings)
-        # This MUST always run, even during cooldown or if price is unchanged
-        # Risk management limits are safety features that should always be enforced
+        # CRITICAL: Check user's risk management limits (from Settings)
+        # BUT: Only if price data is VALIDATED - don't trigger on bad prices!
+        # Risk management limits are safety features, but they need accurate price data
         from services.risk_manager import RiskManager
         risk_manager = RiskManager()
         risk_limits = risk_manager.get_risk_limits(position.user_id)
         
+        # CRITICAL: Before checking risk limits, verify price data is trustworthy
+        # If price is unchanged or suspicious, don't trigger risk management exits
+        price_is_trustworthy = (
+            not price_unchanged and  # Price has actually changed
+            not allow_only_expiration_exit and  # Not in cooldown/suspicious state
+            position.current_price != position.entry_price  # Price is different from entry
+        )
+        
         # Check if position loss exceeds user's risk management stop loss
         # Use max_daily_loss_percent as per-position stop loss if set
-        if risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0:
+        # BUT: Only if price data is trustworthy!
+        if (risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0 and 
+            price_is_trustworthy):
             # Use the daily loss limit as a per-position stop loss
             risk_stop_loss = risk_limits.max_daily_loss_percent
             if loss_percent >= risk_stop_loss:
@@ -758,6 +815,19 @@ class PositionMonitor:
                 except:
                     pass
                 return (True, f"Risk management stop loss triggered ({loss_percent:.2f}% loss, limit: {risk_stop_loss}% from Settings)")
+        elif (risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0 and 
+              not price_is_trustworthy):
+            # Price data is not trustworthy - log but don't trigger
+            try:
+                from flask import current_app
+                current_app.logger.warning(
+                    f"⚠️ Position {position.id} ({position.symbol}): "
+                    f"Risk management stop loss would trigger ({loss_percent:.2f}% loss), "
+                    f"but price data is not trustworthy (unchanged={price_unchanged}, "
+                    f"cooldown={allow_only_expiration_exit}). Skipping exit to prevent false trigger."
+                )
+            except:
+                pass
         
         # Also check daily loss limit - if user is approaching/exceeding daily loss, close losing positions
         if risk_limits and risk_limits.max_daily_loss_percent:
