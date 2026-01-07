@@ -77,7 +77,8 @@ const Dashboard: React.FC = () => {
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false - show cached data immediately
+  const [refreshing, setRefreshing] = useState(false); // Separate state for manual refresh
   const [accountBalance, setAccountBalance] = useState<number | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
@@ -97,7 +98,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check cache first - if data is fresh, use it immediately
+    // Check cache first - if data is fresh, use it immediately (ALWAYS show something)
     const cached = getCachedData();
     if (cached) {
       setPositions(cached.positions || []);
@@ -105,9 +106,15 @@ const Dashboard: React.FC = () => {
       setRecentTrades((cached.trades || []).slice(0, 10));
       setWatchlist(cached.watchlist || []);
       setAccountBalance(cached.balance || 100000);
-      setLoading(false);
       setLastLoadTime(cached.timestamp);
       console.log('✅ Using cached dashboard data');
+    } else {
+      // If no cache, set defaults so page can render immediately
+      setPositions([]);
+      setAllTrades([]);
+      setRecentTrades([]);
+      setWatchlist([]);
+      setAccountBalance(100000);
     }
     
     // Load user preference for showing opportunities
@@ -126,9 +133,11 @@ const Dashboard: React.FC = () => {
     }
     
     // Load fresh data in background (only if cache is stale or missing)
+    // This runs silently in the background - doesn't block UI
     const shouldReload = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
     if (shouldReload) {
-      loadDashboardData();
+      // Load in background without showing loading state
+      loadDashboardData(false, true); // silent background load
     }
     
     // Load optional widgets in background (non-blocking, with longer delay)
@@ -147,27 +156,20 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // Auto-refresh prices every 2 minutes (120000ms) - traders need to see current P/L
-    // This updates prices without full page reload
-    const priceRefreshInterval = setInterval(() => {
-      console.log('⏰ Auto-refreshing prices (2-minute interval)');
-      loadDashboardData(true); // Update prices every 2 minutes
-    }, 120000); // 2 minutes
-    
-    // Optional: Full data refresh every 10 minutes (600000ms)
-    const fullRefreshInterval = setInterval(() => {
-      console.log('⏰ Full dashboard refresh (10-minute interval)');
-      loadDashboardData(false); // Full refresh without price update (prices already updated above)
-    }, 600000); // 10 minutes
+    // REMOVED: Auto-refresh intervals - user can manually refresh when needed
+    // This prevents the blank screen issue and gives user control
+    // Auto-refresh was causing the 10-second blank screen problem
     
     return () => {
-      clearInterval(priceRefreshInterval);
-      clearInterval(fullRefreshInterval);
+      // No intervals to clear anymore
     };
   }, []);
 
-  const loadDashboardData = async (updatePrices: boolean = false) => {
-    setLoading(true);
+  const loadDashboardData = async (updatePrices: boolean = false, silent: boolean = false) => {
+    // Only show loading state if it's a manual refresh (not silent background load)
+    if (!silent) {
+      setRefreshing(true);
+    }
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
@@ -265,15 +267,15 @@ const Dashboard: React.FC = () => {
       setLastLoadTime(Date.now());
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
-      toast.error('Failed to load some dashboard data. Please refresh the page.', { duration: 5000 });
-      // Set defaults so page can still render
-      setPositions([]);
-      setAllTrades([]);
-      setRecentTrades([]);
-      setWatchlist([]);
-      setAccountBalance(100000);
+      // Only show error toast for manual refreshes, not silent background loads
+      if (!silent) {
+        toast.error('Failed to load some dashboard data. Please try again.', { duration: 5000 });
+      }
+      // Don't clear existing data on error - keep what we have
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setRefreshing(false);
+      }
     }
   };
 
@@ -620,9 +622,8 @@ const Dashboard: React.FC = () => {
     ],
   };
 
-  if (loading) {
-    return <div className="text-center py-12">Loading dashboard...</div>;
-  }
+  // Never show blank screen - always render dashboard with cached/default data
+  // Loading state is now handled per-section, not for entire page
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('has_seen_onboarding', 'true');
@@ -651,14 +652,14 @@ const Dashboard: React.FC = () => {
           <button
             onClick={async () => {
               toast.loading('Refreshing dashboard data...', { id: 'refresh' });
-              await loadDashboardData(true); // Update prices on manual refresh
+              await loadDashboardData(true, false); // Update prices on manual refresh, show loading
               toast.success('Dashboard refreshed!', { id: 'refresh' });
             }}
-            disabled={loading}
+            disabled={refreshing}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
             title="Manually refresh dashboard data and update position prices"
           >
-            {loading ? (
+            {refreshing ? (
               <>
                 <span className="animate-spin">⏳</span>
                 <span>Refreshing...</span>
