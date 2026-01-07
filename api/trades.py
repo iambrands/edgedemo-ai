@@ -281,6 +281,63 @@ def close_position(current_user, position_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@trades_bp.route('/recent-activity', methods=['GET'])
+@token_required
+def get_recent_activity(current_user):
+    """Get recent trades and positions to diagnose what happened"""
+    try:
+        from models.trade import Trade
+        from models.position import Position
+        from datetime import datetime, timedelta
+        
+        db = current_app.extensions['sqlalchemy']
+        
+        # Get trades from last 24 hours
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        recent_trades = db.session.query(Trade).filter(
+            Trade.user_id == current_user.id,
+            Trade.trade_date >= yesterday
+        ).order_by(Trade.trade_date.desc()).all()
+        
+        # Get all open and recently closed positions
+        recent_positions = db.session.query(Position).filter(
+            Position.user_id == current_user.id
+        ).order_by(Position.entry_date.desc()).limit(20).all()
+        
+        # Format response
+        trades_data = []
+        for trade in recent_trades:
+            trade_dict = trade.to_dict()
+            # Check if this trade closed a position
+            if trade.action.lower() == 'sell':
+                # Find the position this might have closed
+                matching_position = db.session.query(Position).filter(
+                    Position.user_id == current_user.id,
+                    Position.symbol == trade.symbol,
+                    Position.option_symbol == trade.option_symbol,
+                    Position.status == 'closed'
+                ).first()
+                if matching_position:
+                    trade_dict['closed_position_id'] = matching_position.id
+                    trade_dict['realized_pnl'] = matching_position.realized_pnl
+                    trade_dict['realized_pnl_percent'] = matching_position.realized_pnl_percent
+            trades_data.append(trade_dict)
+        
+        positions_data = [pos.to_dict() for pos in recent_positions]
+        
+        return jsonify({
+            'recent_trades': trades_data,
+            'recent_positions': positions_data,
+            'summary': {
+                'trades_last_24h': len(trades_data),
+                'open_positions': len([p for p in positions_data if p['status'] == 'open']),
+                'closed_positions': len([p for p in positions_data if p['status'] == 'closed'])
+            }
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error getting recent activity: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
 @trades_bp.route('/positions/check-exits', methods=['POST', 'OPTIONS'])
 @token_required
 def check_position_exits(current_user):
