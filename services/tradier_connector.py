@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import random
 import time
 from utils.rate_limiter import tradier_rate_limiter
+from functools import lru_cache
 
 class TradierConnector:
     """Tradier API integration with mock data support and alternative data sources"""
@@ -372,19 +373,33 @@ class TradierConnector:
                 }
             }
     
-    def get_options_expirations(self, symbol: str) -> List[str]:
-        """Get available option expiration dates - tries Yahoo/Polygon first if enabled"""
-        # DISABLED: Yahoo Finance - use Tradier directly
-        # Try Yahoo Finance first if enabled
-        # if self.use_yahoo and self.yahoo:
-        #     expirations = self.yahoo.get_options_expirations(symbol)
-        #     if expirations:
-        #         return expirations
+    def get_options_expirations(self, symbol: str, use_cache: bool = True) -> List[str]:
+        """Get available option expiration dates - with caching for performance"""
+        symbol = symbol.upper()
+        
+        # Check cache first (expiration dates don't change frequently)
+        if use_cache and hasattr(self, '_expiration_cache'):
+            cache_key = symbol
+            if cache_key in self._expiration_cache:
+                cached_data, cached_time = self._expiration_cache[cache_key]
+                # Cache for 1 hour (expiration dates don't change often)
+                if (datetime.now() - cached_time).total_seconds() < 3600:
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(f'Using cached expirations for {symbol}')
+                    except RuntimeError:
+                        pass
+                    return cached_data
+        
+        # Initialize cache if it doesn't exist
+        if not hasattr(self, '_expiration_cache'):
+            self._expiration_cache = {}
         
         # Try Polygon.io if enabled
         if self.use_polygon and self.polygon:
             expirations = self.polygon.get_options_expirations(symbol)
             if expirations:
+                self._expiration_cache[symbol] = (expirations, datetime.now())
                 return expirations
         
         # Fall back to mock or Tradier
@@ -395,20 +410,49 @@ class TradierConnector:
                 current_app.logger.info(f'Mock expirations for {symbol}: {mock_data}')
             except RuntimeError:
                 pass
-            return mock_data['expirations']['expiration']
+            result = mock_data['expirations']['expiration']
+            self._expiration_cache[symbol] = (result, datetime.now())
+            return result
         
+        # Use shorter timeout for expiration requests (should be fast)
         endpoint = f'markets/options/expirations'
         params = {'symbol': symbol}
-        response = self._make_request(endpoint, params)
+        
         try:
-            from flask import current_app
-            current_app.logger.info(f'Tradier expirations response for {symbol}: {response}')
-        except RuntimeError:
-            pass
+            # Make request with shorter timeout
+            url = f"{self.base_url}/{endpoint}"
+            response = requests.get(
+                url, 
+                headers=self._get_headers(), 
+                params=params, 
+                timeout=5  # Reduced from 10 to 5 seconds
+            )
+            response.raise_for_status()
+            api_response = response.json()
+        except requests.exceptions.Timeout:
+            try:
+                from flask import current_app
+                current_app.logger.warning(f'Timeout fetching expirations for {symbol}, using mock data')
+            except RuntimeError:
+                pass
+            # Return mock data on timeout
+            result = self._mock_expirations(symbol)['expirations']['expiration']
+            self._expiration_cache[symbol] = (result, datetime.now())
+            return result
+        except Exception as e:
+            try:
+                from flask import current_app
+                current_app.logger.warning(f'Error fetching expirations for {symbol}: {e}, using mock data')
+            except RuntimeError:
+                pass
+            # Return mock data on error
+            result = self._mock_expirations(symbol)['expirations']['expiration']
+            self._expiration_cache[symbol] = (result, datetime.now())
+            return result
         
         # Tradier API can return either 'expiration' or 'date' field
-        if 'expirations' in response:
-            expirations_data = response['expirations']
+        if 'expirations' in api_response:
+            expirations_data = api_response['expirations']
             # Check for 'date' field (Tradier Sandbox format)
             if 'date' in expirations_data:
                 expirations = expirations_data['date']
@@ -432,7 +476,16 @@ class TradierConnector:
                         current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
                     except RuntimeError:
                         pass
-                    return self._mock_expirations(symbol)['expirations']['expiration']
+                    result = self._mock_expirations(symbol)['expirations']['expiration']
+                else:
+                    try:
+                        from flask import current_app
+                        current_app.logger.info(f'✅ Got {len(result)} expirations for {symbol} from Tradier')
+                    except RuntimeError:
+                        pass
+                
+                # Cache the result
+                self._expiration_cache[symbol] = (result, datetime.now())
                 return result
         
         # If no expirations in response, fall back to mock data
@@ -441,7 +494,9 @@ class TradierConnector:
             current_app.logger.warning(f'No expirations in Tradier response for {symbol}, falling back to mock data')
         except RuntimeError:
             pass
-        return self._mock_expirations(symbol)['expirations']['expiration']
+        result = self._mock_expirations(symbol)['expirations']['expiration']
+        self._expiration_cache[symbol] = (result, datetime.now())
+        return result
     
     def _mock_expirations(self, symbol: str) -> Dict:
         """Mock expiration dates"""

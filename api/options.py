@@ -192,16 +192,21 @@ def get_expirations(current_user, symbol):
         return jsonify({'error': 'Invalid symbol'}), 400
     
     try:
+        import time
+        start_time = time.time()
+        
         tradier = get_tradier()
-        expirations = tradier.get_options_expirations(symbol)
+        expirations = tradier.get_options_expirations(symbol, use_cache=True)
+        
+        elapsed = time.time() - start_time
         try:
-            current_app.logger.info(f'Expirations for {symbol}: {expirations}')
-            current_app.logger.info(f'Expirations type: {type(expirations)}, length: {len(expirations) if isinstance(expirations, list) else "N/A"}')
+            current_app.logger.info(f'✅ Expirations for {symbol}: {len(expirations) if isinstance(expirations, list) else 0} dates (took {elapsed:.2f}s)')
         except:
             pass
         return jsonify({
             'symbol': symbol,
-            'expirations': expirations
+            'expirations': expirations,
+            'cached': elapsed < 0.1  # If very fast, likely from cache
         }), 200
     except Exception as e:
         try:
