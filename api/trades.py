@@ -283,8 +283,15 @@ def close_position(current_user, position_id):
     if request.method == 'OPTIONS':
         return jsonify({}), 200
     
-    data = request.get_json() or {}
-    exit_price = data.get('exit_price')
+    # Handle empty body gracefully - allow POST without JSON body
+    exit_price = None
+    try:
+        if request.content_type and 'application/json' in request.content_type:
+            data = request.get_json(silent=True) or {}
+            exit_price = data.get('exit_price')
+    except Exception:
+        # If JSON parsing fails, that's okay - exit_price will be None
+        pass
     
     try:
         trade_executor = get_trade_executor()
