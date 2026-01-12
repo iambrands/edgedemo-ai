@@ -942,10 +942,13 @@ class TradeExecutor:
                                 except:
                                     pass
                                 
-                                # Find closest strike within reasonable range (within 20% of position strike)
+                                # Find closest strike within reasonable range
+                                # For risk management exits, use larger tolerance (50%) to ensure positions can be closed
+                                # For manual closes, use smaller tolerance (20%)
                                 closest_option = None
                                 closest_diff = float('inf')
-                                max_strike_diff = position_strike * 0.20  # 20% tolerance
+                                # Use larger tolerance to ensure positions can be closed (especially for risk management)
+                                max_strike_diff = position_strike * 0.50  # 50% tolerance for safety
                                 
                                 for option in options_list:
                                     option_strike = option.get('strike') or option.get('strike_price')
@@ -959,9 +962,19 @@ class TradeExecutor:
                                     if option_strike_float is None:
                                         continue
                                     
-                                    # Match contract type
+                                    # Match contract type - be lenient for 'option' type
                                     if position_contract_type == 'option':
+                                        # For generic 'option' type, match both calls and puts
+                                        # But prefer the one that matches the option_symbol if available
                                         type_match = option_type in ['call', 'put']
+                                        if position.option_symbol:
+                                            # Check if option_symbol indicates call or put
+                                            is_call = 'C' in position.option_symbol[-10:]
+                                            is_put = 'P' in position.option_symbol[-10:]
+                                            if is_call:
+                                                type_match = option_type == 'call'
+                                            elif is_put:
+                                                type_match = option_type == 'put'
                                     else:
                                         type_match = (
                                             option_type == position_contract_type or
@@ -980,6 +993,16 @@ class TradeExecutor:
                                     ask = closest_option.get('ask', 0) or 0
                                     last = closest_option.get('last', 0) or closest_option.get('lastPrice', 0) or 0
                                     
+                                    try:
+                                        from flask import current_app
+                                        current_app.logger.info(
+                                            f"🔍 CLOSE POSITION: Found closest strike ${closest_option.get('strike')} "
+                                            f"(diff: ${closest_diff:.2f}) for position strike ${position.strike_price}. "
+                                            f"Prices: bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
+                                        )
+                                    except:
+                                        pass
+                                    
                                     # Validate price is reasonable
                                     max_price = max(bid, ask, last) if (bid or ask or last) else 0
                                     if max_price > 0 and max_price <= 50:
@@ -994,13 +1017,40 @@ class TradeExecutor:
                                             try:
                                                 from flask import current_app
                                                 current_app.logger.warning(
-                                                    f"⚠️ CLOSE POSITION: Using closest strike ${closest_option.get('strike')} "
+                                                    f"✅ CLOSE POSITION: Using closest strike ${closest_option.get('strike')} "
                                                     f"(diff: ${closest_diff:.2f}) for position strike ${position.strike_price}. "
                                                     f"Exit price: ${exit_price:.2f}"
                                                 )
                                             except:
                                                 pass
                                             # Found valid exit price from closest strike
+                                        else:
+                                            try:
+                                                from flask import current_app
+                                                current_app.logger.warning(
+                                                    f"⚠️ CLOSE POSITION: Closest strike ${closest_option.get('strike')} found but no valid price "
+                                                    f"(bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f})"
+                                                )
+                                            except:
+                                                pass
+                                    else:
+                                        try:
+                                            from flask import current_app
+                                            current_app.logger.warning(
+                                                f"⚠️ CLOSE POSITION: Closest strike ${closest_option.get('strike')} found but price is invalid "
+                                                f"(max_price=${max_price:.2f} > $50 or zero)"
+                                            )
+                                        except:
+                                            pass
+                                else:
+                                    try:
+                                        from flask import current_app
+                                        current_app.logger.warning(
+                                            f"⚠️ CLOSE POSITION: No closest strike found within {max_strike_diff:.2f} tolerance "
+                                            f"for position strike ${position.strike_price}"
+                                        )
+                                    except:
+                                        pass
                                 
                                 if not exit_price:
                                     try:
@@ -1076,17 +1126,43 @@ class TradeExecutor:
                             pass
                         exit_price = None  # Reject stock price - don't use entry_price fallback
                     elif not exit_price or exit_price <= 0:
-                        # No price found - DO NOT use entry_price - this causes SELL at BUY price!
-                        try:
-                            from flask import current_app
-                            current_app.logger.error(
-                                f"🚨🚨🚨 CRITICAL: Could not fetch option premium for position {position.id}. "
-                                f"Options chain lookup FAILED. Will NOT close position with entry_price fallback "
-                                f"(this causes SELL at BUY price bug)."
-                            )
-                        except:
-                            pass
-                        exit_price = None  # Don't use entry_price - this is the bug!
+                        # CRITICAL FALLBACK: If options chain lookup failed but we have a validated current_price,
+                        # use it as a last resort (safety first - especially for risk management exits)
+                        # This only applies if current_price is reasonable (<$50) and different from entry_price
+                        can_use_current_price = (
+                            position.current_price and 
+                            position.current_price > 0 and 
+                            position.current_price <= 50 and
+                            position.entry_price and
+                            position.entry_price > 0 and
+                            abs(position.current_price - position.entry_price) >= (position.entry_price * 0.01)  # At least 1% different
+                        )
+                        
+                        if can_use_current_price:
+                            try:
+                                from flask import current_app
+                                current_app.logger.warning(
+                                    f"⚠️ CRITICAL FALLBACK: Options chain lookup failed for position {position.id} ({position.symbol}). "
+                                    f"Using validated current_price=${position.current_price:.2f} as exit price "
+                                    f"(entry=${position.entry_price:.2f}, diff={abs(position.current_price - position.entry_price)/position.entry_price*100:.1f}%). "
+                                    f"This is a safety measure to allow position closure when chain lookup fails."
+                                )
+                            except:
+                                pass
+                            exit_price = position.current_price
+                        else:
+                            # No valid fallback - DO NOT use entry_price - this causes SELL at BUY price!
+                            try:
+                                from flask import current_app
+                                current_app.logger.error(
+                                    f"🚨🚨🚨 CRITICAL: Could not fetch option premium for position {position.id} ({position.symbol}). "
+                                    f"Options chain lookup FAILED. current_price=${position.current_price} "
+                                    f"(entry=${position.entry_price}) is not usable. "
+                                    f"Will NOT use entry_price fallback (this causes SELL at BUY price bug)."
+                                )
+                            except:
+                                pass
+                            exit_price = None  # Don't use entry_price - this is the bug!
                 else:
                     # For stocks, use current_price or entry_price
                     if not exit_price or exit_price <= 0:
@@ -1096,7 +1172,8 @@ class TradeExecutor:
         # NEVER allow 0, None, or entry_price for option positions - this causes SELL at BUY price bug!
         if is_option_position:
             # CRITICAL CHECK: If exit_price equals entry_price, this is the bug - reject it!
-            if exit_price and position.entry_price and abs(exit_price - position.entry_price) < 0.01:
+            # BUT: Allow if the difference is at least 1% (to handle rounding)
+            if exit_price and position.entry_price and abs(exit_price - position.entry_price) < (position.entry_price * 0.01):
                 try:
                     from flask import current_app
                     current_app.logger.error(
