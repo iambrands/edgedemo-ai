@@ -1052,15 +1052,16 @@ class TradeExecutor:
                                     except:
                                         pass
                                 
+                                # If exit_price is still None after closest strike attempt, log but continue to fallback
                                 if not exit_price:
                                     try:
                                         from flask import current_app
-                                        current_app.logger.error(
-                                            f"🚨🚨🚨 CLOSE POSITION: No matching option found in chain for "
+                                        current_app.logger.warning(
+                                            f"⚠️ CLOSE POSITION: No matching option found in chain for "
                                             f"position {position.id} ({position.symbol}) "
                                             f"strike=${position.strike_price} type={position.contract_type} "
                                             f"exp={expiration_str}. Chain had {len(options_list)} options. "
-                                            f"Cannot close - option not found in chain."
+                                            f"Will try fallback to current_price."
                                         )
                                         # Log sample options and available strikes for debugging
                                         if options_list:
@@ -1190,19 +1191,37 @@ class TradeExecutor:
                 }
             
             if not exit_price or exit_price <= 0:
-                try:
-                    from flask import current_app
-                    current_app.logger.error(
-                        f"🚨🚨🚨 CRITICAL: exit_price is {exit_price} for option position {position.id}. "
-                        f"Options chain lookup FAILED. Will NOT use entry_price fallback (this causes SELL at BUY price bug). "
-                        f"ABORTING close."
-                    )
-                except:
-                    pass
-                return {
-                    'error': f'Cannot close position: Could not fetch current option premium from Tradier. '
-                             f'Options chain lookup failed. Please try again later or close manually with correct price.'
-                }
+                # FINAL FALLBACK: Try one more time with current_price if available
+                if (position.current_price and 
+                    position.current_price > 0 and 
+                    position.current_price <= 50 and
+                    position.entry_price and
+                    position.entry_price > 0 and
+                    abs(position.current_price - position.entry_price) >= (position.entry_price * 0.01)):
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"⚠️ FINAL FALLBACK: Using current_price=${position.current_price:.2f} for position {position.id} "
+                            f"after all other methods failed. This allows position closure when chain lookup fails."
+                        )
+                    except:
+                        pass
+                    exit_price = position.current_price
+                else:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"🚨🚨🚨 CRITICAL: exit_price is {exit_price} for option position {position.id}. "
+                            f"Options chain lookup FAILED. current_price=${position.current_price} not usable. "
+                            f"Will NOT use entry_price fallback (this causes SELL at BUY price bug). "
+                            f"ABORTING close."
+                        )
+                    except:
+                        pass
+                    return {
+                        'error': f'Cannot close position: Could not fetch current option premium from Tradier. '
+                                 f'Options chain lookup failed. Please try again later or close manually with correct price.'
+                    }
             
             # Double-check: if exit_price still looks like stock price, reject it
             if exit_price > 50:
@@ -1228,42 +1247,98 @@ class TradeExecutor:
         except:
             pass
         
+        # CRITICAL: Validate exit_price one more time before executing
+        if not exit_price or exit_price <= 0:
+            try:
+                from flask import current_app
+                current_app.logger.error(
+                    f"🚨🚨🚨 CRITICAL: exit_price is still invalid ({exit_price}) after all fallbacks. "
+                    f"Cannot execute trade for position {position.id}."
+                )
+            except:
+                pass
+            return {
+                'error': f'Cannot close position: Invalid exit price (${exit_price}). '
+                         f'All price lookup methods failed. Please try again later or close manually.'
+            }
+        
         # Execute sell trade (skip risk checks for exits)
-        result = self.execute_trade(
-            user_id=user_id,
-            symbol=position.symbol,
-            action='sell',
-            quantity=position.quantity,
-            option_symbol=position.option_symbol,
-            strike=position.strike_price,
-            expiration_date=position.expiration_date.isoformat() if position.expiration_date else None,
-            contract_type=position.contract_type,
-            price=exit_price,  # CRITICAL: This must be a valid option premium, not 0 or stock price
-            strategy_source='manual',
-            notes='Position close',
-            skip_risk_check=True
-        )
-        
-        # Update position
-        position.status = 'closed'
-        # For options, multiply by 100 (contract multiplier)
-        is_option = (
-            (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
-            bool(position.option_symbol) or
-            (position.expiration_date and position.strike_price is not None)
-        )
-        contract_multiplier = 100 if is_option else 1
-        
-        position.unrealized_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
-        position.unrealized_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
-        
-        # Update trade with realized P/L
-        if 'trade' in result:
-            trade = db.session.query(Trade).filter_by(id=result['trade']['id']).first()
-            if trade:
-                trade.realized_pnl = position.unrealized_pnl
-                trade.realized_pnl_percent = position.unrealized_pnl_percent
-        
-        db.session.commit()
-        return result
+        try:
+            result = self.execute_trade(
+                user_id=user_id,
+                symbol=position.symbol,
+                action='sell',
+                quantity=position.quantity,
+                option_symbol=position.option_symbol,
+                strike=position.strike_price,
+                expiration_date=position.expiration_date.isoformat() if position.expiration_date else None,
+                contract_type=position.contract_type,
+                price=exit_price,  # CRITICAL: This must be a valid option premium, not 0 or stock price
+                strategy_source='manual',
+                notes='Position close',
+                skip_risk_check=True
+            )
+            
+            # CRITICAL: Check if trade execution failed
+            if 'error' in result:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f"🚨🚨🚨 Trade execution failed for position {position.id}: {result['error']}"
+                    )
+                except:
+                    pass
+                return result
+            
+            # Update position status and P/L
+            position.status = 'closed'
+            position.exit_price = exit_price
+            position.exit_date = datetime.utcnow()
+            
+            # For options, multiply by 100 (contract multiplier)
+            is_option = (
+                (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
+                bool(position.option_symbol) or
+                (position.expiration_date and position.strike_price is not None)
+            )
+            contract_multiplier = 100 if is_option else 1
+            
+            # Calculate final P/L
+            position.unrealized_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
+            position.unrealized_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
+            
+            # Update trade with realized P/L
+            if 'trade' in result:
+                trade = db.session.query(Trade).filter_by(id=result['trade']['id']).first()
+                if trade:
+                    trade.realized_pnl = position.unrealized_pnl
+                    trade.realized_pnl_percent = position.unrealized_pnl_percent
+            
+            # CRITICAL: Commit all changes to database
+            db.session.commit()
+            
+            try:
+                from flask import current_app
+                current_app.logger.info(
+                    f"✅ Position {position.id} ({position.symbol}) CLOSED successfully. "
+                    f"Exit price: ${exit_price:.2f}, P/L: {position.unrealized_pnl_percent:.2f}% "
+                    f"(${position.unrealized_pnl:.2f})"
+                )
+            except:
+                pass
+            
+            return result
+            
+        except Exception as e:
+            db.session.rollback()
+            try:
+                from flask import current_app
+                current_app.logger.error(
+                    f"🚨🚨🚨 Exception closing position {position.id}: {e}", exc_info=True
+                )
+            except:
+                pass
+            return {
+                'error': f'Error closing position: {str(e)}'
+            }
 
