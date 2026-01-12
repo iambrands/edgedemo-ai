@@ -137,7 +137,10 @@ const Dashboard: React.FC = () => {
     const shouldReload = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
     if (shouldReload) {
       // Load in background without showing loading state
-      loadDashboardData(false, true); // silent background load
+      // BUT: Update prices if cache is more than 2 minutes old (120000ms)
+      const cacheAge = cached ? (Date.now() - cached.timestamp) : Infinity;
+      const shouldUpdatePrices = cacheAge > 120000; // 2 minutes
+      loadDashboardData(shouldUpdatePrices, true); // Update prices if cache is old, silent background load
     }
     
     // Load optional widgets in background (non-blocking, with longer delay)
@@ -156,12 +159,22 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // REMOVED: Auto-refresh intervals - user can manually refresh when needed
-    // This prevents the blank screen issue and gives user control
-    // Auto-refresh was causing the 10-second blank screen problem
+    // Auto-refresh prices every 3 minutes (silently in background)
+    // This keeps prices up-to-date without blocking the UI
+    const priceRefreshInterval = setInterval(() => {
+      // Only refresh prices if we have positions and cache is older than 2 minutes
+      const cached = getCachedData();
+      if (cached && cached.positions.length > 0) {
+        const cacheAge = Date.now() - cached.timestamp;
+        if (cacheAge > 120000) { // 2 minutes
+          console.log('🔄 Auto-refreshing position prices...');
+          loadDashboardData(true, true); // Update prices, silent background load
+        }
+      }
+    }, 180000); // Check every 3 minutes
     
     return () => {
-      // No intervals to clear anymore
+      clearInterval(priceRefreshInterval);
     };
   }, []);
 
@@ -370,7 +383,7 @@ const Dashboard: React.FC = () => {
     // Force update prices when manually refreshing
     setForcePriceUpdate(true);
     try {
-      await loadDashboardData(true);
+      await loadDashboardData(true, false); // update_prices=true, not silent
       toast.success('Positions updated successfully', { duration: 3000 });
     } catch (error) {
       toast.error('Failed to update positions. Please try again.', { duration: 5000 });

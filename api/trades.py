@@ -165,6 +165,7 @@ def get_positions(current_user):
         if update_prices:
             monitor = PositionMonitor()
             exits_triggered = 0
+            prices_updated = 0
             for pos_dict in positions:
                 # Find the position in DB and force update
                 position = db.session.query(Position).filter_by(
@@ -172,8 +173,18 @@ def get_positions(current_user):
                     user_id=current_user.id
                 ).first()
                 if position:
+                    old_price = position.current_price
                     monitor.update_position_data(position, force_update=True)
                     db.session.refresh(position)
+                    new_price = position.current_price
+                    
+                    # Log price updates for debugging
+                    if old_price != new_price:
+                        prices_updated += 1
+                        current_app.logger.info(
+                            f"💰 Position {position.id} ({position.symbol}): "
+                            f"Price updated ${old_price:.2f} → ${new_price:.2f}"
+                        )
                     
                     # CRITICAL: Check exit conditions after updating prices
                     # This ensures risk management limits are enforced
@@ -185,6 +196,11 @@ def get_positions(current_user):
                     # Update the dict with fresh data
                     pos_dict.update(position.to_dict())
             db.session.commit()
+            
+            current_app.logger.info(
+                f"📊 Price update complete: {prices_updated}/{len(positions)} positions updated, "
+                f"{exits_triggered} exits triggered"
+            )
             
             if exits_triggered > 0:
                 current_app.logger.info(
