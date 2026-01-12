@@ -180,7 +180,8 @@ const Dashboard: React.FC = () => {
       const timeoutMs = updatePrices ? 90000 : 60000;
       
       // Fetch all data with individual error handling
-      const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string, customTimeout?: number): Promise<T> => {
+      // CRITICAL: Return null on error instead of empty array to preserve existing data
+      const fetchWithTimeout = async <T,>(promise: Promise<T>, defaultValue: T, name: string, customTimeout?: number): Promise<T | null> => {
         const timeoutDuration = customTimeout || timeoutMs;
         const timeout = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error(`Request timeout for ${name}`)), timeoutDuration);
@@ -195,14 +196,14 @@ const Dashboard: React.FC = () => {
             // Silently handle timeouts - don't log as errors if it's just a background operation
             // Only log if it's a manual refresh or critical operation
             if (updatePrices || name === 'positions') {
-              console.warn(`⏱️ Timeout loading ${name} (${timeoutDuration}ms), using cached/default data`);
+              console.warn(`⏱️ Timeout loading ${name} (${timeoutDuration}ms), preserving existing data`);
             }
-            // Don't show error toasts for background timeouts - they're expected in slow network conditions
-            return defaultValue;
+            // Return null to indicate failure - caller will preserve existing data
+            return null;
           } else {
-            // For non-timeout errors, log but still return default
+            // For non-timeout errors, log but return null to preserve existing data
             console.warn(`⚠️ Error loading ${name}:`, errorMessage);
-            return defaultValue;
+            return null;
           }
         }
       };
@@ -244,25 +245,50 @@ const Dashboard: React.FC = () => {
         ),
       ]);
       
-      const userData = userDataResponse;
-
-      const positionsList = positionsData.positions || [];
-      const tradesList = tradesData.trades || [];
-      const watchlistList = watchlistData.watchlist || [];
-      const balance = userData.data?.user?.paper_balance || 100000;
+      // CRITICAL: Only update state if we got valid data (not null)
+      // This preserves existing data if refresh fails or times out
+      // Get current cached data to preserve what we have
+      const cached = getCachedData();
       
-      setPositions(positionsList);
-      setAllTrades(tradesList); // Store all trades for performance trend
-      setRecentTrades(tradesList.slice(0, 10)); // Show only 10 in table
-      setWatchlist(watchlistList);
-      setAccountBalance(balance);
+      if (positionsData !== null) {
+        const positionsList = positionsData.positions || [];
+        setPositions(positionsList);
+      } else {
+        // Refresh failed - keep existing positions, but show warning
+        if (!silent) {
+          toast.error('Position refresh timed out. Showing cached data.', { duration: 4000 });
+        }
+        console.warn('⚠️ Position refresh failed - preserving existing positions');
+        // Don't update positions - keep what we have
+      }
       
-      // Cache the data for fast reloads
+      if (tradesData !== null) {
+        const tradesList = tradesData.trades || [];
+        setAllTrades(tradesList); // Store all trades for performance trend
+        setRecentTrades(tradesList.slice(0, 10)); // Show only 10 in table
+      }
+      // If trades failed, keep existing trades
+      
+      if (watchlistData !== null) {
+        const watchlistList = watchlistData.watchlist || [];
+        setWatchlist(watchlistList);
+      }
+      // If watchlist failed, keep existing watchlist
+      
+      if (userDataResponse !== null) {
+        const userData = userDataResponse;
+        const balance = userData.data?.user?.paper_balance || 100000;
+        setAccountBalance(balance);
+      }
+      // If user data failed, keep existing balance
+      
+      // Update cache with whatever data we successfully fetched
+      // Preserve existing data for any that failed
       setCachedData({
-        positions: positionsList,
-        trades: tradesList,
-        watchlist: watchlistList,
-        balance: balance,
+        positions: positionsData !== null ? (positionsData.positions || []) : (cached?.positions || []),
+        trades: tradesData !== null ? (tradesData.trades || []) : (cached?.trades || []),
+        watchlist: watchlistData !== null ? (watchlistData.watchlist || []) : (cached?.watchlist || []),
+        balance: userDataResponse !== null ? (userDataResponse.data?.user?.paper_balance || 100000) : (cached?.balance || 100000),
         timestamp: Date.now()
       });
       
