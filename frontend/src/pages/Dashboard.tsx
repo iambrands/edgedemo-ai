@@ -134,13 +134,12 @@ const Dashboard: React.FC = () => {
     
     // Load fresh data in background (only if cache is stale or missing)
     // This runs silently in the background - doesn't block UI
+    // NOTE: Prices are updated by backend cron job every 2 minutes, so we don't need to request updates here
     const shouldReload = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
     if (shouldReload) {
       // Load in background without showing loading state
-      // BUT: Update prices if cache is more than 2 minutes old (120000ms)
-      const cacheAge = cached ? (Date.now() - cached.timestamp) : Infinity;
-      const shouldUpdatePrices = cacheAge > 120000; // 2 minutes
-      loadDashboardData(shouldUpdatePrices, true); // Update prices if cache is old, silent background load
+      // Don't request price updates - backend cron job handles that
+      loadDashboardData(false, true); // Silent background load, no price update request
     }
     
     // Load optional widgets in background (non-blocking, with longer delay)
@@ -159,22 +158,12 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // Auto-refresh prices every 3 minutes (silently in background)
-    // This keeps prices up-to-date without blocking the UI
-    const priceRefreshInterval = setInterval(() => {
-      // Only refresh prices if we have positions and cache is older than 2 minutes
-      const cached = getCachedData();
-      if (cached && cached.positions.length > 0) {
-        const cacheAge = Date.now() - cached.timestamp;
-        if (cacheAge > 120000) { // 2 minutes
-          console.log('🔄 Auto-refreshing position prices...');
-          loadDashboardData(true, true); // Update prices, silent background load
-        }
-      }
-    }, 180000); // Check every 3 minutes
+    // REMOVED: Frontend auto-refresh - prices are now updated by backend cron job
+    // This prevents UI interruptions and blank screens
+    // Users can still manually refresh if needed
     
     return () => {
-      clearInterval(priceRefreshInterval);
+      // No intervals to clear
     };
   }, []);
 

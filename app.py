@@ -3,8 +3,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from config import config
 import os
+import atexit
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -163,6 +166,67 @@ def create_app(config_name=None):
             
         except Exception as e:
             app.logger.error(f"Error starting position monitoring: {e}", exc_info=True)
+    
+    # Initialize APScheduler for background price updates
+    scheduler = BackgroundScheduler(daemon=True)
+    scheduler.start()
+    
+    def update_position_prices():
+        """Scheduled task to update position prices in background"""
+        try:
+            with app.app_context():
+                from services.position_monitor import PositionMonitor
+                from models.position import Position
+                
+                db = app.extensions['sqlalchemy']
+                positions = db.session.query(Position).filter_by(status='open').all()
+                
+                if not positions:
+                    return
+                
+                app.logger.info(f"💰 Updating prices for {len(positions)} positions (scheduled task)")
+                
+                monitor = PositionMonitor()
+                updated_count = 0
+                
+                for position in positions:
+                    try:
+                        old_price = position.current_price
+                        monitor.update_position_data(position, force_update=False)
+                        db.session.refresh(position)
+                        new_price = position.current_price
+                        
+                        if old_price != new_price:
+                            updated_count += 1
+                            app.logger.debug(
+                                f"   Position {position.id} ({position.symbol}): "
+                                f"${old_price:.2f} → ${new_price:.2f}"
+                            )
+                    except Exception as e:
+                        app.logger.warning(f"Failed to update position {position.id}: {e}")
+                        continue
+                
+                db.session.commit()
+                
+                if updated_count > 0:
+                    app.logger.info(f"✅ Updated prices for {updated_count}/{len(positions)} positions")
+                
+        except Exception as e:
+            app.logger.error(f"Error in scheduled price update task: {e}", exc_info=True)
+    
+    # Schedule price updates every 2 minutes
+    # This runs in the background and doesn't affect the frontend UI
+    scheduler.add_job(
+        func=update_position_prices,
+        trigger=IntervalTrigger(minutes=2),
+        id='update_position_prices',
+        name='Update position prices',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled price update task started (runs every 2 minutes)")
+    
+    # Shut down scheduler when app exits
+    atexit.register(lambda: scheduler.shutdown())
     
     # Start position monitoring automatically when app is created
     # Use a delayed start to ensure app is fully initialized
