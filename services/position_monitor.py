@@ -783,25 +783,31 @@ class PositionMonitor:
             pass
         
         # CRITICAL: Check user's risk management limits (from Settings)
-        # BUT: Only if price data is VALIDATED - don't trigger on bad prices!
-        # Risk management limits are safety features, but they need accurate price data
+        # RISK MANAGEMENT SHOULD ALWAYS RUN - it's a safety feature that overrides other protections
+        # However, we still need to validate that the price is reasonable (not a data error)
         from services.risk_manager import RiskManager
         risk_manager = RiskManager()
         risk_limits = risk_manager.get_risk_limits(position.user_id)
         
-        # CRITICAL: Before checking risk limits, verify price data is trustworthy
-        # If price is unchanged or suspicious, don't trigger risk management exits
-        price_is_trustworthy = (
-            not price_unchanged and  # Price has actually changed
-            not allow_only_expiration_exit and  # Not in cooldown/suspicious state
+        # CRITICAL: Risk management stop loss should ALWAYS be checked if:
+        # 1. We have valid price data (not None, not zero, reasonable for option)
+        # 2. Price is different from entry (not stale/unchanged)
+        # 3. Loss is actually occurring (loss_percent > 0)
+        # We DON'T check allow_only_expiration_exit here - risk management overrides that!
+        price_is_valid_for_risk_check = (
+            position.current_price is not None and
+            position.current_price > 0 and
+            position.entry_price is not None and
+            position.entry_price > 0 and
+            not price_unchanged and  # Price has actually changed from entry
             position.current_price != position.entry_price  # Price is different from entry
         )
         
         # Check if position loss exceeds user's risk management stop loss
         # Use max_daily_loss_percent as per-position stop loss if set
-        # BUT: Only if price data is trustworthy!
+        # CRITICAL: This should ALWAYS run if price is valid, regardless of cooldown or other protections
         if (risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0 and 
-            price_is_trustworthy):
+            price_is_valid_for_risk_check):
             # Use the daily loss limit as a per-position stop loss
             risk_stop_loss = risk_limits.max_daily_loss_percent
             if loss_percent >= risk_stop_loss:
@@ -810,21 +816,24 @@ class PositionMonitor:
                     current_app.logger.warning(
                         f"🛡️ Position {position.id} ({position.symbol}): "
                         f"Risk management stop loss triggered - {loss_percent:.2f}% loss "
-                        f"exceeds user limit of {risk_stop_loss}% (from Settings)"
+                        f"exceeds user limit of {risk_stop_loss}% (from Settings). "
+                        f"OVERRIDING cooldown and other protections - closing position for safety."
                     )
                 except:
                     pass
                 return (True, f"Risk management stop loss triggered ({loss_percent:.2f}% loss, limit: {risk_stop_loss}% from Settings)")
         elif (risk_limits and risk_limits.max_daily_loss_percent and loss_percent > 0 and 
-              not price_is_trustworthy):
-            # Price data is not trustworthy - log but don't trigger
+              not price_is_valid_for_risk_check):
+            # Price data is not valid for risk check - log but don't trigger
+            # This prevents false triggers from bad data
             try:
                 from flask import current_app
                 current_app.logger.warning(
                     f"⚠️ Position {position.id} ({position.symbol}): "
                     f"Risk management stop loss would trigger ({loss_percent:.2f}% loss), "
-                    f"but price data is not trustworthy (unchanged={price_unchanged}, "
-                    f"cooldown={allow_only_expiration_exit}). Skipping exit to prevent false trigger."
+                    f"but price data is not valid (unchanged={price_unchanged}, "
+                    f"current_price={position.current_price}, entry_price={position.entry_price}). "
+                    f"Skipping exit to prevent false trigger from bad data."
                 )
             except:
                 pass
