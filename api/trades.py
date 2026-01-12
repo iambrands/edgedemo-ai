@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify, current_app
 from services.trade_executor import TradeExecutor
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
+from utils.performance import log_performance
+from utils.cache import cached
+from sqlalchemy.orm import joinedload
 
 trades_bp = Blueprint('trades', __name__)
 
@@ -115,6 +118,8 @@ def execute_trade(current_user):
 
 @trades_bp.route('/history', methods=['GET'])
 @token_required
+@log_performance(threshold=1.0)
+@cached(timeout=30)  # Cache trade history for 30 seconds
 def get_trade_history(current_user):
     """Get trade history with optional filters"""
     symbol = request.args.get('symbol')
@@ -140,6 +145,7 @@ def get_trade_history(current_user):
 
 @trades_bp.route('/positions', methods=['GET'])
 @token_required
+@log_performance(threshold=1.0)
 def get_positions(current_user):
     """Get current positions"""
     try:
@@ -158,7 +164,20 @@ def get_positions(current_user):
             f"📊 GET /api/trades/positions - user_id={current_user.id}, update_prices={update_prices}"
         )
         
-        positions = trade_executor.get_positions(current_user.id, update_prices=update_prices)
+        # Use eager loading to avoid N+1 queries
+        if update_prices:
+            # If updating prices, we'll query positions directly with eager loading
+            positions_query = db.session.query(Position).filter_by(
+                user_id=current_user.id,
+                status='open'
+            ).options(
+                joinedload(Position.automation)  # Eager load automation to avoid N+1
+            ).all()
+            
+            positions = [p.to_dict() for p in positions_query]
+        else:
+            # Fast path - use trade_executor method
+            positions = trade_executor.get_positions(current_user.id, update_prices=False)
         
         # If update_prices is true, force update all positions immediately (bypass cooldown)
         # AND check exit conditions to enforce risk management limits

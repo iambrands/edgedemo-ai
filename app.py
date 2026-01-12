@@ -6,6 +6,7 @@ from flask_jwt_extended import JWTManager
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from config import config
+from datetime import datetime
 import os
 import atexit
 
@@ -189,27 +190,82 @@ def create_app(config_name=None):
                 monitor = PositionMonitor()
                 updated_count = 0
                 
+                failed_count = 0
+                expired_count = 0
+                
                 for position in positions:
                     try:
+                        # Check if option has expired
+                        if position.expiration_date:
+                            exp_date = position.expiration_date
+                            today = datetime.utcnow().date()
+                            
+                            if exp_date < today:
+                                # Close expired position
+                                app.logger.info(
+                                    f"⏰ Closing expired position: {position.symbol} "
+                                    f"(expired {position.expiration_date})"
+                                )
+                                try:
+                                    position.status = 'closed'
+                                    position.exit_price = 0.0
+                                    position.exit_date = datetime.utcnow()
+                                    position.unrealized_pnl = -position.entry_price * position.quantity * 100
+                                    position.unrealized_pnl_percent = -100.0
+                                    expired_count += 1
+                                    continue
+                                except Exception as e:
+                                    app.logger.error(f"Error closing expired position {position.id}: {e}")
+                                    failed_count += 1
+                                    continue
+                        
                         old_price = position.current_price
                         monitor.update_position_data(position, force_update=False)
                         db.session.refresh(position)
                         new_price = position.current_price
                         
-                        if old_price != new_price:
-                            updated_count += 1
-                            app.logger.debug(
-                                f"   Position {position.id} ({position.symbol}): "
-                                f"${old_price:.2f} → ${new_price:.2f}"
+                        # Validate price was actually updated
+                        if new_price and new_price > 0:
+                            if old_price != new_price:
+                                updated_count += 1
+                                app.logger.debug(
+                                    f"   Position {position.id} ({position.symbol}): "
+                                    f"${old_price:.2f} → ${new_price:.2f}"
+                                )
+                            else:
+                                # Price unchanged but valid - still counts as success
+                                updated_count += 1
+                        else:
+                            # Price update failed - no valid price returned
+                            failed_count += 1
+                            app.logger.warning(
+                                f"⚠️ Position {position.id} ({position.symbol}): "
+                                f"Price update returned invalid price: {new_price}"
                             )
+                            
                     except Exception as e:
-                        app.logger.warning(f"Failed to update position {position.id}: {e}")
+                        app.logger.error(
+                            f"❌ Failed to update position {position.id} ({position.symbol}): {e}",
+                            exc_info=True
+                        )
+                        db.session.rollback()
+                        failed_count += 1
                         continue
                 
-                db.session.commit()
+                # Commit all changes
+                try:
+                    db.session.commit()
+                except Exception as e:
+                    app.logger.error(f"Error committing position updates: {e}", exc_info=True)
+                    db.session.rollback()
                 
-                if updated_count > 0:
-                    app.logger.info(f"✅ Updated prices for {updated_count}/{len(positions)} positions")
+                # Log results
+                total = len(positions)
+                success_count = updated_count + expired_count
+                app.logger.info(
+                    f"✅ Updated {success_count}/{total} positions "
+                    f"(updated: {updated_count}, expired: {expired_count}, failed: {failed_count})"
+                )
                 
         except Exception as e:
             app.logger.error(f"Error in scheduled price update task: {e}", exc_info=True)
