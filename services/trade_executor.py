@@ -930,23 +930,96 @@ class TradeExecutor:
                                 except:
                                     pass
                             elif not matching_options:
+                                # CRITICAL: If exact strike not found, try to find closest strike
+                                # This handles cases where the option chain has changed or strike was recorded incorrectly
                                 try:
                                     from flask import current_app
-                                    current_app.logger.error(
-                                        f"🚨🚨🚨 CLOSE POSITION: No matching option found in chain for "
-                                        f"position {position.id} ({position.symbol}) "
-                                        f"strike=${position.strike_price} type={position.contract_type} "
-                                        f"exp={expiration_str}. Chain had {len(options_list)} options. "
-                                        f"Cannot close - option not found in chain."
+                                    current_app.logger.warning(
+                                        f"⚠️ CLOSE POSITION: No exact match for position {position.id} ({position.symbol}) "
+                                        f"strike=${position.strike_price} type={position.contract_type} exp={expiration_str}. "
+                                        f"Trying closest strike..."
                                     )
-                                    # Log sample options and available strikes for debugging
-                                    if options_list:
-                                        available_strikes = set()
-                                        available_types = set()
-                                        sample_options = options_list[:20]  # Check more options
-                                        for opt in sample_options:
-                                            opt_strike = opt.get('strike') or opt.get('strike_price')
-                                            opt_type = opt.get('type') or opt.get('contract_type') or opt.get('option_type')
+                                except:
+                                    pass
+                                
+                                # Find closest strike within reasonable range (within 20% of position strike)
+                                closest_option = None
+                                closest_diff = float('inf')
+                                max_strike_diff = position_strike * 0.20  # 20% tolerance
+                                
+                                for option in options_list:
+                                    option_strike = option.get('strike') or option.get('strike_price')
+                                    option_type = (option.get('type') or option.get('contract_type') or '').lower()
+                                    
+                                    try:
+                                        option_strike_float = float(option_strike) if option_strike is not None else None
+                                    except (ValueError, TypeError):
+                                        continue
+                                    
+                                    if option_strike_float is None:
+                                        continue
+                                    
+                                    # Match contract type
+                                    if position_contract_type == 'option':
+                                        type_match = option_type in ['call', 'put']
+                                    else:
+                                        type_match = (
+                                            option_type == position_contract_type or
+                                            (not position_contract_type and option_type in ['call', 'put'])
+                                        )
+                                    
+                                    if type_match:
+                                        strike_diff = abs(option_strike_float - position_strike)
+                                        if strike_diff < closest_diff and strike_diff <= max_strike_diff:
+                                            closest_diff = strike_diff
+                                            closest_option = option
+                                
+                                if closest_option:
+                                    # Use closest option if within tolerance
+                                    bid = closest_option.get('bid', 0) or 0
+                                    ask = closest_option.get('ask', 0) or 0
+                                    last = closest_option.get('last', 0) or closest_option.get('lastPrice', 0) or 0
+                                    
+                                    # Validate price is reasonable
+                                    max_price = max(bid, ask, last) if (bid or ask or last) else 0
+                                    if max_price > 0 and max_price <= 50:
+                                        if bid > 0 and ask > 0:
+                                            exit_price = (bid + ask) / 2
+                                        elif last > 0:
+                                            exit_price = last
+                                        else:
+                                            exit_price = None
+                                        
+                                        if exit_price:
+                                            try:
+                                                from flask import current_app
+                                                current_app.logger.warning(
+                                                    f"⚠️ CLOSE POSITION: Using closest strike ${closest_option.get('strike')} "
+                                                    f"(diff: ${closest_diff:.2f}) for position strike ${position.strike_price}. "
+                                                    f"Exit price: ${exit_price:.2f}"
+                                                )
+                                            except:
+                                                pass
+                                            break
+                                
+                                if not exit_price:
+                                    try:
+                                        from flask import current_app
+                                        current_app.logger.error(
+                                            f"🚨🚨🚨 CLOSE POSITION: No matching option found in chain for "
+                                            f"position {position.id} ({position.symbol}) "
+                                            f"strike=${position.strike_price} type={position.contract_type} "
+                                            f"exp={expiration_str}. Chain had {len(options_list)} options. "
+                                            f"Cannot close - option not found in chain."
+                                        )
+                                        # Log sample options and available strikes for debugging
+                                        if options_list:
+                                            available_strikes = set()
+                                            available_types = set()
+                                            sample_options = options_list[:20]  # Check more options
+                                            for opt in sample_options:
+                                                opt_strike = opt.get('strike') or opt.get('strike_price')
+                                                opt_type = opt.get('type') or opt.get('contract_type') or opt.get('option_type')
                                             if opt_strike:
                                                 try:
                                                     available_strikes.add(float(opt_strike))

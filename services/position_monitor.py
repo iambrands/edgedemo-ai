@@ -779,7 +779,8 @@ class PositionMonitor:
                     f"🔍 Position {position.id} ({position.symbol}): No automation - using defaults - "
                     f"profit_target=25%, stop_loss=10%"
                 )
-        except:
+        except (RuntimeError, ImportError, NameError) as e:
+            # Silently ignore - current_app not available in this context
             pass
         
         # CRITICAL: Check user's risk management limits (from Settings)
