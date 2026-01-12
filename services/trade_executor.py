@@ -1000,7 +1000,7 @@ class TradeExecutor:
                                                 )
                                             except:
                                                 pass
-                                            break
+                                            # Found valid exit price from closest strike
                                 
                                 if not exit_price:
                                     try:
@@ -1020,33 +1020,33 @@ class TradeExecutor:
                                             for opt in sample_options:
                                                 opt_strike = opt.get('strike') or opt.get('strike_price')
                                                 opt_type = opt.get('type') or opt.get('contract_type') or opt.get('option_type')
-                                            if opt_strike:
-                                                try:
-                                                    available_strikes.add(float(opt_strike))
-                                                except:
-                                                    pass
-                                            if opt_type:
-                                                available_types.add(str(opt_type).lower())
-                                            if len(sample_options) <= 5:  # Only log details for first 5
-                                                current_app.logger.info(
-                                                    f"   Sample: strike=${opt_strike}, type={opt_type}, "
-                                                    f"bid=${opt.get('bid', 0):.2f}, ask=${opt.get('ask', 0):.2f}, "
-                                                    f"last=${opt.get('last', 0) or opt.get('lastPrice', 0):.2f}"
+                                                if opt_strike:
+                                                    try:
+                                                        available_strikes.add(float(opt_strike))
+                                                    except:
+                                                        pass
+                                                if opt_type:
+                                                    available_types.add(str(opt_type).lower())
+                                                if len(sample_options) <= 5:  # Only log details for first 5
+                                                    current_app.logger.info(
+                                                        f"   Sample: strike=${opt_strike}, type={opt_type}, "
+                                                        f"bid=${opt.get('bid', 0):.2f}, ask=${opt.get('ask', 0):.2f}, "
+                                                        f"last=${opt.get('last', 0) or opt.get('lastPrice', 0):.2f}"
+                                                    )
+                                            
+                                            if available_strikes:
+                                                closest_strike = min(available_strikes, key=lambda x: abs(x - position_strike))
+                                                current_app.logger.warning(
+                                                    f"   Available strikes: {sorted(list(available_strikes))[:20]}. "
+                                                    f"Closest to ${position.strike_price}: ${closest_strike:.2f} "
+                                                    f"(diff: ${abs(closest_strike - position_strike):.2f})"
                                                 )
-                                        
-                                        if available_strikes:
-                                            closest_strike = min(available_strikes, key=lambda x: abs(x - position_strike))
-                                            current_app.logger.warning(
-                                                f"   Available strikes: {sorted(list(available_strikes))[:20]}. "
-                                                f"Closest to ${position.strike_price}: ${closest_strike:.2f} "
-                                                f"(diff: ${abs(closest_strike - position_strike):.2f})"
-                                            )
-                                        if available_types:
-                                            current_app.logger.warning(
-                                                f"   Available types: {available_types}. Looking for: {position.contract_type}"
-                                            )
-                                except:
-                                    pass
+                                            if available_types:
+                                                current_app.logger.warning(
+                                                    f"   Available types: {available_types}. Looking for: {position.contract_type}"
+                                                )
+                                    except:
+                                        pass
                     else:
                         # For stocks ONLY (not options), get stock price
                         quote = self.tradier.get_quote(position.symbol)
