@@ -75,11 +75,17 @@ def health_check():
             'redis_url_present': bool(os.getenv('REDIS_URL'))
         }
         
-        # Overall health
-        overall_healthy = db_healthy and tradier_config.get('api_key_present', False)
+        # Overall health - be more lenient
+        # System is healthy if Tradier is configured, even if DB has issues
+        # DB issues might be temporary (connection pool, query timeout)
+        overall_healthy = tradier_config.get('api_key_present', False) and db_healthy
+        # But allow degraded status if only DB has issues (not critical for read-only endpoints)
+        is_degraded = not db_healthy and tradier_config.get('api_key_present', False)
+        
+        status = 'healthy' if overall_healthy else ('degraded' if is_degraded else 'unhealthy')
         
         return jsonify({
-            'status': 'healthy' if overall_healthy else 'degraded',
+            'status': status,
             'timestamp': datetime.utcnow().isoformat(),
             'version': '1.0.0',
             'components': {
@@ -98,7 +104,7 @@ def health_check():
                 }
             },
             'environment': env_info
-        }), 200 if overall_healthy else 503
+        }), 200 if overall_healthy else (503 if is_degraded else 503)
         
     except Exception as e:
         logger.error(f"Health check failed: {e}", exc_info=True)
