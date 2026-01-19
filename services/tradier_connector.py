@@ -675,11 +675,7 @@ class TradierConnector:
                 cache.set(cache_key, [], timeout=10)
             except Exception as e:
                 # Cache write failed, but continue - not critical
-                try:
-                    from flask import current_app
-                    current_app.logger.debug(f"Cache write failed (non-critical): {e}")
-                except:
-                    pass
+                logger.debug(f"Cache write failed (non-critical): {e}")
         
         return []
     
