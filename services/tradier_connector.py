@@ -666,6 +666,89 @@ class TradierConnector:
                     continue  # Skip this option - it has stock prices, not premiums
                 
                 validated_options.append(opt)
+    
+    def find_option_in_chain(self, chain: List[Dict], option_type: str, strike: float, expiration: str) -> Optional[Dict]:
+        """
+        Find option in chain with fuzzy strike matching.
+        
+        Args:
+            chain: Options chain data (list of option dicts)
+            option_type: 'call' or 'put'
+            strike: Target strike price (float)
+            expiration: Expiration date string (YYYY-MM-DD)
+        
+        Returns:
+            Option dict or None
+        """
+        if not chain:
+            logger.debug(f"Empty chain for {option_type} ${strike}")
+            return None
+        
+        # Filter by type and expiration
+        matches = []
+        for opt in chain:
+            opt_type = (opt.get('type') or opt.get('option_type') or '').lower()
+            opt_exp = opt.get('expiration_date') or opt.get('expiration', '')
+            
+            # Match type (handle variations: 'call', 'Call', 'C', etc.)
+            type_match = (
+                opt_type == option_type.lower() or
+                (option_type.lower() == 'call' and opt_type in ['call', 'c']) or
+                (option_type.lower() == 'put' and opt_type in ['put', 'p'])
+            )
+            
+            # Match expiration (handle different formats)
+            exp_match = (
+                opt_exp == expiration or
+                opt_exp.replace('-', '') == expiration.replace('-', '')
+            )
+            
+            if type_match and exp_match:
+                matches.append(opt)
+        
+        if not matches:
+            logger.debug(f"No {option_type} options found for expiration {expiration}")
+            return None
+        
+        # Try exact strike match first
+        exact = []
+        for opt in matches:
+            opt_strike = float(opt.get('strike', 0) or opt.get('strike_price', 0))
+            if abs(opt_strike - strike) < 0.01:  # Within 1 cent
+                exact.append(opt)
+        
+        if exact:
+            logger.debug(f"✅ Exact strike match: ${strike}")
+            return exact[0]
+        
+        # Try fuzzy match (within $0.50)
+        fuzzy = []
+        for opt in matches:
+            opt_strike = float(opt.get('strike', 0) or opt.get('strike_price', 0))
+            diff = abs(opt_strike - strike)
+            if diff <= 0.5:  # Within 50 cents
+                fuzzy.append((opt, diff))
+        
+        if fuzzy:
+            # Sort by difference and return closest
+            fuzzy.sort(key=lambda x: x[1])
+            opt, diff = fuzzy[0]
+            actual_strike = float(opt.get('strike', 0) or opt.get('strike_price', 0))
+            logger.info(
+                f"🎯 Fuzzy match: requested ${strike:.2f}, using ${actual_strike:.2f} "
+                f"(diff: ${diff:.2f})"
+            )
+            return opt
+        
+        # Log available strikes for debugging
+        available = sorted([float(opt.get('strike', 0) or opt.get('strike_price', 0)) for opt in matches])
+        if len(available) > 0:
+            logger.warning(
+                f"❌ Strike ${strike:.2f} not found. Available {option_type} strikes: "
+                f"{available[:5]}{'...' + str(available[-5:]) if len(available) > 10 else ''}"
+            )
+        
+        return None
             
             if is_index:
                 logger.info(

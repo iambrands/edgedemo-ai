@@ -99,6 +99,8 @@ def create_app(config_name=None):
     from api.account import account_bp
     from api.automation_diagnostics import automation_diagnostics_bp
     from api.opportunity_insights import opportunity_insights_bp
+    from api.health import health_bp
+    from api.admin import admin_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
