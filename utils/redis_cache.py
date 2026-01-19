@@ -37,20 +37,31 @@ class RedisCache:
                 redis_url = os.environ.get('REDIS_URL')
             
             if redis_url:
-                self.redis_client = redis.from_url(
-                    redis_url,
-                    decode_responses=True,
-                    socket_connect_timeout=2,
-                    socket_timeout=2,
-                    retry_on_timeout=True,
-                    health_check_interval=30
-                )
-                # Test connection
-                self.redis_client.ping()
-                self.use_redis = True
-                logger.info("✅ Redis cache connected")
+                try:
+                    self.redis_client = redis.from_url(
+                        redis_url,
+                        decode_responses=True,
+                        socket_connect_timeout=2,
+                        socket_timeout=2,
+                        retry_on_timeout=True,
+                        health_check_interval=30
+                    )
+                    # Test connection with short timeout
+                    self.redis_client.ping()
+                    self.use_redis = True
+                    logger.info("✅ Redis cache connected")
+                except redis.ConnectionError as e:
+                    logger.warning(f"⚠️ Redis connection error: {e}, using in-memory cache")
+                    self.use_redis = False
+                    self.redis_client = None
+                except Exception as e:
+                    logger.warning(f"⚠️ Redis initialization error: {e}, using in-memory cache")
+                    self.use_redis = False
+                    self.redis_client = None
             else:
-                logger.warning("⚠️ REDIS_URL not set, using in-memory cache")
+                logger.debug("REDIS_URL not set, using in-memory cache")
+                self.use_redis = False
+                self.redis_client = None
         except Exception as e:
             logger.warning(f"⚠️ Redis connection failed: {e}, using in-memory cache")
             self.use_redis = False

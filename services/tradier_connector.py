@@ -180,16 +180,24 @@ class TradierConnector:
         
         # Try Redis cache first (5 second TTL for quotes)
         if use_cache:
-            cache = get_redis_cache()
-            cache_key = f"quote:{symbol.upper()}"
-            cached_quote = cache.get(cache_key)
-            if cached_quote:
+            try:
+                cache = get_redis_cache()
+                cache_key = f"quote:{symbol.upper()}"
+                cached_quote = cache.get(cache_key)
+                if cached_quote is not None:
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(f"✅ Cache HIT: quote for {symbol}")
+                    except:
+                        pass
+                    return cached_quote
+            except Exception as e:
+                # If cache fails, continue to fetch from API
                 try:
                     from flask import current_app
-                    current_app.logger.debug(f"✅ Cache HIT: quote for {symbol}")
+                    current_app.logger.debug(f"Cache lookup failed, fetching from API: {e}")
                 except:
                     pass
-                return cached_quote
         
         try:
             from flask import current_app
@@ -281,9 +289,17 @@ class TradierConnector:
                     
                     # Cache the result (5 second TTL for quotes)
                     if use_cache:
-                        cache = get_redis_cache()
-                        cache_key = f"quote:{symbol.upper()}"
-                        cache.set(cache_key, result, timeout=5)
+                        try:
+                            cache = get_redis_cache()
+                            cache_key = f"quote:{symbol.upper()}"
+                            cache.set(cache_key, result, timeout=5)
+                        except Exception as e:
+                            # Cache write failed, but continue - not critical
+                            try:
+                                from flask import current_app
+                                current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                            except:
+                                pass
                     
                     return result
             except Exception as e:
@@ -541,16 +557,24 @@ class TradierConnector:
         
         # Try Redis cache first (30 second TTL for options chains)
         if use_cache:
-            cache = get_redis_cache()
-            cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-            cached_chain = cache.get(cache_key)
-            if cached_chain:
+            try:
+                cache = get_redis_cache()
+                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                cached_chain = cache.get(cache_key)
+                if cached_chain is not None:
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(f"✅ Cache HIT: options chain for {symbol} {expiration}")
+                    except:
+                        pass
+                    return cached_chain
+            except Exception as e:
+                # If cache fails, continue to fetch from API
                 try:
                     from flask import current_app
-                    current_app.logger.debug(f"✅ Cache HIT: options chain for {symbol} {expiration}")
+                    current_app.logger.debug(f"Cache lookup failed, fetching from API: {e}")
                 except:
                     pass
-                return cached_chain
         
         try:
             from flask import current_app
@@ -590,9 +614,17 @@ class TradierConnector:
                     pass
                 # Cache the result (30 second TTL for options chains)
                 if use_cache:
-                    cache = get_redis_cache()
-                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                    cache.set(cache_key, chain, timeout=30)
+                    try:
+                        cache = get_redis_cache()
+                        cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                        cache.set(cache_key, chain, timeout=30)
+                    except Exception as e:
+                        # Cache write failed, but continue - not critical
+                        try:
+                            from flask import current_app
+                            current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                        except:
+                            pass
                 return chain
         
         # Fall back to mock or Tradier
@@ -611,15 +643,31 @@ class TradierConnector:
                 result = options if isinstance(options, list) else [options]
                 # Cache mock data too (shorter TTL - 10 seconds)
                 if use_cache:
-                    cache = get_redis_cache()
-                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                    cache.set(cache_key, result, timeout=10)
+                    try:
+                        cache = get_redis_cache()
+                        cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                        cache.set(cache_key, result, timeout=10)
+                    except Exception as e:
+                        # Cache write failed, but continue - not critical
+                        try:
+                            from flask import current_app
+                            current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                        except:
+                            pass
                 return result
             # Cache empty result
             if use_cache:
-                cache = get_redis_cache()
-                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                cache.set(cache_key, [], timeout=10)
+                try:
+                    cache = get_redis_cache()
+                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                    cache.set(cache_key, [], timeout=10)
+                except Exception as e:
+                    # Cache write failed, but continue - not critical
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                    except:
+                        pass
             return []
         
         endpoint = 'markets/options/chains'
@@ -693,17 +741,33 @@ class TradierConnector:
             
             # Cache the result (30 second TTL for options chains)
             if use_cache:
-                cache = get_redis_cache()
-                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                cache.set(cache_key, validated_options, timeout=30)
+                try:
+                    cache = get_redis_cache()
+                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                    cache.set(cache_key, validated_options, timeout=30)
+                except Exception as e:
+                    # Cache write failed, but continue - not critical
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                    except:
+                        pass
             
             return validated_options
         
         # Cache empty result too (shorter TTL - 10 seconds)
         if use_cache:
-            cache = get_redis_cache()
-            cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-            cache.set(cache_key, [], timeout=10)
+            try:
+                cache = get_redis_cache()
+                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                cache.set(cache_key, [], timeout=10)
+            except Exception as e:
+                # Cache write failed, but continue - not critical
+                try:
+                    from flask import current_app
+                    current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                except:
+                    pass
         
         return []
     
