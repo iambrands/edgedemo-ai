@@ -399,11 +399,7 @@ class TradierConnector:
                 cached_data, cached_time = self._expiration_cache[cache_key]
                 # Cache for 1 hour (expiration dates don't change often)
                 if (datetime.now() - cached_time).total_seconds() < 3600:
-                    try:
-                        from flask import current_app
-                        current_app.logger.debug(f'Using cached expirations for {symbol}')
-                    except RuntimeError:
-                        pass
+                    logger.debug(f'Using cached expirations for {symbol}')
                     return cached_data
         
         # Initialize cache if it doesn't exist
@@ -420,11 +416,7 @@ class TradierConnector:
         # Fall back to mock or Tradier
         if self.use_mock:
             mock_data = self._mock_expirations(symbol)
-            try:
-                from flask import current_app
-                current_app.logger.info(f'Mock expirations for {symbol}: {mock_data}')
-            except RuntimeError:
-                pass
+            logger.info(f'Mock expirations for {symbol}: {mock_data}')
             result = mock_data['expirations']['expiration']
             self._expiration_cache[symbol] = (result, datetime.now())
             return result
@@ -445,21 +437,13 @@ class TradierConnector:
             response.raise_for_status()
             api_response = response.json()
         except requests.exceptions.Timeout:
-            try:
-                from flask import current_app
-                current_app.logger.warning(f'Timeout fetching expirations for {symbol}, using mock data')
-            except RuntimeError:
-                pass
+            logger.warning(f'Timeout fetching expirations for {symbol}, using mock data')
             # Return mock data on timeout
             result = self._mock_expirations(symbol)['expirations']['expiration']
             self._expiration_cache[symbol] = (result, datetime.now())
             return result
         except Exception as e:
-            try:
-                from flask import current_app
-                current_app.logger.warning(f'Error fetching expirations for {symbol}: {e}, using mock data')
-            except RuntimeError:
-                pass
+            logger.warning(f'Error fetching expirations for {symbol}: {e}, using mock data')
             # Return mock data on error
             result = self._mock_expirations(symbol)['expirations']['expiration']
             self._expiration_cache[symbol] = (result, datetime.now())
@@ -493,11 +477,7 @@ class TradierConnector:
                         pass
                     result = self._mock_expirations(symbol)['expirations']['expiration']
                 else:
-                    try:
-                        from flask import current_app
-                        current_app.logger.info(f'✅ Got {len(result)} expirations for {symbol} from Tradier')
-                    except RuntimeError:
-                        pass
+                    logger.info(f'✅ Got {len(result)} expirations for {symbol} from Tradier')
                 
                 # Cache the result
                 self._expiration_cache[symbol] = (result, datetime.now())
