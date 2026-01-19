@@ -121,7 +121,6 @@ def get_quote(symbol=None):
 
 @options_bp.route('/analyze', methods=['POST'])
 @log_performance(threshold=5.0)
-@cached(timeout=300, key_prefix='analyze')  # Cache analysis results for 5 minutes
 def analyze_options():
     """Analyze options chain with AI-powered explanations (PUBLIC ENDPOINT)"""
     from flask import current_app
@@ -145,6 +144,24 @@ def analyze_options():
     preference = data.get('preference', 'balanced')
     if preference not in ['income', 'growth', 'balanced', 'aggressive', 'conservative']:
         preference = 'balanced'
+    
+    # PHASE 4: Check cache first (precomputed results)
+    try:
+        from services.cache_manager import CacheManager
+        cache = CacheManager()
+        cached_result = cache.get_analysis(symbol, expiration, preference)
+        if cached_result:
+            current_app.logger.info(f'💾 Using cached/precomputed analysis for {symbol} {expiration}')
+            return jsonify({
+                'symbol': symbol,
+                'expiration': expiration,
+                'preference': preference,
+                'options': cached_result,
+                'count': len(cached_result) if isinstance(cached_result, list) else 0,
+                'cached': True
+            }), 200
+    except Exception as e:
+        current_app.logger.debug(f"Cache check failed (non-critical): {e}")
     
     # Try to get user if available, but don't require it
     current_user = None
@@ -228,6 +245,14 @@ def analyze_options():
         
         results = result_queue.get()
         current_app.logger.info(f'Analysis complete, returning {len(results)} results')
+        
+        # PHASE 4: Cache the result using CacheManager
+        try:
+            from services.cache_manager import CacheManager
+            cache = CacheManager()
+            cache.set_analysis(symbol, expiration, preference, results, ttl=300)
+        except Exception as e:
+            current_app.logger.warning(f"Failed to cache analysis result: {e}")
         
         return jsonify({
             'symbol': symbol,

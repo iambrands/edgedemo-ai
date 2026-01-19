@@ -1,6 +1,7 @@
 """Redis-based caching with fallback to in-memory cache"""
 
 import redis
+from redis.connection import ConnectionPool
 import json
 import hashlib
 from functools import wraps
@@ -8,6 +9,7 @@ from flask import request, current_app
 from typing import Optional, Any
 import logging
 import time
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +21,16 @@ _in_memory_timestamps = {}
 class RedisCache:
     """Redis-based caching with fallback to in-memory"""
     
+    # Class-level connection pool (shared across all instances)
+    _pool = None
+    
     def __init__(self):
         self.redis_client = None
         self.use_redis = False
         self._init_redis()
     
     def _init_redis(self):
-        """Initialize Redis connection"""
+        """Initialize Redis connection with connection pooling"""
         try:
             # Try to get Redis URL from config
             redis_url = None
@@ -33,23 +38,30 @@ class RedisCache:
                 redis_url = current_app.config.get('REDIS_URL')
             except RuntimeError:
                 # Outside app context - check environment directly
-                import os
                 redis_url = os.environ.get('REDIS_URL')
             
             if redis_url:
                 try:
-                    self.redis_client = redis.from_url(
-                        redis_url,
-                        decode_responses=True,
-                        socket_connect_timeout=2,
-                        socket_timeout=2,
-                        retry_on_timeout=True,
-                        health_check_interval=30
-                    )
+                    # Create pool once, reuse for all connections (PHASE 1: Connection Pooling)
+                    if RedisCache._pool is None:
+                        RedisCache._pool = ConnectionPool.from_url(
+                            redis_url,
+                            max_connections=20,
+                            socket_connect_timeout=2,
+                            socket_timeout=2,
+                            decode_responses=True,
+                            health_check_interval=30,
+                            retry_on_timeout=True
+                        )
+                        logger.info("✅ Redis connection pool created (max=20 connections)")
+                    
+                    # Use pool for this connection
+                    self.redis_client = redis.Redis(connection_pool=RedisCache._pool)
+                    
                     # Test connection with short timeout
                     self.redis_client.ping()
                     self.use_redis = True
-                    logger.info("✅ Redis cache connected")
+                    logger.debug("✅ Redis connection from pool successful")
                 except redis.ConnectionError as e:
                     logger.warning(f"⚠️ Redis connection error: {e}, using in-memory cache")
                     self.use_redis = False

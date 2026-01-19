@@ -372,6 +372,66 @@ def create_app(config_name=None):
     )
     app.logger.info("✅ Scheduled cache cleanup (daily at midnight ET)")
     
+    # Schedule precompute service for popular symbols (every 5 minutes during market hours)
+    def precompute_popular_symbols_job():
+        """Scheduled task to pre-compute analysis for popular symbols"""
+        try:
+            with app.app_context():
+                from services.precompute_service import PrecomputeService
+                
+                service = PrecomputeService()
+                service.precompute_popular_symbols()
+        except Exception as e:
+            app.logger.error(f"Error in precompute job: {e}", exc_info=True)
+    
+    scheduler.add_job(
+        func=precompute_popular_symbols_job,
+        trigger=IntervalTrigger(minutes=5),
+        id='precompute_popular_symbols',
+        name='Precompute popular symbols',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled precompute service (every 5 minutes during market hours)")
+    
+    # PHASE 5: Cache warming on startup
+    def warm_cache_on_startup():
+        """
+        Warm cache on application startup to avoid cold start delays.
+        Pre-computes top 5 symbols so first requests are instant.
+        """
+        try:
+            with app.app_context():
+                app.logger.info("🔥 Warming cache on startup...")
+                
+                from services.precompute_service import PrecomputeService
+                
+                precompute = PrecomputeService()
+                
+                # Warm only top 5 symbols (fast startup)
+                top_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']
+                
+                for symbol in top_symbols:
+                    try:
+                        result = precompute._precompute_symbol(symbol)
+                        if result == 'success':
+                            app.logger.info(f"✅ Warmed cache: {symbol}")
+                    except Exception as e:
+                        app.logger.warning(f"⚠️ Failed to warm {symbol}: {e}")
+                
+                app.logger.info("🔥 Cache warming complete")
+        except Exception as e:
+            app.logger.error(f"❌ Cache warming failed: {e}", exc_info=True)
+            # Don't crash app if warming fails
+    
+    # Run cache warming in background thread (don't block startup)
+    import threading
+    def delayed_cache_warm():
+        import time
+        time.sleep(10)  # Wait 10 seconds for app to fully initialize
+        warm_cache_on_startup()
+    
+    threading.Thread(target=delayed_cache_warm, daemon=True).start()
+    
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())
     

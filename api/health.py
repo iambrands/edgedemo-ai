@@ -128,6 +128,17 @@ def cache_health():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
+@health_bp.route('/health/precompute', methods=['GET'])
+def precompute_status():
+    """Get precompute service status"""
+    try:
+        from services.precompute_service import PrecomputeService
+        service = PrecomputeService()
+        return jsonify(service.get_status()), 200
+    except Exception as e:
+        logger.error(f"Precompute status check failed: {e}", exc_info=True)
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
 @health_bp.route('/health/positions', methods=['GET'])
 def positions_health():
     """Position monitoring health"""
