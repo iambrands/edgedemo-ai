@@ -488,7 +488,7 @@ class TradierConnector:
                 if not result:
                     try:
                         from flask import current_app
-                        current_app.logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
+                        logger.warning(f'Tradier returned empty expirations for {symbol}, falling back to mock data')
                     except RuntimeError:
                         pass
                     result = self._mock_expirations(symbol)['expirations']['expiration']
@@ -584,7 +584,7 @@ class TradierConnector:
             try:
                 from flask import current_app
                 if is_index:
-                    current_app.logger.warning(
+                    logger.warning(
                         f"⚠️ TRADIER: Using MOCK options chain for {symbol} (not real data!)"
                     )
             except:
@@ -861,7 +861,7 @@ class TradierConnector:
         except Exception as e:
             try:
                 from flask import current_app
-                current_app.logger.error(f"Order placement error: {str(e)}")
+                logger.error(f"Order placement error: {str(e)}")
             except RuntimeError:
                 pass  # Outside application context
             return {'error': str(e)}
