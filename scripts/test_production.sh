@@ -215,7 +215,7 @@ echo ""
 # Section 7: Error Handling
 echo -e "${BLUE}📍 Section 7: Error Handling${NC}"
 echo "-----------------------------"
-test_endpoint "Invalid Symbol" "GET" "/api/options/expirations?symbol=INVALID123" "" 200  # Should return empty or error
+test_endpoint "Invalid Symbol" "GET" "/api/options/expirations?symbol=INVALID123" "" 400  # Should return 400 for invalid symbol
 test_endpoint "Missing Required Param" "POST" "/api/options/analyze" '{"symbol":"AAPL"}' 400
 test_endpoint "Invalid Endpoint" "GET" "/api/invalid/endpoint" "" 404
 echo ""

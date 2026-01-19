@@ -167,7 +167,8 @@ def analyze_options():
         analyzer = get_analyzer()
         current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
         
-        # Add timeout protection - limit analysis to 60 seconds total
+        # Add timeout protection - limit analysis to 30 seconds (reduced from 60)
+        # Railway has a 30s timeout, so we need to finish before that
         import threading
         import queue
         result_queue = queue.Queue()
@@ -188,7 +189,7 @@ def analyze_options():
         # Run analysis in a thread with timeout
         analysis_thread = threading.Thread(target=run_analysis, daemon=True)
         analysis_thread.start()
-        analysis_thread.join(timeout=60)  # 60 second timeout
+        analysis_thread.join(timeout=25)  # 25 second timeout (before Railway's 30s)
         
         if analysis_thread.is_alive():
             # Analysis timed out
@@ -196,12 +197,19 @@ def analyze_options():
             return jsonify({
                 'error': 'Analysis timed out. Please try with a different expiration or symbol.',
                 'symbol': symbol,
-                'expiration': expiration
+                'expiration': expiration,
+                'suggestion': 'Try a more liquid symbol or closer expiration date'
             }), 504  # Gateway Timeout
         
         if not error_queue.empty():
             error = error_queue.get()
-            raise error
+            current_app.logger.error(f'Analysis error: {str(error)}', exc_info=True)
+            return jsonify({
+                'error': 'Analysis failed',
+                'message': str(error),
+                'symbol': symbol,
+                'expiration': expiration
+            }), 500
         
         if result_queue.empty():
             # No results returned
@@ -209,7 +217,8 @@ def analyze_options():
             return jsonify({
                 'error': 'No options found for this symbol and expiration',
                 'symbol': symbol,
-                'expiration': expiration
+                'expiration': expiration,
+                'suggestion': 'Try a different expiration date or symbol'
             }), 404
         
         results = result_queue.get()

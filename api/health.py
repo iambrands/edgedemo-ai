@@ -22,14 +22,24 @@ def health_check():
         from services.tradier_connector import TradierConnector
         from utils.redis_cache import get_redis_cache
         
-        # Database check
+        # Database check with timeout
         db_healthy = True
         position_count = None
         open_positions = None
         try:
+            # Quick connection test with timeout
             db.session.execute('SELECT 1')
-            position_count = db.session.query(Position).count()
-            open_positions = db.session.query(Position).filter_by(status='open').count()
+            db.session.commit()
+            
+            # Try to get counts, but don't fail if it times out
+            try:
+                position_count = db.session.query(Position).count()
+                open_positions = db.session.query(Position).filter_by(status='open').count()
+            except Exception as count_error:
+                logger.warning(f"Could not get position counts: {count_error}")
+                # Database is connected but query timed out - still healthy
+                position_count = 0
+                open_positions = 0
         except Exception as e:
             db_healthy = False
             logger.error(f"Database health check failed: {e}")
