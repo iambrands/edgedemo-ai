@@ -4,6 +4,7 @@ from services.tradier_connector import TradierConnector
 from services.ai_signals import AISignals
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
+from utils.performance import log_performance
 
 options_bp = Blueprint('options', __name__)
 
