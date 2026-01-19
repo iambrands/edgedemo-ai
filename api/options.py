@@ -121,6 +121,7 @@ def get_quote(symbol=None):
 
 @options_bp.route('/analyze', methods=['POST'])
 @log_performance(threshold=5.0)
+@cached(timeout=300, key_prefix='analyze')  # Cache analysis results for 5 minutes
 def analyze_options():
     """Analyze options chain with AI-powered explanations (PUBLIC ENDPOINT)"""
     from flask import current_app
@@ -167,8 +168,8 @@ def analyze_options():
         analyzer = get_analyzer()
         current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
         
-        # Add timeout protection - limit analysis to 30 seconds (reduced from 60)
-        # Railway has a 30s timeout, so we need to finish before that
+        # Add timeout protection - limit analysis to 20 seconds (reduced further)
+        # Railway has a 30s timeout, so we need to finish well before that
         import threading
         import queue
         result_queue = queue.Queue()
@@ -176,6 +177,7 @@ def analyze_options():
         
         def run_analysis():
             try:
+                # Limit the analysis to prevent timeouts
                 results = analyzer.analyze_options_chain(
                     symbol=symbol,
                     expiration=expiration,
@@ -189,16 +191,18 @@ def analyze_options():
         # Run analysis in a thread with timeout
         analysis_thread = threading.Thread(target=run_analysis, daemon=True)
         analysis_thread.start()
-        analysis_thread.join(timeout=25)  # 25 second timeout (before Railway's 30s)
+        analysis_thread.join(timeout=20)  # 20 second timeout (before Railway's 30s)
         
         if analysis_thread.is_alive():
-            # Analysis timed out
+            # Analysis timed out - return a helpful error
             current_app.logger.warning(f'Options analysis timed out for {symbol} {expiration}')
             return jsonify({
-                'error': 'Analysis timed out. Please try with a different expiration or symbol.',
+                'error': 'Analysis timed out',
+                'message': 'The analysis is taking too long. This may be due to high API load or complex options chain.',
                 'symbol': symbol,
                 'expiration': expiration,
-                'suggestion': 'Try a more liquid symbol or closer expiration date'
+                'suggestion': 'Try a more liquid symbol (like SPY, QQQ) or a closer expiration date',
+                'retry_after': 60
             }), 504  # Gateway Timeout
         
         if not error_queue.empty():
@@ -215,7 +219,8 @@ def analyze_options():
             # No results returned
             current_app.logger.warning(f'No results returned for {symbol} {expiration}')
             return jsonify({
-                'error': 'No options found for this symbol and expiration',
+                'error': 'No options found',
+                'message': 'No options found for this symbol and expiration',
                 'symbol': symbol,
                 'expiration': expiration,
                 'suggestion': 'Try a different expiration date or symbol'
