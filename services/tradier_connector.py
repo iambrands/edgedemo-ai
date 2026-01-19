@@ -789,34 +789,6 @@ class TradierConnector:
             )
         
         return None
-            
-            # Cache the result (30 second TTL for options chains)
-            if use_cache:
-                try:
-                    cache = get_redis_cache()
-                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                    cache.set(cache_key, validated_options, timeout=30)
-                except Exception as e:
-                    # Cache write failed, but continue - not critical
-                    try:
-                        from flask import current_app
-                        logger.debug(f"Cache write failed (non-critical): {e}")
-                    except:
-                        pass
-            
-            return validated_options
-        
-        # Cache empty result too (shorter TTL - 10 seconds)
-        if use_cache:
-            try:
-                cache = get_redis_cache()
-                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
-                cache.set(cache_key, [], timeout=10)
-            except Exception as e:
-                # Cache write failed, but continue - not critical
-                logger.debug(f"Cache write failed (non-critical): {e}")
-        
-        return []
     
     def _mock_options_chain(self, symbol: str, expiration: str) -> Dict:
         """Generate mock options chain with Greeks"""
