@@ -324,14 +324,10 @@ class TradierConnector:
             if is_option_symbol and quote.get('last'):
                 last_price = float(quote.get('last', 0))
                 if last_price > 50:
-                    try:
-                        from flask import current_app
-                        current_app.logger.error(
-                            f"🚨 CRITICAL: Tradier get_quote returned STOCK PRICE ${last_price:.2f} "
-                            f"for option symbol {symbol}! This is WRONG for options!"
-                        )
-                    except:
-                        pass
+                    logger.error(
+                        f"🚨 CRITICAL: Tradier get_quote returned STOCK PRICE ${last_price:.2f} "
+                        f"for option symbol {symbol}! This is WRONG for options!"
+                    )
             
             # Return in the same format as mock data
             return {
@@ -593,7 +589,7 @@ class TradierConnector:
                     # Cache write failed, but continue - not critical
                     try:
                         from flask import current_app
-                        current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                        logger.debug(f"Cache write failed (non-critical): {e}")
                     except:
                         pass
             return []
@@ -665,7 +661,7 @@ class TradierConnector:
                     # Cache write failed, but continue - not critical
                     try:
                         from flask import current_app
-                        current_app.logger.debug(f"Cache write failed (non-critical): {e}")
+                        logger.debug(f"Cache write failed (non-critical): {e}")
                     except:
                         pass
             
