@@ -22,14 +22,26 @@ class TradierConnector:
             self.api_key = current_app.config.get('TRADIER_API_KEY')
             self.api_secret = current_app.config.get('TRADIER_API_SECRET')
             self.account_id = current_app.config.get('TRADIER_ACCOUNT_ID')
-            self.base_url = current_app.config.get('TRADIER_BASE_URL', 'https://api.tradier.com/v1')
+            self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
+            
+            # CRITICAL: Set base_url based on sandbox flag if not explicitly provided
+            # This ensures consistency - sandbox flag takes precedence over TRADIER_BASE_URL
+            explicit_base_url = current_app.config.get('TRADIER_BASE_URL')
+            if explicit_base_url:
+                self.base_url = explicit_base_url
+            else:
+                # Use sandbox flag to determine URL
+                self.base_url = (
+                    'https://sandbox.tradier.com/v1' if self.sandbox 
+                    else 'https://api.tradier.com/v1'
+                )
+            
             # CRITICAL: Default to False for USE_MOCK_DATA - only use mock if explicitly enabled
             # This prevents silent fallback to mock data which causes wrong prices
             self.use_mock = current_app.config.get('USE_MOCK_DATA', False)
             # FORCE DISABLE: Yahoo Finance removed - causes performance issues and rate limiting
             self.use_yahoo = False
             self.use_polygon = current_app.config.get('USE_POLYGON_DATA', False)
-            self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
             
             # Log configuration for debugging
             logger.info(
@@ -53,17 +65,34 @@ class TradierConnector:
                 self.polygon = None
         except RuntimeError:
             # Outside application context - use defaults
-            self.api_key = ''
-            self.api_secret = ''
-            self.account_id = ''
-            self.base_url = 'https://api.tradier.com/v1'
+            import os
+            self.api_key = os.environ.get('TRADIER_API_KEY', '')
+            self.api_secret = os.environ.get('TRADIER_API_SECRET', '')
+            self.account_id = os.environ.get('TRADIER_ACCOUNT_ID', '')
+            self.sandbox = os.environ.get('TRADIER_SANDBOX', 'true').lower() == 'true'
+            
+            # CRITICAL: Set base_url based on sandbox flag
+            explicit_base_url = os.environ.get('TRADIER_BASE_URL')
+            if explicit_base_url:
+                self.base_url = explicit_base_url
+            else:
+                # Use sandbox flag to determine URL
+                self.base_url = (
+                    'https://sandbox.tradier.com/v1' if self.sandbox 
+                    else 'https://api.tradier.com/v1'
+                )
+            
             self.use_mock = False  # Changed default to False - don't use mock outside app context
             # FORCE DISABLE: Yahoo Finance removed
             self.use_yahoo = False
             self.use_polygon = False
-            self.sandbox = True
             self.yahoo = None
             self.polygon = None
+            
+            logger.info(
+                f"🔧 TRADIER CONFIG (outside Flask context): sandbox={self.sandbox}, "
+                f"base_url={self.base_url}, api_key_present={bool(self.api_key)}"
+            )
     
     def _get_headers(self) -> Dict:
         """Get API headers"""
@@ -93,6 +122,9 @@ class TradierConnector:
             return self._get_mock_data(endpoint, params)
         
         url = f"{self.base_url}/{endpoint}"
+        
+        # Log URL for debugging (helps identify URL inconsistency issues)
+        logger.debug(f"🌐 Making Tradier request to: {url}")
         
         # Use session with retry logic for better timeout handling
         session = self._get_session()
