@@ -666,6 +666,46 @@ class TradierConnector:
                     continue  # Skip this option - it has stock prices, not premiums
                 
                 validated_options.append(opt)
+            
+            if is_index:
+                logger.info(
+                    f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
+                    f"(rejected {rejected_count} with stock prices)"
+                )
+                # Log first few VALIDATED option prices
+                for i, opt in enumerate(validated_options[:3]):
+                    bid = opt.get('bid', 0) or 0
+                    ask = opt.get('ask', 0) or 0
+                    last = opt.get('last', 0) or 0
+                    strike = opt.get('strike', 0) or opt.get('strike_price', 0)
+                    opt_type = opt.get('type', '')
+                    logger.info(
+                        f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
+                    )
+            
+            # Cache the result (30 second TTL for options chains)
+            if use_cache:
+                try:
+                    cache = get_redis_cache()
+                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                    cache.set(cache_key, validated_options, timeout=30)
+                except Exception as e:
+                    # Cache write failed, but continue - not critical
+                    logger.debug(f"Cache write failed (non-critical): {e}")
+            
+            return validated_options
+        
+        # Cache empty result too (shorter TTL - 10 seconds)
+        if use_cache:
+            try:
+                cache = get_redis_cache()
+                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                cache.set(cache_key, [], timeout=10)
+            except Exception as e:
+                # Cache write failed, but continue - not critical
+                logger.debug(f"Cache write failed (non-critical): {e}")
+        
+        return []
     
     def find_option_in_chain(self, chain: List[Dict], option_type: str, strike: float, expiration: str) -> Optional[Dict]:
         """

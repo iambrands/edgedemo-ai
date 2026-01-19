@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from config import config
 from datetime import datetime
 import os
@@ -282,6 +283,79 @@ def create_app(config_name=None):
         replace_existing=True
     )
     app.logger.info("✅ Scheduled price update task started (runs every 2 minutes)")
+    
+    # Schedule expired position cleanup daily at 4:05 PM ET (after market close)
+    def cleanup_expired_positions_job():
+        """Scheduled task to cleanup expired positions"""
+        try:
+            with app.app_context():
+                from services.cleanup_service import cleanup_expired_positions, get_expiring_today
+                
+                app.logger.info("🧹 Starting scheduled expired position cleanup...")
+                count = cleanup_expired_positions()
+                app.logger.info(f"✅ Cleanup complete: {count} positions closed")
+                
+                # Also check for positions expiring today
+                expiring = get_expiring_today()
+                if expiring:
+                    app.logger.warning(
+                        f"⚠️⚠️⚠️ {len(expiring)} POSITIONS EXPIRE TODAY - MANUAL REVIEW RECOMMENDED"
+                    )
+        except Exception as e:
+            app.logger.error(f"Error in expired position cleanup: {e}", exc_info=True)
+    
+    scheduler.add_job(
+        func=cleanup_expired_positions_job,
+        trigger=CronTrigger(hour=16, minute=5, timezone='America/New_York'),
+        id='cleanup_expired_positions',
+        name='Cleanup expired positions',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled expired position cleanup (daily at 4:05 PM ET)")
+    
+    # Schedule cache cleanup for expired options contracts daily at midnight
+    def cleanup_expired_cache_job():
+        """Scheduled task to clear expired cache entries"""
+        try:
+            with app.app_context():
+                from utils.redis_cache import get_redis_cache
+                
+                cache = get_redis_cache()
+                if cache.use_redis and cache.redis_client:
+                    app.logger.info("🧹 Starting scheduled cache cleanup...")
+                    cleared = 0
+                    try:
+                        # Clear expired options chain cache entries
+                        pattern = "cache:options_chain:*:*"
+                        for key in cache.redis_client.scan_iter(match=pattern, count=100):
+                            # Parse expiration from key: "cache:options_chain:AAPL:2026-01-23"
+                            parts = key.split(':')
+                            if len(parts) >= 4:
+                                try:
+                                    exp_date = datetime.strptime(parts[3], '%Y-%m-%d').date()
+                                    if exp_date < datetime.utcnow().date():
+                                        cache.redis_client.delete(key)
+                                        cleared += 1
+                                except ValueError:
+                                    continue
+                        
+                        if cleared > 0:
+                            app.logger.info(f"🧹 Cleared {cleared} expired cache entries")
+                        else:
+                            app.logger.debug("✅ No expired cache entries to clear")
+                    except Exception as e:
+                        app.logger.error(f"Error clearing expired cache: {e}", exc_info=True)
+        except Exception as e:
+            app.logger.error(f"Error in cache cleanup job: {e}", exc_info=True)
+    
+    scheduler.add_job(
+        func=cleanup_expired_cache_job,
+        trigger=CronTrigger(hour=0, minute=0, timezone='America/New_York'),
+        id='cleanup_expired_cache',
+        name='Cleanup expired cache',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled cache cleanup (daily at midnight ET)")
     
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())
