@@ -58,3 +58,4 @@ frontend/.env.production.local
 # Logs
 *.log
 
+test_results_*/
