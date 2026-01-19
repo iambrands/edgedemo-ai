@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
 from utils.performance import log_performance
+from utils.redis_cache import cached
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
@@ -18,6 +19,7 @@ def get_db():
 @opportunities_bp.route('/today', methods=['GET'])
 @token_required
 @log_performance(threshold=2.0)
+@cached(timeout=60, key_prefix='opportunities')  # Cache for 60 seconds
 def get_today_opportunities(current_user):
     """Get today's top trading opportunities - optimized for speed"""
     try:
@@ -262,6 +264,7 @@ def quick_scan(current_user):
 @opportunities_bp.route('/market-movers', methods=['GET'])
 @token_required
 @log_performance(threshold=2.0)
+@cached(timeout=60, key_prefix='market_movers')  # Cache for 60 seconds
 def get_market_movers(current_user):
     """Get market movers - high volume/volatility stocks"""
     try:

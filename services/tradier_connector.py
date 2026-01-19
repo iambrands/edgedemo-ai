@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import random
 import time
 from utils.rate_limiter import tradier_rate_limiter
+from utils.redis_cache import get_redis_cache
 from functools import lru_cache
 
 class TradierConnector:
@@ -171,11 +172,24 @@ class TradierConnector:
             return self._mock_balances()
         return {}
     
-    def get_quote(self, symbol: str) -> Dict:
-        """Get real-time stock quote - tries Yahoo/Polygon first if enabled"""
+    def get_quote(self, symbol: str, use_cache: bool = True) -> Dict:
+        """Get real-time stock quote with Redis caching - tries Yahoo/Polygon first if enabled"""
         # CRITICAL: Log when fetching quotes for index options
         is_index_option = symbol in ['SPY', 'QQQ', 'IWM', 'DIA'] or any(symbol.startswith(s) for s in ['SPY', 'QQQ', 'IWM', 'DIA'])
         is_option_symbol = len(symbol) > 15 and (symbol[-9:-1].isdigit() or 'C' in symbol[-10:] or 'P' in symbol[-10:])
+        
+        # Try Redis cache first (5 second TTL for quotes)
+        if use_cache:
+            cache = get_redis_cache()
+            cache_key = f"quote:{symbol.upper()}"
+            cached_quote = cache.get(cache_key)
+            if cached_quote:
+                try:
+                    from flask import current_app
+                    current_app.logger.debug(f"✅ Cache HIT: quote for {symbol}")
+                except:
+                    pass
+                return cached_quote
         
         try:
             from flask import current_app
@@ -258,11 +272,20 @@ class TradierConnector:
                             current_app.logger.info(f"✅ TRADIER: Using REAL Tradier quote for {symbol}")
                     except:
                         pass
-                    return {
+                    
+                    result = {
                         'quotes': {
                             'quote': quote
                         }
                     }
+                    
+                    # Cache the result (5 second TTL for quotes)
+                    if use_cache:
+                        cache = get_redis_cache()
+                        cache_key = f"quote:{symbol.upper()}"
+                        cache.set(cache_key, result, timeout=5)
+                    
+                    return result
             except Exception as e:
                 try:
                     from flask import current_app
@@ -511,10 +534,23 @@ class TradierConnector:
             expirations.append(expiration.strftime('%Y-%m-%d'))
         return {'expirations': {'expiration': expirations}}
     
-    def get_options_chain(self, symbol: str, expiration: str) -> List[Dict]:
-        """Get options chain for symbol and expiration - tries Yahoo/Polygon first if enabled"""
+    def get_options_chain(self, symbol: str, expiration: str, use_cache: bool = True) -> List[Dict]:
+        """Get options chain for symbol and expiration with Redis caching - tries Yahoo/Polygon first if enabled"""
         # CRITICAL: Log index options specifically
         is_index = symbol in ['SPY', 'QQQ', 'IWM', 'DIA']
+        
+        # Try Redis cache first (30 second TTL for options chains)
+        if use_cache:
+            cache = get_redis_cache()
+            cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+            cached_chain = cache.get(cache_key)
+            if cached_chain:
+                try:
+                    from flask import current_app
+                    current_app.logger.debug(f"✅ Cache HIT: options chain for {symbol} {expiration}")
+                except:
+                    pass
+                return cached_chain
         
         try:
             from flask import current_app
@@ -552,6 +588,11 @@ class TradierConnector:
                         )
                 except:
                     pass
+                # Cache the result (30 second TTL for options chains)
+                if use_cache:
+                    cache = get_redis_cache()
+                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                    cache.set(cache_key, chain, timeout=30)
                 return chain
         
         # Fall back to mock or Tradier
@@ -567,7 +608,18 @@ class TradierConnector:
             chain_data = self._mock_options_chain(symbol, expiration)
             if 'options' in chain_data and 'option' in chain_data['options']:
                 options = chain_data['options']['option']
-                return options if isinstance(options, list) else [options]
+                result = options if isinstance(options, list) else [options]
+                # Cache mock data too (shorter TTL - 10 seconds)
+                if use_cache:
+                    cache = get_redis_cache()
+                    cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                    cache.set(cache_key, result, timeout=10)
+                return result
+            # Cache empty result
+            if use_cache:
+                cache = get_redis_cache()
+                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                cache.set(cache_key, [], timeout=10)
             return []
         
         endpoint = 'markets/options/chains'
@@ -639,7 +691,20 @@ class TradierConnector:
             except:
                 pass
             
+            # Cache the result (30 second TTL for options chains)
+            if use_cache:
+                cache = get_redis_cache()
+                cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+                cache.set(cache_key, validated_options, timeout=30)
+            
             return validated_options
+        
+        # Cache empty result too (shorter TTL - 10 seconds)
+        if use_cache:
+            cache = get_redis_cache()
+            cache_key = f"options_chain:{symbol.upper()}:{expiration}"
+            cache.set(cache_key, [], timeout=10)
+        
         return []
     
     def _mock_options_chain(self, symbol: str, expiration: str) -> Dict:

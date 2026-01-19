@@ -5,6 +5,7 @@ from services.ai_signals import AISignals
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
 from utils.performance import log_performance
+from utils.redis_cache import cached
 
 options_bp = Blueprint('options', __name__)
 
@@ -20,6 +21,7 @@ def get_ai_signals():
 @options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
 @token_required
 @log_performance(threshold=1.0)
+@cached(timeout=5, key_prefix='quote')  # Cache quotes for 5 seconds
 def get_quote(current_user, symbol):
     """Get current quote for a symbol - uses Tradier"""
     try:

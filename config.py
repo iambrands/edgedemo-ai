@@ -81,6 +81,9 @@ class Config:
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
     FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@iabadvisors.com')
     DEFAULT_FEEDBACK_EMAIL = os.environ.get('DEFAULT_FEEDBACK_EMAIL', 'leslie@iabadvisors.com')
+    
+    # Redis configuration (for caching)
+    REDIS_URL = os.environ.get('REDIS_URL')  # e.g., redis://default:password@host:port
 
 class DevelopmentConfig(Config):
     DEBUG = True
