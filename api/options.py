@@ -18,20 +18,18 @@ def get_ai_signals():
 
 @options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
 @token_required
+@log_performance(threshold=1.0)
 def get_quote(current_user, symbol):
-    """Get current quote for a symbol - uses Yahoo Finance if enabled, otherwise Tradier"""
+    """Get current quote for a symbol - uses Tradier"""
     try:
-        current_app.logger.info(f'=== QUOTE ENDPOINT HIT ===')
-        current_app.logger.info(f'Method: {request.method}')
-        current_app.logger.info(f'Symbol: {symbol}')
-        current_app.logger.info(f'User: {current_user.username if current_user else "None"}')
+        current_app.logger.debug(f'Quote request for {symbol} from user {current_user.id}')
     except:
         pass
     
     symbol = symbol.upper()
     if not validate_symbol(symbol):
         try:
-            current_app.logger.error(f'Invalid symbol: {symbol}')
+            current_app.logger.warning(f'Invalid symbol: {symbol}')
         except:
             pass
         return jsonify({'error': 'Invalid symbol'}), 400
@@ -112,10 +110,12 @@ def get_quote(current_user, symbol):
 
 @options_bp.route('/analyze', methods=['POST'])
 @token_required
+@log_performance(threshold=5.0)
 def analyze_options(current_user):
     """Analyze options chain with AI-powered explanations"""
     from flask import current_app
     import traceback
+    import signal
     
     data = request.get_json()
     
@@ -140,12 +140,53 @@ def analyze_options(current_user):
         
         analyzer = get_analyzer()
         current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
-        results = analyzer.analyze_options_chain(
-            symbol=symbol,
-            expiration=expiration,
-            preference=preference,
-            user_risk_tolerance=user_risk_tolerance
-        )
+        
+        # Add timeout protection - limit analysis to 60 seconds total
+        import threading
+        import queue
+        result_queue = queue.Queue()
+        error_queue = queue.Queue()
+        
+        def run_analysis():
+            try:
+                results = analyzer.analyze_options_chain(
+                    symbol=symbol,
+                    expiration=expiration,
+                    preference=preference,
+                    user_risk_tolerance=user_risk_tolerance
+                )
+                result_queue.put(results)
+            except Exception as e:
+                error_queue.put(e)
+        
+        # Run analysis in a thread with timeout
+        analysis_thread = threading.Thread(target=run_analysis, daemon=True)
+        analysis_thread.start()
+        analysis_thread.join(timeout=60)  # 60 second timeout
+        
+        if analysis_thread.is_alive():
+            # Analysis timed out
+            current_app.logger.warning(f'Options analysis timed out for {symbol} {expiration}')
+            return jsonify({
+                'error': 'Analysis timed out. Please try with a different expiration or symbol.',
+                'symbol': symbol,
+                'expiration': expiration
+            }), 504  # Gateway Timeout
+        
+        if not error_queue.empty():
+            error = error_queue.get()
+            raise error
+        
+        if result_queue.empty():
+            # No results returned
+            current_app.logger.warning(f'No results returned for {symbol} {expiration}')
+            return jsonify({
+                'error': 'No options found for this symbol and expiration',
+                'symbol': symbol,
+                'expiration': expiration
+            }), 404
+        
+        results = result_queue.get()
         current_app.logger.info(f'Analysis complete, returning {len(results)} results')
         
         return jsonify({

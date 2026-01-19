@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
+from utils.performance import log_performance
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
@@ -16,6 +17,7 @@ def get_db():
 
 @opportunities_bp.route('/today', methods=['GET'])
 @token_required
+@log_performance(threshold=2.0)
 def get_today_opportunities(current_user):
     """Get today's top trading opportunities - optimized for speed"""
     try:
@@ -86,11 +88,28 @@ def get_today_opportunities(current_user):
                     confidence = min(0.75, confidence + 0.05)
                     reason += ' with high volume'
                 
-                # Get insights (earnings, IV, unusual activity) - async would be better but keep simple for now
+                # Get insights (earnings, IV, unusual activity) - with timeout protection
                 insights = None
                 try:
-                    insights_service = OpportunityInsights()
-                    insights = insights_service.get_symbol_insights(symbol, current_user.id)
+                    import threading
+                    import queue
+                    insights_queue = queue.Queue()
+                    
+                    def fetch_insights():
+                        try:
+                            insights_service = OpportunityInsights()
+                            result = insights_service.get_symbol_insights(symbol, current_user.id)
+                            insights_queue.put(result)
+                        except Exception as e:
+                            insights_queue.put(None)  # Return None on error
+                    
+                    # Fetch insights with 5 second timeout
+                    insights_thread = threading.Thread(target=fetch_insights, daemon=True)
+                    insights_thread.start()
+                    insights_thread.join(timeout=5)  # 5 second timeout
+                    
+                    if not insights_queue.empty():
+                        insights = insights_queue.get()
                 except Exception as e:
                     try:
                         current_app.logger.warning(f"Error getting insights for {symbol}: {e}")
@@ -242,6 +261,7 @@ def quick_scan(current_user):
 
 @opportunities_bp.route('/market-movers', methods=['GET'])
 @token_required
+@log_performance(threshold=2.0)
 def get_market_movers(current_user):
     """Get market movers - high volume/volatility stocks"""
     try:
