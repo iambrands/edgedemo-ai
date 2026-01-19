@@ -790,22 +790,6 @@ class TradierConnector:
         
         return None
             
-            if is_index:
-                logger.info(
-                    f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
-                    f"(rejected {rejected_count} with stock prices)"
-                )
-                # Log first few VALIDATED option prices
-                for i, opt in enumerate(validated_options[:3]):
-                    bid = opt.get('bid', 0) or 0
-                    ask = opt.get('ask', 0) or 0
-                    last = opt.get('last', 0) or 0
-                    strike = opt.get('strike', 0) or opt.get('strike_price', 0)
-                    opt_type = opt.get('type', '')
-                    logger.info(
-                        f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
-                    )
-            
             # Cache the result (30 second TTL for options chains)
             if use_cache:
                 try:
