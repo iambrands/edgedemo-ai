@@ -121,6 +121,21 @@ def create_app(config_name=None):
     app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     app.register_blueprint(opportunities_bp, url_prefix='/api/opportunities')
     app.register_blueprint(account_bp, url_prefix='/api/account')
+    app.register_blueprint(health_bp)  # No prefix - /health endpoints
+    app.register_blueprint(admin_bp, url_prefix='/api')  # /api/admin/* endpoints
+    
+    # Debug route to list all registered routes
+    @app.route('/debug/routes')
+    def list_routes():
+        """Debug: List all registered routes"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'path': str(rule)
+            })
+        return jsonify(sorted(routes, key=lambda x: x['path']))
     
     # Start automatic position monitoring on app startup
     # This ensures positions are checked and closed when thresholds are hit

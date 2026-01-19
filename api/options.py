@@ -28,14 +28,12 @@ def get_quote(symbol=None):
     if symbol is None:
         symbol = request.args.get('symbol')
     
+    if not symbol:
+        return jsonify({'error': 'Symbol required'}), 400
+    
     # Log request (no auth required)
     try:
         current_app.logger.debug(f'Quote request for {symbol}')
-    except:
-        pass
-    """Get current quote for a symbol - uses Tradier"""
-    try:
-        current_app.logger.debug(f'Quote request for {symbol} from user {current_user.id}')
     except:
         pass
     
@@ -122,10 +120,9 @@ def get_quote(symbol=None):
         return jsonify({'error': str(e)}), 500
 
 @options_bp.route('/analyze', methods=['POST'])
-@token_required
 @log_performance(threshold=5.0)
-def analyze_options(current_user):
-    """Analyze options chain with AI-powered explanations"""
+def analyze_options():
+    """Analyze options chain with AI-powered explanations (PUBLIC ENDPOINT)"""
     from flask import current_app
     import traceback
     import signal
@@ -143,13 +140,29 @@ def analyze_options(current_user):
     if not expiration:
         return jsonify({'error': 'Expiration date required'}), 400
     
-    preference = data.get('preference', current_user.default_strategy)
-    if preference not in ['income', 'growth', 'balanced']:
+    # Get preference from request or default to 'balanced'
+    preference = data.get('preference', 'balanced')
+    if preference not in ['income', 'growth', 'balanced', 'aggressive', 'conservative']:
         preference = 'balanced'
+    
+    # Try to get user if available, but don't require it
+    current_user = None
+    try:
+        from flask_jwt_extended import get_jwt_identity
+        from models.user import User
+        user_id = get_jwt_identity()
+        if user_id:
+            current_user = User.query.get(int(user_id))
+    except:
+        pass
+    
+    # Use user's risk tolerance if available, otherwise default
+    user_risk_tolerance = 'moderate'
+    if current_user and current_user.risk_tolerance:
+        user_risk_tolerance = current_user.risk_tolerance
     
     try:
         current_app.logger.info(f'Starting options analysis for {symbol}, expiration {expiration}')
-        user_risk_tolerance = current_user.risk_tolerance or 'moderate'
         
         analyzer = get_analyzer()
         current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
@@ -235,8 +248,15 @@ def get_options_chain(current_user, symbol, expiration):
 
 @options_bp.route('/expirations', methods=['GET'])
 @options_bp.route('/expirations/<symbol>', methods=['GET'])
-def get_expirations(current_user, symbol):
-    """Get available expiration dates for symbol"""
+def get_expirations(symbol=None):
+    """Get available expiration dates for symbol (PUBLIC ENDPOINT)"""
+    # Handle query parameter or path parameter
+    if symbol is None:
+        symbol = request.args.get('symbol')
+    
+    if not symbol:
+        return jsonify({'error': 'Symbol required'}), 400
+    
     symbol = symbol.upper()
     if not validate_symbol(symbol):
         try:
