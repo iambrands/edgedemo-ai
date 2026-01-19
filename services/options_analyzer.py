@@ -94,7 +94,8 @@ class OptionsAnalyzer:
         import threading
         
         # Use ThreadPoolExecutor for parallel AI analysis
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        # Reduced workers to prevent overwhelming the system
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             # Submit all AI analysis tasks
             future_to_option = {
                 executor.submit(
