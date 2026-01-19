@@ -3,9 +3,15 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import random
 import time
+import logging
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from utils.rate_limiter import tradier_rate_limiter
 from utils.redis_cache import get_redis_cache
 from functools import lru_cache
+
+# Set up logging module (works both inside and outside Flask context)
+logger = logging.getLogger(__name__)
 
 class TradierConnector:
     """Tradier API integration with mock data support and alternative data sources"""
@@ -26,14 +32,11 @@ class TradierConnector:
             self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
             
             # Log configuration for debugging
-            try:
-                current_app.logger.info(
-                    f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo} (FORCED OFF), "
-                    f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
-                    f"api_key_present={bool(self.api_key)}, base_url={self.base_url}"
-                )
-            except:
-                pass
+            logger.info(
+                f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo} (FORCED OFF), "
+                f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
+                f"api_key_present={bool(self.api_key)}, base_url={self.base_url}"
+            )
             
             # REMOVED: Yahoo Finance integration - causes performance issues
             self.yahoo = None  # Disabled - use Tradier directly
@@ -69,6 +72,20 @@ class TradierConnector:
             'Accept': 'application/json'
         }
     
+    def _get_session(self):
+        """Get requests session with retry logic"""
+        session = requests.Session()
+        retry = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=['GET']
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('https://', adapter)
+        session.mount('http://', adapter)
+        return session
+    
     @tradier_rate_limiter
     def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
         """Make API request or return mock data (rate limited)"""
@@ -76,83 +93,95 @@ class TradierConnector:
             return self._get_mock_data(endpoint, params)
         
         url = f"{self.base_url}/{endpoint}"
+        
+        # Use session with retry logic for better timeout handling
+        session = self._get_session()
+        
         try:
-            response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+            # Improved timeout: (connect timeout, read timeout)
+            response = session.get(
+                url, 
+                headers=self._get_headers(), 
+                params=params, 
+                timeout=(5, 15)  # 5s connect, 15s read
+            )
             
             # Check for rate limit errors (429)
             if response.status_code == 429:
-                try:
-                    current_app.logger.warning(f"Tradier API rate limit hit for {endpoint}. Waiting and retrying...")
-                except RuntimeError:
-                    pass
+                logger.warning(f"Tradier API rate limit hit for {endpoint}. Waiting and retrying...")
                 # Wait a bit longer and retry once
                 time.sleep(2)
-                response = requests.get(url, headers=self._get_headers(), params=params, timeout=10)
+                response = session.get(
+                    url, 
+                    headers=self._get_headers(), 
+                    params=params, 
+                    timeout=(5, 15)
+                )
             
             response.raise_for_status()
             return response.json()
+            
+        except requests.exceptions.Timeout as e:
+            logger.error(
+                f"🚨 TRADIER API TIMEOUT for {endpoint}: {str(e)} "
+                f"(type={type(e).__name__})"
+            )
+            # Fallback to mock if enabled, otherwise return empty
+            if self.use_mock:
+                logger.warning(
+                    f"⚠️ TRADIER API timeout for {endpoint}, falling back to MOCK DATA "
+                    f"(USE_MOCK_DATA=True). This may cause incorrect prices!"
+                )
+                return self._get_mock_data(endpoint, params)
+            else:
+                logger.error(
+                    f"🚨🚨🚨 TRADIER API TIMEOUT for {endpoint} and USE_MOCK_DATA=False. "
+                    f"Returning empty response to prevent wrong data."
+                )
+                return {}
+                
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
-                try:
-                    current_app.logger.error(f"Tradier API rate limit exceeded for {endpoint}. Using fallback.")
-                except RuntimeError:
-                    pass
+                logger.error(f"Tradier API rate limit exceeded for {endpoint}. Using fallback.")
             else:
-                try:
-                    current_app.logger.error(
-                        f"🚨 TRADIER API HTTP ERROR for {endpoint}: {str(e)} "
-                        f"(status={e.response.status_code if hasattr(e, 'response') else 'N/A'})"
-                    )
-                except RuntimeError:
-                    pass
+                logger.error(
+                    f"🚨 TRADIER API HTTP ERROR for {endpoint}: {str(e)} "
+                    f"(status={e.response.status_code if hasattr(e, 'response') else 'N/A'})"
+                )
             # CRITICAL: Only fallback to mock if explicitly enabled
             # Otherwise, return empty/error response to prevent wrong data
             if self.use_mock:
-                try:
-                    current_app.logger.warning(
-                        f"⚠️ TRADIER API failed for {endpoint}, falling back to MOCK DATA "
-                        f"(USE_MOCK_DATA=True). This may cause incorrect prices!"
-                    )
-                except RuntimeError:
-                    pass
+                logger.warning(
+                    f"⚠️ TRADIER API failed for {endpoint}, falling back to MOCK DATA "
+                    f"(USE_MOCK_DATA=True). This may cause incorrect prices!"
+                )
                 return self._get_mock_data(endpoint, params)
             else:
                 # Return empty response - don't use mock data
-                try:
-                    current_app.logger.error(
-                        f"🚨🚨🚨 TRADIER API FAILED for {endpoint} and USE_MOCK_DATA=False. "
-                        f"Returning empty response to prevent wrong data."
-                    )
-                except RuntimeError:
-                    pass
-                return {}
-        except Exception as e:
-            try:
-                current_app.logger.error(
-                    f"🚨 TRADIER API EXCEPTION for {endpoint}: {str(e)} "
-                    f"(type={type(e).__name__})"
+                logger.error(
+                    f"🚨🚨🚨 TRADIER API FAILED for {endpoint} and USE_MOCK_DATA=False. "
+                    f"Returning empty response to prevent wrong data."
                 )
-            except RuntimeError:
-                pass
+                return {}
+                
+        except Exception as e:
+            logger.error(
+                f"🚨 TRADIER API EXCEPTION for {endpoint}: {str(e)} "
+                f"(type={type(e).__name__})"
+            )
             # CRITICAL: Only fallback to mock if explicitly enabled
             if self.use_mock:
-                try:
-                    current_app.logger.warning(
-                        f"⚠️ TRADIER API exception for {endpoint}, falling back to MOCK DATA. "
-                        f"This may cause incorrect prices!"
-                    )
-                except RuntimeError:
-                    pass
+                logger.warning(
+                    f"⚠️ TRADIER API exception for {endpoint}, falling back to MOCK DATA. "
+                    f"This may cause incorrect prices!"
+                )
                 return self._get_mock_data(endpoint, params)
             else:
                 # Return empty response - don't use mock data
-                try:
-                    current_app.logger.error(
-                        f"🚨🚨🚨 TRADIER API EXCEPTION for {endpoint} and USE_MOCK_DATA=False. "
-                        f"Returning empty response."
-                    )
-                except RuntimeError:
-                    pass
+                logger.error(
+                    f"🚨🚨🚨 TRADIER API EXCEPTION for {endpoint} and USE_MOCK_DATA=False. "
+                    f"Returning empty response."
+                )
                 return {}
     
     def _get_mock_data(self, endpoint: str, params: Dict = None) -> Dict:
@@ -185,29 +214,17 @@ class TradierConnector:
                 cache_key = f"quote:{symbol.upper()}"
                 cached_quote = cache.get(cache_key)
                 if cached_quote is not None:
-                    try:
-                        from flask import current_app
-                        current_app.logger.debug(f"✅ Cache HIT: quote for {symbol}")
-                    except:
-                        pass
+                    logger.debug(f"✅ Cache HIT: quote for {symbol}")
                     return cached_quote
             except Exception as e:
                 # If cache fails, continue to fetch from API
-                try:
-                    from flask import current_app
-                    current_app.logger.debug(f"Cache lookup failed, fetching from API: {e}")
-                except:
-                    pass
+                logger.debug(f"Cache lookup failed, fetching from API: {e}")
         
-        try:
-            from flask import current_app
-            if is_index_option or is_option_symbol:
-                current_app.logger.info(
-                    f"🔍 TRADIER get_quote called for: {symbol} "
-                    f"(is_index_option={is_index_option}, is_option_symbol={is_option_symbol})"
-                )
-        except:
-            pass
+        if is_index_option or is_option_symbol:
+            logger.info(
+                f"🔍 TRADIER get_quote called for: {symbol} "
+                f"(is_index_option={is_index_option}, is_option_symbol={is_option_symbol})"
+            )
         
         # DISABLED: Yahoo Finance - use Tradier directly
         # Try Yahoo Finance first if enabled
@@ -226,26 +243,18 @@ class TradierConnector:
         if self.use_polygon and self.polygon:
             quote = self.polygon.get_quote(symbol)
             if quote:
-                try:
-                    from flask import current_app
-                    if is_index_option or is_option_symbol:
-                        current_app.logger.info(f"✅ TRADIER: Using Polygon quote for {symbol}: {quote}")
-                except:
-                    pass
+                if is_index_option or is_option_symbol:
+                    logger.info(f"✅ TRADIER: Using Polygon quote for {symbol}: {quote}")
                 return quote
         
         # CRITICAL: Tradier's /markets/quotes endpoint returns STOCK PRICE for option symbols, not option premium!
         # For option symbols, we MUST use get_options_chain instead - NEVER use get_quote for options
         if is_option_symbol:
-            try:
-                from flask import current_app
-                current_app.logger.warning(
-                    f"🚨 CRITICAL: get_quote called for option symbol {symbol}! "
-                    f"Tradier's quotes endpoint returns STOCK PRICE, not option premium. "
-                    f"Use get_options_chain instead. Returning empty quote to force chain lookup."
-                )
-            except:
-                pass
+            logger.warning(
+                f"🚨 CRITICAL: get_quote called for option symbol {symbol}! "
+                f"Tradier's quotes endpoint returns STOCK PRICE, not option premium. "
+                f"Use get_options_chain instead. Returning empty quote to force chain lookup."
+            )
             # Return empty quote to force caller to use options chain
             return {'quotes': {'quote': {}}}
         
@@ -264,22 +273,14 @@ class TradierConnector:
                     
                     # Check for unmatched_symbols (Tradier returns this when symbol not found)
                     if 'unmatched_symbols' in response.get('quotes', {}):
-                        try:
-                            from flask import current_app
-                            current_app.logger.warning(
-                                f"⚠️ TRADIER: Symbol {symbol} not found (unmatched_symbols). "
-                                f"Returning empty quote."
-                            )
-                        except:
-                            pass
+                        logger.warning(
+                            f"⚠️ TRADIER: Symbol {symbol} not found (unmatched_symbols). "
+                            f"Returning empty quote."
+                        )
                         return {'quotes': {'quote': {}}}
                     
-                    try:
-                        from flask import current_app
-                        if is_index_option:
-                            current_app.logger.info(f"✅ TRADIER: Using REAL Tradier quote for {symbol}")
-                    except:
-                        pass
+                    if is_index_option:
+                        logger.info(f"✅ TRADIER: Using REAL Tradier quote for {symbol}")
                     
                     result = {
                         'quotes': {
@@ -295,48 +296,23 @@ class TradierConnector:
                             cache.set(cache_key, result, timeout=5)
                         except Exception as e:
                             # Cache write failed, but continue - not critical
-                            try:
-                                from flask import current_app
-                                current_app.logger.debug(f"Cache write failed (non-critical): {e}")
-                            except:
-                                pass
+                            logger.debug(f"Cache write failed (non-critical): {e}")
                     
                     return result
             except Exception as e:
-                try:
-                    from flask import current_app
-                    current_app.logger.warning(f"Tradier API call failed for {symbol}, falling back to mock: {e}")
-                except:
-                    pass
+                logger.warning(f"Tradier API call failed for {symbol}, falling back to mock: {e}")
         
         # Fall back to mock only if explicitly enabled OR if Tradier API failed
         if self.use_mock:
             result = self._mock_quote(symbol)
-            try:
-                from flask import current_app
-                if is_index_option or is_option_symbol:
-                    current_app.logger.warning(f"⚠️ TRADIER: Using MOCK quote for {symbol} (not real data!)")
-            except:
-                pass
+            if is_index_option or is_option_symbol:
+                logger.warning(f"⚠️ TRADIER: Using MOCK quote for {symbol} (not real data!)")
             return result
         
         # If we get here, Tradier API failed and mock is disabled
         # Return empty quote structure
-        try:
-            from flask import current_app
-            current_app.logger.error(f"❌ TRADIER: API failed for {symbol} and mock data is disabled. No data available.")
-        except:
-            pass
+        logger.error(f"❌ TRADIER: API failed for {symbol} and mock data is disabled. No data available.")
         return {'quotes': {'quote': {}}}
-        
-        try:
-            from flask import current_app
-            if is_index_option or is_option_symbol:
-                current_app.logger.info(
-                    f"🔍 TRADIER API response for {symbol}: {response}"
-                )
-        except:
-            pass
         
         # Always return the full structure to match mock data format
         if 'quotes' in response and 'quote' in response['quotes']:
@@ -528,11 +504,7 @@ class TradierConnector:
                 return result
         
         # If no expirations in response, fall back to mock data
-        try:
-            from flask import current_app
-            current_app.logger.warning(f'No expirations in Tradier response for {symbol}, falling back to mock data')
-        except RuntimeError:
-            pass
+        logger.warning(f'No expirations in Tradier response for {symbol}, falling back to mock data')
         result = self._mock_expirations(symbol)['expirations']['expiration']
         self._expiration_cache[symbol] = (result, datetime.now())
         return result
@@ -562,28 +534,16 @@ class TradierConnector:
                 cache_key = f"options_chain:{symbol.upper()}:{expiration}"
                 cached_chain = cache.get(cache_key)
                 if cached_chain is not None:
-                    try:
-                        from flask import current_app
-                        current_app.logger.debug(f"✅ Cache HIT: options chain for {symbol} {expiration}")
-                    except:
-                        pass
+                    logger.debug(f"✅ Cache HIT: options chain for {symbol} {expiration}")
                     return cached_chain
             except Exception as e:
                 # If cache fails, continue to fetch from API
-                try:
-                    from flask import current_app
-                    current_app.logger.debug(f"Cache lookup failed, fetching from API: {e}")
-                except:
-                    pass
+                logger.debug(f"Cache lookup failed, fetching from API: {e}")
         
-        try:
-            from flask import current_app
-            if is_index:
-                current_app.logger.info(
-                    f"🔍 TRADIER get_options_chain called for INDEX: {symbol} exp={expiration}"
-                )
-        except:
-            pass
+        if is_index:
+            logger.info(
+                f"🔍 TRADIER get_options_chain called for INDEX: {symbol} exp={expiration}"
+            )
         
         # DISABLED: Yahoo Finance - use Tradier directly
         # Try Yahoo Finance first if enabled
@@ -604,14 +564,10 @@ class TradierConnector:
         if self.use_polygon and self.polygon:
             chain = self.polygon.get_options_chain(symbol, expiration)
             if chain:
-                try:
-                    from flask import current_app
-                    if is_index:
-                        current_app.logger.info(
-                            f"✅ TRADIER: Using Polygon options chain for {symbol}, found {len(chain)} options"
-                        )
-                except:
-                    pass
+                if is_index:
+                    logger.info(
+                        f"✅ TRADIER: Using Polygon options chain for {symbol}, found {len(chain)} options"
+                    )
                 # Cache the result (30 second TTL for options chains)
                 if use_cache:
                     try:
@@ -620,11 +576,7 @@ class TradierConnector:
                         cache.set(cache_key, chain, timeout=30)
                     except Exception as e:
                         # Cache write failed, but continue - not critical
-                        try:
-                            from flask import current_app
-                            current_app.logger.debug(f"Cache write failed (non-critical): {e}")
-                        except:
-                            pass
+                        logger.debug(f"Cache write failed (non-critical): {e}")
                 return chain
         
         # Fall back to mock or Tradier
@@ -649,11 +601,7 @@ class TradierConnector:
                         cache.set(cache_key, result, timeout=10)
                     except Exception as e:
                         # Cache write failed, but continue - not critical
-                        try:
-                            from flask import current_app
-                            current_app.logger.debug(f"Cache write failed (non-critical): {e}")
-                        except:
-                            pass
+                        logger.debug(f"Cache write failed (non-critical): {e}")
                 return result
             # Cache empty result
             if use_cache:
@@ -674,16 +622,12 @@ class TradierConnector:
         params = {'symbol': symbol, 'expiration': expiration, 'greeks': 'true'}
         response = self._make_request(endpoint, params)
         
-        try:
-            from flask import current_app
-            if is_index:
-                current_app.logger.info(
-                    f"🔍 TRADIER API options chain response for {symbol}: "
-                    f"has_options={('options' in response)}, "
-                    f"response_keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
-                )
-        except:
-            pass
+        if is_index:
+            logger.info(
+                f"🔍 TRADIER API options chain response for {symbol}: "
+                f"has_options={('options' in response)}, "
+                f"response_keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
+            )
         
         if 'options' in response and 'option' in response['options']:
             options = response['options']['option']
@@ -705,39 +649,31 @@ class TradierConnector:
                 
                 if max_price > 50:
                     rejected_count += 1
-                    try:
-                        from flask import current_app
-                        if is_index and rejected_count <= 3:  # Log first 3 rejections
-                            current_app.logger.warning(
-                                f"🚨 TRADIER: REJECTED option with stock price: "
-                                f"strike=${strike}, bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f} "
-                                f"(max=${max_price:.2f} > $50 threshold)"
-                            )
-                    except:
-                        pass
+                    if is_index and rejected_count <= 3:  # Log first 3 rejections
+                        logger.warning(
+                            f"🚨 TRADIER: REJECTED option with stock price: "
+                            f"strike=${strike}, bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f} "
+                            f"(max=${max_price:.2f} > $50 threshold)"
+                        )
                     continue  # Skip this option - it has stock prices, not premiums
                 
                 validated_options.append(opt)
             
-            try:
-                from flask import current_app
-                if is_index:
-                    current_app.logger.info(
-                        f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
-                        f"(rejected {rejected_count} with stock prices)"
+            if is_index:
+                logger.info(
+                    f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
+                    f"(rejected {rejected_count} with stock prices)"
+                )
+                # Log first few VALIDATED option prices
+                for i, opt in enumerate(validated_options[:3]):
+                    bid = opt.get('bid', 0) or 0
+                    ask = opt.get('ask', 0) or 0
+                    last = opt.get('last', 0) or 0
+                    strike = opt.get('strike', 0) or opt.get('strike_price', 0)
+                    opt_type = opt.get('type', '')
+                    logger.info(
+                        f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
                     )
-                    # Log first few VALIDATED option prices
-                    for i, opt in enumerate(validated_options[:3]):
-                        bid = opt.get('bid', 0) or 0
-                        ask = opt.get('ask', 0) or 0
-                        last = opt.get('last', 0) or 0
-                        strike = opt.get('strike', 0) or opt.get('strike_price', 0)
-                        opt_type = opt.get('type', '')
-                        current_app.logger.info(
-                            f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
-                        )
-            except:
-                pass
             
             # Cache the result (30 second TTL for options chains)
             if use_cache:
