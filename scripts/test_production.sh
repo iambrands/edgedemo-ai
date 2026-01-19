@@ -91,9 +91,18 @@ test_cache_performance() {
     
     # First request (cache miss)
     echo -n "  → First request (cache miss)... "
-    start_ms=$(date +%s%3N)
+    # macOS compatible millisecond timestamp
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        start_ms=$(($(date +%s) * 1000))
+    else
+        start_ms=$(date +%s%3N)
+    fi
     response1=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" -H "Content-Type: application/json" -d "$data" "$BASE_URL$endpoint")
-    end_ms=$(date +%s%3N)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        end_ms=$(($(date +%s) * 1000))
+    else
+        end_ms=$(date +%s%3N)
+    fi
     duration1=$((end_ms - start_ms))
     
     if [ "$response1" -eq 200 ]; then
@@ -108,9 +117,18 @@ test_cache_performance() {
     
     # Second request (cache hit)
     echo -n "  → Second request (cache hit)... "
-    start_ms=$(date +%s%3N)
+    # macOS compatible millisecond timestamp
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        start_ms=$(($(date +%s) * 1000))
+    else
+        start_ms=$(date +%s%3N)
+    fi
     response2=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" -H "Content-Type: application/json" -d "$data" "$BASE_URL$endpoint")
-    end_ms=$(date +%s%3N)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        end_ms=$(($(date +%s) * 1000))
+    else
+        end_ms=$(date +%s%3N)
+    fi
     duration2=$((end_ms - start_ms))
     
     if [ "$response2" -eq 200 ]; then

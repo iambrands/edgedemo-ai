@@ -18,11 +18,21 @@ def get_tradier():
 def get_ai_signals():
     return AISignals()
 
+@options_bp.route('/quote', methods=['GET', 'OPTIONS'])
 @options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
-@token_required
 @log_performance(threshold=1.0)
 @cached(timeout=5, key_prefix='quote')  # Cache quotes for 5 seconds
-def get_quote(current_user, symbol):
+def get_quote(symbol=None):
+    """Get current quote for a symbol - uses Tradier (PUBLIC ENDPOINT)"""
+    # Handle query parameter or path parameter
+    if symbol is None:
+        symbol = request.args.get('symbol')
+    
+    # Log request (no auth required)
+    try:
+        current_app.logger.debug(f'Quote request for {symbol}')
+    except:
+        pass
     """Get current quote for a symbol - uses Tradier"""
     try:
         current_app.logger.debug(f'Quote request for {symbol} from user {current_user.id}')
@@ -223,8 +233,8 @@ def get_options_chain(current_user, symbol, expiration):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@options_bp.route('/expirations', methods=['GET'])
 @options_bp.route('/expirations/<symbol>', methods=['GET'])
-@token_required
 def get_expirations(current_user, symbol):
     """Get available expiration dates for symbol"""
     symbol = symbol.upper()
