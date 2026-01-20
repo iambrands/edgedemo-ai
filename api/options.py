@@ -318,13 +318,14 @@ def analyze_options():
         
         results = result_queue.get()
         
+        # TODO: Uncomment after running: flask db upgrade
         # Increment rate limit counter if user is authenticated
-        if current_user:
-            try:
-                current_user.increment_analysis_count()
-            except AttributeError:
-                # User model doesn't have rate limiting yet - skip
-                pass
+        # if current_user:
+        #     try:
+        #         current_user.increment_analysis_count()
+        #     except AttributeError:
+        #         # User model doesn't have rate limiting yet - skip
+        #         pass
         
         # Cache the result with smart TTL
         cache_write_start = time.time()

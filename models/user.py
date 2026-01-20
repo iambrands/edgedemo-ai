@@ -23,8 +23,9 @@ class User(db.Model):
     paper_balance = db.Column(db.Float, default=100000.0)  # Starting paper trading balance
     
     # Rate Limiting for AI Analysis
-    daily_ai_analyses = db.Column(db.Integer, default=0)  # Counter for daily AI analyses
-    last_analysis_reset = db.Column(db.Date, default=datetime.utcnow)  # Date of last counter reset
+    # TODO: Uncomment after running: flask db upgrade
+    # daily_ai_analyses = db.Column(db.Integer, default=0)  # Counter for daily AI analyses
+    # last_analysis_reset = db.Column(db.Date, default=datetime.utcnow)  # Date of last counter reset
     
     # Relationships
     stocks = db.relationship('Stock', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -40,50 +41,51 @@ class User(db.Model):
         """Verify password"""
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
     
-    def can_analyze(self):
-        """Check if user can make AI analysis request"""
-        from datetime import date
-        # Reset counter if new day
-        today = date.today()
-        if self.last_analysis_reset != today:
-            self.daily_ai_analyses = 0
-            self.last_analysis_reset = today
-            db.session.commit()
-        
-        # Free tier limit: 100 analyses per day (generous for now)
-        # You can adjust this later or add tier system
-        return self.daily_ai_analyses < 100
-    
-    def increment_analysis_count(self):
-        """Increment AI analysis counter"""
-        from datetime import date
-        # Reset if needed
-        today = date.today()
-        if self.last_analysis_reset != today:
-            self.daily_ai_analyses = 0
-            self.last_analysis_reset = today
-        
-        self.daily_ai_analyses += 1
-        db.session.commit()
-    
-    def get_analysis_usage(self):
-        """Get current usage stats"""
-        from datetime import date, datetime, timedelta
-        # Reset if needed
-        today = date.today()
-        if self.last_analysis_reset != today:
-            self.daily_ai_analyses = 0
-            self.last_analysis_reset = today
-        
-        # Calculate reset time (midnight EST)
-        reset_at = (datetime.now() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        return {
-            'used': self.daily_ai_analyses,
-            'limit': 100,
-            'remaining': 100 - self.daily_ai_analyses,
-            'reset_at': reset_at.isoformat()
-        }
+    # TODO: Uncomment after running: flask db upgrade
+    # def can_analyze(self):
+    #     """Check if user can make AI analysis request"""
+    #     from datetime import date
+    #     # Reset counter if new day
+    #     today = date.today()
+    #     if self.last_analysis_reset != today:
+    #         self.daily_ai_analyses = 0
+    #         self.last_analysis_reset = today
+    #         db.session.commit()
+    #     
+    #     # Free tier limit: 100 analyses per day (generous for now)
+    #     # You can adjust this later or add tier system
+    #     return self.daily_ai_analyses < 100
+    # 
+    # def increment_analysis_count(self):
+    #     """Increment AI analysis counter"""
+    #     from datetime import date
+    #     # Reset if needed
+    #     today = date.today()
+    #     if self.last_analysis_reset != today:
+    #         self.daily_ai_analyses = 0
+    #         self.last_analysis_reset = today
+    #     
+    #     self.daily_ai_analyses += 1
+    #     db.session.commit()
+    # 
+    # def get_analysis_usage(self):
+    #     """Get current usage stats"""
+    #     from datetime import date, datetime, timedelta
+    #     # Reset if needed
+    #     today = date.today()
+    #     if self.last_analysis_reset != today:
+    #         self.daily_ai_analyses = 0
+    #         self.last_analysis_reset = today
+    #     
+    #     # Calculate reset time (midnight EST)
+    #     reset_at = (datetime.now() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    #     
+    #     return {
+    #         'used': self.daily_ai_analyses,
+    #         'limit': 100,
+    #         'remaining': 100 - self.daily_ai_analyses,
+    #         'reset_at': reset_at.isoformat()
+    #     }
     
     def to_dict(self):
         """Convert to dictionary"""

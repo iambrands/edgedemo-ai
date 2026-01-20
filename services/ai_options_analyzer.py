@@ -12,42 +12,19 @@ class AIOptionsAnalyzer:
     """AI-powered options analysis with plain English explanations using Claude Haiku"""
     
     def __init__(self):
+        """Initialize AI options analyzer with Anthropic Claude Haiku"""
         self.anthropic_client = get_anthropic_client()
         self.use_ai = self.anthropic_client.is_available()
         
-        if self.use_openai:
-            try:
-                import openai
-                openai.api_key = self.openai_api_key
-            except ImportError:
-                self.use_openai = False
-                try:
-                    from flask import current_app
-                    current_app.logger.warning("OpenAI package not installed")
-                except RuntimeError:
-                    pass  # Outside application context
-        
-        if self.use_claude:
-            try:
-                import anthropic
-                try:
-                    from flask import current_app
-                    current_app.logger.info(f"✅ Claude API configured (key present: {bool(self.anthropic_api_key)})")
-                except RuntimeError:
-                    pass  # Outside application context
-            except ImportError:
-                self.use_claude = False
-                try:
-                    from flask import current_app
-                    current_app.logger.warning("❌ Anthropic package not installed - install with: pip install anthropic")
-                except RuntimeError:
-                    pass  # Outside application context
-        else:
-            try:
-                from flask import current_app
-                current_app.logger.warning("⚠️ Claude API not configured - ANTHROPIC_API_KEY not set")
-            except RuntimeError:
-                pass  # Outside application context
+        try:
+            from flask import current_app
+            if self.use_ai:
+                current_app.logger.info("✅ AI analyzer initialized with Claude Haiku")
+            else:
+                current_app.logger.warning("⚠️ Anthropic API not configured - AI features disabled")
+        except RuntimeError:
+            # Outside application context
+            pass
     
     def _parse_claude_response(self, ai_text: str, option: Dict, stock_price: float,
                               delta: float, gamma: float, theta: float,
