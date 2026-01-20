@@ -79,9 +79,36 @@ class OptionsAnalyzer:
                 basic_analysis['original_option'] = option
                 pre_analyzed.append(basic_analysis)
         
+        # Log distribution BEFORE sorting
+        try:
+            pre_calls = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'call']
+            pre_puts = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'put']
+            current_app.logger.info(
+                f'[RECOMMENDATIONS] After basic analysis: {len(pre_analyzed)} total '
+                f'({len(pre_calls)} CALLs, {len(pre_puts)} PUTs)'
+            )
+        except RuntimeError:
+            pass
+        
         # Step 2: Sort by basic score and take top candidates
         pre_analyzed.sort(key=lambda x: x['score'], reverse=True)
         top_candidates = pre_analyzed[:MAX_OPTIONS_TO_ANALYZE]
+        
+        # Log distribution AFTER sorting (top candidates)
+        try:
+            top_calls = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'call']
+            top_puts = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'put']
+            current_app.logger.info(
+                f'[RECOMMENDATIONS] Top {len(top_candidates)} candidates: '
+                f'{len(top_calls)} CALLs, {len(top_puts)} PUTs'
+            )
+            if len(top_puts) == 0 and len(top_candidates) > 0:
+                current_app.logger.warning(
+                    f'[RECOMMENDATIONS] ⚠️ No PUTs in top {len(top_candidates)} candidates! '
+                    f'This may indicate scoring bias.'
+                )
+        except RuntimeError:
+            pass
         
         try:
             current_app.logger.info(f'Pre-filtered to {len(top_candidates)} top candidates for AI analysis')
@@ -127,6 +154,22 @@ class OptionsAnalyzer:
                         current_app.logger.warning(f'AI analysis failed for option, using basic analysis: {str(e)[:100]}')
                     except RuntimeError:
                         pass
+        
+        try:
+            # Log final distribution
+            final_calls = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'call']
+            final_puts = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'put']
+            current_app.logger.info(
+                f'[RECOMMENDATIONS] Analysis complete: {len(analyzed_options)} options '
+                f'({len(final_calls)} CALLs, {len(final_puts)} PUTs)'
+            )
+            if len(final_puts) == 0 and len(analyzed_options) > 0:
+                current_app.logger.warning(
+                    f'[RECOMMENDATIONS] ⚠️ No PUTs in final recommendations! '
+                    f'This indicates a bias in the recommendation algorithm.'
+                )
+        except RuntimeError:
+            pass
         
         try:
             current_app.logger.info(f'Analysis complete: {len(analyzed_options)} options analyzed successfully')
