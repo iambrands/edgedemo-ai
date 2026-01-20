@@ -7,7 +7,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import create_app
+from app import create_app, db
 from sqlalchemy import inspect, text
 
 app = create_app()
@@ -21,7 +21,7 @@ with app.app_context():
     
     # Check users table
     try:
-        inspector = inspect(User.query.session.bind)
+        inspector = inspect(db.engine)
         user_columns = [c['name'] for c in inspector.get_columns('users')]
         print(f"\n✅ Users table exists", flush=True)
         print(f"   Total columns: {len(user_columns)}", flush=True)
@@ -39,7 +39,7 @@ with app.app_context():
     
     # Check spreads table
     try:
-        inspector = inspect(User.query.session.bind)
+        inspector = inspect(db.engine)
         tables = inspector.get_table_names()
         
         if 'spreads' in tables:
@@ -56,7 +56,7 @@ with app.app_context():
     
     # Check migration version
     try:
-        with User.query.session.bind.connect() as conn:
+        with db.engine.connect() as conn:
             result = conn.execute(text("SELECT version_num FROM alembic_version"))
             version = result.fetchone()
             if version:
