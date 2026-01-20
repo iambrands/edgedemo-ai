@@ -126,6 +126,21 @@ def analyze_options():
     from flask import current_app
     import traceback
     import signal
+    import time
+    from datetime import datetime
+    
+    # Performance tracking
+    start_time = time.time()
+    perf_log = {
+        'start': datetime.now().isoformat(),
+        'steps': {}
+    }
+    
+    try:
+        current_app.logger.info("=" * 60)
+        current_app.logger.info(f"[CHAIN ANALYZER] Request started at {perf_log['start']}")
+    except:
+        pass
     
     data = request.get_json()
     
@@ -146,22 +161,39 @@ def analyze_options():
         preference = 'balanced'
     
     # PHASE 4: Check cache first (precomputed results)
+    cache_check_start = time.time()
     try:
         from services.cache_manager import CacheManager
         cache = CacheManager()
         cached_result = cache.get_analysis(symbol, expiration, preference)
+        cache_check_time = time.time() - cache_check_start
+        perf_log['steps']['cache_check'] = round(cache_check_time, 3)
+        
         if cached_result:
-            current_app.logger.info(f'💾 Using cached/precomputed analysis for {symbol} {expiration}')
+            total_time = time.time() - start_time
+            perf_log['total'] = round(total_time, 3)
+            try:
+                current_app.logger.info(f'💾 Using cached/precomputed analysis for {symbol} {expiration}')
+                current_app.logger.info(f"[CHAIN ANALYZER] ⏱️ Cache check: {cache_check_time:.3f}s, Total: {total_time:.3f}s")
+                current_app.logger.info("=" * 60)
+            except:
+                pass
             return jsonify({
                 'symbol': symbol,
                 'expiration': expiration,
                 'preference': preference,
                 'options': cached_result,
                 'count': len(cached_result) if isinstance(cached_result, list) else 0,
-                'cached': True
+                'cached': True,
+                'performance': perf_log
             }), 200
     except Exception as e:
-        current_app.logger.debug(f"Cache check failed (non-critical): {e}")
+        cache_check_time = time.time() - cache_check_start
+        perf_log['steps']['cache_check'] = round(cache_check_time, 3)
+        try:
+            current_app.logger.debug(f"Cache check failed (non-critical): {e}")
+        except:
+            pass
     
     # Try to get user if available, but don't require it
     current_user = None
@@ -180,10 +212,20 @@ def analyze_options():
         user_risk_tolerance = current_user.risk_tolerance
     
     try:
-        current_app.logger.info(f'Starting options analysis for {symbol}, expiration {expiration}')
+        try:
+            current_app.logger.info(f'[CHAIN ANALYZER] Symbol: {symbol}, Expiration: {expiration}, Preference: {preference}')
+        except:
+            pass
         
+        analyzer_start = time.time()
         analyzer = get_analyzer()
-        current_app.logger.info(f'Analyzer created, calling analyze_options_chain...')
+        analyzer_init_time = time.time() - analyzer_start
+        perf_log['steps']['analyzer_init'] = round(analyzer_init_time, 3)
+        
+        try:
+            current_app.logger.info(f'[CHAIN ANALYZER] Analyzer created in {analyzer_init_time:.3f}s')
+        except:
+            pass
         
         # Add timeout protection - limit analysis to 20 seconds (reduced further)
         # Railway has a 30s timeout, so we need to finish well before that
@@ -194,6 +236,7 @@ def analyze_options():
         
         def run_analysis():
             try:
+                analysis_start = time.time()
                 # Limit the analysis to prevent timeouts
                 results = analyzer.analyze_options_chain(
                     symbol=symbol,
@@ -201,6 +244,28 @@ def analyze_options():
                     preference=preference,
                     user_risk_tolerance=user_risk_tolerance
                 )
+                analysis_time = time.time() - analysis_start
+                perf_log['steps']['analysis'] = round(analysis_time, 3)
+                
+                # Count CALLs vs PUTs
+                calls = [r for r in results if (r.get('contract_type') or '').lower() == 'call']
+                puts = [r for r in results if (r.get('contract_type') or '').lower() == 'put']
+                perf_log['results'] = {
+                    'total': len(results),
+                    'calls': len(calls),
+                    'puts': len(puts),
+                    'call_percent': round(len(calls) / len(results) * 100, 1) if results else 0,
+                    'put_percent': round(len(puts) / len(results) * 100, 1) if results else 0
+                }
+                
+                try:
+                    current_app.logger.info(
+                        f"[CHAIN ANALYZER] ⏱️ Analysis took: {analysis_time:.3f}s - "
+                        f"{len(results)} results ({len(calls)} CALLs, {len(puts)} PUTs)"
+                    )
+                except:
+                    pass
+                
                 result_queue.put(results)
             except Exception as e:
                 error_queue.put(e)
@@ -244,22 +309,40 @@ def analyze_options():
             }), 404
         
         results = result_queue.get()
-        current_app.logger.info(f'Analysis complete, returning {len(results)} results')
         
-        # PHASE 4: Cache the result using CacheManager
+        # Cache the result
+        cache_write_start = time.time()
         try:
             from services.cache_manager import CacheManager
             cache = CacheManager()
             cache.set_analysis(symbol, expiration, preference, results, ttl=300)
+            cache_write_time = time.time() - cache_write_start
+            perf_log['steps']['cache_write'] = round(cache_write_time, 3)
         except Exception as e:
-            current_app.logger.warning(f"Failed to cache analysis result: {e}")
+            cache_write_time = time.time() - cache_write_start
+            perf_log['steps']['cache_write'] = round(cache_write_time, 3)
+            try:
+                current_app.logger.warning(f"Failed to cache analysis result: {e}")
+            except:
+                pass
+        
+        total_time = time.time() - start_time
+        perf_log['total'] = round(total_time, 3)
+        
+        try:
+            current_app.logger.info(f"[CHAIN ANALYZER] ✅ Total request time: {total_time:.3f}s")
+            current_app.logger.info(f"[CHAIN ANALYZER] Performance breakdown: {perf_log}")
+            current_app.logger.info("=" * 60)
+        except:
+            pass
         
         return jsonify({
             'symbol': symbol,
             'expiration': expiration,
             'preference': preference,
             'options': results,
-            'count': len(results)
+            'count': len(results),
+            'performance': perf_log
         }), 200
     except Exception as e:
         current_app.logger.error(f'Error in analyze_options: {str(e)}')

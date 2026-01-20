@@ -293,7 +293,13 @@ class OptionsAnalyzer:
         """Analyze a single option contract"""
         try:
             # Extract option data - handle None values
-            contract_type = option.get('type', '').lower()
+            # CRITICAL FIX: Tradier uses 'option_type', not 'type'
+            contract_type = (
+                option.get('option_type') or      # ← Tradier uses this
+                option.get('type') or              # Fallback
+                option.get('contract_type') or     # Another fallback
+                ''
+            ).lower().strip()
             strike = float(option.get('strike') or 0)
             last_price = float(option.get('last') or 0)
             bid = float(option.get('bid') or 0)
@@ -479,7 +485,13 @@ class OptionsAnalyzer:
                             spread_percent: float, days_to_expiration: int,
                             delta: float, volume: int, open_interest: int) -> str:
         """Generate plain English explanation for the recommendation"""
-        contract_type = option.get('type', '').lower()
+        # CRITICAL FIX: Use 'option_type' first (Tradier's field)
+        contract_type = (
+            option.get('option_type') or
+            option.get('type') or
+            option.get('contract_type') or
+            ''
+        ).lower().strip()
         strike = option.get('strike')
         
         explanations = []
