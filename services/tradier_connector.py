@@ -20,7 +20,14 @@ class TradierConnector:
     def __init__(self):
         try:
             from flask import current_app
-            self.api_key = current_app.config.get('TRADIER_API_KEY')
+            # CRITICAL: Use TRADIER_API_KEY (not TRADIER_API_TOKEN)
+            # Support both for backward compatibility, but prefer TRADIER_API_KEY
+            self.api_key = (
+                current_app.config.get('TRADIER_API_KEY') or 
+                current_app.config.get('TRADIER_API_TOKEN') or
+                os.environ.get('TRADIER_API_KEY') or
+                os.environ.get('TRADIER_API_TOKEN')
+            )
             self.api_secret = current_app.config.get('TRADIER_API_SECRET')
             self.account_id = current_app.config.get('TRADIER_ACCOUNT_ID')
             self.sandbox = current_app.config.get('TRADIER_SANDBOX', True)
@@ -48,8 +55,17 @@ class TradierConnector:
             logger.info(
                 f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo} (FORCED OFF), "
                 f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
-                f"api_key_present={bool(self.api_key)}, base_url={self.base_url}"
+                f"api_key_present={bool(self.api_key)}, api_key_length={len(self.api_key) if self.api_key else 0}, "
+                f"base_url={self.base_url}"
             )
+            
+            # CRITICAL: Warn if API key is missing
+            if not self.api_key:
+                logger.error(
+                    f"🚨🚨🚨 TRADIER API KEY MISSING! "
+                    f"Checked: TRADIER_API_KEY (config), TRADIER_API_KEY (env), TRADIER_API_TOKEN (fallback). "
+                    f"This will cause 401 Unauthorized errors!"
+                )
             
             # REMOVED: Yahoo Finance integration - causes performance issues
             self.yahoo = None  # Disabled - use Tradier directly
@@ -67,7 +83,13 @@ class TradierConnector:
         except RuntimeError:
             # Outside application context - use defaults
             import os
-            self.api_key = os.environ.get('TRADIER_API_KEY', '')
+            # CRITICAL: Use TRADIER_API_KEY (not TRADIER_API_TOKEN)
+            # Support both for backward compatibility, but prefer TRADIER_API_KEY
+            self.api_key = (
+                os.environ.get('TRADIER_API_KEY') or 
+                os.environ.get('TRADIER_API_TOKEN') or
+                ''
+            )
             self.api_secret = os.environ.get('TRADIER_API_SECRET', '')
             self.account_id = os.environ.get('TRADIER_ACCOUNT_ID', '')
             self.sandbox = os.environ.get('TRADIER_SANDBOX', 'true').lower() == 'true'
@@ -92,8 +114,17 @@ class TradierConnector:
             
             logger.info(
                 f"🔧 TRADIER CONFIG (outside Flask context): sandbox={self.sandbox}, "
-                f"base_url={self.base_url}, api_key_present={bool(self.api_key)}"
+                f"base_url={self.base_url}, api_key_present={bool(self.api_key)}, "
+                f"api_key_length={len(self.api_key) if self.api_key else 0}"
             )
+            
+            # CRITICAL: Warn if API key is missing
+            if not self.api_key:
+                logger.error(
+                    f"🚨🚨🚨 TRADIER API KEY MISSING! "
+                    f"Checked: TRADIER_API_KEY (env), TRADIER_API_TOKEN (fallback). "
+                    f"This will cause 401 Unauthorized errors!"
+                )
     
     def _get_headers(self) -> Dict:
         """Get API headers"""
