@@ -1,6 +1,66 @@
 # Paper Balance Diagnostic Scripts
 
-## Quick Fix: Run on Railway
+## 🚀 QUICKEST FIX: Railway Shell (No Dependencies!)
+
+The **easiest way** to fix the balance is using Railway's built-in shell:
+
+1. Go to: https://railway.app → `iab-options-bot` → `web` service
+2. Click **Deployments** → Click active deployment → **Shell** button
+3. Run this command:
+
+```bash
+bash fix_balance_railway_shell.sh
+```
+
+Or paste this Python code directly:
+
+```python
+from app import create_app, db
+from models.user import User
+
+app = create_app()
+with app.app_context():
+    users = User.query.filter(User.paper_balance.isnot(None)).all()
+    for user in users:
+        if user.paper_balance < 0:
+            print(f"Fixing User {user.id}: ${user.paper_balance:,.2f} → $100,000")
+            user.paper_balance = 100000.00
+    db.session.commit()
+    print("✅ Fixed all negative balances")
+```
+
+---
+
+## 📊 SQL Method (Direct Database Access)
+
+If you have direct database access:
+
+1. Go to Railway Dashboard → `iab-options-bot` → `Postgres` database
+2. Click **Data** tab → **Query** button
+3. Paste the contents of `fix_balance_railway.sql`
+4. Click **Run**
+
+This shows detailed diagnostics before fixing.
+
+---
+
+## 🐍 Simple Python Script (Minimal Dependencies)
+
+If you want to run locally with minimal setup:
+
+```bash
+# Set DATABASE_URL (get it from Railway environment variables)
+export DATABASE_URL="postgresql://user:pass@host:port/db"
+
+# Run (only needs psycopg2-binary)
+python3 fix_balance_simple.py
+```
+
+This script only requires `psycopg2-binary` (install with `pip install psycopg2-binary`).
+
+---
+
+## Quick Fix: Run on Railway (Full Scripts)
 
 The easiest way to run these scripts is directly on Railway:
 
