@@ -50,6 +50,7 @@ class OptionsAnalyzer:
         options = self.tradier.get_options_chain(symbol, expiration)
         
         try:
+            import sys
             # Log raw distribution from Tradier
             raw_calls = [
                 o for o in options 
@@ -61,10 +62,13 @@ class OptionsAnalyzer:
                 if isinstance(o, dict) and 
                 ((o.get('option_type') or o.get('type') or '').lower().strip() == 'put')
             ]
-            current_app.logger.info(
+            log_msg = (
                 f'[RECOMMENDATIONS] Raw chain from Tradier: {len(options)} total '
                 f'({len(raw_calls)} CALLs, {len(raw_puts)} PUTs)'
             )
+            # Force console output
+            print(log_msg, file=sys.stderr, flush=True)
+            current_app.logger.info(log_msg)
             current_app.logger.info(f'Received {len(options)} options from chain')
         except RuntimeError:
             pass
@@ -111,17 +115,23 @@ class OptionsAnalyzer:
         
         # Log distribution AFTER sorting (top candidates)
         try:
+            import sys
             top_calls = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'call']
             top_puts = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'put']
-            current_app.logger.info(
+            log_msg = (
                 f'[RECOMMENDATIONS] Top {len(top_candidates)} candidates: '
                 f'{len(top_calls)} CALLs, {len(top_puts)} PUTs'
             )
+            # Force console output
+            print(log_msg, file=sys.stderr, flush=True)
+            current_app.logger.info(log_msg)
             if len(top_puts) == 0 and len(top_candidates) > 0:
-                current_app.logger.warning(
+                warn_msg = (
                     f'[RECOMMENDATIONS] ⚠️ No PUTs in top {len(top_candidates)} candidates! '
                     f'This may indicate scoring bias.'
                 )
+                print(warn_msg, file=sys.stderr, flush=True)
+                current_app.logger.warning(warn_msg)
         except RuntimeError:
             pass
         
@@ -171,18 +181,24 @@ class OptionsAnalyzer:
                         pass
         
         try:
+            import sys
             # Log final distribution
             final_calls = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'call']
             final_puts = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'put']
-            current_app.logger.info(
+            log_msg = (
                 f'[RECOMMENDATIONS] Analysis complete: {len(analyzed_options)} options '
                 f'({len(final_calls)} CALLs, {len(final_puts)} PUTs)'
             )
+            # Force console output
+            print(log_msg, file=sys.stderr, flush=True)
+            current_app.logger.info(log_msg)
             if len(final_puts) == 0 and len(analyzed_options) > 0:
-                current_app.logger.warning(
+                warn_msg = (
                     f'[RECOMMENDATIONS] ⚠️ No PUTs in final recommendations! '
                     f'This indicates a bias in the recommendation algorithm.'
                 )
+                print(warn_msg, file=sys.stderr, flush=True)
+                current_app.logger.warning(warn_msg)
         except RuntimeError:
             pass
         

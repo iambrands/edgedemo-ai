@@ -127,6 +127,7 @@ def analyze_options():
     import traceback
     import signal
     import time
+    import sys
     from datetime import datetime
     
     # Performance tracking
@@ -135,6 +136,11 @@ def analyze_options():
         'start': datetime.now().isoformat(),
         'steps': {}
     }
+    
+    # Force immediate console output (will appear in Railway logs)
+    print("=" * 60, file=sys.stderr, flush=True)
+    print(f"[CHAIN ANALYZER] Request started at {perf_log['start']}", file=sys.stderr, flush=True)
+    print("=" * 60, file=sys.stderr, flush=True)
     
     try:
         current_app.logger.info("=" * 60)
@@ -212,6 +218,9 @@ def analyze_options():
         user_risk_tolerance = current_user.risk_tolerance
     
     try:
+        # Force console output
+        print(f'[CHAIN ANALYZER] Symbol: {symbol}, Expiration: {expiration}, Preference: {preference}', file=sys.stderr, flush=True)
+        
         try:
             current_app.logger.info(f'[CHAIN ANALYZER] Symbol: {symbol}, Expiration: {expiration}, Preference: {preference}')
         except:
@@ -328,6 +337,11 @@ def analyze_options():
         
         total_time = time.time() - start_time
         perf_log['total'] = round(total_time, 3)
+        
+        # Force console output
+        print(f"[CHAIN ANALYZER] ✅ Total request time: {total_time:.3f}s", file=sys.stderr, flush=True)
+        print(f"[CHAIN ANALYZER] Performance breakdown: {perf_log}", file=sys.stderr, flush=True)
+        print("=" * 60, file=sys.stderr, flush=True)
         
         try:
             current_app.logger.info(f"[CHAIN ANALYZER] ✅ Total request time: {total_time:.3f}s")
