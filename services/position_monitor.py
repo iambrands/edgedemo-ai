@@ -600,18 +600,29 @@ class PositionMonitor:
                     available_strikes = []
                     available_puts = []
                     available_calls = []
+                    all_strikes = []
+                    sample_options = []
                     
                     # Use the same chain_list we already parsed above
                     # Check all options, not just first 20
-                    for opt in chain_list:
+                    for i, opt in enumerate(chain_list):
                         if not isinstance(opt, dict):
                             continue
                         opt_strike = opt.get('strike') or opt.get('strike_price')
-                        opt_type = (opt.get('type') or opt.get('contract_type') or '').lower()
+                        opt_type = (opt.get('type') or opt.get('contract_type') or opt.get('option_type') or '').lower()
+                        
+                        # Collect sample for debugging
+                        if i < 5:
+                            sample_options.append({
+                                'strike': opt_strike,
+                                'type': opt_type,
+                                'keys': list(opt.keys())[:10]  # First 10 keys
+                            })
                         
                         if opt_strike:
                             try:
                                 strike_float = float(opt_strike)
+                                all_strikes.append(strike_float)
                                 if opt_type == 'put':
                                     available_puts.append(strike_float)
                                 elif opt_type == 'call':
@@ -627,6 +638,20 @@ class PositionMonitor:
                         available_strikes = sorted(set(available_calls))[:20]
                     else:
                         available_strikes = sorted(set(available_puts + available_calls))[:20]
+                    
+                    # Log detailed debugging info
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"🔍 Position {position.id} ({position.symbol}): Chain analysis - "
+                            f"Total options: {len(chain_list)}, "
+                            f"All strikes: {len(set(all_strikes))}, "
+                            f"PUT strikes: {len(set(available_puts))}, "
+                            f"CALL strikes: {len(set(available_calls))}, "
+                            f"Sample options: {sample_options}"
+                        )
+                    except:
+                        pass
                     
                     current_app.logger.warning(
                         f"❌ Could not find option for position {position.id}: "
