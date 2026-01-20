@@ -414,9 +414,20 @@ class PositionMonitor:
                 
                 # If exact strike not found, find closest strike (for deep OTM options)
                 if not option_found and chain_list:
+                    try:
+                        from flask import current_app
+                        current_app.logger.warning(
+                            f"⚠️ Position {position.id} ({position.symbol}): Exact match not found, "
+                            f"searching for closest {position_contract_type} strike to ${position_strike}"
+                        )
+                    except:
+                        pass
+                    
                     closest_option = None
                     closest_diff = float('inf')
                     for option in chain_list:
+                        if not isinstance(option, dict):
+                            continue
                         option_strike = option.get('strike') or option.get('strike_price')
                         option_type = option.get('type') or option.get('contract_type')
                         try:
@@ -425,7 +436,6 @@ class PositionMonitor:
                             continue
                         
                         # Match contract type - handle 'option' as a wildcard
-                        position_contract_type = (position.contract_type or '').lower()
                         option_contract_type = (option_type or '').lower()
                         type_match = (
                             option_contract_type == position_contract_type or
@@ -442,6 +452,26 @@ class PositionMonitor:
                     # Use closest if within reasonable range (within 5% of strike)
                     if closest_option and closest_diff < (position_strike * 0.05):
                         option_found = closest_option
+                        try:
+                            from flask import current_app
+                            closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
+                            current_app.logger.info(
+                                f"🎯 Position {position.id} ({position.symbol}): Using closest match - "
+                                f"{position_contract_type} ${closest_strike} (diff: ${closest_diff:.2f})"
+                            )
+                        except:
+                            pass
+                    elif closest_option:
+                        try:
+                            from flask import current_app
+                            closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
+                            current_app.logger.warning(
+                                f"⚠️ Position {position.id} ({position.symbol}): Closest match too far - "
+                                f"{position_contract_type} ${closest_strike} (diff: ${closest_diff:.2f}, "
+                                f"threshold: ${position_strike * 0.05:.2f})"
+                            )
+                        except:
+                            pass
             
             if option_found:
                 # Check if this was from direct quote (already set current_price)
