@@ -436,23 +436,40 @@ class PositionMonitor:
                     pass
                 
                 for option in chain_list:
-                    # Match by strike and contract type (primary method)
-                    option_strike = option.get('strike') or option.get('strike_price')
-                    option_type = option.get('type') or option.get('contract_type')
+                    if not isinstance(option, dict):
+                        continue
+                    
+                    # Get strike from multiple possible field names
+                    option_strike = (
+                        option.get('strike') or 
+                        option.get('strike_price') or 
+                        option.get('strikePrice')
+                    )
+                    
+                    if not option_strike:
+                        continue
+                    
+                    # CRITICAL FIX: Tradier uses 'option_type', not 'type'
+                    # Check multiple field names for compatibility
+                    option_type = (
+                        option.get('option_type') or      # ← Tradier uses this
+                        option.get('type') or              # Fallback for other APIs
+                        option.get('contract_type') or     # Another fallback
+                        option.get('contractType') or
+                        ''
+                    )
                     
                     # Convert to float for comparison (handle numpy types)
                     try:
-                        option_strike_float = float(option_strike) if option_strike is not None else None
+                        option_strike_float = float(option_strike)
                     except (ValueError, TypeError):
-                        option_strike_float = None
+                        continue
                     
-                    # Match strike price
-                    strike_match = (option_strike_float is not None and 
-                                   abs(option_strike_float - position_strike) < 0.01)
+                    # Match strike price (within $0.01)
+                    strike_match = abs(option_strike_float - position_strike) < 0.01
                     
-                    # Match contract type - handle 'option' as a wildcard (matches both call and put)
-                    position_contract_type = (position.contract_type or '').lower()
-                    option_contract_type = (option_type or '').lower()
+                    # Match contract type - Tradier returns "put" or "call" in lowercase
+                    option_contract_type = (option_type or '').lower().strip()
                     type_match = (
                         option_contract_type == position_contract_type or
                         (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
@@ -461,11 +478,27 @@ class PositionMonitor:
                     
                     if strike_match and type_match:
                         option_found = option
+                        try:
+                            from flask import current_app
+                            current_app.logger.info(
+                                f"✅ Position {position.id} ({position.symbol}): Found matching option! "
+                                f"{option_contract_type} ${option_strike_float}, "
+                                f"bid=${option.get('bid', 0)}, ask=${option.get('ask', 0)}, last=${option.get('last', 0)}"
+                            )
+                        except:
+                            pass
                         break
                     
                     # Also try matching by option_symbol if available
                     if position.option_symbol and option.get('symbol') == position.option_symbol:
                         option_found = option
+                        try:
+                            from flask import current_app
+                            current_app.logger.info(
+                                f"✅ Position {position.id} ({position.symbol}): Found by option_symbol match!"
+                            )
+                        except:
+                            pass
                         break
                 
                 # If exact strike not found, find closest strike (for deep OTM options)
@@ -542,7 +575,11 @@ class PositionMonitor:
                         try:
                             from flask import current_app
                             closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
-                            closest_type = (closest_option.get('option_type') or closest_option.get('type') or '').lower()
+                            closest_type = (
+                                closest_option.get('option_type') or 
+                                closest_option.get('type') or 
+                                ''
+                            ).lower().strip()
                             current_app.logger.info(
                                 f"🎯 Position {position.id} ({position.symbol}): Using closest match - "
                                 f"{closest_type} ${closest_strike} (diff: ${closest_diff:.2f})"
@@ -553,7 +590,11 @@ class PositionMonitor:
                         try:
                             from flask import current_app
                             closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
-                            closest_type = (closest_option.get('option_type') or closest_option.get('type') or '').lower()
+                            closest_type = (
+                                closest_option.get('option_type') or 
+                                closest_option.get('type') or 
+                                ''
+                            ).lower().strip()
                             current_app.logger.warning(
                                 f"⚠️ Position {position.id} ({position.symbol}): Closest match too far - "
                                 f"{closest_type} ${closest_strike} (diff: ${closest_diff:.2f}, "
