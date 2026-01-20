@@ -234,30 +234,28 @@ class PositionMonitor:
         
         # CRITICAL: Reduced cooldown for price updates to 2 minutes
         # Prices need to update frequently so traders can see current P/L
-        # Only apply cooldown if current_price has been updated at least once
-        # If current_price == entry_price, it means it hasn't been updated yet - allow update
-        if not force_update and position.entry_date:
-            time_since_creation = datetime.utcnow() - position.entry_date
-            price_update_cooldown_minutes = 2  # 2 minute cooldown for price updates (reduced from 5)
-            # Only apply cooldown if current_price has been updated at least once
-            # If current_price == entry_price, it means it hasn't been updated yet - allow update
-            price_never_updated = (
-                position.current_price is None or 
-                abs(position.current_price - position.entry_price) < 0.01
-            )
+        # Cooldown is based on last_updated timestamp, not entry_date
+        # This ensures old positions that haven't been updated recently will still get updated
+        if not force_update:
+            price_update_cooldown_minutes = 2  # 2 minute cooldown for price updates
             
-            # Allow immediate first update, then apply 2-minute cooldown
-            if not price_never_updated and time_since_creation.total_seconds() < (price_update_cooldown_minutes * 60):
-                try:
-                    from flask import current_app
-                    current_app.logger.debug(
-                        f"⏳ Position {position.id} ({position.symbol}) price update cooldown. "
-                        f"Last updated {time_since_creation.total_seconds()/60:.1f} minutes ago. "
-                        f"Will update again in {price_update_cooldown_minutes} minutes."
-                    )
-                except:
-                    pass
-                return  # Skip price update during cooldown
+            # Use last_updated if available, otherwise use entry_date
+            # If last_updated is None or very old, always allow update
+            if position.last_updated:
+                time_since_last_update = datetime.utcnow() - position.last_updated
+                # If last update was more than 2 minutes ago, allow update
+                if time_since_last_update.total_seconds() < (price_update_cooldown_minutes * 60):
+                    try:
+                        from flask import current_app
+                        current_app.logger.debug(
+                            f"⏳ Position {position.id} ({position.symbol}) price update cooldown. "
+                            f"Last updated {time_since_last_update.total_seconds()/60:.1f} minutes ago. "
+                            f"Will update again in {price_update_cooldown_minutes} minutes."
+                        )
+                    except:
+                        pass
+                    return  # Skip price update during cooldown
+            # If last_updated is None or missing, always allow update (position needs initial update)
         
         # Check if current_price is suspiciously low (likely a bug) and needs correction
         # If current_price is less than 1% of entry_price, it's probably wrong
