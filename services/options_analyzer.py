@@ -50,6 +50,21 @@ class OptionsAnalyzer:
         options = self.tradier.get_options_chain(symbol, expiration)
         
         try:
+            # Log raw distribution from Tradier
+            raw_calls = [
+                o for o in options 
+                if isinstance(o, dict) and 
+                ((o.get('option_type') or o.get('type') or '').lower().strip() == 'call')
+            ]
+            raw_puts = [
+                o for o in options 
+                if isinstance(o, dict) and 
+                ((o.get('option_type') or o.get('type') or '').lower().strip() == 'put')
+            ]
+            current_app.logger.info(
+                f'[RECOMMENDATIONS] Raw chain from Tradier: {len(options)} total '
+                f'({len(raw_calls)} CALLs, {len(raw_puts)} PUTs)'
+            )
             current_app.logger.info(f'Received {len(options)} options from chain')
         except RuntimeError:
             pass
