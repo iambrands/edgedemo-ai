@@ -238,9 +238,11 @@ def create_app(config_name=None):
                                     continue
                         
                         old_price = position.current_price
+                        old_updated = position.last_updated
                         monitor.update_position_data(position, force_update=False)
                         db.session.refresh(position)
                         new_price = position.current_price
+                        new_updated = position.last_updated  # Get updated timestamp
                         
                         # Validate price was actually updated
                         if new_price and new_price > 0:
