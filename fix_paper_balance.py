@@ -3,12 +3,25 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import create_app, db
-from models.user import User
-from models.position import Position
-from models.trade import Trade
+try:
+    from app import create_app, db
+    from models.user import User
+    from models.position import Position
+    from models.trade import Trade
+except ImportError as e:
+    print("=" * 80)
+    print("❌ Missing dependencies!")
+    print("=" * 80)
+    print(f"Error: {e}")
+    print()
+    print("To install dependencies, run:")
+    print("  pip install -r requirements.txt")
+    print()
+    print("Or run this script on Railway:")
+    print("  Railway Dashboard → Deployments → Open Shell")
+    print("=" * 80)
+    sys.exit(1)
 
 app = create_app()
 
