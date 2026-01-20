@@ -382,6 +382,94 @@ def get_options_chain(current_user, symbol, expiration):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@options_bp.route('/quote', methods=['POST'])
+def get_option_quote():
+    """Get current market price for a specific option contract (PUBLIC ENDPOINT)"""
+    from flask import current_app
+    import traceback
+    
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'error': 'Request body required'}), 400
+    
+    try:
+        symbol = data.get('symbol', '').upper()
+        option_type = data.get('option_type', '').lower()
+        strike = data.get('strike')
+        expiration = data.get('expiration')
+        
+        if not symbol:
+            return jsonify({'error': 'Symbol required'}), 400
+        if option_type not in ['call', 'put']:
+            return jsonify({'error': 'option_type must be "call" or "put"'}), 400
+        if not strike:
+            return jsonify({'error': 'Strike price required'}), 400
+        if not expiration:
+            return jsonify({'error': 'Expiration date required'}), 400
+        
+        try:
+            strike_float = float(strike)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid strike price'}), 400
+        
+        # Validate symbol
+        if not validate_symbol(symbol):
+            return jsonify({'error': 'Invalid symbol'}), 400
+        
+        try:
+            current_app.logger.info(
+                f'[OPTION QUOTE] Request: {symbol} {option_type} ${strike_float} exp {expiration}'
+            )
+        except:
+            pass
+        
+        # Get quote from Tradier
+        tradier = get_tradier()
+        quote = tradier.get_option_quote(
+            symbol=symbol,
+            option_type=option_type,
+            strike=strike_float,
+            expiration=expiration
+        )
+        
+        if not quote:
+            return jsonify({
+                'success': False,
+                'error': f'Option not found: {symbol} {option_type} ${strike_float} exp {expiration}'
+            }), 404
+        
+        try:
+            current_app.logger.info(
+                f'[OPTION QUOTE] Success: {symbol} {option_type} ${strike_float} - '
+                f'mid=${quote["mid"]:.2f}, bid=${quote["bid"]:.2f}, ask=${quote["ask"]:.2f}'
+            )
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'symbol': quote.get('symbol'),
+            'option_type': quote.get('option_type'),
+            'strike': quote.get('strike'),
+            'expiration': quote.get('expiration'),
+            'last': quote.get('last', 0),
+            'bid': quote.get('bid', 0),
+            'ask': quote.get('ask', 0),
+            'mid': quote.get('mid', 0),
+            'volume': quote.get('volume', 0),
+            'open_interest': quote.get('open_interest', 0),
+            'greeks': quote.get('greeks', {})
+        }), 200
+        
+    except Exception as e:
+        try:
+            current_app.logger.error(f'Error getting option quote: {str(e)}')
+            current_app.logger.error(traceback.format_exc())
+        except:
+            pass
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @options_bp.route('/expirations', methods=['GET'])
 @options_bp.route('/expirations/<symbol>', methods=['GET'])
 def get_expirations(symbol=None):

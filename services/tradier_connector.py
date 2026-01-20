@@ -822,6 +822,107 @@ class TradierConnector:
                     logger.debug(f"Cache write failed (non-critical): {e}")
             
             return validated_options
+    
+    def get_option_quote(self, symbol: str, option_type: str, strike: float, expiration: str) -> Optional[Dict]:
+        """
+        Get quote for a specific option contract
+        
+        Args:
+            symbol: Stock symbol (e.g., 'TSLA')
+            option_type: 'call' or 'put'
+            strike: Strike price (e.g., 430.0)
+            expiration: Date string 'YYYY-MM-DD'
+        
+        Returns:
+            Dict with option quote data or None if not found
+        """
+        try:
+            # Get the full options chain for this expiration
+            chain = self.get_options_chain(symbol, expiration, use_cache=True)
+            
+            if not chain or len(chain) == 0:
+                logger.warning(f"No options chain found for {symbol} {expiration}")
+                return None
+            
+            # Find matching option
+            option_type_lower = option_type.lower().strip()
+            strike_float = float(strike)
+            
+            for option in chain:
+                if not isinstance(option, dict):
+                    continue
+                
+                # Get option type
+                opt_type = (
+                    option.get('option_type') or
+                    option.get('type') or
+                    option.get('contract_type') or
+                    ''
+                ).lower().strip()
+                
+                # Get strike
+                opt_strike = option.get('strike') or option.get('strike_price')
+                if not opt_strike:
+                    continue
+                
+                try:
+                    opt_strike_float = float(opt_strike)
+                except (ValueError, TypeError):
+                    continue
+                
+                # Match strike (within $0.01) and type
+                strike_match = abs(opt_strike_float - strike_float) < 0.01
+                type_match = opt_type == option_type_lower
+                
+                if strike_match and type_match:
+                    # Extract pricing data
+                    bid = float(option.get('bid', 0) or 0)
+                    ask = float(option.get('ask', 0) or 0)
+                    last = float(option.get('last', 0) or option.get('lastPrice', 0) or 0)
+                    volume = int(option.get('volume', 0) or 0)
+                    open_interest = int(option.get('open_interest', 0) or 0)
+                    
+                    # Calculate mid price
+                    mid = (bid + ask) / 2 if (bid > 0 and ask > 0) else last
+                    
+                    # Extract Greeks
+                    greeks = option.get('greeks', {}) or {}
+                    
+                    logger.info(
+                        f"✅ Found option quote: {symbol} {option_type} ${strike} exp {expiration} - "
+                        f"bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}, mid=${mid:.2f}"
+                    )
+                    
+                    return {
+                        'symbol': symbol,
+                        'option_type': option_type_lower,
+                        'strike': strike_float,
+                        'expiration': expiration,
+                        'last': last,
+                        'bid': bid,
+                        'ask': ask,
+                        'mid': mid,
+                        'volume': volume,
+                        'open_interest': open_interest,
+                        'greeks': {
+                            'delta': float(greeks.get('delta', 0) or 0),
+                            'gamma': float(greeks.get('gamma', 0) or 0),
+                            'theta': float(greeks.get('theta', 0) or 0),
+                            'vega': float(greeks.get('vega', 0) or 0),
+                            'mid_iv': float(greeks.get('mid_iv', 0) or greeks.get('iv', 0) or 0)
+                        }
+                    }
+            
+            # Option not found in chain
+            logger.warning(
+                f"Option not found: {symbol} {option_type} ${strike} exp {expiration} "
+                f"in chain of {len(chain)} options"
+            )
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error fetching option quote: {e}", exc_info=True)
+            return None
         
         # Cache empty result too (shorter TTL - 10 seconds)
         if use_cache:

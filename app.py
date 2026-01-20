@@ -102,6 +102,7 @@ def create_app(config_name=None):
     from api.opportunity_insights import opportunity_insights_bp
     from api.health import health_bp
     from api.admin import admin_bp
+    from api.spreads import spreads_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -122,7 +123,7 @@ def create_app(config_name=None):
     app.register_blueprint(opportunities_bp, url_prefix='/api/opportunities')
     app.register_blueprint(account_bp, url_prefix='/api/account')
     app.register_blueprint(health_bp)  # No prefix - /health endpoints
-    app.register_blueprint(admin_bp, url_prefix='/api')  # /api/admin/* endpoints
+    app.register_blueprint(spreads_bp, url_prefix='/api/spreads')(admin_bp, url_prefix='/api')  # /api/admin/* endpoints
     
     # Debug route to list all registered routes
     @app.route('/debug/routes')

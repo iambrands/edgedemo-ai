@@ -23,6 +23,13 @@ const Trade: React.FC = () => {
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [accountBalance, setAccountBalance] = useState<number | null>(null);
   const [stockPrice, setStockPrice] = useState<number | null>(null);
+  
+  // Spread state
+  const [isSpread, setIsSpread] = useState(false);
+  const [longStrike, setLongStrike] = useState('');
+  const [shortStrike, setShortStrike] = useState('');
+  const [spreadMetrics, setSpreadMetrics] = useState<any>(null);
+  const [calculatingSpread, setCalculatingSpread] = useState(false);
 
   useEffect(() => {
     loadAccountBalance();
@@ -74,11 +81,24 @@ const Trade: React.FC = () => {
   }, [symbol]);
 
   useEffect(() => {
-    // Auto-fetch option price when symbol, expiration, strike, and contract type are all set
-    if (symbol && expiration && strike && contractType) {
+    // Auto-fetch option price when symbol, expiration, strike, and contract type are all set (single option mode only)
+    if (!isSpread && symbol && expiration && strike && contractType) {
       fetchOptionPrice();
     }
-  }, [symbol, expiration, strike, contractType]);
+  }, [symbol, expiration, strike, contractType, isSpread]);
+  
+  // Calculate spread metrics when strikes change
+  useEffect(() => {
+    if (isSpread && symbol && expiration && longStrike && shortStrike && contractType) {
+      const debounce = setTimeout(() => {
+        calculateSpreadMetrics();
+      }, 500);
+      
+      return () => clearTimeout(debounce);
+    } else {
+      setSpreadMetrics(null);
+    }
+  }, [isSpread, symbol, expiration, longStrike, shortStrike, contractType, quantity]);
 
   const loadAccountBalance = async () => {
     try {
@@ -90,24 +110,36 @@ const Trade: React.FC = () => {
   };
 
   const fetchExpirations = async () => {
-    if (!symbol) return;
+    if (!symbol || symbol.length < 1) {
+      setExpirations([]);
+      setExpiration('');
+      return;
+    }
+    
     setLoadingExpirations(true);
     try {
       const response = await api.get(`/options/expirations/${symbol}`);
       const expirationsList = response.data.expirations || [];
-      setExpirations(expirationsList.map((exp: string) => ({ date: exp })));
-      // Only auto-set expiration if we don't already have one from tradeData
-      if (expirationsList.length > 0 && !expiration) {
-        setExpiration(expirationsList[0]);
+      
+      if (expirationsList.length > 0) {
+        setExpirations(expirationsList.map((exp: string) => ({ date: exp })));
+        // Only auto-set expiration if we don't already have one from tradeData
+        if (!expiration) {
+          setExpiration(expirationsList[0]);
+        }
+      } else {
+        setExpirations([]);
+        if (!expiration) {
+          toast.error('No expiration dates found for this symbol');
+        }
       }
     } catch (error: any) {
-      // Don't show error toast - expirations are optional if we already have one
+      console.error('Failed to fetch expirations:', error);
+      setExpirations([]);
+      // Only show error if we don't have an expiration already set
       if (!expiration) {
-        console.error('Failed to fetch expirations:', error);
-        // Only show error if we don't have an expiration already set
-        if (error.response?.status !== 404 && error.response?.status !== 400) {
-          toast.error(error.response?.data?.error || 'Failed to fetch expirations');
-        }
+        const errorMsg = error.response?.data?.error || 'Failed to fetch expirations';
+        toast.error(errorMsg);
       }
     } finally {
       setLoadingExpirations(false);
@@ -128,34 +160,44 @@ const Trade: React.FC = () => {
   };
 
   const fetchOptionPrice = async () => {
-    if (!symbol || !expiration || !strike) return;
+    if (!symbol || !expiration || !strike || !contractType) {
+      toast.error('Please fill in Symbol, Expiration, Strike, and Contract Type first');
+      return;
+    }
     
     setLoadingPrice(true);
     try {
-      const response = await api.get(`/options/chain/${symbol}/${expiration}`);
-      const chain = response.data.chain || [];
-      
-      // Find the matching option
-      const strikeNum = parseFloat(strike);
-      const matchingOption = chain.find((opt: any) => {
-        const optStrike = parseFloat(opt.strike || 0);
-        const optType = (opt.type || '').toLowerCase();
-        return Math.abs(optStrike - strikeNum) < 0.01 && optType === contractType;
+      // Use new dedicated quote endpoint
+      const response = await api.post('/options/quote', {
+        symbol: symbol.toUpperCase(),
+        option_type: contractType,
+        strike: parseFloat(strike),
+        expiration: expiration
       });
       
-      if (matchingOption) {
-        // Use mid price if available, otherwise last price
-        const midPrice = matchingOption.bid && matchingOption.ask 
-          ? (parseFloat(matchingOption.bid) + parseFloat(matchingOption.ask)) / 2
-          : parseFloat(matchingOption.last || 0);
+      if (response.data.success) {
+        // Use mid price (average of bid/ask) or last price
+        const midPrice = response.data.mid > 0 ? response.data.mid : response.data.last;
         
         if (midPrice > 0) {
           setPrice(midPrice);
+          toast.success(`Fetched price: $${midPrice.toFixed(2)}`);
+          
+          // Log bid/ask spread for reference
+          if (response.data.bid && response.data.ask) {
+            const spread = response.data.ask - response.data.bid;
+            console.log(`Bid: $${response.data.bid}, Ask: $${response.data.ask}, Spread: $${spread.toFixed(2)}`);
+          }
+        } else {
+          toast.error('Unable to fetch valid option price');
         }
+      } else {
+        toast.error(response.data.error || 'Failed to fetch option price');
       }
     } catch (error: any) {
-      // Silently fail - user can still enter price manually
       console.error('Failed to fetch option price:', error);
+      const errorMsg = error.response?.data?.error || 'Failed to fetch option price. Please try again or enter manually.';
+      toast.error(errorMsg);
     } finally {
       setLoadingPrice(false);
     }
@@ -166,8 +208,92 @@ const Trade: React.FC = () => {
     return price * quantity * 100; // Options are 100 shares per contract
   };
 
+  const calculateSpreadMetrics = async () => {
+    if (!symbol || !expiration || !longStrike || !shortStrike || !contractType) {
+      return;
+    }
+    
+    setCalculatingSpread(true);
+    
+    try {
+      const response = await api.post('/spreads/calculate', {
+        symbol: symbol.toUpperCase(),
+        option_type: contractType,
+        long_strike: parseFloat(longStrike),
+        short_strike: parseFloat(shortStrike),
+        expiration: expiration,
+        quantity: quantity
+      });
+      
+      if (response.data.success) {
+        setSpreadMetrics(response.data);
+      } else {
+        setSpreadMetrics(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to calculate spread:', error);
+      setSpreadMetrics(null);
+    } finally {
+      setCalculatingSpread(false);
+    }
+  };
+  
+  const executeSpread = async () => {
+    if (!symbol || !expiration || !longStrike || !shortStrike || !contractType) {
+      toast.error('Please fill in all spread fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await api.post('/spreads/execute', {
+        symbol: symbol.toUpperCase(),
+        option_type: contractType,
+        long_strike: parseFloat(longStrike),
+        short_strike: parseFloat(shortStrike),
+        expiration: expiration,
+        quantity: quantity,
+        account_type: 'paper'
+      });
+      
+      if (response.data.success) {
+        toast.success(response.data.message || 'Spread executed successfully');
+        
+        // Reload balance
+        await loadAccountBalance();
+        
+        // Reset form
+        setSymbol('');
+        setExpiration('');
+        setLongStrike('');
+        setShortStrike('');
+        setStrike('');
+        setQuantity(1);
+        setPrice(null);
+        setIsSpread(false);
+        setSpreadMetrics(null);
+        
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
+      } else {
+        toast.error(response.data.error || 'Failed to execute spread');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Spread execution failed';
+      console.error('Spread execution error:', error);
+      toast.error(errorMessage, { duration: 5000 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTrade = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSpread) {
+      return executeSpread();
+    }
     
     if (!symbol || !expiration || !strike || !quantity || price === null) {
       toast.error('Please fill in all required fields including price');
@@ -291,6 +417,35 @@ const Trade: React.FC = () => {
             )}
           </div>
 
+          {/* Spread Toggle */}
+          <div className="border-t pt-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isSpread}
+                onChange={(e) => {
+                  setIsSpread(e.target.checked);
+                  if (e.target.checked) {
+                    setPrice(null);
+                    setStrike('');
+                  }
+                }}
+                className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Trade as Debit Spread
+              </span>
+            </label>
+            {isSpread && (
+              <p className="mt-1 text-xs text-gray-500">
+                {contractType === 'put' 
+                  ? 'Buy higher strike, sell lower strike'
+                  : 'Buy lower strike, sell higher strike'
+                }
+              </p>
+            )}
+          </div>
+
           {/* Contract Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Contract Type *</label>
@@ -325,33 +480,150 @@ const Trade: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Expiration *</label>
             <select
               value={expiration}
-              onChange={(e) => setExpiration(e.target.value)}
-              disabled={loadingExpirations || expirations.length === 0}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
+              onChange={(e) => {
+                const newExpiration = e.target.value;
+                setExpiration(newExpiration);
+                // Clear price when expiration changes to force re-fetch
+                if (newExpiration !== expiration) {
+                  setPrice(null);
+                }
+              }}
+              disabled={loadingExpirations || !symbol || symbol.length < 1}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               required
             >
-              <option value="">Select expiration</option>
-              {expirations.map((exp) => (
-                <option key={exp.date} value={exp.date}>
-                  {exp.date}
-                </option>
-              ))}
+              {loadingExpirations ? (
+                <option value="">Loading expiration dates...</option>
+              ) : expirations.length === 0 ? (
+                <option value="">{symbol ? 'No expirations available' : 'Enter symbol first'}</option>
+              ) : (
+                <>
+                  <option value="">Select expiration</option>
+                  {expirations.map((exp) => (
+                    <option key={exp.date} value={exp.date}>
+                      {exp.date}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
+            {loadingExpirations && (
+              <p className="mt-1 text-xs text-gray-500">Fetching available expiration dates...</p>
+            )}
           </div>
 
-          {/* Strike Price */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Strike Price *</label>
-            <input
-              type="number"
-              step="0.01"
-              value={strike}
-              onChange={(e) => setStrike(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 150.00"
-              required
-            />
-          </div>
+          {/* Spread Fields or Single Strike */}
+          {isSpread ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Long Strike (Buy) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={longStrike}
+                    onChange={(e) => setLongStrike(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder={contractType === 'put' ? 'Higher strike' : 'Lower strike'}
+                    required
+                  />
+                  {spreadMetrics && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Premium: ${spreadMetrics.long_premium?.toFixed(2) || '0.00'}
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Short Strike (Sell) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={shortStrike}
+                    onChange={(e) => setShortStrike(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder={contractType === 'put' ? 'Lower strike' : 'Higher strike'}
+                    required
+                  />
+                  {spreadMetrics && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Premium: ${spreadMetrics.short_premium?.toFixed(2) || '0.00'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Spread Metrics */}
+              {calculatingSpread && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">Calculating spread metrics...</p>
+                </div>
+              )}
+              
+              {spreadMetrics && !calculatingSpread && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                  <h3 className="font-semibold text-gray-900">Spread Analysis</h3>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">Strike Width</p>
+                      <p className="text-lg font-semibold">${spreadMetrics.strike_width?.toFixed(2) || '0.00'}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500">Net Debit</p>
+                      <p className="text-lg font-semibold text-red-600">
+                        -${Math.abs(spreadMetrics.net_debit || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500">Max Profit</p>
+                      <p className="text-lg font-semibold text-green-600">
+                        +${spreadMetrics.max_profit?.toFixed(2) || '0.00'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500">Max Loss</p>
+                      <p className="text-lg font-semibold text-red-600">
+                        -${spreadMetrics.max_loss?.toFixed(2) || '0.00'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500">Breakeven</p>
+                      <p className="text-lg font-semibold">${spreadMetrics.breakeven?.toFixed(2) || '0.00'}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-500">Return on Risk</p>
+                      <p className={`text-lg font-semibold ${(spreadMetrics.return_on_risk || 0) > 50 ? 'text-green-600' : 'text-gray-700'}`}>
+                        {(spreadMetrics.return_on_risk || 0).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Strike Price *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={strike}
+                onChange={(e) => setStrike(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="e.g., 150.00"
+                required
+              />
+            </div>
+          )}
 
           {/* Quantity */}
           <div>
@@ -366,37 +638,39 @@ const Trade: React.FC = () => {
             />
           </div>
 
-          {/* Price (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price per Contract (Premium) *
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.01"
-                value={price || ''}
-                onChange={(e) => setPrice(e.target.value ? parseFloat(e.target.value) : null)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="e.g., 2.50"
-                required
-              />
-              <button
-                type="button"
-                onClick={fetchOptionPrice}
-                disabled={loadingPrice || !symbol || !expiration || !strike}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                {loadingPrice ? '...' : 'Fetch'}
-              </button>
+          {/* Price (Optional) - Only show for single options */}
+          {!isSpread && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price per Contract (Premium) *
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={price || ''}
+                  onChange={(e) => setPrice(e.target.value ? parseFloat(e.target.value) : null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="e.g., 2.50"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={fetchOptionPrice}
+                  disabled={loadingPrice || !symbol || !expiration || !strike}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {loadingPrice ? '...' : 'Fetch'}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {loadingPrice ? 'Fetching current market price...' : 'Click "Fetch" to get current market price, or enter manually'}
+              </p>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
-              {loadingPrice ? 'Fetching current market price...' : 'Click "Fetch" to get current market price, or enter manually'}
-            </p>
-          </div>
+          )}
 
           {/* Cost Calculation */}
-          {price && quantity && (
+          {!isSpread && price && quantity && (
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 font-medium">Total Cost:</span>
@@ -414,18 +688,55 @@ const Trade: React.FC = () => {
               )}
             </div>
           )}
+          
+          {/* Spread Cost Display */}
+          {isSpread && spreadMetrics && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Total Cost (Net Debit):</span>
+                <span className="text-2xl font-bold text-secondary">
+                  ${Math.abs(spreadMetrics.net_debit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              {accountBalance !== null && (
+                <p className={`text-sm mt-2 ${Math.abs(spreadMetrics.net_debit || 0) > accountBalance ? 'text-error' : 'text-success'}`}>
+                  Balance after: ${(accountBalance - Math.abs(spreadMetrics.net_debit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !symbol || !expiration || !strike || !quantity || price === null}
+            disabled={
+              loading || 
+              !symbol || 
+              !expiration || 
+              !quantity || 
+              (isSpread 
+                ? (!longStrike || !shortStrike)
+                : (!strike || price === null)
+              )
+            }
             className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-colors ${
-              action === 'buy'
-                ? 'bg-success hover:bg-green-600'
-                : 'bg-error hover:bg-red-600'
+              isSpread
+                ? 'bg-primary hover:bg-indigo-600'
+                : action === 'buy'
+                  ? 'bg-success hover:bg-green-600'
+                  : 'bg-error hover:bg-red-600'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {loading ? 'Executing...' : `${action === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${contractType.toUpperCase()} Contract(s)`}
+            {loading ? (
+              'Executing...'
+            ) : isSpread ? (
+              <>
+                Execute Spread
+                {spreadMetrics && ` - Debit $${Math.abs(spreadMetrics.net_debit || 0).toFixed(2)}`}
+              </>
+            ) : (
+              `${action === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${contractType.toUpperCase()} Contract(s)`
+            )}
           </button>
         </form>
       </div>
