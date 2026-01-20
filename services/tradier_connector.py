@@ -666,6 +666,15 @@ class TradierConnector:
         url = f"{self.base_url}/{endpoint}"
         headers = self._get_headers()
         
+        # CRITICAL: Verify API key is present before making request
+        if not self.api_key:
+            logger.error(
+                f"🚨🚨🚨 Cannot fetch options chain: TRADIER_API_KEY is missing! "
+                f"Check Railway environment variables. "
+                f"Expected: TRADIER_API_KEY or TRADIER_API_TOKEN"
+            )
+            return []
+        
         # Try up to 3 times with increasing timeout
         max_retries = 3
         timeouts = [10, 15, 20]  # Increase timeout on each retry
