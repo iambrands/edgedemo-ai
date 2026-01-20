@@ -167,9 +167,17 @@ class OptionsAnalyzer:
         except RuntimeError:
             pass
         
-        # Separate by type
-        calls = [opt for opt in options if (opt.get('option_type', '') or opt.get('type', '')).lower() == 'call']
-        puts = [opt for opt in options if (opt.get('option_type', '') or opt.get('type', '')).lower() == 'put']
+        # Separate by type - CRITICAL: Use 'option_type' first (Tradier's field)
+        calls = [
+            opt for opt in options 
+            if isinstance(opt, dict) and
+            ((opt.get('option_type') or opt.get('type') or '').lower().strip() == 'call')
+        ]
+        puts = [
+            opt for opt in options 
+            if isinstance(opt, dict) and
+            ((opt.get('option_type') or opt.get('type') or '').lower().strip() == 'put')
+        ]
         
         # Filter by strike range (±20% from current price)
         price_range = underlying_price * 0.20  # 20% range
