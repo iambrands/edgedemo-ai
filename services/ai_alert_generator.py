@@ -1,21 +1,19 @@
 """
-AI-Powered Alert Message Generator using OpenAI
+AI-Powered Alert Message Generator using Claude Haiku
 Generates dynamic, personalized alert messages based on real market data and user preferences
 """
 from typing import Dict, Optional
 from datetime import datetime
 from flask import current_app
 import os
+from services.anthropic_client import get_anthropic_client
 
 class AIAlertGenerator:
-    """Generate intelligent, contextual alert messages using OpenAI"""
+    """Generate intelligent, contextual alert messages using Claude Haiku"""
     
     def __init__(self):
-        self.openai_api_key = os.environ.get('OPENAI_API_KEY')
-        self.use_openai = bool(self.openai_api_key)
-        self.quota_exceeded = False  # Track if quota is exceeded
-        self.quota_error_count = 0
-        self.max_quota_errors = 3  # Disable after 3 consecutive quota errors
+        self.anthropic_client = get_anthropic_client()
+        self.use_ai = self.anthropic_client.is_available()
     
     def generate_alert_message(self, alert_type: str, context: Dict, user_preferences: Dict = None) -> Dict:
         """
@@ -29,108 +27,36 @@ class AIAlertGenerator:
         Returns:
             Dict with title, message, and explanation
         """
-        if not self.use_openai or self.quota_exceeded:
-            # Fallback to rule-based messages if OpenAI not configured or quota exceeded
-            if self.quota_exceeded:
-                try:
-                    from flask import current_app
-                    current_app.logger.debug("OpenAI quota exceeded, using fallback messages")
-                except:
-                    pass
+        if not self.use_ai:
             return self._generate_fallback_message(alert_type, context)
         
         try:
-            import openai
-            
-            # Set API key
-            openai.api_key = self.openai_api_key
-            
             # Build prompt based on alert type
             prompt = self._build_prompt(alert_type, context, user_preferences)
             
-            # Call OpenAI API (using newer client library format)
-            try:
-                # Try new OpenAI client format (v1.0+)
-                from openai import OpenAI
-                client = OpenAI(api_key=self.openai_api_key)
-                response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert options trading advisor. Provide clear, actionable, and personalized trading alerts based on real market data. Be concise but informative."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    temperature=0.7,
-                    max_tokens=500
-                )
-                ai_response = response.choices[0].message.content.strip()
-            except (ImportError, AttributeError):
-                # Fallback to older format
-                response = openai.ChatCompletion.create(
-                    model="gpt-4",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert options trading advisor. Provide clear, actionable, and personalized trading alerts based on real market data. Be concise but informative."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    temperature=0.7,
-                    max_tokens=500
-                )
-                ai_response = response.choices[0].message.content.strip()
+            # Call Claude Haiku API
+            response = self.anthropic_client.client.messages.create(
+                model=self.anthropic_client.model,
+                max_tokens=500,
+                temperature=0.7,
+                system="You are an expert options trading advisor. Provide clear, actionable, and personalized trading alerts based on real market data. Be concise but informative.",
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+            
+            ai_response = response.content[0].text.strip()
             
             # Parse AI response into structured format
             return self._parse_ai_response(ai_response, alert_type, context)
             
-        except ImportError:
+        except Exception as e:
             try:
                 from flask import current_app
-                current_app.logger.warning("OpenAI library not installed. Install with: pip install openai")
+                current_app.logger.warning(f"Claude Haiku alert generation failed: {e}")
             except:
                 pass
-            return self._generate_fallback_message(alert_type, context)
-        except Exception as e:
-            error_str = str(e)
-            
-            # Check for quota exceeded errors
-            if '429' in error_str or 'insufficient_quota' in error_str or 'quota' in error_str.lower():
-                self.quota_error_count += 1
-                if self.quota_error_count >= self.max_quota_errors:
-                    self.quota_exceeded = True
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning(
-                            f"OpenAI quota exceeded ({self.quota_error_count} errors). "
-                            f"Disabling AI features. Please check your OpenAI billing."
-                        )
-                    except:
-                        pass
-                else:
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning(
-                            f"OpenAI quota error ({self.quota_error_count}/{self.max_quota_errors}): {error_str}"
-                        )
-                    except:
-                        pass
-            else:
-                # Reset quota error count on non-quota errors
-                self.quota_error_count = 0
-                try:
-                    from flask import current_app
-                    current_app.logger.error(f"OpenAI API error: {error_str}")
-                except:
-                    pass
-            
             return self._generate_fallback_message(alert_type, context)
     
     def _build_prompt(self, alert_type: str, context: Dict, user_preferences: Dict = None) -> str:

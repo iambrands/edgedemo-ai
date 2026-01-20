@@ -1,23 +1,19 @@
 """
 AI-Powered Options Analysis Service
-Explains Greeks and provides plain English trade analysis using OpenAI
+Explains Greeks and provides plain English trade analysis using Claude Haiku
 """
 from typing import Dict, List, Optional
 from datetime import datetime, date
 from flask import current_app
 import os
+from services.anthropic_client import get_anthropic_client
 
 class AIOptionsAnalyzer:
-    """AI-powered options analysis with plain English explanations using OpenAI and Claude"""
+    """AI-powered options analysis with plain English explanations using Claude Haiku"""
     
     def __init__(self):
-        self.openai_api_key = os.environ.get('OPENAI_API_KEY')
-        self.anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
-        self.use_openai = bool(self.openai_api_key)
-        # Only enable Claude if API key is present AND non-empty
-        self.use_claude = bool(self.anthropic_api_key and self.anthropic_api_key.strip())
-        self.quota_exceeded = False  # Track if OpenAI quota is exceeded
-        self.claude_quota_exceeded = False  # Track if Claude quota is exceeded
+        self.anthropic_client = get_anthropic_client()
+        self.use_ai = self.anthropic_client.is_available()
         
         if self.use_openai:
             try:
@@ -53,94 +49,20 @@ class AIOptionsAnalyzer:
             except RuntimeError:
                 pass  # Outside application context
     
-    def _generate_openai_analysis(self, option: Dict, stock_price: float,
-                                  delta: float, gamma: float, theta: float,
-                                  vega: float, iv: float, days_to_expiration: int,
-                                  user_risk_tolerance: str) -> Optional[Dict]:
-        """Generate AI-powered analysis using OpenAI"""
+    def _parse_claude_response(self, ai_text: str, option: Dict, stock_price: float,
+                              delta: float, gamma: float, theta: float,
+                              vega: float, iv: float, days_to_expiration: int,
+                              user_risk_tolerance: str) -> Optional[Dict]:
+        """Parse Claude Haiku response into structured format"""
         try:
-            import openai
-            
             contract_type = option.get('type', '').lower()
             strike = float(option.get('strike', 0))
             mid_price = option.get('mid_price', 0)
-            volume = int(option.get('volume', 0))
-            open_interest = int(option.get('open_interest', 0))
-            
-            prompt = f"""You are an expert options trading analyst. Analyze this option trade and provide a comprehensive, easy-to-understand analysis.
-
-Option Details:
-- Symbol: {option.get('symbol', 'N/A')}
-- Type: {contract_type.upper()}
-- Strike: ${strike:.2f}
-- Current Stock Price: ${stock_price:.2f}
-- Premium (Mid Price): ${mid_price:.2f}
-- Days to Expiration: {days_to_expiration}
-- Volume: {volume}
-- Open Interest: {open_interest}
-
-Greeks:
-- Delta: {delta:.4f}
-- Gamma: {gamma:.4f}
-- Theta: {theta:.4f}
-- Vega: {vega:.4f}
-- Implied Volatility: {iv*100:.2f}%
-
-User Risk Tolerance: {user_risk_tolerance}
-
-Provide a comprehensive analysis in the following format:
-
-**AI Recommendation:** [Buy/Consider/Consider Carefully/Avoid] (Confidence: High/Medium/Low)
-**Suitability:** [Suitable/Moderately Suitable/Not Suitable] for {user_risk_tolerance} risk tolerance
-**Reasoning:** [2-3 sentence explanation]
-
-**Greeks Explained:**
-**Delta:** [Plain English explanation of what this delta means for the trade]
-**Gamma:** [Plain English explanation of gamma's impact]
-**Theta:** [Plain English explanation of time decay implications]
-**Vega:** [Plain English explanation of volatility sensitivity]
-**Implied Volatility:** [Plain English explanation of IV level and implications]
-
-**Trade Analysis:**
-**Overview:** [Overall trade assessment]
-**Best Case:** [Best case scenario]
-**Worst Case:** [Worst case scenario]
-**Break-Even:** [Break-even calculation and explanation]
-**Profit Potential:** [Profit potential analysis]
-**Time Considerations:** [Time-related factors]
-
-**Risk Assessment:**
-**Overall Risk Level:** [Low/Moderate/High]
-**Risk Factors:** [List key risk factors]
-**Warnings:** [Any important warnings]
-
-Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance trader."""
-            
-            # Use OpenAI client with timeout and no retries for 429 errors
-            from openai import OpenAI
-            client = OpenAI(
-                api_key=self.openai_api_key,
-                timeout=10.0,  # 10 second timeout
-                max_retries=0  # Disable automatic retries - we'll handle errors ourselves
-            )
-            
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are an expert options trading analyst providing clear, actionable, and educational analysis. Focus on practical insights and risk awareness."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=1500,
-                temperature=0.7,
-            )
-            
-            ai_content = response.choices[0].message.content.strip()
             
             # Parse the AI response into structured format
             # Extract recommendation
-            recommendation_match = None
-            if "**AI Recommendation:**" in ai_content:
-                rec_line = ai_content.split("**AI Recommendation:**")[1].split("\n")[0].strip()
+            if "**AI Recommendation:**" in ai_text or "AI Recommendation:" in ai_text:
+                rec_line = (ai_text.split("**AI Recommendation:**")[1] if "**AI Recommendation:**" in ai_text else ai_text.split("AI Recommendation:")[1]).split("\n")[0].strip()
                 if "Buy" in rec_line:
                     action = "buy"
                 elif "Consider Carefully" in rec_line:
@@ -157,8 +79,8 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             
             # Extract suitability
             suitability = "suitable"
-            if "**Suitability:**" in ai_content:
-                suit_line = ai_content.split("**Suitability:**")[1].split("\n")[0].strip()
+            if "**Suitability:**" in ai_text or "Suitability:" in ai_text:
+                suit_line = (ai_text.split("**Suitability:**")[1] if "**Suitability:**" in ai_text else ai_text.split("Suitability:")[1]).split("\n")[0].strip()
                 if "Not Suitable" in suit_line:
                     suitability = "not_suitable"
                 elif "Moderately" in suit_line:
@@ -166,8 +88,8 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             
             # Extract reasoning
             reasoning = ""
-            if "**Reasoning:**" in ai_content:
-                reasoning = ai_content.split("**Reasoning:**")[1].split("**")[0].strip()
+            if "**Reasoning:**" in ai_text or "Reasoning:" in ai_text:
+                reasoning = (ai_text.split("**Reasoning:**")[1] if "**Reasoning:**" in ai_text else ai_text.split("Reasoning:")[1]).split("**")[0].strip()
             
             # Map to score and category
             score = self._map_recommendation_to_score(action, confidence)
@@ -176,7 +98,7 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
             return {
                 'score': score,
                 'category': category,
-                'explanation': ai_content,  # Use full AI-generated explanation
+                'explanation': ai_text,  # Use full AI-generated explanation
                 'greeks_explanation': {},  # Will be extracted from explanation
                 'trade_analysis': {},  # Will be extracted from explanation
                 'risk_assessment': {},  # Will be extracted from explanation
@@ -190,230 +112,11 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
                 'ai_generated': True
             }
         except Exception as e:
-            # Check if it's a quota exceeded error (429)
-            error_str = str(e)
-            if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
-                self.quota_exceeded = True
-                try:
-                    from flask import current_app
-                    current_app.logger.warning("OpenAI quota exceeded - will try Claude API")
-                except RuntimeError:
-                    pass
-            else:
-                try:
-                    from flask import current_app
-                    current_app.logger.error(f"OpenAI analysis error: {e}")
-                except RuntimeError:
-                    pass  # Outside application context
-            return None
-    
-    def _generate_claude_analysis(self, option: Dict, stock_price: float,
-                                  delta: float, gamma: float, theta: float,
-                                  vega: float, iv: float, days_to_expiration: int,
-                                  user_risk_tolerance: str) -> Optional[Dict]:
-        """Generate AI-powered analysis using Claude (Anthropic)"""
-        try:
-            import anthropic
-            
-            # Log that we're trying Claude
             try:
                 from flask import current_app
-                current_app.logger.info("🤖 Attempting Claude API analysis...")
+                current_app.logger.error(f"Failed to parse Claude response: {e}")
             except RuntimeError:
                 pass
-            
-            contract_type = option.get('type', '').lower()
-            strike = float(option.get('strike', 0))
-            mid_price = option.get('mid_price', 0)
-            volume = int(option.get('volume', 0))
-            open_interest = int(option.get('open_interest', 0))
-            
-            prompt = f"""You are an expert options trading analyst. Analyze this option trade and provide a comprehensive, easy-to-understand analysis.
-
-Option Details:
-- Symbol: {option.get('symbol', 'N/A')}
-- Type: {contract_type.upper()}
-- Strike: ${strike:.2f}
-- Current Stock Price: ${stock_price:.2f}
-- Premium (Mid Price): ${mid_price:.2f}
-- Days to Expiration: {days_to_expiration}
-- Volume: {volume}
-- Open Interest: {open_interest}
-
-Greeks:
-- Delta: {delta:.4f}
-- Gamma: {gamma:.4f}
-- Theta: {theta:.4f}
-- Vega: {vega:.4f}
-- Implied Volatility: {iv*100:.2f}%
-
-User Risk Tolerance: {user_risk_tolerance}
-
-Provide a comprehensive analysis in the following format:
-
-**AI Recommendation:** [Buy/Consider/Consider Carefully/Avoid] (Confidence: High/Medium/Low)
-**Suitability:** [Suitable/Moderately Suitable/Not Suitable] for {user_risk_tolerance} risk tolerance
-**Reasoning:** [2-3 sentence explanation]
-
-**Greeks Explained:**
-**Delta:** [Plain English explanation of what this delta means for the trade]
-**Gamma:** [Plain English explanation of gamma's impact]
-**Theta:** [Plain English explanation of time decay implications]
-**Vega:** [Plain English explanation of volatility sensitivity]
-**Implied Volatility:** [Plain English explanation of IV level and implications]
-
-**Trade Analysis:**
-**Overview:** [Overall trade assessment]
-**Best Case:** [Best case scenario]
-**Worst Case:** [Worst case scenario]
-**Break-Even:** [Break-even calculation and explanation]
-**Profit Potential:** [Profit potential analysis]
-**Time Considerations:** [Time-related factors]
-
-**Risk Assessment:**
-**Overall Risk Level:** [Low/Moderate/High]
-**Risk Factors:** [List key risk factors]
-**Warnings:** [Any important warnings]
-
-Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance trader."""
-            
-            # Create Claude client
-            # Note: Anthropic SDK doesn't support timeout/max_retries in constructor
-            # We'll handle retries manually
-            client = anthropic.Anthropic(
-                api_key=self.anthropic_api_key
-            )
-            
-            message = client.messages.create(
-                model="claude-3-5-sonnet-20241022",  # Use latest Claude model
-                max_tokens=2000,
-                temperature=0.7,
-                system="You are an expert options trading analyst providing clear, actionable, and educational analysis. Focus on practical insights and risk awareness.",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            
-            ai_content = message.content[0].text.strip()
-            
-            # Log success
-            try:
-                from flask import current_app
-                current_app.logger.info("✅ Claude API analysis successful")
-            except RuntimeError:
-                pass
-            
-            # Parse the AI response into structured format (same as OpenAI)
-            # Extract recommendation
-            if "**AI Recommendation:**" in ai_content:
-                rec_line = ai_content.split("**AI Recommendation:**")[1].split("\n")[0].strip()
-                if "Buy" in rec_line:
-                    action = "buy"
-                elif "Consider Carefully" in rec_line:
-                    action = "consider_carefully"
-                elif "Consider" in rec_line:
-                    action = "consider"
-                else:
-                    action = "avoid"
-                
-                confidence = "high" if "High" in rec_line else "medium" if "Medium" in rec_line else "low"
-            else:
-                action = "consider"
-                confidence = "medium"
-            
-            # Extract suitability
-            suitability = "suitable"
-            if "**Suitability:**" in ai_content:
-                suit_line = ai_content.split("**Suitability:**")[1].split("\n")[0].strip()
-                if "Not Suitable" in suit_line:
-                    suitability = "not_suitable"
-                elif "Moderately" in suit_line:
-                    suitability = "moderately_suitable"
-            
-            # Extract reasoning
-            reasoning = ""
-            if "**Reasoning:**" in ai_content:
-                reasoning = ai_content.split("**Reasoning:**")[1].split("**")[0].strip()
-            
-            # Map to score and category
-            score = self._map_recommendation_to_score(action, confidence)
-            category = self._map_recommendation_to_category(action)
-            
-            return {
-                'score': score,
-                'category': category,
-                'explanation': ai_content,  # Use full AI-generated explanation
-                'greeks_explanation': {},  # Will be extracted from explanation
-                'trade_analysis': {},  # Will be extracted from explanation
-                'risk_assessment': {},  # Will be extracted from explanation
-                'recommendation': {
-                    'action': action,
-                    'confidence': confidence,
-                    'suitability': suitability,
-                    'reasoning': reasoning
-                },
-                'ai_generated_at': datetime.utcnow().isoformat(),
-                'ai_generated': True,
-                'ai_provider': 'claude'  # Mark as Claude-generated
-            }
-        except Exception as e:
-            # Log the full error for debugging
-            error_str = str(e)
-            error_type = type(e).__name__
-            
-            try:
-                from flask import current_app
-                current_app.logger.error(f"❌ Claude API error ({error_type}): {error_str}")
-                # Log more details if available
-                if hasattr(e, 'status_code'):
-                    current_app.logger.error(f"   Status code: {e.status_code}")
-                if hasattr(e, 'response'):
-                    current_app.logger.error(f"   Response: {e.response}")
-            except RuntimeError:
-                pass  # Outside application context
-            
-            # Check error type and handle appropriately
-            status_code = getattr(e, 'status_code', None)
-            if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
-                status_code = e.response.status_code
-            
-            # Check if it's a quota exceeded error (429)
-            if status_code == 429 or '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
-                self.claude_quota_exceeded = True
-                try:
-                    from flask import current_app
-                    current_app.logger.warning("⚠️ Claude quota exceeded - falling back to rule-based analysis")
-                except RuntimeError:
-                    pass
-            # Check for 404 (invalid endpoint or API key) or 401 (authentication failed)
-            elif status_code == 404 or '404' in error_str or 'not found' in error_str.lower():
-                # Disable Claude permanently if we get 404s (invalid API key or endpoint)
-                self.use_claude = False
-                self.claude_quota_exceeded = True
-                try:
-                    from flask import current_app
-                    current_app.logger.warning("⚠️ Claude API endpoint not found (404) - disabling Claude. Check ANTHROPIC_API_KEY or API endpoint.")
-                except RuntimeError:
-                    pass
-            elif status_code == 401 or '401' in error_str or 'authentication' in error_str.lower():
-                # Disable Claude if authentication fails
-                self.use_claude = False
-                self.claude_quota_exceeded = True
-                try:
-                    from flask import current_app
-                    current_app.logger.error("❌ Claude API authentication failed - disabling Claude. Check ANTHROPIC_API_KEY")
-                except RuntimeError:
-                    pass
-            else:
-                # For other errors, log but don't disable (might be temporary)
-                try:
-                    from flask import current_app
-                    # Only log once per error type to reduce noise
-                    if not hasattr(self, '_last_claude_error') or self._last_claude_error != error_type:
-                        current_app.logger.warning(f"⚠️ Claude analysis failed: {error_type}: {error_str[:100]}")
-                        self._last_claude_error = error_type
-                except RuntimeError:
-                    pass  # Outside application context
             return None
     
     def analyze_option_with_ai(self, option: Dict, stock_price: float, 
@@ -447,80 +150,37 @@ Be concise, practical, and tailored to a {user_risk_tolerance} risk tolerance tr
         except (ValueError, TypeError):
             days_to_expiration = 0
         
-        # Try OpenAI first if available and quota not exceeded
-        if self.use_openai and not self.quota_exceeded:
+        # Try Claude Haiku for AI analysis (primary method)
+        if self.use_ai:
             try:
-                ai_result = self._generate_openai_analysis(
+                greeks = {
+                    'delta': delta,
+                    'gamma': gamma,
+                    'theta': theta,
+                    'vega': vega,
+                    'iv': iv
+                }
+                
+                ai_text = self.anthropic_client.generate_analysis_text(
                     option=option,
                     stock_price=stock_price,
-                    delta=delta,
-                    gamma=gamma,
-                    theta=theta,
-                    vega=vega,
-                    iv=iv,
+                    greeks=greeks,
                     days_to_expiration=days_to_expiration,
                     user_risk_tolerance=user_risk_tolerance
                 )
-                if ai_result:
-                    ai_result['ai_provider'] = 'openai'  # Mark as OpenAI-generated
-                    return ai_result
+                
+                if ai_text:
+                    # Parse the AI response into structured format
+                    ai_result = self._parse_claude_response(ai_text, option, stock_price, delta, gamma, theta, vega, iv, days_to_expiration, user_risk_tolerance)
+                    if ai_result:
+                        ai_result['ai_provider'] = 'claude-haiku'
+                        return ai_result
             except Exception as e:
-                # Check if it's a quota error
-                error_str = str(e)
-                if '429' in error_str or 'quota' in error_str.lower() or 'insufficient_quota' in error_str.lower():
-                    self.quota_exceeded = True
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning("OpenAI quota exceeded - trying Claude API")
-                    except RuntimeError:
-                        pass
-                else:
-                    # Try Claude if OpenAI fails for other reasons
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning(f"OpenAI analysis failed, trying Claude: {e}")
-                    except RuntimeError:
-                        pass  # Outside application context
-        
-        # Try Claude if OpenAI is unavailable or quota exceeded
-        # Only try if Claude is enabled and not quota exceeded
-        if self.use_claude and not self.claude_quota_exceeded and self.anthropic_api_key and self.anthropic_api_key.strip():
-            try:
                 try:
                     from flask import current_app
-                    current_app.logger.info(f"🔄 Trying Claude API (use_claude={self.use_claude}, quota_exceeded={self.claude_quota_exceeded})")
+                    current_app.logger.warning(f"Claude Haiku analysis failed, using rule-based: {e}")
                 except RuntimeError:
                     pass
-                ai_result = self._generate_claude_analysis(
-                    option=option,
-                    stock_price=stock_price,
-                    delta=delta,
-                    gamma=gamma,
-                    theta=theta,
-                    vega=vega,
-                    iv=iv,
-                    days_to_expiration=days_to_expiration,
-                    user_risk_tolerance=user_risk_tolerance
-                )
-                if ai_result:
-                    return ai_result
-            except Exception as e:
-                # Check if it's a quota error
-                error_str = str(e)
-                if '429' in error_str or 'quota' in error_str.lower() or 'rate_limit' in error_str.lower():
-                    self.claude_quota_exceeded = True
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning("Claude quota exceeded - falling back to rule-based analysis")
-                    except RuntimeError:
-                        pass
-                else:
-                    # Fallback to rule-based if Claude fails for other reasons
-                    try:
-                        from flask import current_app
-                        current_app.logger.warning(f"Claude analysis failed, using rule-based: {e}")
-                    except RuntimeError:
-                        pass  # Outside application context
         
         # Generate rule-based explanations (fallback)
         greeks_explanation = self._explain_greeks(

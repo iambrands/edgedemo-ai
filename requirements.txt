@@ -14,8 +14,8 @@ pytz==2023.3
 polygon-api-client==1.13.0
 pandas==2.2.0
 numpy==1.26.4
-openai>=1.0.0
-anthropic>=0.18.0
+# openai>=1.0.0  # Replaced with Anthropic Claude Haiku (14x cheaper)
+anthropic==0.39.0
 gunicorn==21.2.0
 APScheduler==3.10.4
 redis>=5.0.0
