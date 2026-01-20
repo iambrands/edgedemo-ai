@@ -357,7 +357,24 @@ class PositionMonitor:
             
             # If direct quote didn't work, try options chain lookup
             if not option_found:
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"🔍 Position {position.id} ({position.symbol}): Fetching options chain for {expiration_str}..."
+                    )
+                except:
+                    pass
                 options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                
+                # Log chain results for debugging
+                try:
+                    from flask import current_app
+                    chain_length = len(options_chain) if isinstance(options_chain, list) else 0
+                    current_app.logger.info(
+                        f"📊 Position {position.id} ({position.symbol}): Received {chain_length} options from chain"
+                    )
+                except:
+                    pass
                 
                 # Find the specific option contract
                 position_strike = float(position.strike_price)
@@ -520,13 +537,33 @@ class PositionMonitor:
                 # Always use entry price as fallback - NEVER set to 0.01
                 try:
                     from flask import current_app
+                    # Log available strikes for debugging
+                    available_strikes = []
+                    if isinstance(options_chain, list) and len(options_chain) > 0:
+                        for opt in options_chain[:20]:  # Check first 20
+                            opt_strike = opt.get('strike') or opt.get('strike_price')
+                            opt_type = opt.get('type') or opt.get('contract_type')
+                            if opt_strike and (opt_type or '').lower() == (position.contract_type or '').lower():
+                                try:
+                                    available_strikes.append(float(opt_strike))
+                                except:
+                                    pass
+                        available_strikes = sorted(set(available_strikes))[:10]
+                    
                     current_app.logger.warning(
-                        f"Could not find option for position {position.id}: "
-                        f"{position.symbol} {position.contract_type} {position.strike_price} {expiration_str}. "
+                        f"❌ Could not find option for position {position.id}: "
+                        f"{position.symbol} {position.contract_type} ${position.strike_price} {expiration_str}. "
+                        f"Available {position.contract_type} strikes: {available_strikes}. "
                         f"Using entry price ${position.entry_price:.2f} as fallback."
                     )
                 except RuntimeError:
                     pass
+                except Exception as e:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(f"Error logging option lookup failure: {e}")
+                    except:
+                        pass
                 
                 # ALWAYS use entry price as fallback if we couldn't get current price
                 # This ensures we never leave a position with 0.01 or other bad values

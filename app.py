@@ -203,7 +203,7 @@ def create_app(config_name=None):
                 if not positions:
                     return
                 
-                app.logger.info(f"💰 Updating prices for {len(positions)} positions (scheduled task)")
+                app.logger.info(f"💰 Scheduled price update: Processing {len(positions)} positions")
                 
                 monitor = PositionMonitor()
                 updated_count = 0
