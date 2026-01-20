@@ -718,6 +718,17 @@ class TradierConnector:
             options = response['options']['option']
             options_list = options if isinstance(options, list) else [options]
             
+            # Log sample option structure for debugging
+            if options_list and len(options_list) > 0:
+                logger.info(f"📊 Received {len(options_list)} options from Tradier")
+                logger.info(f"📋 First option keys: {list(options_list[0].keys())}")
+                # Log first option structure (truncated to avoid huge logs)
+                try:
+                    sample_json = json.dumps(options_list[0], indent=2, default=str)
+                    logger.info(f"📋 First option sample: {sample_json[:500]}...")
+                except:
+                    logger.info(f"📋 First option sample: {str(options_list[0])[:500]}...")
+            
             # CRITICAL: Validate and filter out options with stock prices instead of premiums
             validated_options = []
             rejected_count = 0
