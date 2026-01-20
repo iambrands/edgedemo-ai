@@ -32,3 +32,4 @@ EXPOSE 5000
 # Run the application
 CMD ["python", "app.py"]
 
+# Rebuild 1768949816
