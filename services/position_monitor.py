@@ -615,7 +615,13 @@ class PositionMonitor:
                             position_strike = float(position.strike_price)
                             for option in options_chain:
                                 option_strike = option.get('strike') or option.get('strike_price')
-                                option_type = option.get('type') or option.get('contract_type')
+                                # CRITICAL FIX: Use 'option_type' first (Tradier's field name)
+                                option_type = (
+                                    option.get('option_type') or
+                                    option.get('type') or
+                                    option.get('contract_type') or
+                                    ''
+                                )
                                 try:
                                     option_strike_float = float(option_strike) if option_strike is not None else None
                                 except (ValueError, TypeError):
@@ -710,7 +716,13 @@ class PositionMonitor:
                         if not isinstance(opt, dict):
                             continue
                         opt_strike = opt.get('strike') or opt.get('strike_price')
-                        opt_type = (opt.get('type') or opt.get('contract_type') or opt.get('option_type') or '').lower()
+                        # CRITICAL FIX: Use 'option_type' first (Tradier's field name)
+                        opt_type = (
+                            opt.get('option_type') or      # ← Tradier uses this
+                            opt.get('type') or              # Fallback
+                            opt.get('contract_type') or      # Another fallback
+                            ''
+                        ).lower().strip()
                         
                         # Collect sample for debugging
                         if i < 5:
