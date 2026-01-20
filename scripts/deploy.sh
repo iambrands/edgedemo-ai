@@ -31,7 +31,8 @@ PORT=${PORT:-8080}
 
 # Start gunicorn with appropriate workers
 # Workers = (2 x CPU cores) + 1, but cap at 4 for Railway
-exec gunicorn app:app \
+# Use create_app() factory pattern
+exec gunicorn "app:create_app()" \
     --bind 0.0.0.0:${PORT} \
     --workers 4 \
     --timeout 120 \
