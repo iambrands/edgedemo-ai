@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_spread_and_rate_limit'
-down_revision = '3a2807af4be6'  # Update this to match your latest migration
+down_revision = '213574eb3fd0'  # Follows add_quantity_to_automations migration
 branch_labels = None
 depends_on = None
 
