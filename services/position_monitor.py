@@ -511,6 +511,12 @@ class PositionMonitor:
                         position.current_theta = greeks.get('theta')
                         position.current_vega = greeks.get('vega')
                         position.current_iv = greeks.get('mid_iv') or greeks.get('implied_volatility')
+                    
+                    # CRITICAL: Explicitly update last_updated when option is found
+                    position.last_updated = datetime.utcnow()
+                    
+                    # CRITICAL: Explicitly update last_updated timestamp
+                    position.last_updated = datetime.utcnow()
             else:
                 # Couldn't find option in chain or via direct quote
                 # Always use entry price as fallback - NEVER set to 0.01

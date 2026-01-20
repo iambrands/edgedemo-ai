@@ -250,9 +250,20 @@ def create_app(config_name=None):
                                     f"   Position {position.id} ({position.symbol}): "
                                     f"${old_price:.2f} → ${new_price:.2f}"
                                 )
-                            else:
-                                # Price unchanged but valid - still counts as success
+                            elif new_updated and old_updated and new_updated > old_updated:
+                                # Price unchanged but timestamp updated - still counts as success
                                 updated_count += 1
+                                app.logger.debug(
+                                    f"   Position {position.id} ({position.symbol}): "
+                                    f"Price unchanged (${new_price:.2f}) but timestamp updated"
+                                )
+                            else:
+                                # Price unchanged and timestamp not updated - might be an issue
+                                app.logger.warning(
+                                    f"⚠️ Position {position.id} ({position.symbol}): "
+                                    f"Price update did not change timestamp (old: {old_updated}, new: {new_updated})"
+                                )
+                                updated_count += 1  # Still count as attempt
                         else:
                             # Price update failed - no valid price returned
                             failed_count += 1
