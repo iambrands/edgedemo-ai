@@ -67,9 +67,13 @@ class Config:
     DISABLE_AUTH = os.environ.get('DISABLE_AUTH', 'false').lower() == 'true'  # For development/testing
     
     # AI API Configuration
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    # OpenAI (deprecated - using Claude Haiku instead)
+    # OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    # USE_OPENAI_ALERTS = os.environ.get('USE_OPENAI_ALERTS', 'true').lower() == 'true'
+    
+    # Anthropic Claude Haiku (primary AI provider - 14x cheaper than GPT-4o)
     ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-    USE_OPENAI_ALERTS = os.environ.get('USE_OPENAI_ALERTS', 'true').lower() == 'true'  # Enable AI-powered alerts
+    USE_AI_ALERTS = os.environ.get('USE_AI_ALERTS', 'true').lower() == 'true'  # Enable AI-powered alerts
     
     # CORS Configuration
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:6002,http://localhost:4000,http://localhost:3000,http://127.0.0.1:6002,http://127.0.0.1:4000,http://127.0.0.1:3000').split(',')
