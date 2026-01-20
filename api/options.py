@@ -166,12 +166,11 @@ def analyze_options():
     if preference not in ['income', 'growth', 'balanced', 'aggressive', 'conservative']:
         preference = 'balanced'
     
-    # PHASE 4: Check cache first (precomputed results)
+    # PHASE 4: Check smart cache first
     cache_check_start = time.time()
     try:
-        from services.cache_manager import CacheManager
-        cache = CacheManager()
-        cached_result = cache.get_analysis(symbol, expiration, preference)
+        from services.smart_cache import SmartCache
+        cached_result = SmartCache.get_cached_analysis(symbol, expiration, 'both', preference)
         cache_check_time = time.time() - cache_check_start
         perf_log['steps']['cache_check'] = round(cache_check_time, 3)
         
@@ -179,7 +178,7 @@ def analyze_options():
             total_time = time.time() - start_time
             perf_log['total'] = round(total_time, 3)
             try:
-                current_app.logger.info(f'💾 Using cached/precomputed analysis for {symbol} {expiration}')
+                current_app.logger.info(f'💾 Using cached analysis for {symbol} {expiration}')
                 current_app.logger.info(f"[CHAIN ANALYZER] ⏱️ Cache check: {cache_check_time:.3f}s, Total: {total_time:.3f}s")
                 current_app.logger.info("=" * 60)
             except:
@@ -319,12 +318,19 @@ def analyze_options():
         
         results = result_queue.get()
         
-        # Cache the result
+        # Increment rate limit counter if user is authenticated
+        if current_user:
+            try:
+                current_user.increment_analysis_count()
+            except AttributeError:
+                # User model doesn't have rate limiting yet - skip
+                pass
+        
+        # Cache the result with smart TTL
         cache_write_start = time.time()
         try:
-            from services.cache_manager import CacheManager
-            cache = CacheManager()
-            cache.set_analysis(symbol, expiration, preference, results, ttl=300)
+            from services.smart_cache import SmartCache
+            SmartCache.cache_analysis(symbol, expiration, 'both', preference, results)
             cache_write_time = time.time() - cache_write_start
             perf_log['steps']['cache_write'] = round(cache_write_time, 3)
         except Exception as e:
