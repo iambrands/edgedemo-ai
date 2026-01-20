@@ -476,6 +476,29 @@ class PositionMonitor:
                             f"⚠️ Position {position.id} ({position.symbol}): Exact match not found, "
                             f"searching for closest {position_contract_type} strike to ${position_strike}"
                         )
+                        
+                        # Show available strikes by type for debugging
+                        available_puts = [
+                            float(o.get('strike', 0)) 
+                            for o in chain_list 
+                            if isinstance(o, dict) and 
+                            (o.get('option_type') or o.get('type') or '').lower() == 'put' and
+                            o.get('strike')
+                        ]
+                        available_calls = [
+                            float(o.get('strike', 0)) 
+                            for o in chain_list 
+                            if isinstance(o, dict) and 
+                            (o.get('option_type') or o.get('type') or '').lower() == 'call' and
+                            o.get('strike')
+                        ]
+                        
+                        current_app.logger.info(
+                            f"   Available PUT strikes: {sorted(set(available_puts))[:20]}"
+                        )
+                        current_app.logger.info(
+                            f"   Available CALL strikes: {sorted(set(available_calls))[:20]}"
+                        )
                     except:
                         pass
                     
@@ -485,14 +508,22 @@ class PositionMonitor:
                         if not isinstance(option, dict):
                             continue
                         option_strike = option.get('strike') or option.get('strike_price')
-                        option_type = option.get('type') or option.get('contract_type')
+                        
+                        # CRITICAL FIX: Use 'option_type' first (Tradier's field name)
+                        option_type = (
+                            option.get('option_type') or
+                            option.get('type') or
+                            option.get('contract_type') or
+                            ''
+                        )
+                        
                         try:
                             option_strike_float = float(option_strike) if option_strike is not None else None
                         except (ValueError, TypeError):
                             continue
                         
                         # Match contract type - handle 'option' as a wildcard
-                        option_contract_type = (option_type or '').lower()
+                        option_contract_type = (option_type or '').lower().strip()
                         type_match = (
                             option_contract_type == position_contract_type or
                             (position_contract_type == 'option' and option_contract_type in ['call', 'put']) or
@@ -511,9 +542,10 @@ class PositionMonitor:
                         try:
                             from flask import current_app
                             closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
+                            closest_type = (closest_option.get('option_type') or closest_option.get('type') or '').lower()
                             current_app.logger.info(
                                 f"🎯 Position {position.id} ({position.symbol}): Using closest match - "
-                                f"{position_contract_type} ${closest_strike} (diff: ${closest_diff:.2f})"
+                                f"{closest_type} ${closest_strike} (diff: ${closest_diff:.2f})"
                             )
                         except:
                             pass
@@ -521,9 +553,10 @@ class PositionMonitor:
                         try:
                             from flask import current_app
                             closest_strike = float(closest_option.get('strike') or closest_option.get('strike_price'))
+                            closest_type = (closest_option.get('option_type') or closest_option.get('type') or '').lower()
                             current_app.logger.warning(
                                 f"⚠️ Position {position.id} ({position.symbol}): Closest match too far - "
-                                f"{position_contract_type} ${closest_strike} (diff: ${closest_diff:.2f}, "
+                                f"{closest_type} ${closest_strike} (diff: ${closest_diff:.2f}, "
                                 f"threshold: ${position_strike * 0.05:.2f})"
                             )
                         except:
