@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import random
 import time
 import logging
+import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from utils.rate_limiter import tradier_rate_limiter
@@ -628,7 +629,83 @@ class TradierConnector:
         
         endpoint = 'markets/options/chains'
         params = {'symbol': symbol, 'expiration': expiration, 'greeks': 'true'}
-        response = self._make_request(endpoint, params)
+        
+        # CRITICAL: Use direct request with retry logic and increased timeout for options chains
+        # Options chains can be large and take longer to fetch
+        url = f"{self.base_url}/{endpoint}"
+        headers = self._get_headers()
+        
+        # Try up to 3 times with increasing timeout
+        max_retries = 3
+        timeouts = [10, 15, 20]  # Increase timeout on each retry
+        
+        response = None
+        for attempt in range(max_retries):
+            try:
+                timeout = timeouts[attempt]
+                logger.info(
+                    f"📡 Fetching options chain: {symbol} exp {expiration} "
+                    f"(Attempt {attempt + 1}/{max_retries} with {timeout}s timeout)..."
+                )
+                
+                session = self._get_session()
+                response_obj = session.get(
+                    url, 
+                    headers=headers, 
+                    params=params, 
+                    timeout=timeout
+                )
+                
+                if response_obj.status_code == 200:
+                    response = response_obj.json()
+                    
+                    # Log the response structure
+                    logger.info(
+                        f"✅ Tradier API success! Response keys: {list(response.keys()) if isinstance(response, dict) else 'N/A'}"
+                    )
+                    break
+                
+                elif response_obj.status_code == 429:
+                    logger.warning(f"⚠️ Rate limit hit (429), waiting 2 seconds before retry...")
+                    time.sleep(2)
+                    continue
+                
+                else:
+                    logger.error(
+                        f"❌ Tradier API error: {response_obj.status_code} - {response_obj.text[:200]}"
+                    )
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    else:
+                        return []
+                        
+            except requests.exceptions.Timeout:
+                logger.warning(
+                    f"⚠️ Timeout on attempt {attempt + 1}/{max_retries} ({timeout}s)"
+                )
+                if attempt < max_retries - 1:
+                    time.sleep(1)  # Brief pause before retry
+                    continue
+                else:
+                    logger.error(f"❌ All {max_retries} attempts timed out. Giving up.")
+                    return []
+                    
+            except Exception as e:
+                logger.error(
+                    f"❌ Unexpected error fetching chain: {str(e)}", 
+                    exc_info=True
+                )
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                    continue
+                else:
+                    return []
+        
+        # If all retries failed, response will be None
+        if response is None:
+            logger.error(f"❌ Failed to fetch options chain after {max_retries} attempts")
+            return []
         
         if is_index:
             logger.info(

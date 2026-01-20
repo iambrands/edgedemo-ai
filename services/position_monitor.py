@@ -364,7 +364,34 @@ class PositionMonitor:
                     )
                 except:
                     pass
-                options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                
+                try:
+                    options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
+                except Exception as e:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"❌ Position {position.id} ({position.symbol}): Failed to fetch chain: {str(e)}"
+                        )
+                    except:
+                        pass
+                    options_chain = []
+                
+                if not options_chain:
+                    try:
+                        from flask import current_app
+                        current_app.logger.error(
+                            f"❌ Position {position.id} ({position.symbol}): Empty or failed chain fetch. "
+                            f"Keeping current price: ${position.current_price}"
+                        )
+                    except:
+                        pass
+                    
+                    # Update last_updated so we don't retry immediately
+                    position.last_updated = datetime.utcnow()
+                    db.session.commit()
+                    # Return early - can't update price without chain
+                    return
                 
                 # get_options_chain returns a list directly (validated_options)
                 # Handle both list and dict formats for safety
