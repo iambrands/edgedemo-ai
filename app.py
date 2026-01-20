@@ -510,10 +510,29 @@ def create_app(config_name=None):
     
     app.logger.info("=" * 50)
     
-    # Database tables are created via migrations (railway_start.sh runs flask db upgrade)
-    # No database connection is attempted during app initialization
-    # This prevents crashes if the database is temporarily unavailable
-    app.logger.info("✅ Application initialized. Database will connect on first use.")
+    # Run database migrations on startup (fallback if Procfile migration didn't run)
+    def run_migrations_on_startup():
+        """Run database migrations on app startup"""
+        try:
+            app.logger.info("📊 Running database migrations on startup...")
+            from flask_migrate import upgrade
+            
+            with app.app_context():
+                upgrade()
+                app.logger.info("✅ Database migrations completed successfully")
+        except Exception as e:
+            app.logger.error(f"❌ Database migration failed: {e}")
+            app.logger.error("App will continue, but database may be out of date")
+            # Don't crash the app, but log the error
+    
+    # Run migrations in a thread to avoid blocking startup
+    import threading
+    migration_thread = threading.Thread(target=run_migrations_on_startup, daemon=True)
+    migration_thread.start()
+    
+    # Database tables are created via migrations
+    # This ensures migrations run even if Procfile command didn't execute
+    app.logger.info("✅ Application initialized. Database migrations running in background.")
     
     # Health check endpoint
     @app.route('/health')
