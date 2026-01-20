@@ -100,12 +100,16 @@ class OptionsAnalyzer:
         
         # Log distribution BEFORE sorting
         try:
+            import sys
             pre_calls = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'call']
             pre_puts = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'put']
-            current_app.logger.info(
+            log_msg = (
                 f'[RECOMMENDATIONS] After basic analysis: {len(pre_analyzed)} total '
                 f'({len(pre_calls)} CALLs, {len(pre_puts)} PUTs)'
             )
+            # Force console output
+            print(log_msg, file=sys.stderr, flush=True)
+            current_app.logger.info(log_msg)
         except RuntimeError:
             pass
         
