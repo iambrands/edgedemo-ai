@@ -378,7 +378,9 @@ def analyze_options():
             'preference': preference,
             'options': results,
             'count': len(results),
-            'performance': perf_log
+            'cached': False,
+            'performance': perf_log,
+            'usage': current_user.get_analysis_usage() if current_user else None
         }), 200
     except Exception as e:
         current_app.logger.error(f'Error in analyze_options: {str(e)}')
