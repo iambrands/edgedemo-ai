@@ -108,15 +108,39 @@ class TradeExecutor:
             
             trade_cost = price * quantity * (100 if is_option else 1)
             
+            # CRITICAL: Validate balance before trade
+            if user.paper_balance < 0:
+                try:
+                    from flask import current_app
+                    current_app.logger.error(
+                        f'🚨🚨🚨 Account has NEGATIVE balance: ${user.paper_balance:,.2f}. '
+                        f'Resetting to $100,000...'
+                    )
+                except (RuntimeError, ImportError):
+                    pass
+                user.paper_balance = 100000.00
+            
             try:
                 from flask import current_app
-                current_app.logger.info(f'Paper trade cost calculation: price={price}, quantity={quantity}, contract_type={contract_type}, option_symbol={option_symbol}, expiration_date={expiration_date}, strike={strike}, is_option={is_option}, trade_cost={trade_cost}, balance_before={user.paper_balance}')
+                current_app.logger.info(
+                    f'Paper trade cost calculation: price={price}, quantity={quantity}, '
+                    f'contract_type={contract_type}, option_symbol={option_symbol}, '
+                    f'expiration_date={expiration_date}, strike={strike}, is_option={is_option}, '
+                    f'trade_cost={trade_cost}, balance_before={user.paper_balance}'
+                )
             except (RuntimeError, ImportError):
                 pass
             
             if action.lower() == 'buy':
+                # Validate sufficient balance
+                if trade_cost > user.paper_balance:
+                    raise ValueError(
+                        f"Insufficient paper balance. Need ${trade_cost:,.2f}, "
+                        f"have ${user.paper_balance:,.2f}"
+                    )
                 user.paper_balance -= trade_cost
             else:
+                # Selling - add proceeds back
                 user.paper_balance += trade_cost
             
             try:
