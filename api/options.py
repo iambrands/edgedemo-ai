@@ -211,6 +211,21 @@ def analyze_options():
     except:
         pass
     
+    # TODO: Uncomment after running: flask db upgrade
+    # Check rate limit if user is authenticated (before cache check to avoid cache hits for rate-limited users)
+    # if current_user:
+    #     try:
+    #         if not current_user.can_analyze():
+    #             usage = current_user.get_analysis_usage()
+    #             return jsonify({
+    #                 'error': 'Daily analysis limit reached',
+    #                 'message': f"You've used all {usage['limit']} AI analyses for today. Resets at midnight EST.",
+    #                 'usage': usage
+    #             }), 429
+    #     except AttributeError:
+    #         # User model doesn't have rate limiting yet - skip check
+    #         pass
+    
     # Use user's risk tolerance if available, otherwise default
     user_risk_tolerance = 'moderate'
     if current_user and current_user.risk_tolerance:
