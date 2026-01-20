@@ -1,2 +1,2 @@
-web: gunicorn "app:create_app()"
+web: bash scripts/deploy.sh
 
