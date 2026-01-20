@@ -14,13 +14,17 @@ print("=" * 60, file=sys.stderr, flush=True)
 print("RUNNING DATABASE MIGRATION", file=sys.stderr, flush=True)
 print("=" * 60, file=sys.stderr, flush=True)
 
-from app import create_app, db
-from flask_migrate import upgrade
-from sqlalchemy import inspect, text
-
-app = create_app()
-
-with app.app_context():
+try:
+    from app import create_app, db
+    from flask_migrate import upgrade
+    from sqlalchemy import inspect, text
+    
+    print("✅ Imports successful", file=sys.stderr, flush=True)
+    
+    app = create_app()
+    print("✅ App created", file=sys.stderr, flush=True)
+    
+    with app.app_context():
     # Run migration
     try:
         print("📊 Running flask db upgrade...", file=sys.stderr, flush=True)
@@ -80,4 +84,10 @@ with app.app_context():
         print(f"❌ Error verifying migration: {e}", file=sys.stderr, flush=True)
         import traceback
         traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+except Exception as e:
+    print(f"❌ FATAL ERROR in run_migration.py: {e}", file=sys.stderr, flush=True)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
 

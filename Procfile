@@ -1,2 +1,2 @@
-web: python run_migration.py && gunicorn app:create_app() --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+web: bash test_startup.sh && gunicorn app:create_app() --bind 0.0.0.0:$PORT --workers 4 --timeout 120
 
