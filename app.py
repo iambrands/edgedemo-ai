@@ -497,19 +497,10 @@ def create_app(config_name=None):
     from models.feedback import Feedback
     
     # Verify AI API configuration (non-blocking)
-    openai_key = os.environ.get('OPENAI_API_KEY', '')
     anthropic_key = os.environ.get('ANTHROPIC_API_KEY', '')
     app.logger.info("=" * 50)
     app.logger.info("AI API Configuration:")
-    app.logger.info(f"  OpenAI API Key: {'✅ Set' if openai_key else '❌ Not set'}")
-    app.logger.info(f"  Anthropic API Key: {'✅ Set' if anthropic_key else '❌ Not set'}")
-    
-    # Check if packages are installed
-    try:
-        import openai
-        app.logger.info("  OpenAI package: ✅ Installed")
-    except ImportError:
-        app.logger.warning("  OpenAI package: ❌ Not installed")
+    app.logger.info(f"  Anthropic API Key: {'✅ Set' if anthropic_key else '❌ Not set (AI features disabled)'}")
     
     try:
         import anthropic
