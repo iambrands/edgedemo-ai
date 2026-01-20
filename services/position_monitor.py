@@ -542,24 +542,7 @@ class PositionMonitor:
                     available_puts = []
                     available_calls = []
                     
-                    # Handle both list and dict formats from Tradier
-                    if isinstance(options_chain, list):
-                        chain_list = options_chain
-                    elif isinstance(options_chain, dict):
-                        # Tradier returns {'options': {'option': [...]}}
-                        if 'options' in options_chain:
-                            options_data = options_chain['options']
-                            if isinstance(options_data, dict) and 'option' in options_data:
-                                chain_list = options_data['option'] if isinstance(options_data['option'], list) else [options_data['option']]
-                            elif isinstance(options_data, list):
-                                chain_list = options_data
-                            else:
-                                chain_list = []
-                        else:
-                            chain_list = []
-                    else:
-                        chain_list = []
-                    
+                    # Use the same chain_list we already parsed above
                     # Check all options, not just first 20
                     for opt in chain_list:
                         if not isinstance(opt, dict):
