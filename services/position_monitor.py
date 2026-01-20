@@ -366,20 +366,49 @@ class PositionMonitor:
                     pass
                 options_chain = self.tradier.get_options_chain(position.symbol, expiration_str)
                 
+                # get_options_chain returns a list directly (validated_options)
+                # Handle both list and dict formats for safety
+                if isinstance(options_chain, list):
+                    chain_list = options_chain
+                elif isinstance(options_chain, dict):
+                    # Handle Tradier's raw response format: {'options': {'option': [...]}}
+                    if 'options' in options_chain:
+                        options_data = options_chain['options']
+                        if isinstance(options_data, dict) and 'option' in options_data:
+                            chain_list = options_data['option'] if isinstance(options_data['option'], list) else [options_data['option']]
+                        elif isinstance(options_data, list):
+                            chain_list = options_data
+                        else:
+                            chain_list = []
+                    else:
+                        chain_list = []
+                else:
+                    chain_list = []
+                
                 # Log chain results for debugging
                 try:
                     from flask import current_app
-                    chain_length = len(options_chain) if isinstance(options_chain, list) else 0
                     current_app.logger.info(
-                        f"📊 Position {position.id} ({position.symbol}): Received {chain_length} options from chain"
+                        f"📊 Position {position.id} ({position.symbol}): Received {len(chain_list)} options from chain"
                     )
                 except:
                     pass
                 
                 # Find the specific option contract
                 position_strike = float(position.strike_price)
+                position_contract_type = (position.contract_type or '').lower()
                 
-                for option in options_chain:
+                # Log what we're looking for
+                try:
+                    from flask import current_app
+                    current_app.logger.info(
+                        f"🔍 Position {position.id} ({position.symbol}): Looking for "
+                        f"{position_contract_type} ${position_strike} in {len(chain_list)} options"
+                    )
+                except:
+                    pass
+                
+                for option in chain_list:
                     # Match by strike and contract type (primary method)
                     option_strike = option.get('strike') or option.get('strike_price')
                     option_type = option.get('type') or option.get('contract_type')
