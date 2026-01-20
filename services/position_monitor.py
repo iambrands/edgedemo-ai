@@ -413,10 +413,10 @@ class PositionMonitor:
                         break
                 
                 # If exact strike not found, find closest strike (for deep OTM options)
-                if not option_found and options_chain:
+                if not option_found and chain_list:
                     closest_option = None
                     closest_diff = float('inf')
-                    for option in options_chain:
+                    for option in chain_list:
                         option_strike = option.get('strike') or option.get('strike_price')
                         option_type = option.get('type') or option.get('contract_type')
                         try:
@@ -539,16 +539,52 @@ class PositionMonitor:
                     from flask import current_app
                     # Log available strikes for debugging
                     available_strikes = []
-                    if isinstance(options_chain, list) and len(options_chain) > 0:
-                        for opt in options_chain[:20]:  # Check first 20
-                            opt_strike = opt.get('strike') or opt.get('strike_price')
-                            opt_type = opt.get('type') or opt.get('contract_type')
-                            if opt_strike and (opt_type or '').lower() == (position.contract_type or '').lower():
-                                try:
-                                    available_strikes.append(float(opt_strike))
-                                except:
-                                    pass
-                        available_strikes = sorted(set(available_strikes))[:10]
+                    available_puts = []
+                    available_calls = []
+                    
+                    # Handle both list and dict formats from Tradier
+                    if isinstance(options_chain, list):
+                        chain_list = options_chain
+                    elif isinstance(options_chain, dict):
+                        # Tradier returns {'options': {'option': [...]}}
+                        if 'options' in options_chain:
+                            options_data = options_chain['options']
+                            if isinstance(options_data, dict) and 'option' in options_data:
+                                chain_list = options_data['option'] if isinstance(options_data['option'], list) else [options_data['option']]
+                            elif isinstance(options_data, list):
+                                chain_list = options_data
+                            else:
+                                chain_list = []
+                        else:
+                            chain_list = []
+                    else:
+                        chain_list = []
+                    
+                    # Check all options, not just first 20
+                    for opt in chain_list:
+                        if not isinstance(opt, dict):
+                            continue
+                        opt_strike = opt.get('strike') or opt.get('strike_price')
+                        opt_type = (opt.get('type') or opt.get('contract_type') or '').lower()
+                        
+                        if opt_strike:
+                            try:
+                                strike_float = float(opt_strike)
+                                if opt_type == 'put':
+                                    available_puts.append(strike_float)
+                                elif opt_type == 'call':
+                                    available_calls.append(strike_float)
+                            except:
+                                pass
+                    
+                    # Show available strikes for the contract type we're looking for
+                    position_type = (position.contract_type or '').lower()
+                    if position_type == 'put':
+                        available_strikes = sorted(set(available_puts))[:20]
+                    elif position_type == 'call':
+                        available_strikes = sorted(set(available_calls))[:20]
+                    else:
+                        available_strikes = sorted(set(available_puts + available_calls))[:20]
                     
                     current_app.logger.warning(
                         f"❌ Could not find option for position {position.id}: "
