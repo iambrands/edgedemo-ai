@@ -1436,8 +1436,16 @@ const Dashboard: React.FC = () => {
                   <button
                     onClick={async () => {
                       try {
+                        // Skip refresh for spreads (they don't have a refresh endpoint)
+                        if (selectedPosition.is_spread) {
+                          toast.error('Spread positions cannot be refreshed individually. Use the main refresh button.', { id: 'refresh-position' });
+                          return;
+                        }
                         toast.loading('Refreshing position...', { id: 'refresh-position' });
-                        const result = await tradesService.refreshPosition(selectedPosition.id);
+                        const positionId = typeof selectedPosition.id === 'string' 
+                          ? parseInt(selectedPosition.id.replace('spread_', ''), 10) 
+                          : selectedPosition.id;
+                        const result = await tradesService.refreshPosition(positionId);
                         toast.success('Position refreshed successfully', { id: 'refresh-position' });
                         // Update the selected position with new data
                         setSelectedPosition(result.position);
@@ -1455,7 +1463,15 @@ const Dashboard: React.FC = () => {
                     onClick={async () => {
                       if (window.confirm(`Close position: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}?`)) {
                         try {
-                          await api.post(`/trades/positions/${selectedPosition.id}/close`);
+                          // Handle spreads differently
+                          if (selectedPosition.is_spread && selectedPosition.spread_id) {
+                            await api.post(`/spreads/${selectedPosition.spread_id}/close`);
+                          } else {
+                            const positionId = typeof selectedPosition.id === 'string' 
+                              ? parseInt(selectedPosition.id.replace('spread_', ''), 10) 
+                              : selectedPosition.id;
+                            await api.post(`/trades/positions/${positionId}/close`);
+                          }
                           toast.success('Position closed');
                           setSelectedPosition(null);
                           loadDashboardData();
