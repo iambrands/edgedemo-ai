@@ -33,11 +33,17 @@ def token_required(f):
             # Check if Authorization header is present
             auth_header = request.headers.get('Authorization')
             if not auth_header:
+                logger.warning(f"❌ Missing Authorization header for {request.method} {request.path}")
                 return jsonify({'error': 'Missing Authorization Header'}), 401
+            
+            # Log token presence (but not the token itself)
+            has_bearer = auth_header.startswith('Bearer ')
+            logger.debug(f"🔐 Authorization header present: {has_bearer}, length: {len(auth_header)}")
             
             # Verify JWT token - disable CSRF check for API requests
             verify_jwt_in_request(locations=['headers'])
             current_user_id = get_jwt_identity()
+            logger.debug(f"✅ Token verified, user_id: {current_user_id}")
             # Convert to int if it's a string (JWT identity is string)
             user_id = int(current_user_id) if isinstance(current_user_id, str) else current_user_id
             # Import here to avoid circular imports

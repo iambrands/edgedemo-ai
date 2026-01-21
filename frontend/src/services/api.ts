@@ -47,10 +47,11 @@ api.interceptors.request.use(
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // Debug: log token presence (but not the actual token for security)
-      if (config.url?.includes('/close')) {
-        console.log('Sending request with token to:', config.url);
-        console.log('Content-Type:', config.headers['Content-Type']);
+      // Debug: log token presence for admin endpoints (but not the actual token for security)
+      if (config.url?.includes('/admin/') || config.url?.includes('/close')) {
+        console.log('🔐 Sending request with token to:', config.url);
+        console.log('   Token present:', !!token, 'Token length:', token.length);
+        console.log('   Authorization header:', config.headers.Authorization?.substring(0, 20) + '...');
       }
     } else {
       // Log warning if no token for protected endpoint
@@ -61,7 +62,8 @@ api.interceptors.request.use(
         // Only warn, don't block - let the server return 401 if needed
         // This allows logout to work even if tokens are already cleared
         if (!config.url?.includes('/auth/')) {
-          console.warn('No access token found for request:', config.url);
+          console.warn('⚠️ No access token found for request:', config.url);
+          console.warn('   localStorage.getItem("access_token"):', localStorage.getItem('access_token'));
         }
       }
     }
