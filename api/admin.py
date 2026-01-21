@@ -546,6 +546,7 @@ def apply_optimizations(current_user=None):
             'preview': preview_only,
             'applied': [],
             'failed': [],
+            'skipped': [],  # Track tables that don't exist yet
             'timestamp': datetime.utcnow().isoformat()
         }
         
