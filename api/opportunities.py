@@ -273,14 +273,61 @@ def get_market_movers(current_user):
         
         current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {current_user.id}")
         
-        movers_service = MarketMoversService()
-        movers = movers_service.get_market_movers(limit=limit)
+        # Add timeout protection - limit processing time
+        import threading
+        import queue
         
-        # Optionally add insights (can be slow, so make it optional)
-        if include_insights:
+        movers_queue = queue.Queue()
+        error_queue = queue.Queue()
+        
+        def fetch_movers():
+            try:
+                movers_service = MarketMoversService()
+                movers = movers_service.get_market_movers(limit=limit)
+                movers_queue.put(movers)
+            except Exception as e:
+                error_queue.put(e)
+        
+        # Run in thread with timeout
+        mover_thread = threading.Thread(target=fetch_movers, daemon=True)
+        mover_thread.start()
+        mover_thread.join(timeout=15)  # 15 second timeout
+        
+        if mover_thread.is_alive():
+            # Timeout occurred
+            current_app.logger.warning(f"⚠️ Market movers request timed out after 15s")
+            return jsonify({
+                'movers': [],
+                'count': 0,
+                'error': 'Request timed out',
+                'message': 'Market movers request took too long. Please try again.'
+            }), 200  # Return 200 with empty array instead of error
+        
+        if not error_queue.empty():
+            error = error_queue.get()
+            current_app.logger.error(f"❌ Error in market movers service: {error}")
+            # Return empty array instead of error to prevent frontend crash
+            return jsonify({
+                'movers': [],
+                'count': 0,
+                'error': str(error)
+            }), 200
+        
+        if movers_queue.empty():
+            current_app.logger.warning("⚠️ Market movers service returned no data")
+            return jsonify({
+                'movers': [],
+                'count': 0
+            }), 200
+        
+        movers = movers_queue.get()
+        
+        # Optionally add insights (can be slow, so make it optional and skip if timeout risk)
+        if include_insights and movers:
             try:
                 insights_service = OpportunityInsights()
-                for mover in movers:
+                # Limit insights to first 5 to prevent timeout
+                for mover in movers[:5]:
                     symbol = mover.get('symbol')
                     if symbol:
                         try:
@@ -313,7 +360,13 @@ def get_market_movers(current_user):
             current_app.logger.error(f"❌ Error getting market movers: {e}\n{traceback.format_exc()}", exc_info=True)
         except:
             pass
-        return jsonify({'error': 'Failed to load market movers', 'details': str(e)}), 500
+        # Return empty array instead of error to prevent frontend crash
+        return jsonify({
+            'movers': [],
+            'count': 0,
+            'error': 'Failed to load market movers',
+            'details': str(e)
+        }), 200  # Changed from 500 to 200 to prevent frontend crash
 
 @opportunities_bp.route('/ai-suggestions', methods=['GET'])
 @token_required
