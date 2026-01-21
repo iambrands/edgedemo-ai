@@ -280,7 +280,13 @@ def quick_scan(current_user):
             current_app.logger.error(f"Error in quick scan: {e}", exc_info=True)
         except:
             pass
-        return jsonify({'error': 'Failed to perform quick scan', 'details': str(e)}), 500
+        # Return 200 with empty results instead of 500 to prevent frontend crash
+        return jsonify({
+            'opportunities': [],
+            'count': 0,
+            'error': 'Failed to perform quick scan',
+            'details': str(e)
+        }), 200
 
 @opportunities_bp.route('/market-movers', methods=['GET'])
 # @token_required  # Temporarily disabled for testing

@@ -17,12 +17,13 @@ const BottomNav: React.FC = () => {
     return null;
   }
 
-  // Primary navigation items (4-5 most important)
+  // Primary navigation items (5 core items)
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-    { name: 'Analyze', href: '/analyzer', icon: '🔍' },
     { name: 'Trade', href: '/trade', icon: '💹' },
-    { name: 'Portfolio', href: '/positions', icon: '📈' },
+    { name: 'Options', href: '/analyzer', icon: '📈' },
+    { name: 'Portfolio', href: '/positions', icon: '💼' },
+    { name: 'Settings', href: '/settings', icon: '⚙️' },
   ];
 
   const isActive = (path: string) => {
@@ -40,7 +41,7 @@ const BottomNav: React.FC = () => {
         height: 'calc(64px + env(safe-area-inset-bottom, 0))',
       }}
     >
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
