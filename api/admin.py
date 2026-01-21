@@ -30,6 +30,25 @@ admin_bp = Blueprint('admin', __name__)
 # TODO: Add authentication middleware for production
 # For now, these are unprotected - add auth before production launch
 
+# Debug route to check if admin blueprint is loaded
+@admin_bp.route('/admin/debug', methods=['GET'])
+def admin_debug():
+    """Debug endpoint to verify admin blueprint is registered"""
+    from flask import current_app
+    routes = []
+    for rule in current_app.url_map.iter_rules():
+        if 'admin' in rule.rule:
+            routes.append({
+                'rule': rule.rule,
+                'methods': list(rule.methods),
+                'endpoint': rule.endpoint
+            })
+    return jsonify({
+        'status': 'admin blueprint loaded',
+        'admin_routes': routes,
+        'timestamp': datetime.utcnow().isoformat()
+    }), 200
+
 
 @admin_bp.route('/admin/cleanup/expired', methods=['POST'])
 def manual_cleanup_expired():
