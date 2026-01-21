@@ -9,6 +9,7 @@ from services.cleanup_service import (
 )
 from utils.redis_cache import get_redis_cache
 from utils.decorators import token_required
+from flask import current_app
 from sqlalchemy import inspect, text
 from datetime import datetime
 import logging
@@ -482,7 +483,7 @@ def apply_optimizations(current_user):
         if preview_only:
             results['would_apply'] = optimizations
         else:
-            from extensions import db
+            db = current_app.extensions['sqlalchemy']
             for sql in optimizations:
                 try:
                     db.session.execute(text(sql))
@@ -500,17 +501,15 @@ def apply_optimizations(current_user):
             
             if not results['failed'] or len(results['failed']) < len(optimizations):
                 try:
-                    from extensions import db
                     db.session.commit()
                 except Exception as e:
-                    from extensions import db
                     db.session.rollback()
                     results['error'] = str(e)
         
         return jsonify(results), 200
         
     except Exception as e:
-        from extensions import db
+        db = current_app.extensions['sqlalchemy']
         db.session.rollback()
         logger.error(f"Optimization apply failed: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
