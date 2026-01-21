@@ -406,6 +406,9 @@ def analyze_connections(current_user):
             'timestamp': datetime.utcnow().isoformat()
         }
         
+        # Get db from current_app extensions
+        db = current_app.extensions['sqlalchemy']
+        
         # Get pool info
         pool = db.engine.pool
         results['pool'] = {
