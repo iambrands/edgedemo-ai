@@ -514,52 +514,104 @@ def apply_optimizations(current_user):
             'timestamp': datetime.utcnow().isoformat()
         }
         
-        # Define all optimizations
-        optimizations = [
-            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
-            "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)",
-            "CREATE INDEX IF NOT EXISTS idx_positions_user_id ON positions(user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status)",
-            "CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(symbol)",
-            "CREATE INDEX IF NOT EXISTS idx_positions_user_status ON positions(user_id, status)",
-            "CREATE INDEX IF NOT EXISTS idx_positions_expiration_date ON positions(expiration_date)",
-            "CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)",
-            "CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at DESC)",
-            "CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)",
-            "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC)",
-            "CREATE INDEX IF NOT EXISTS idx_alerts_user_status ON alerts(user_id, status)",
-            "CREATE INDEX IF NOT EXISTS idx_spreads_user_id ON spreads(user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_spreads_symbol ON spreads(symbol)",
-            "CREATE INDEX IF NOT EXISTS idx_spreads_status ON spreads(status)",
+        # Get db and inspector
+        db = current_app.extensions['sqlalchemy']
+        inspector = inspect(db.engine)
+        existing_tables = set(inspector.get_table_names())
+        logger.info(f"Existing tables: {sorted(existing_tables)}")
+        
+        # Define all potential optimizations with table info
+        all_optimizations = [
+            ("users", "email", "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"),
+            ("users", "created_at", "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)"),
+            
+            ("positions", "user_id", "CREATE INDEX IF NOT EXISTS idx_positions_user_id ON positions(user_id)"),
+            ("positions", "status", "CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status)"),
+            ("positions", "symbol", "CREATE INDEX IF NOT EXISTS idx_positions_symbol ON positions(symbol)"),
+            ("positions", "expiration_date", "CREATE INDEX IF NOT EXISTS idx_positions_expiration_date ON positions(expiration_date)"),
+            ("positions", "user_id,status", "CREATE INDEX IF NOT EXISTS idx_positions_user_status ON positions(user_id, status)"),
+            
+            ("trades", "user_id", "CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)"),
+            ("trades", "symbol", "CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)"),
+            ("trades", "executed_at", "CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at DESC)"),
+            
+            ("alerts", "user_id", "CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id)"),
+            ("alerts", "status", "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)"),
+            ("alerts", "created_at", "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC)"),
+            ("alerts", "user_id,status", "CREATE INDEX IF NOT EXISTS idx_alerts_user_status ON alerts(user_id, status)"),
+            
+            ("spreads", "user_id", "CREATE INDEX IF NOT EXISTS idx_spreads_user_id ON spreads(user_id)"),
+            ("spreads", "symbol", "CREATE INDEX IF NOT EXISTS idx_spreads_symbol ON spreads(symbol)"),
+            ("spreads", "status", "CREATE INDEX IF NOT EXISTS idx_spreads_status ON spreads(status)"),
         ]
         
+        # Filter to only existing tables
+        optimizations_to_apply = []
+        for table_name, column_name, sql in all_optimizations:
+            if table_name in existing_tables:
+                optimizations_to_apply.append((table_name, column_name, sql))
+            else:
+                results['skipped'].append({
+                    'table': table_name,
+                    'column': column_name,
+                    'reason': 'Table does not exist',
+                    'sql': sql
+                })
+        
+        logger.info(f"Will apply {len(optimizations_to_apply)} optimizations, skipped {len(results['skipped'])}")
+        
         if preview_only:
-            results['would_apply'] = optimizations
+            results['would_apply'] = [
+                {'table': t, 'column': c, 'sql': s} 
+                for t, c, s in optimizations_to_apply
+            ]
         else:
-            db = current_app.extensions['sqlalchemy']
-            for sql in optimizations:
+            # Apply optimizations
+            for table_name, column_name, sql in optimizations_to_apply:
                 try:
+                    logger.info(f"Applying: {sql}")
                     db.session.execute(text(sql))
-                    results['applied'].append(sql)
+                    results['applied'].append({
+                        'table': table_name,
+                        'column': column_name,
+                        'sql': sql
+                    })
+                    logger.info(f"✅ Applied: {table_name}.{column_name}")
                 except Exception as e:
-                    error_msg = str(e)
+                    error_msg = str(e)[:200]
                     # Check if index already exists (not a real error)
                     if 'already exists' in error_msg.lower() or 'duplicate' in error_msg.lower():
-                        results['applied'].append(sql)  # Still count as success
+                        results['applied'].append({
+                            'table': table_name,
+                            'column': column_name,
+                            'sql': sql,
+                            'note': 'Already exists'
+                        })
+                        logger.info(f"✅ Already exists: {table_name}.{column_name}")
                     else:
                         results['failed'].append({
+                            'table': table_name,
+                            'column': column_name,
                             'sql': sql,
-                            'error': error_msg[:100]
+                            'error': error_msg
                         })
+                        logger.error(f"❌ Failed: {table_name}.{column_name} - {error_msg}")
             
-            if not results['failed'] or len(results['failed']) < len(optimizations):
-                try:
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    results['error'] = str(e)
+            # Commit if no failures
+            if not results['failed']:
+                db.session.commit()
+                logger.info(f"✅ Committed {len(results['applied'])} optimizations")
+            else:
+                db.session.rollback()
+                logger.warning(f"⚠️ Rolled back due to {len(results['failed'])} failures")
+        
+        # Add summary
+        results['summary'] = {
+            'applied': len(results['applied']),
+            'skipped': len(results['skipped']),
+            'failed': len(results['failed']),
+            'total': len(all_optimizations)
+        }
         
         return jsonify(results), 200
         
