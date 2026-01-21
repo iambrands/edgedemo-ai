@@ -524,20 +524,12 @@ def analyze_connections(current_user):
 
 
 @admin_bp.route('/admin/optimize/apply', methods=['POST'])
-# TEMPORARY: Auth disabled for testing - RE-ENABLE AFTER TESTING
-# @token_required  # ⚠️ TODO: Re-enable this after verifying optimizations work
-def apply_optimizations(current_user=None):
-    """Apply database optimizations - only on existing tables.
-    
-    ⚠️ WARNING: Authentication is temporarily disabled for testing.
-    This endpoint should require authentication in production.
-    """
+@token_required
+def apply_optimizations(current_user):
+    """Apply database optimizations - only on existing tables."""
     try:
-        # Debug logging
-        if current_user:
-            logger.info(f"🔧 Apply optimizations called by user {current_user.id} ({current_user.username})")
-        else:
-            logger.warning("⚠️ Apply optimizations called WITHOUT authentication (testing mode)")
+        # Log authenticated user
+        logger.info(f"🔧 Apply optimizations called by user {current_user.id} ({current_user.username})")
         
         data = request.get_json() or {}
         preview_only = data.get('preview', False)
