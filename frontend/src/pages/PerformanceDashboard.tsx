@@ -27,8 +27,10 @@ interface CacheStats {
   enabled: boolean;
   connected?: boolean;
   keys?: number;
+  total_keys?: number;
   memory_used?: string;
   hit_rate?: number;
+  status?: 'HEALTHY' | 'CONNECTED' | 'NOT_CONFIGURED' | 'ERROR';
 }
 
 const PerformanceDashboard: React.FC = () => {
