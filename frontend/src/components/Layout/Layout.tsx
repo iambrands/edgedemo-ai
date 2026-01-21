@@ -83,9 +83,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'}`}>
-      {/* Sidebar - Desktop Only */}
+      {/* Sidebar - Desktop Only (completely hidden on mobile/tablet) */}
       {showSidebar && (
-        <div className="fixed inset-y-0 left-0 w-64 bg-secondary text-white shadow-lg hidden lg:block">
+        <div className="fixed inset-y-0 left-0 w-64 bg-secondary text-white shadow-lg hidden lg:flex flex-col">
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-700">
@@ -157,7 +157,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <div className={showSidebar ? 'ml-64' : ''}>
+      <div className={showSidebar ? 'lg:ml-64' : ''}>
         <main 
           className={`p-4 md:p-6 lg:p-8 ${
             (isMobile || isTablet) ? 'pb-20' : ''
