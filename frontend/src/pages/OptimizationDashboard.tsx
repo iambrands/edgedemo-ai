@@ -88,10 +88,12 @@ const OptimizationDashboard: React.FC = () => {
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
+    console.log('🔍 OptimizationDashboard mounted');
     loadAnalyses();
   }, []);
 
   const loadAnalyses = async () => {
+    console.log('📊 Loading optimization analyses...');
     setLoading(true);
     let hasErrors = false;
     try {
@@ -103,6 +105,7 @@ const OptimizationDashboard: React.FC = () => {
       
       // Handle database analysis
       if (dbRes.status === 'fulfilled') {
+        console.log('✅ Database analysis loaded:', dbRes.value.data);
         setDbAnalysis(dbRes.value.data);
       } else {
         console.error('Database analysis failed:', dbRes.reason);
@@ -116,6 +119,7 @@ const OptimizationDashboard: React.FC = () => {
       
       // Handle Redis analysis
       if (redisRes.status === 'fulfilled') {
+        console.log('✅ Redis analysis loaded:', redisRes.value.data);
         setRedisAnalysis(redisRes.value.data);
       } else {
         console.error('Redis analysis failed:', redisRes.reason);
@@ -127,6 +131,7 @@ const OptimizationDashboard: React.FC = () => {
       
       // Handle connection analysis
       if (connRes.status === 'fulfilled') {
+        console.log('✅ Connection analysis loaded:', connRes.value.data);
         setConnAnalysis(connRes.value.data);
       } else {
         console.error('Connection analysis failed:', connRes.reason);
@@ -175,6 +180,8 @@ const OptimizationDashboard: React.FC = () => {
       setApplying(false);
     }
   };
+
+  console.log('🎨 Rendering OptimizationDashboard', { loading, hasDb: !!dbAnalysis, hasRedis: !!redisAnalysis, hasConn: !!connAnalysis, activeTab });
 
   if (loading) {
     return (
