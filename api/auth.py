@@ -91,7 +91,7 @@ def register():
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    """User login with database retry logic"""
+    """User login with database retry logic - supports both username and email"""
     if request.method == 'OPTIONS':
         # Flask-CORS will handle this, just return empty response
         response = jsonify({})
@@ -100,8 +100,11 @@ def login():
     
     data = request.get_json()
     
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'error': 'Username and password required'}), 400
+    # Accept either 'username' or 'email' field
+    identifier = data.get('username') or data.get('email')
+    
+    if not data or not identifier or not data.get('password'):
+        return jsonify({'error': 'Username/email and password required'}), 400
     
     # Retry logic for database connection
     max_retries = 3
@@ -111,7 +114,10 @@ def login():
     for attempt in range(max_retries):
         try:
             db = get_db()
-            user = db.session.query(User).filter_by(username=data['username']).first()
+            # Try username first, then email
+            user = db.session.query(User).filter_by(username=identifier).first()
+            if not user:
+                user = db.session.query(User).filter_by(email=identifier).first()
             
             if not user or not user.check_password(data['password']):
                 return jsonify({'error': 'Invalid credentials'}), 401

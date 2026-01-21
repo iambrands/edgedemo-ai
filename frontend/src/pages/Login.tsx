@@ -59,7 +59,7 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-              Username
+              Username or Email
             </label>
             <input
               id="username"
@@ -69,7 +69,7 @@ const Login: React.FC = () => {
               onChange={handleChange}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               disabled={loading}
               autoComplete="username"
             />
