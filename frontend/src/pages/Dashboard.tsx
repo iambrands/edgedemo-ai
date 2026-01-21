@@ -10,6 +10,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import OnboardingModal from '../components/OnboardingModal';
 import { useDevice } from '../hooks/useDevice';
 import ResponsiveTable, { ColumnDef } from '../components/common/ResponsiveTable';
+import ResponsiveModal from '../components/common/ResponsiveModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1446,26 +1447,16 @@ const Dashboard: React.FC = () => {
                 </>
               )}
             </div>
-          </div>
-        </div>
+        </ResponsiveModal>
       )}
 
       {/* Trade Details Modal */}
       {selectedTrade && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
-          <div className="bg-white rounded-lg p-4 md:p-6 w-full h-full md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto md:mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-secondary">
-                Trade Details: {selectedTrade.symbol} {selectedTrade.contract_type?.toUpperCase()}
-              </h2>
-              <button
-                onClick={() => setSelectedTrade(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
+        <ResponsiveModal
+          isOpen={!!selectedTrade}
+          onClose={() => setSelectedTrade(null)}
+          title={`Trade Details: ${selectedTrade.symbol} ${selectedTrade.contract_type?.toUpperCase()}`}
+        >
             <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 md:gap-6`}>
               {/* Basic Info */}
               <div className="space-y-4">
