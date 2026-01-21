@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# This script documents the Railway Custom Start Command update
+# Must be done manually in Railway dashboard
+
+echo "============================================================"
+echo "Railway Custom Start Command Update"
+echo "============================================================"
+echo ""
+echo "MANUAL STEP REQUIRED:"
+echo ""
+echo "1. Go to: https://railway.app/project/iab-options-bot"
+echo "2. Click: web service"
+echo "3. Click: Settings tab"
+echo "4. Scroll to: Deploy section"
+echo "5. Find: Custom Start Command"
+echo ""
+echo "6. Change from:"
+echo "   gunicorn \"app:create_app()\" --bind 0.0.0.0:\$PORT --workers 4 --timeout 120"
+echo ""
+echo "7. Change to:"
+echo "   python migrate_direct.py && gunicorn \"app:create_app()\" --bind 0.0.0.0:\$PORT --workers 4 --timeout 120"
+echo ""
+echo "8. Save (Railway auto-saves)"
+echo ""
+echo "9. Trigger redeploy:"
+echo "   git commit --allow-empty -m 'trigger migration deploy'"
+echo "   git push"
+echo ""
+echo "10. Monitor logs:"
+echo "    railway logs --follow"
+echo ""
+echo "============================================================"
+echo "After deployment, run comprehensive tests:"
+echo "  python scripts/run_all_tests.py --email YOUR_EMAIL --password YOUR_PASSWORD"
+echo "============================================================"
+

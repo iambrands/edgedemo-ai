@@ -59,3 +59,8 @@ frontend/.env.production.local
 *.log
 
 test_results_*/
+
+# Test credentials (never commit)
+test_credentials.json
+.env.test
+scripts/.env
