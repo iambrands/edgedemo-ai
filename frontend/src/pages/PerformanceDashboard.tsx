@@ -280,11 +280,13 @@ const PerformanceDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Redis Cache</h3>
               {getStatusBadge(
-                cacheStats.enabled && cacheStats.connected 
+                cacheStats.status === 'HEALTHY' || (cacheStats.enabled && cacheStats.connected && (cacheStats.keys || cacheStats.total_keys || 0) > 0)
                   ? 'healthy' 
-                  : cacheStats.enabled 
+                  : cacheStats.status === 'CONNECTED' || (cacheStats.enabled && cacheStats.connected)
                     ? 'degraded' 
-                    : 'not_configured'
+                    : cacheStats.status === 'NOT_CONFIGURED' || !cacheStats.enabled
+                      ? 'not_configured'
+                      : 'degraded'
               )}
             </div>
             <div className="space-y-2">
