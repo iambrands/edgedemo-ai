@@ -22,7 +22,7 @@ const BottomNav: React.FC = () => {
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
     { name: 'Trade', href: '/trade', icon: '💹' },
     { name: 'Options', href: '/analyzer', icon: '📈' },
-    { name: 'Portfolio', href: '/dashboard', icon: '💼' },
+    { name: 'Portfolio', href: '/portfolio', icon: '💼' },
     { name: 'Settings', href: '/settings', icon: '⚙️' },
   ];
 
