@@ -21,12 +21,22 @@ class CacheWarmer:
         self.cache_manager = CacheManager()
         self.cache = get_redis_cache()
         
-        # Popular symbols that are frequently accessed
+        # Expanded popular symbols list for better cache coverage
         self.popular_symbols = [
-            'SPY', 'QQQ', 'IWM', 'DIA',  # ETFs
-            'AAPL', 'MSFT', 'NVDA', 'TSLA', 'META', 'GOOGL', 'AMZN',  # Tech
-            'AMD', 'INTC', 'NFLX', 'DIS'  # Additional popular
-        ]
+            # Major Indices
+            'SPY', 'QQQ', 'IWM', 'DIA',
+            # Mega Cap Tech
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA',
+            # Popular Stocks
+            'TSLA', 'AMD', 'NFLX', 'DIS', 'BA',
+            # Finance
+            'JPM', 'BAC', 'GS',
+            # Other Popular
+            'COIN', 'UBER', 'SHOP'
+        ]  # Now 20 symbols
+        
+        # Symbols for options chains (most liquid)
+        self.options_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'META']
     
     def _get_next_friday(self) -> str:
         """Get next Friday's date for options expiration."""
@@ -40,19 +50,35 @@ class CacheWarmer:
         """Preload quotes for popular symbols."""
         logger.info(f"🔥 Warming quotes for {len(self.popular_symbols)} popular symbols")
         warmed = 0
+        failed = 0
         
         for symbol in self.popular_symbols:
             try:
-                # Use cache manager which has intelligent TTL
+                # Get quote from Tradier
                 quote = self.tradier.get_quote(symbol)
-                if quote:
-                    self.cache_manager.set_quote(symbol, quote)
-                    warmed += 1
-                    logger.debug(f"✅ Warmed quote: {symbol}")
+                
+                # Debug logging
+                if quote is None:
+                    logger.debug(f"⚠️ No quote data returned for {symbol}")
+                    failed += 1
+                    continue
+                
+                # Check if quote has required fields
+                if not isinstance(quote, dict) or 'symbol' not in quote:
+                    logger.debug(f"⚠️ Invalid quote format for {symbol}: {type(quote)}")
+                    failed += 1
+                    continue
+                
+                # Use cache manager which has intelligent TTL
+                self.cache_manager.set_quote(symbol, quote)
+                warmed += 1
+                logger.debug(f"✅ Warmed quote: {symbol}")
+                
             except Exception as e:
-                logger.warning(f"Failed to warm quote for {symbol}: {e}")
+                logger.warning(f"Failed to warm quote for {symbol}: {e}", exc_info=True)
+                failed += 1
         
-        logger.info(f"✅ Warmed {warmed}/{len(self.popular_symbols)} quotes")
+        logger.info(f"✅ Warmed {warmed}/{len(self.popular_symbols)} quotes (failed: {failed})")
         return warmed
     
     def warm_options_chains(self) -> int:
@@ -61,8 +87,8 @@ class CacheWarmer:
         warmed = 0
         expiration = self._get_next_friday()
         
-        # Only warm top 5 most popular to avoid rate limits
-        top_symbols = self.popular_symbols[:5]
+        # Use options_symbols list (most liquid symbols)
+        top_symbols = self.options_symbols
         
         for symbol in top_symbols:
             try:
@@ -124,8 +150,12 @@ class CacheWarmer:
         duration = (datetime.now() - start_time).total_seconds()
         results['duration_seconds'] = round(duration, 2)
         
-        total_warmed = sum(results.values()) - results['duration_seconds']
-        logger.info(f"✅ Cache warming complete: {total_warmed} items in {duration:.2f}s")
+        total_warmed = results['quotes'] + results['chains'] + results['expirations']
+        logger.info(
+            f"✅ Cache warming complete: {total_warmed} items in {duration:.2f}s "
+            f"(Quotes: {results['quotes']}, Chains: {results['chains']}, "
+            f"Expirations: {results['expirations']})"
+        )
         
         return results
 

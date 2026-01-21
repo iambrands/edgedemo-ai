@@ -72,14 +72,43 @@ const PerformanceDashboard: React.FC = () => {
       if (cacheRes.status === 'fulfilled' && cacheRes.value.ok) {
         try {
           const data = await cacheRes.value.json();
-          setCacheStats(data);
+          // Ensure we have the right structure
+          setCacheStats({
+            enabled: data.enabled !== false,
+            connected: data.connected === true,
+            keys: data.keys || data.total_keys || 0,
+            memory_used: data.memory_used || data.redis_memory_used || 'N/A',
+            hit_rate: data.hit_rate || 0,
+            status: data.status || (data.enabled ? 'CONNECTED' : 'NOT_CONFIGURED')
+          });
         } catch (e) {
           console.warn('Failed to parse cache stats:', e);
+          // Fallback
+          if (health?.components.cache) {
+            setCacheStats(health.components.cache.stats || { enabled: false });
+          }
         }
       } else {
         // Cache endpoint not available - use fallback from health data
         if (health?.components.cache) {
           setCacheStats(health.components.cache.stats || { enabled: false });
+        } else {
+          // Try to get from admin cache stats endpoint
+          try {
+            const adminRes = await api.get('/admin/cache/stats');
+            if (adminRes.data?.stats) {
+              const stats = adminRes.data.stats;
+              setCacheStats({
+                enabled: stats.using_redis !== false,
+                connected: stats.using_redis === true,
+                keys: stats.redis_keys || stats.total_keys || 0,
+                memory_used: stats.redis_memory_used || 'N/A',
+                hit_rate: stats.hit_rate || 0
+              });
+            }
+          } catch (e) {
+            console.warn('Failed to get cache stats from admin endpoint:', e);
+          }
         }
       }
 
