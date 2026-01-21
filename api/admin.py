@@ -27,15 +27,20 @@ logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
 
-# Diagnostic endpoint - no auth, no database
-@admin_bp.route('/ping', methods=['GET'])
+# Diagnostic endpoint - no auth, no database (test if blueprint is loaded)
+@admin_bp.route('/admin/ping', methods=['GET'])
 def ping():
-    """Simple test endpoint - no auth, no database."""
+    """Simple test endpoint - no auth, no database. Use this to verify admin routes work.
+    
+    Access at: /api/admin/ping
+    """
     try:
+        logger.info("Ping endpoint called - admin routes are working")
         return jsonify({
             'status': 'ok',
             'message': 'Admin routes are working',
             'blueprint': admin_bp.name,
+            'endpoint': '/api/admin/ping',
             'timestamp': datetime.utcnow().isoformat()
         }), 200
     except Exception as e:
