@@ -54,6 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'History', href: '/history', icon: '📜' },
         { name: 'Settings', href: '/settings', icon: '⚙️' },
         { name: 'Help', href: '/help', icon: '❓' },
+        { name: 'Optimization', href: '/admin/optimization', icon: '🔧' },
       ],
     },
   ];
