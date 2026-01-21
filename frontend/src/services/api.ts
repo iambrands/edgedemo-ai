@@ -38,32 +38,50 @@ api.interceptors.request.use(
     }
     
     // Don't add token to login/register endpoints
-    if (config.url?.includes('/auth/login') || 
-        config.url?.includes('/auth/register') ||
-        config.url?.includes('/auth/refresh')) {
+    const isAuthEndpoint = config.url?.includes('/auth/login') || 
+                           config.url?.includes('/auth/register') ||
+                           config.url?.includes('/auth/refresh');
+    
+    if (isAuthEndpoint) {
       return config;
     }
     
-    const token = localStorage.getItem('access_token');
+    // Get token from localStorage (check multiple possible keys for compatibility)
+    const token = localStorage.getItem('access_token') || 
+                  localStorage.getItem('token') ||
+                  sessionStorage.getItem('access_token') ||
+                  sessionStorage.getItem('token');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // Debug: log token presence for admin endpoints (but not the actual token for security)
-      if (config.url?.includes('/admin/') || config.url?.includes('/close')) {
-        console.log('🔐 Sending request with token to:', config.url);
-        console.log('   Token present:', !!token, 'Token length:', token.length);
-        console.log('   Authorization header:', config.headers.Authorization?.substring(0, 20) + '...');
+      
+      // Enhanced debug logging for all protected endpoints
+      if (config.url?.includes('/admin/') || 
+          config.url?.includes('/opportunities/') ||
+          config.url?.includes('/trades/') ||
+          config.url?.includes('/automations/')) {
+        console.log('🔐 Added token to request:', config.url);
+        console.log('   Token length:', token.length);
+        console.log('   Authorization header present:', !!config.headers.Authorization);
       }
     } else {
       // Log warning if no token for protected endpoint
       // But don't block auth endpoints or public endpoints
-      if (!config.url?.includes('/auth/login') && 
-          !config.url?.includes('/auth/register') &&
-          !config.url?.includes('/auth/logout')) {
-        // Only warn, don't block - let the server return 401 if needed
-        // This allows logout to work even if tokens are already cleared
-        if (!config.url?.includes('/auth/')) {
-          console.warn('⚠️ No access token found for request:', config.url);
-          console.warn('   localStorage.getItem("access_token"):', localStorage.getItem('access_token'));
+      if (!isAuthEndpoint && !config.url?.includes('/auth/logout')) {
+        // Only warn for protected endpoints
+        if (config.url?.includes('/admin/') || 
+            config.url?.includes('/opportunities/') ||
+            config.url?.includes('/trades/') ||
+            config.url?.includes('/automations/')) {
+          console.warn('⚠️ No access token found for protected endpoint:', config.url);
+          console.warn('   Checked localStorage for: access_token, token');
+          console.warn('   Checked sessionStorage for: access_token, token');
+          console.warn('   All values:', {
+            'localStorage.access_token': localStorage.getItem('access_token'),
+            'localStorage.token': localStorage.getItem('token'),
+            'sessionStorage.access_token': sessionStorage.getItem('access_token'),
+            'sessionStorage.token': sessionStorage.getItem('token')
+          });
         }
       }
     }
