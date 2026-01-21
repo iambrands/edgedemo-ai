@@ -558,6 +558,7 @@ def apply_optimizations(current_user=None):
         
         # Define all potential optimizations with table info
         all_optimizations = [
+            # Basic indices
             ("users", "email", "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"),
             ("users", "created_at", "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)"),
             
@@ -579,6 +580,26 @@ def apply_optimizations(current_user=None):
             ("spreads", "user_id", "CREATE INDEX IF NOT EXISTS idx_spreads_user_id ON spreads(user_id)"),
             ("spreads", "symbol", "CREATE INDEX IF NOT EXISTS idx_spreads_symbol ON spreads(symbol)"),
             ("spreads", "status", "CREATE INDEX IF NOT EXISTS idx_spreads_status ON spreads(status)"),
+            
+            # Foreign key indices - critical for JOIN performance
+            ("positions", "automation_id", "CREATE INDEX IF NOT EXISTS idx_positions_automation_id ON positions(automation_id)"),
+            
+            ("trades", "automation_id", "CREATE INDEX IF NOT EXISTS idx_trades_automation_id ON trades(automation_id)"),
+            ("trades", "entry_trade_id", "CREATE INDEX IF NOT EXISTS idx_trades_entry_trade_id ON trades(entry_trade_id)"),
+            
+            ("audit_logs", "automation_id", "CREATE INDEX IF NOT EXISTS idx_audit_logs_automation_id ON audit_logs(automation_id)"),
+            ("audit_logs", "position_id", "CREATE INDEX IF NOT EXISTS idx_audit_logs_position_id ON audit_logs(position_id)"),
+            ("audit_logs", "trade_id", "CREATE INDEX IF NOT EXISTS idx_audit_logs_trade_id ON audit_logs(trade_id)"),
+            
+            ("error_logs", "automation_id", "CREATE INDEX IF NOT EXISTS idx_error_logs_automation_id ON error_logs(automation_id)"),
+            ("error_logs", "position_id", "CREATE INDEX IF NOT EXISTS idx_error_logs_position_id ON error_logs(position_id)"),
+            ("error_logs", "trade_id", "CREATE INDEX IF NOT EXISTS idx_error_logs_trade_id ON error_logs(trade_id)"),
+            
+            ("alerts", "automation_id", "CREATE INDEX IF NOT EXISTS idx_alerts_automation_id ON alerts(automation_id)"),
+            ("alerts", "position_id", "CREATE INDEX IF NOT EXISTS idx_alerts_position_id ON alerts(position_id)"),
+            ("alerts", "trade_id", "CREATE INDEX IF NOT EXISTS idx_alerts_trade_id ON alerts(trade_id)"),
+            
+            ("strategy_logs", "position_id", "CREATE INDEX IF NOT EXISTS idx_strategy_logs_position_id ON strategy_logs(position_id)"),
         ]
         
         # Filter to only existing tables
