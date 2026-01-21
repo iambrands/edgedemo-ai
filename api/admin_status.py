@@ -22,9 +22,10 @@ def admin_status():
         
         # Check database
         try:
+            from sqlalchemy import text
             db = current_app.extensions.get('sqlalchemy')
             if db:
-                db.session.execute(db.text('SELECT 1'))
+                db.session.execute(text('SELECT 1'))
                 status['services']['database'] = {'status': 'connected', 'message': 'Database connection successful'}
             else:
                 status['services']['database'] = {'status': 'unknown', 'message': 'Database not initialized'}
