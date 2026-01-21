@@ -228,13 +228,58 @@ def get_positions(current_user):
                 # Re-fetch positions to exclude closed ones
                 positions = trade_executor.get_positions(current_user.id, update_prices=False)
         
+        # Also include open spreads as positions
+        from models.spread import Spread
+        open_spreads = db.session.query(Spread).filter_by(
+            user_id=current_user.id,
+            status='open'
+        ).all()
+        
+        # Convert spreads to position-like format for Dashboard display
+        spread_positions = []
+        for spread in open_spreads:
+            # Create a position-like dict from spread
+            option_type = 'put' if 'put' in spread.spread_type else 'call'
+            spread_pos = {
+                'id': f"spread_{spread.id}",  # Prefix to identify as spread
+                'spread_id': spread.id,  # Original spread ID
+                'symbol': spread.symbol,
+                'contract_type': option_type,
+                'quantity': spread.quantity,
+                'entry_price': abs(spread.net_debit) / (spread.quantity * 100),  # Net debit per contract
+                'current_price': (spread.current_value / (spread.quantity * 100)) if spread.current_value else None,
+                'strike_price': spread.long_strike,  # Use long strike as primary
+                'expiration_date': spread.expiration.isoformat() if spread.expiration else None,
+                'entry_date': spread.created_at.isoformat() if spread.created_at else None,
+                'last_updated': spread.last_updated.isoformat() if spread.last_updated else None,
+                'unrealized_pnl': spread.unrealized_pnl,
+                'unrealized_pnl_percent': spread.unrealized_pnl_percent,
+                'status': spread.status,
+                'is_spread': True,  # Flag to identify as spread
+                'spread_type': spread.spread_type,
+                'long_strike': spread.long_strike,
+                'short_strike': spread.short_strike,
+                'strike_width': spread.strike_width,
+                'net_debit': spread.net_debit,
+                'max_profit': spread.max_profit,
+                'max_loss': spread.max_loss,
+                'breakeven': spread.breakeven,
+                'option_symbol': None,  # Spreads don't have single option_symbol
+                'automation_id': None,
+                'automation': None
+            }
+            spread_positions.append(spread_pos)
+        
+        # Combine regular positions and spreads
+        all_positions = positions + spread_positions
+        
         current_app.logger.info(
-            f"✅ GET /api/trades/positions - returning {len(positions)} positions for user {current_user.id}"
+            f"✅ GET /api/trades/positions - returning {len(positions)} positions and {len(spread_positions)} spreads for user {current_user.id}"
         )
         
         return jsonify({
-            'positions': positions,
-            'count': len(positions)
+            'positions': all_positions,
+            'count': len(all_positions)
         }), 200
     except Exception as e:
         import traceback

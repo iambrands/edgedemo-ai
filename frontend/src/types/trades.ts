@@ -25,13 +25,13 @@ export interface Trade {
 }
 
 export interface Position {
-  id: number;
+  id: number | string;  // Can be number for positions or "spread_X" for spreads
   symbol: string;
   option_symbol?: string;
   contract_type?: 'call' | 'put';
   quantity: number;
   entry_price: number;
-  current_price: number;
+  current_price: number | null;
   strike_price?: number;
   expiration_date?: string;
   entry_date: string;
@@ -50,5 +50,16 @@ export interface Position {
   automation_id?: number;
   status: 'open' | 'closed' | 'pending_exit';
   last_updated: string;
+  // Spread-specific fields
+  is_spread?: boolean;
+  spread_id?: number;
+  spread_type?: string;
+  long_strike?: number;
+  short_strike?: number;
+  strike_width?: number;
+  net_debit?: number;
+  max_profit?: number;
+  max_loss?: number;
+  breakeven?: number;
 }
 

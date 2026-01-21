@@ -923,13 +923,25 @@ const Dashboard: React.FC = () => {
                     <tr key={position.id} className="hover:bg-gray-50">
                       <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {position.symbol}
-                        {position.strike_price && (
+                        {position.is_spread ? (
+                          <span className="text-xs text-gray-500 block">
+                            Spread: ${position.long_strike}/${position.short_strike}
+                          </span>
+                        ) : position.strike_price ? (
                           <span className="text-xs text-gray-500 block">${position.strike_price}</span>
-                        )}
-                        <span className="text-xs text-gray-500 sm:hidden block">{position.contract_type?.toUpperCase() || 'STOCK'}</span>
+                        ) : null}
+                        <span className="text-xs text-gray-500 sm:hidden block">
+                          {position.is_spread ? 'SPREAD' : (position.contract_type?.toUpperCase() || 'STOCK')}
+                        </span>
                       </td>
                       <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
-                        {position.contract_type?.toUpperCase() || 'STOCK'}
+                        {position.is_spread ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            SPREAD
+                          </span>
+                        ) : (
+                          position.contract_type?.toUpperCase() || 'STOCK'
+                        )}
                       </td>
                       <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                         {position.quantity}
@@ -978,25 +990,51 @@ const Dashboard: React.FC = () => {
                         >
                           Details
                         </button>
-                        <button
-                          onClick={async () => {
-                            if (window.confirm(`Close position: ${position.quantity} ${position.symbol} ${position.contract_type?.toUpperCase()}?`)) {
-                              try {
-                                // Check if user is logged in before making request
-                                const token = localStorage.getItem('access_token');
-                                if (!token) {
-                                  toast.error('You are not logged in. Please log in again.');
-                                  window.location.href = '/login';
-                                  return;
+                        {position.is_spread ? (
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`Close spread: ${position.quantity} ${position.symbol} ${position.spread_type?.replace('_', ' ').toUpperCase()}?`)) {
+                                try {
+                                  const token = localStorage.getItem('access_token');
+                                  if (!token) {
+                                    toast.error('You are not logged in. Please log in again.');
+                                    window.location.href = '/login';
+                                    return;
+                                  }
+                                  
+                                  await api.post(`/spreads/${position.spread_id}/close`);
+                                  toast.success('Spread closed');
+                                  loadDashboardData();
+                                } catch (error: any) {
+                                  console.error('Close spread error:', error);
+                                  toast.error(error.response?.data?.error || 'Failed to close spread');
                                 }
-                                
-                                await api.post(`/trades/positions/${position.id}/close`);
-                                toast.success('Position closed');
-                                loadDashboardData();
-                              } catch (error: any) {
-                                console.error('Close position error:', error);
-                                console.error('Error response:', error.response?.data);
-                                console.error('Error status:', error.response?.status);
+                              }
+                            }}
+                            className="text-error hover:text-red-700 font-medium"
+                          >
+                            Close
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(`Close position: ${position.quantity} ${position.symbol} ${position.contract_type?.toUpperCase()}?`)) {
+                                try {
+                                  // Check if user is logged in before making request
+                                  const token = localStorage.getItem('access_token');
+                                  if (!token) {
+                                    toast.error('You are not logged in. Please log in again.');
+                                    window.location.href = '/login';
+                                    return;
+                                  }
+                                  
+                                  await api.post(`/trades/positions/${position.id}/close`);
+                                  toast.success('Position closed');
+                                  loadDashboardData();
+                                } catch (error: any) {
+                                  console.error('Close position error:', error);
+                                  console.error('Error response:', error.response?.data);
+                                  console.error('Error status:', error.response?.status);
                                 if (error.response?.status === 401) {
                                   // Token refresh should have been attempted automatically
                                   // If we still get 401, the refresh failed or the new token is invalid
