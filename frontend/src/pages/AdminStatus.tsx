@@ -126,6 +126,9 @@ const AdminStatus: React.FC = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <h2 className="text-xl font-bold mb-4 text-blue-800">Quick Access</h2>
             <div className="space-y-2">
+              <a href="/admin/performance" className="block text-blue-600 hover:text-blue-800 underline">
+                📊 Performance Dashboard
+              </a>
               <a href="/admin/optimization" className="block text-blue-600 hover:text-blue-800 underline">
                 🔧 Optimization Dashboard
               </a>

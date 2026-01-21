@@ -16,6 +16,7 @@ import Market from './pages/Market';
 import Recommendations from './pages/Recommendations';
 import Opportunities from './pages/Opportunities';
 import OptimizationDashboard from './pages/OptimizationDashboard';
+import PerformanceDashboard from './pages/PerformanceDashboard';
 import AdminStatus from './pages/AdminStatus';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -98,6 +99,8 @@ function AppRoutes() {
                   <Route path="/opportunities" element={<Opportunities />} />
                   <Route path="/admin/optimization" element={<OptimizationDashboard />} />
                   <Route path="/admin/status" element={<AdminStatus />} />
+                  <Route path="/admin/performance" element={<PerformanceDashboard />} />
+                  <Route path="/performance" element={<PerformanceDashboard />} />
                   {/* Legacy routes - redirect to unified Opportunities page */}
                   <Route path="/discover" element={<Navigate to="/opportunities?tab=signals" replace />} />
                   <Route path="/market" element={<Navigate to="/opportunities?tab=movers" replace />} />
