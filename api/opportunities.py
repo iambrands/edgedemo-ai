@@ -23,6 +23,19 @@ def get_db():
 def get_today_opportunities(current_user=None):
     """Get today's top trading opportunities - optimized for speed"""
     try:
+        current_app.logger.info("=== Today's opportunities endpoint called ===")
+        
+        # If no user, return empty array immediately
+        if current_user is None:
+            current_app.logger.info("No user provided, returning empty opportunities")
+            return jsonify({
+                'opportunities': [],
+                'count': 0,
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        
+        current_app.logger.info(f"Fetching opportunities for user {current_user.id if hasattr(current_user, 'id') else 'unknown'}")
+        
         db = get_db()
         
         # Get user's watchlist
@@ -156,10 +169,18 @@ def get_today_opportunities(current_user=None):
         
     except Exception as e:
         try:
-            current_app.logger.error(f"Error getting today's opportunities: {e}", exc_info=True)
+            current_app.logger.error(f"❌ ERROR in get_todays_opportunities: {str(e)}")
+            current_app.logger.error(f"Error type: {type(e).__name__}")
+            current_app.logger.exception(e)  # Full stack trace
         except:
             pass
-        return jsonify({'error': 'Failed to load opportunities', 'details': str(e)}), 500
+        # Return empty array instead of 500 to prevent frontend crash
+        return jsonify({
+            'opportunities': [],
+            'count': 0,
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200  # Return 200, not 500
 
 @opportunities_bp.route('/quick-scan', methods=['POST'])
 @token_required
