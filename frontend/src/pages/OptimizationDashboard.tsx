@@ -152,7 +152,7 @@ const OptimizationDashboard: React.FC = () => {
   };
 
   const applyOptimizations = async () => {
-    if (!window.confirm('Apply database optimizations? This will create indices.\n\nThis action cannot be undone.')) {
+    if (!window.confirm('Apply database optimizations? This will create indices on existing tables.')) {
       return;
     }
 
@@ -162,20 +162,38 @@ const OptimizationDashboard: React.FC = () => {
         preview: false
       });
       
-      const applied = response.data.applied?.length || 0;
-      const failed = response.data.failed?.length || 0;
+      const result = response.data;
+      const summary = result.summary || {};
       
-      if (failed === 0) {
-        toast.success(`Successfully applied ${applied} optimizations!`);
-      } else {
-        toast.error(`Applied ${applied} optimizations, ${failed} failed`);
+      // Build detailed message
+      let message = `Optimization Results:\n\n`;
+      message += `✅ Applied: ${summary.applied || 0} indices\n`;
+      
+      if ((summary.skipped || 0) > 0) {
+        message += `⏭️  Skipped: ${summary.skipped} (tables don't exist yet)\n`;
       }
       
-      // Reload analyses
+      if ((summary.failed || 0) > 0) {
+        message += `❌ Failed: ${summary.failed}\n`;
+      }
+      
+      if (summary.failed === 0 && summary.applied > 0) {
+        toast.success(`Successfully applied ${summary.applied} optimizations!`);
+      } else if (summary.failed > 0) {
+        toast.error(message);
+      } else if (summary.skipped > 0) {
+        toast.success(message);
+      } else {
+        toast.success('No optimizations needed - all indices already exist!');
+      }
+      
+      // Reload analyses to show updated state
       await loadAnalyses();
+      
     } catch (error: any) {
       console.error('Failed to apply optimizations:', error);
-      toast.error(error.response?.data?.error || 'Failed to apply optimizations');
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to apply optimizations';
+      toast.error(`Failed: ${errorMsg}`);
     } finally {
       setApplying(false);
     }

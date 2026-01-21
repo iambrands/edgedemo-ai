@@ -256,7 +256,7 @@ def analyze_database(current_user):
                         'sql': f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{fk_column} ON {table_name}({fk_column});"
                     })
         
-        # Check for common missing indices
+        # Check for common missing indices (only on existing tables)
         common_patterns = [
             ('users', 'email'),
             ('users', 'created_at'),
@@ -270,14 +270,17 @@ def analyze_database(current_user):
             ('alerts', 'user_id'),
             ('alerts', 'status'),
             ('alerts', 'created_at'),
-            ('opportunities', 'user_id'),
-            ('opportunities', 'symbol'),
-            ('opportunities', 'score'),
-            ('opportunities', 'created_at'),
+            ('spreads', 'user_id'),
+            ('spreads', 'symbol'),
+            ('spreads', 'status'),
         ]
         
+        # Get existing tables as a set for fast lookup
+        existing_tables = set(table_names)
+        
         for table_name, column_name in common_patterns:
-            if table_name not in table_names:
+            # Skip if table doesn't exist
+            if table_name not in existing_tables:
                 continue
             
             indices = inspector.get_indexes(table_name)
@@ -285,14 +288,29 @@ def analyze_database(current_user):
             for idx in indices:
                 indexed_columns.update(idx['column_names'])
             
+            # Check if this column (or multi-column index) is missing
             if column_name not in indexed_columns:
-                results['missing_indices'].append({
-                    'table': table_name,
-                    'column': column_name,
-                    'type': 'common_pattern',
-                    'priority': 'medium',
-                    'sql': f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{column_name} ON {table_name}({column_name});"
-                })
+                # Check for multi-column index (e.g., "user_id,status")
+                if ',' in column_name:
+                    # For multi-column, check if all columns are in any index
+                    cols = [c.strip() for c in column_name.split(',')]
+                    has_index = any(all(col in idx['column_names'] for col in cols) for idx in indices)
+                    if not has_index:
+                        results['missing_indices'].append({
+                            'table': table_name,
+                            'column': column_name,
+                            'type': 'common_pattern',
+                            'priority': 'medium',
+                            'sql': f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{column_name.replace(',', '_')} ON {table_name}({column_name});"
+                        })
+                else:
+                    results['missing_indices'].append({
+                        'table': table_name,
+                        'column': column_name,
+                        'type': 'common_pattern',
+                        'priority': 'medium',
+                        'sql': f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{column_name} ON {table_name}({column_name});"
+                    })
         
         # Generate recommendations
         if results['missing_indices']:
