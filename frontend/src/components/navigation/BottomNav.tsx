@@ -18,17 +18,24 @@ const BottomNav: React.FC = () => {
   }
 
   // Primary navigation items (5 core items)
+  // More menu provides access to Settings, Help, and Logout
   const navItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
     { name: 'Trade', href: '/trade', icon: '💹' },
     { name: 'Options', href: '/analyzer', icon: '📈' },
     { name: 'Portfolio', href: '/portfolio', icon: '💼' },
-    { name: 'Settings', href: '/settings', icon: '⚙️' },
+    { name: 'More', href: '/more', icon: '⋯' },
   ];
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return location.pathname === '/' || location.pathname === '/dashboard';
+    }
+    if (path === '/more') {
+      // More is active if on /more, /settings, or /help
+      return location.pathname === '/more' || 
+             location.pathname === '/settings' || 
+             location.pathname === '/help';
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };

@@ -12,6 +12,7 @@ import Trade from './pages/Trade';
 import Settings from './pages/Settings';
 import Help from './pages/Help';
 import Portfolio from './pages/Portfolio';
+import More from './pages/More';
 import Discover from './pages/Discover';
 import Market from './pages/Market';
 import Recommendations from './pages/Recommendations';
@@ -123,6 +124,7 @@ function AppRoutes() {
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/help" element={<Help />} />
+                  <Route path="/more" element={<More />} />
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/positions" element={<Portfolio />} />
                   <Route path="/opportunities" element={<Opportunities />} />
