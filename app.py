@@ -163,14 +163,27 @@ def create_app(config_name=None):
     @app.route('/debug/routes')
     def list_routes():
         """Debug: List all registered routes"""
-        routes = []
-        for rule in app.url_map.iter_rules():
-            routes.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'path': str(rule)
-            })
-        return jsonify(sorted(routes, key=lambda x: x['path']))
+        try:
+            routes = []
+            for rule in app.url_map.iter_rules():
+                # Skip static routes
+                if rule.endpoint == 'static':
+                    continue
+                routes.append({
+                    'endpoint': rule.endpoint,
+                    'methods': [m for m in rule.methods if m not in ['OPTIONS', 'HEAD']],
+                    'path': str(rule)
+                })
+            # Filter admin routes
+            admin_routes = [r for r in routes if 'admin' in r['path'].lower()]
+            return jsonify({
+                'total_routes': len(routes),
+                'admin_routes': admin_routes,
+                'all_routes': sorted(routes, key=lambda x: x['path'])
+            }), 200
+        except Exception as e:
+            app.logger.error(f"Error listing routes: {e}", exc_info=True)
+            return jsonify({'error': str(e)}), 500
     
     # Start automatic position monitoring on app startup
     # This ensures positions are checked and closed when thresholds are hit
