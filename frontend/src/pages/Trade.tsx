@@ -14,6 +14,7 @@ const Trade: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useDevice();
+  const { mode } = useTradingMode();
   const [symbol, setSymbol] = useState('');
   const [expiration, setExpiration] = useState('');
   const [expirations, setExpirations] = useState<Expiration[]>([]);
@@ -410,8 +411,11 @@ const Trade: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Trading Mode Toggle */}
+      <TradingModeToggle />
+
       {/* Account Balance Card */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-4 md:p-6">
+      <div className={`bg-gradient-to-r ${mode === 'paper' ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600'} text-white rounded-lg shadow-lg p-4 md:p-6`}>
         <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'}`}>
           <div>
             <p className="text-sm opacity-90 mb-1">
