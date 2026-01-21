@@ -85,6 +85,10 @@ class User(db.Model):
             'reset_at': reset_at.isoformat()
         }
     
+    def is_admin(self):
+        """Check if user is an admin."""
+        return self.email == 'leslie@iabadvisors.com'
+    
     def to_dict(self):
         """Convert to dictionary"""
         return {

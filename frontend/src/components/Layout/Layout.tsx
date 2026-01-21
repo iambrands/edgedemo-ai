@@ -23,6 +23,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     account: true,  // Open account section by default to show admin links
   });
 
+  // Check if current user is admin
+  const isAdmin = user?.email === 'leslie@iabadvisors.com';
+
   const navigationSections: NavSection[] = [
     {
       title: 'Trading',
@@ -53,9 +56,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: 'History', href: '/history', icon: '📜' },
         { name: 'Settings', href: '/settings', icon: '⚙️' },
         { name: 'Help', href: '/help', icon: '❓' },
-        { name: 'Performance', href: '/admin/performance', icon: '⚡' },
-        { name: 'Admin Status', href: '/admin/status', icon: '📊' },
-        { name: 'Optimization', href: '/admin/optimization', icon: '🔧' },
+        // Admin-only items
+        ...(isAdmin ? [
+          { name: 'Performance', href: '/admin/performance', icon: '⚡' },
+          { name: 'Admin Status', href: '/admin/status', icon: '📊' },
+          { name: 'Optimization', href: '/admin/optimization', icon: '🔧' },
+        ] : []),
       ],
     },
   ];

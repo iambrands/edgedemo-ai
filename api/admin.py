@@ -9,7 +9,8 @@ from services.cleanup_service import (
 )
 from utils.redis_cache import get_redis_cache
 from utils.decorators import token_required
-from flask import current_app
+from flask import current_app, jsonify
+from functools import wraps
 from sqlalchemy import inspect, text
 from datetime import datetime
 import logging
@@ -26,6 +27,20 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
+
+def admin_required(f):
+    """Decorator to require admin access."""
+    @wraps(f)
+    @token_required
+    def decorated_function(current_user, *args, **kwargs):
+        if not current_user.is_admin():
+            logger.warning(f"Non-admin user {current_user.email} attempted to access admin endpoint")
+            return jsonify({
+                'error': 'Admin access required',
+                'message': 'You do not have permission to access this resource'
+            }), 403
+        return f(current_user, *args, **kwargs)
+    return decorated_function
 
 # Diagnostic endpoint - no auth, no database (test if blueprint is loaded)
 @admin_bp.route('/admin/ping', methods=['GET'])
@@ -204,7 +219,7 @@ def cache_stats():
 
 
 @admin_bp.route('/admin/analyze/database', methods=['GET'])
-@token_required
+@admin_required
 def analyze_database(current_user):
     """Analyze database schema and performance."""
     try:
@@ -354,7 +369,7 @@ def analyze_database(current_user):
 
 
 @admin_bp.route('/admin/analyze/redis', methods=['GET'])
-@token_required
+@admin_required
 def analyze_redis(current_user):
     """Analyze Redis cache performance."""
     try:
@@ -437,7 +452,7 @@ def analyze_redis(current_user):
 
 
 @admin_bp.route('/admin/analyze/connections', methods=['GET'])
-@token_required
+@admin_required
 def analyze_connections(current_user):
     """Analyze database connection pool."""
     try:
@@ -524,7 +539,7 @@ def analyze_connections(current_user):
 
 
 @admin_bp.route('/admin/optimize/apply', methods=['POST'])
-@token_required
+@admin_required
 def apply_optimizations(current_user):
     """Apply database optimizations - only on existing tables."""
     try:

@@ -1,6 +1,8 @@
-"""Simple admin status endpoints - no authentication required for debugging"""
+"""Simple admin status endpoints"""
 
 from flask import Blueprint, jsonify, current_app
+from utils.decorators import token_required
+from functools import wraps
 from datetime import datetime
 import logging
 import sys
@@ -10,8 +12,23 @@ logger = logging.getLogger(__name__)
 
 admin_status_bp = Blueprint('admin_status', __name__)
 
+def admin_required(f):
+    """Decorator to require admin access."""
+    @wraps(f)
+    @token_required
+    def decorated_function(current_user, *args, **kwargs):
+        if not current_user.is_admin():
+            logger.warning(f"Non-admin user {current_user.email} attempted to access admin status endpoint")
+            return jsonify({
+                'error': 'Admin access required',
+                'message': 'You do not have permission to access this resource'
+            }), 403
+        return f(current_user, *args, **kwargs)
+    return decorated_function
+
 @admin_status_bp.route('/admin/status', methods=['GET'])
-def admin_status():
+@admin_required
+def admin_status(current_user):
     """Simple admin status endpoint - shows system health"""
     try:
         status = {

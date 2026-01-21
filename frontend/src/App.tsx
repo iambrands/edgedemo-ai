@@ -23,6 +23,32 @@ import Register from './pages/Register';
 import Landing from './pages/Landing';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
+// Admin route wrapper
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.email !== 'leslie@iabadvisors.com') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 function AppRoutes() {
   const { isAuthenticated, loading, user } = useAuth();
   
@@ -97,10 +123,38 @@ function AppRoutes() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="/opportunities" element={<Opportunities />} />
-                  <Route path="/admin/optimization" element={<OptimizationDashboard />} />
-                  <Route path="/admin/status" element={<AdminStatus />} />
-                  <Route path="/admin/performance" element={<PerformanceDashboard />} />
-                  <Route path="/performance" element={<PerformanceDashboard />} />
+                  <Route 
+                    path="/admin/optimization" 
+                    element={
+                      <AdminRoute>
+                        <OptimizationDashboard />
+                      </AdminRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/status" 
+                    element={
+                      <AdminRoute>
+                        <AdminStatus />
+                      </AdminRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/performance" 
+                    element={
+                      <AdminRoute>
+                        <PerformanceDashboard />
+                      </AdminRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/performance" 
+                    element={
+                      <AdminRoute>
+                        <PerformanceDashboard />
+                      </AdminRoute>
+                    } 
+                  />
                   {/* Legacy routes - redirect to unified Opportunities page */}
                   <Route path="/discover" element={<Navigate to="/opportunities?tab=signals" replace />} />
                   <Route path="/market" element={<Navigate to="/opportunities?tab=movers" replace />} />
