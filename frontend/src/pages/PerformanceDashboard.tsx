@@ -52,8 +52,8 @@ const PerformanceDashboard: React.FC = () => {
     try {
       const [healthRes, cacheRes, positionsRes] = await Promise.allSettled([
         fetch('/api/health'),
-        fetch('/api/health/cache').catch(() => ({ ok: false, status: 404 })),
-        fetch('/api/health/positions').catch(() => ({ ok: false, status: 404 }))
+        fetch('/health/cache').catch(() => Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) })),
+        fetch('/health/positions').catch(() => Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) }))
       ]);
 
       // Load health data
