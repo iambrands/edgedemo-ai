@@ -52,26 +52,58 @@ const PerformanceDashboard: React.FC = () => {
     try {
       const [healthRes, cacheRes, positionsRes] = await Promise.allSettled([
         fetch('/api/health'),
-        fetch('/api/health/cache'),
-        fetch('/api/health/positions')
+        fetch('/api/health/cache').catch(() => ({ ok: false, status: 404 })),
+        fetch('/api/health/positions').catch(() => ({ ok: false, status: 404 }))
       ]);
 
       // Load health data
-      if (healthRes.status === 'fulfilled') {
-        const data = await healthRes.value.json();
-        setHealth(data);
+      if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
+        try {
+          const data = await healthRes.value.json();
+          setHealth(data);
+        } catch (e) {
+          console.error('Failed to parse health data:', e);
+        }
+      } else {
+        console.warn('Health endpoint failed:', healthRes);
       }
 
-      // Load cache stats
-      if (cacheRes.status === 'fulfilled') {
-        const data = await cacheRes.value.json();
-        setCacheStats(data);
+      // Load cache stats (optional - may not exist)
+      if (cacheRes.status === 'fulfilled' && cacheRes.value.ok) {
+        try {
+          const data = await cacheRes.value.json();
+          setCacheStats(data);
+        } catch (e) {
+          console.warn('Failed to parse cache stats:', e);
+        }
+      } else {
+        // Cache endpoint not available - use fallback from health data
+        if (health?.components.cache) {
+          setCacheStats(health.components.cache.stats || { enabled: false });
+        }
       }
 
-      // Load positions health
-      if (positionsRes.status === 'fulfilled') {
-        const data = await positionsRes.value.json();
-        setPositionsHealth(data);
+      // Load positions health (optional - may not exist)
+      if (positionsRes.status === 'fulfilled' && positionsRes.value.ok) {
+        try {
+          const data = await positionsRes.value.json();
+          setPositionsHealth(data);
+        } catch (e) {
+          console.warn('Failed to parse positions health:', e);
+        }
+      } else {
+        // Positions endpoint not available - use fallback from health data
+        if (health?.components.database) {
+          setPositionsHealth({
+            status: health.components.database.status,
+            positions: {
+              open: health.components.database.open_positions || 0,
+              closed: 0,
+              stale: 0,
+              expired_open: 0
+            }
+          });
+        }
       }
 
       setLastRefresh(new Date());
@@ -83,7 +115,8 @@ const PerformanceDashboard: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return 'text-gray-600 bg-gray-50 border-gray-200';
     switch (status.toLowerCase()) {
       case 'healthy':
       case 'connected':
@@ -97,7 +130,8 @@ const PerformanceDashboard: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => {
+    if (!status) status = 'Unknown';
     const colorClass = getStatusColor(status);
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${colorClass}`}>
