@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import FloatingFeedbackButton from '../FloatingFeedbackButton';
-import BottomNav from '../BottomNav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -142,15 +141,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 pb-20">
+      <div className="ml-64">
         <main className="p-8">{children}</main>
       </div>
 
       {/* Floating Feedback Button */}
       <FloatingFeedbackButton />
-      
-      {/* Bottom Navigation Bar */}
-      <BottomNav />
     </div>
   );
 };
