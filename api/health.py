@@ -117,15 +117,65 @@ def health_check():
 
 @health_bp.route('/health/cache', methods=['GET'])
 def cache_health():
-    """Detailed cache statistics"""
+    """Detailed cache statistics with comprehensive status"""
     try:
         from utils.redis_cache import get_redis_cache
+        from services.cache_manager import CacheManager
+        from utils.cache_metrics import CacheMetrics
+        
         cache = get_redis_cache()
+        cache_manager = CacheManager()
+        
+        # Get stats from both implementations
         stats = cache.get_stats()
+        
+        # Add cache metrics
+        metrics = CacheMetrics.get_stats()
+        stats.update(metrics)
+        
+        # Determine status
+        if cache.use_redis and cache.redis_client:
+            try:
+                cache.redis_client.ping()
+                total_keys = cache.redis_client.dbsize()
+                stats['enabled'] = True
+                stats['connected'] = True
+                stats['keys'] = total_keys
+                stats['total_keys'] = total_keys
+                stats['status'] = 'HEALTHY' if total_keys > 0 else 'CONNECTED'
+            except Exception as e:
+                stats['enabled'] = True
+                stats['connected'] = False
+                stats['status'] = 'ERROR'
+                stats['error'] = str(e)
+        elif cache_manager.enabled and cache_manager.redis:
+            try:
+                cache_manager.redis.ping()
+                total_keys = cache_manager.redis.dbsize()
+                stats['enabled'] = True
+                stats['connected'] = True
+                stats['keys'] = total_keys
+                stats['total_keys'] = total_keys
+                stats['status'] = 'HEALTHY' if total_keys > 0 else 'CONNECTED'
+            except Exception as e:
+                stats['enabled'] = True
+                stats['connected'] = False
+                stats['status'] = 'ERROR'
+                stats['error'] = str(e)
+        else:
+            stats['enabled'] = False
+            stats['connected'] = False
+            stats['status'] = 'NOT_CONFIGURED'
+        
         return jsonify(stats), 200
     except Exception as e:
         logger.error(f"Cache health check failed: {e}", exc_info=True)
-        return jsonify({'status': 'error', 'error': str(e)}), 500
+        return jsonify({
+            'enabled': False,
+            'connected': False,
+            'status': 'ERROR',
+            'error': str(e)
+        }), 500
 
 
 @health_bp.route('/health/precompute', methods=['GET'])
