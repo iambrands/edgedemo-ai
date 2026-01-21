@@ -53,12 +53,36 @@ def admin_status(current_user):
         # Check Redis
         try:
             from utils.redis_cache import get_redis_cache
+            from services.cache_manager import CacheManager
+            
             cache = get_redis_cache()
-            if cache.redis_client:
-                cache.redis_client.ping()
-                status['services']['redis'] = {'status': 'connected', 'message': 'Redis connection successful'}
+            cache_manager = CacheManager()
+            
+            # Check both cache implementations
+            if cache.use_redis and cache.redis_client:
+                try:
+                    cache.redis_client.ping()
+                    total_keys = cache.redis_client.dbsize()
+                    status['services']['redis'] = {
+                        'status': 'connected',
+                        'message': f'Redis connection successful ({total_keys} keys)',
+                        'total_keys': total_keys
+                    }
+                except Exception as e:
+                    status['services']['redis'] = {'status': 'error', 'message': f'Redis ping failed: {str(e)[:100]}'}
+            elif cache_manager.enabled and cache_manager.redis:
+                try:
+                    cache_manager.redis.ping()
+                    total_keys = cache_manager.redis.dbsize()
+                    status['services']['redis'] = {
+                        'status': 'connected',
+                        'message': f'Redis connection successful via CacheManager ({total_keys} keys)',
+                        'total_keys': total_keys
+                    }
+                except Exception as e:
+                    status['services']['redis'] = {'status': 'error', 'message': f'Redis ping failed: {str(e)[:100]}'}
             else:
-                status['services']['redis'] = {'status': 'not_configured', 'message': 'Redis not configured'}
+                status['services']['redis'] = {'status': 'not_configured', 'message': 'Redis not configured or disabled'}
         except Exception as e:
             status['services']['redis'] = {'status': 'error', 'message': str(e)[:100]}
         

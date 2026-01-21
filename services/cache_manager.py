@@ -87,17 +87,17 @@ class CacheManager:
         Cache options chain with intelligent TTL.
         
         Strategy:
-        - Popular symbols: 15 minutes (expensive to fetch, high demand)
-        - Standard symbols: 10 minutes (default)
-        - Complex symbols: 12 minutes (expensive due to size)
+        - Popular symbols: 30 minutes (expensive to fetch, high demand)
+        - Standard symbols: 20 minutes (default)
+        - Complex symbols: 25 minutes (expensive due to size)
         """
         if not self.enabled or not self.redis:
             return
         
+        try:
             from utils.cache_keys import options_chain_key
             key = options_chain_key(symbol, expiration)
             
-        try:
             # Add cache metadata
             data['_cache_time'] = time.time()
             data['_cache_key'] = key
@@ -114,10 +114,14 @@ class CacheManager:
                 else:
                     ttl = 1200  # 20 minutes default (was 10, increased)
             
-            self.redis.setex(key, ttl, json.dumps(data))
+            # Serialize data to JSON
+            serialized_data = json.dumps(data, default=str)
+            self.redis.setex(key, ttl, serialized_data)
             logger.debug(f"💾 Cached chain: {key} (TTL: {ttl}s)")
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Cache set failed for key '{key}': JSON serialization error - {e}")
         except Exception as e:
-            logger.warning(f"Cache set failed: {e}")
+            logger.warning(f"Cache set failed for key '{key}': {e}")
     
     def get_quote(self, symbol: str) -> Optional[Dict]:
         """Get cached quote data"""
@@ -169,10 +173,14 @@ class CacheManager:
                 ttl = 60 if is_market_open else 600
             
             data['_cache_time'] = time.time()
-            self.redis.setex(key, ttl, json.dumps(data))
+            # Serialize data to JSON
+            serialized_data = json.dumps(data, default=str)
+            self.redis.setex(key, ttl, serialized_data)
             logger.debug(f"💾 Cached quote: {key} (TTL: {ttl}s)")
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Cache set failed for key '{key}': JSON serialization error - {e}")
         except Exception as e:
-            logger.warning(f"Cache set failed: {e}")
+            logger.warning(f"Cache set failed for key '{key}': {e}")
     
     def get_analysis(self, symbol: str, expiration: str, preference: str) -> Optional[Dict]:
         """Get cached analysis result"""
@@ -205,10 +213,14 @@ class CacheManager:
             from utils.cache_keys import analysis_key
             key = analysis_key(symbol, expiration, preference)
             data['_cache_time'] = time.time()
-            self.redis.setex(key, ttl, json.dumps(data))
+            # Serialize data to JSON
+            serialized_data = json.dumps(data, default=str)
+            self.redis.setex(key, ttl, serialized_data)
             logger.debug(f"💾 Cached analysis: {key} (TTL: {ttl}s)")
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Cache set failed for key '{key}': JSON serialization error - {e}")
         except Exception as e:
-            logger.warning(f"Cache set failed: {e}")
+            logger.warning(f"Cache set failed for key '{key}': {e}")
     
     def clear_expired_chains(self) -> int:
         """Clear cache for expired options contracts"""

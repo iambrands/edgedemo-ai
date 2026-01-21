@@ -82,19 +82,31 @@ class CacheWarmer:
         logger.info("🔥 Warming expiration dates")
         warmed = 0
         
+        # Check if method exists (it's called get_options_expirations, not get_expirations)
+        if not hasattr(self.tradier, 'get_options_expirations'):
+            logger.warning("TradierConnector.get_options_expirations() not available - skipping expiration warming")
+            return 0
+        
         for symbol in self.popular_symbols[:10]:  # Top 10 only
             try:
-                expirations = self.tradier.get_expirations(symbol)
-                if expirations:
+                # Use the correct method name
+                expirations = self.tradier.get_options_expirations(symbol, use_cache=False)
+                if expirations and len(expirations) > 0:
                     cache_key = expirations_key(symbol)
                     # Cache expirations for 1 hour (they don't change often)
                     self.cache.set(cache_key, expirations, timeout=3600)
                     warmed += 1
-                    logger.debug(f"✅ Warmed expirations: {symbol}")
+                    logger.debug(f"✅ Warmed {len(expirations)} expirations for {symbol}")
+                else:
+                    logger.debug(f"No expirations found for {symbol}")
+            except AttributeError as e:
+                logger.warning(f"Method not available: {e}")
+                return 0  # Stop trying if method doesn't exist
             except Exception as e:
                 logger.warning(f"Failed to warm expirations for {symbol}: {e}")
         
-        logger.info(f"✅ Warmed {warmed} expiration lists")
+        if warmed > 0:
+            logger.info(f"✅ Warmed expirations for {warmed}/{min(10, len(self.popular_symbols))} symbols")
         return warmed
     
     def warm_all(self) -> dict:
