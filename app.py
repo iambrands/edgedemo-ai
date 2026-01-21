@@ -161,6 +161,17 @@ def create_app(config_name=None):
     app.register_blueprint(spreads_bp, url_prefix='/api/spreads')
     app.register_blueprint(admin_bp, url_prefix='/api')  # /api/admin/* endpoints
     app.register_blueprint(admin_status_bp, url_prefix='/api')  # /api/admin/status endpoint
+    
+    # Log blueprint registration for debugging
+    try:
+        app.logger.info(f"✅ Registered blueprint: {admin_bp.name} at /api/admin/*")
+        app.logger.info(f"✅ Registered blueprint: {admin_status_bp.name} at /api/admin/status")
+        print(f"✅ Registered blueprint: {admin_bp.name} at /api/admin/*", file=sys.stderr, flush=True)
+        print(f"✅ Registered blueprint: {admin_status_bp.name} at /api/admin/status", file=sys.stderr, flush=True)
+    except Exception as e:
+        app.logger.error(f"Error logging blueprint registration: {e}")
+        print(f"⚠️ Error logging blueprint registration: {e}", file=sys.stderr, flush=True)
+    
     # Debug route to list all registered routes
     @app.route('/debug/routes')
     def list_routes():

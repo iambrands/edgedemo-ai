@@ -27,6 +27,25 @@ logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
 
+# Diagnostic endpoint - no auth, no database
+@admin_bp.route('/ping', methods=['GET'])
+def ping():
+    """Simple test endpoint - no auth, no database."""
+    try:
+        return jsonify({
+            'status': 'ok',
+            'message': 'Admin routes are working',
+            'blueprint': admin_bp.name,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        logger.error(f"Ping endpoint error: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
 # TODO: Add authentication middleware for production
 # For now, these are unprotected - add auth before production launch
 
