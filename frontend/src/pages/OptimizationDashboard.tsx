@@ -98,9 +98,9 @@ const OptimizationDashboard: React.FC = () => {
     let hasErrors = false;
     try {
       const [dbRes, redisRes, connRes] = await Promise.allSettled([
-        api.get('/api/admin/analyze/database'),
-        api.get('/api/admin/analyze/redis'),
-        api.get('/api/admin/analyze/connections')
+        api.get('/admin/analyze/database'),
+        api.get('/admin/analyze/redis'),
+        api.get('/admin/analyze/connections')
       ]);
       
       // Handle database analysis
@@ -158,7 +158,7 @@ const OptimizationDashboard: React.FC = () => {
 
     setApplying(true);
     try {
-      const response = await api.post('/api/admin/optimize/apply', {
+      const response = await api.post('/admin/optimize/apply', {
         preview: false
       });
       

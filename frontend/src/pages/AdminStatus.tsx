@@ -14,7 +14,8 @@ const AdminStatus: React.FC = () => {
     setLoading(true);
     try {
       // Use API client to ensure authentication header is included
-      const response = await api.get('/api/admin/status');
+      // Note: baseURL already includes /api, so don't add it again
+      const response = await api.get('/admin/status');
       setStatus(response.data);
     } catch (error: any) {
       console.error('Failed to load status:', error);
