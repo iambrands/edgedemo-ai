@@ -409,16 +409,23 @@ def analyze_connections(current_user):
         # Get db from current_app extensions
         db = current_app.extensions['sqlalchemy']
         
-        # Get pool info
-        pool = db.engine.pool
-        results['pool'] = {
-            'size': pool.size(),
-            'checked_out': pool.checkedout(),
-            'overflow': pool.overflow(),
-            'max_overflow': pool._max_overflow
-        }
+        # Get pool info (handle gracefully if methods don't exist)
+        try:
+            pool = db.engine.pool
+            results['pool'] = {
+                'size': getattr(pool, 'size', lambda: 0)(),
+                'checked_out': getattr(pool, 'checkedout', lambda: 0)(),
+                'overflow': getattr(pool, 'overflow', lambda: 0)(),
+                'max_overflow': getattr(pool, '_max_overflow', 0)
+            }
+        except Exception as e:
+            logger.warning(f"Could not get pool info: {str(e)}")
+            results['pool'] = {
+                'error': str(e)[:200],
+                'note': 'Pool information not available'
+            }
         
-        # Get active connections
+        # Get active connections (PostgreSQL specific)
         try:
             result = db.session.execute(text("""
                 SELECT 
@@ -432,28 +439,46 @@ def analyze_connections(current_user):
             """))
             
             row = result.fetchone()
-            results['active_connections'] = {
-                'total': row.total,
-                'active': row.active,
-                'idle': row.idle,
-                'idle_in_transaction': row.idle_in_transaction
-            }
-            
-            if row.idle_in_transaction > 5:
-                results['recommendations'].append({
-                    'type': 'idle_transactions',
-                    'priority': 'high',
-                    'message': f'High number of idle in transaction connections ({row.idle_in_transaction})'
-                })
+            if row:
+                # Handle both attribute and index access
+                total = row.total if hasattr(row, 'total') else row[0]
+                active = row.active if hasattr(row, 'active') else row[1]
+                idle = row.idle if hasattr(row, 'idle') else row[2]
+                idle_in_transaction = row.idle_in_transaction if hasattr(row, 'idle_in_transaction') else row[3]
+                
+                results['active_connections'] = {
+                    'total': total,
+                    'active': active,
+                    'idle': idle,
+                    'idle_in_transaction': idle_in_transaction
+                }
+                
+                if idle_in_transaction > 5:
+                    results['recommendations'].append({
+                        'type': 'idle_transactions',
+                        'priority': 'high',
+                        'message': f'High number of idle in transaction connections ({idle_in_transaction})'
+                    })
+            else:
+                results['active_connections'] = {'error': 'No connection data returned'}
         except Exception as e:
-            results['active_connections']['error'] = str(e)
-            logger.debug(f"Could not get connection stats: {str(e)}")
+            error_msg = str(e)[:200]
+            logger.warning(f"Could not get connection stats: {error_msg}")
+            results['active_connections'] = {
+                'error': error_msg,
+                'note': 'Connection stats may require PostgreSQL or special permissions'
+            }
         
         return jsonify(results), 200
         
     except Exception as e:
-        logger.error(f"Connection analysis failed: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        logger.error(f"Connection analysis failed: {error_msg}", exc_info=True)
+        return jsonify({
+            'error': error_msg[:500],
+            'details': 'See server logs for more information',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
 
 
 @admin_bp.route('/admin/optimize/apply', methods=['POST'])
