@@ -93,22 +93,51 @@ const OptimizationDashboard: React.FC = () => {
 
   const loadAnalyses = async () => {
     setLoading(true);
+    let hasErrors = false;
     try {
-      const [dbRes, redisRes, connRes] = await Promise.all([
-        api.get('/admin/analyze/database').catch(err => ({ data: null, error: err })),
-        api.get('/admin/analyze/redis').catch(err => ({ data: null, error: err })),
-        api.get('/admin/analyze/connections').catch(err => ({ data: null, error: err }))
+      const [dbRes, redisRes, connRes] = await Promise.allSettled([
+        api.get('/admin/analyze/database'),
+        api.get('/admin/analyze/redis'),
+        api.get('/admin/analyze/connections')
       ]);
       
-      if (dbRes.data && !dbRes.error) {
-        setDbAnalysis(dbRes.data);
+      // Handle database analysis
+      if (dbRes.status === 'fulfilled') {
+        setDbAnalysis(dbRes.value.data);
+      } else {
+        console.error('Database analysis failed:', dbRes.reason);
+        hasErrors = true;
+        if (dbRes.reason?.response?.status === 401 || dbRes.reason?.response?.status === 403) {
+          toast.error('Authentication required. Please log in again.');
+        } else {
+          toast.error(`Database analysis failed: ${dbRes.reason?.response?.data?.error || dbRes.reason?.message || 'Unknown error'}`);
+        }
       }
-      if (redisRes.data && !redisRes.error) {
-        setRedisAnalysis(redisRes.data);
+      
+      // Handle Redis analysis
+      if (redisRes.status === 'fulfilled') {
+        setRedisAnalysis(redisRes.value.data);
+      } else {
+        console.error('Redis analysis failed:', redisRes.reason);
+        // Don't show error for Redis if it's just not configured
+        if (redisRes.reason?.response?.status !== 401 && redisRes.reason?.response?.status !== 403) {
+          setRedisAnalysis({ connected: false, info: {}, keys: {}, recommendations: [], timestamp: new Date().toISOString(), error: redisRes.reason?.response?.data?.error || 'Redis not available' });
+        }
       }
-      if (connRes.data && !connRes.error) {
-        setConnAnalysis(connRes.data);
+      
+      // Handle connection analysis
+      if (connRes.status === 'fulfilled') {
+        setConnAnalysis(connRes.value.data);
+      } else {
+        console.error('Connection analysis failed:', connRes.reason);
+        hasErrors = true;
+        if (connRes.reason?.response?.status === 401 || connRes.reason?.response?.status === 403) {
+          if (!hasErrors) toast.error('Authentication required. Please log in again.');
+        } else {
+          toast.error(`Connection analysis failed: ${connRes.reason?.response?.data?.error || connRes.reason?.message || 'Unknown error'}`);
+        }
       }
+      
     } catch (error: any) {
       console.error('Failed to load analyses:', error);
       toast.error('Failed to load optimization analysis');
@@ -444,14 +473,54 @@ const OptimizationDashboard: React.FC = () => {
       )}
 
       {/* No data available */}
-      {!dbAnalysis && !redisAnalysis && !connAnalysis && (
+      {!dbAnalysis && !redisAnalysis && !connAnalysis && !loading && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-gray-600">Unable to load optimization analysis</p>
+          <p className="text-gray-600 mb-4">Unable to load optimization analysis</p>
+          <p className="text-sm text-gray-500 mb-4">
+            Please check the browser console for error details or try refreshing the page.
+          </p>
           <button
             onClick={loadAnalyses}
             className="mt-4 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
           >
             Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Show tabs even if some data is missing */}
+      {!dbAnalysis && activeTab === 'database' && !loading && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800">Database analysis failed to load</p>
+          <button
+            onClick={loadAnalyses}
+            className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!redisAnalysis && activeTab === 'redis' && !loading && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800">Redis analysis failed to load</p>
+          <button
+            onClick={loadAnalyses}
+            className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!connAnalysis && activeTab === 'connections' && !loading && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800">Connection analysis failed to load</p>
+          <button
+            onClick={loadAnalyses}
+            className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-sm"
+          >
+            Retry
           </button>
         </div>
       )}
