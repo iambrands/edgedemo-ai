@@ -526,10 +526,13 @@ def analyze_connections(current_user):
 @admin_bp.route('/admin/optimize/apply', methods=['POST'])
 @token_required
 def apply_optimizations(current_user):
-    """Apply database optimizations."""
+    """Apply database optimizations - only on existing tables."""
     try:
+        # Debug logging
+        logger.info(f"🔧 Apply optimizations called by user {current_user.id} ({current_user.username})")
+        
         data = request.get_json() or {}
-        preview_only = data.get('preview', True)
+        preview_only = data.get('preview', False)
         
         results = {
             'preview': preview_only,

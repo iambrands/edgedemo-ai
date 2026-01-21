@@ -1,6 +1,9 @@
 from functools import wraps
 from flask import jsonify, current_app, request
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+import logging
+
+logger = logging.getLogger(__name__)
 
 def token_required(f):
     """Decorator to require JWT token authentication"""
