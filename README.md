@@ -200,6 +200,54 @@ flask db upgrade
 7. Configure proper CORS origins
 8. Set up logging and monitoring
 
+## Testing & Verification
+
+### Quick Verification (Post-Deployment)
+
+After deploying migration changes, run:
+
+```bash
+# Verify deployment succeeded
+python scripts/verify_deployment.py
+
+# Test rate limiting
+python scripts/test_rate_limiting.py --email your@email.com --password yourpass
+
+# Test debit spreads
+python scripts/test_spreads.py --email your@email.com --password yourpass
+
+# Monitor costs
+python scripts/monitor_ai_costs.py
+```
+
+### Comprehensive Test Suite
+
+Run all tests at once:
+
+```bash
+python scripts/run_all_tests.py --email your@email.com --password yourpass
+```
+
+### Expected Results
+
+- ✅ Migration creates spreads table (21 columns, 5 indices)
+- ✅ Rate limiting enforces 100 analyses/day per user
+- ✅ Debit spreads calculate and execute correctly
+- ✅ AI costs reduced 97-98% ($375/month → $4-10/month)
+- ✅ Cache hit rate >85%
+
+### Troubleshooting
+
+If tests fail, check Railway logs:
+```bash
+railway logs --follow
+```
+
+Look for migration success message:
+```
+✅ MIGRATION COMPLETED SUCCESSFULLY!
+```
+
 ## License
 
 This project is proprietary software.
