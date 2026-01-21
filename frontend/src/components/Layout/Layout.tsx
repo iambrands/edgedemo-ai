@@ -20,7 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     trading: true,
     discovery: false,
     management: false,
-    account: false,
+    account: true,  // Open account section by default to show admin links
   });
 
   const navigationSections: NavSection[] = [
