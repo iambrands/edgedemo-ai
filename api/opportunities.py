@@ -262,10 +262,10 @@ def quick_scan(current_user):
         return jsonify({'error': 'Failed to perform quick scan', 'details': str(e)}), 500
 
 @opportunities_bp.route('/market-movers', methods=['GET'])
-@token_required
+# @token_required  # Temporarily disabled for testing
 @log_performance(threshold=2.0)
 @cached(timeout=60, key_prefix='market_movers')  # Cache for 60 seconds
-def get_market_movers(current_user):
+def get_market_movers(current_user=None):
     """Get market movers - high volume/volatility stocks"""
     try:
         limit = request.args.get('limit', 10, type=int)
