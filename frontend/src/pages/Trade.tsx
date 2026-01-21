@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useDevice } from '../hooks/useDevice';
+import TradingModeToggle from '../components/TradingModeToggle';
+import { useTradingMode } from '../contexts/TradingModeContext';
 
 interface Expiration {
   date: string;
@@ -412,11 +414,15 @@ const Trade: React.FC = () => {
       <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-4 md:p-6">
         <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'}`}>
           <div>
-            <p className="text-sm opacity-90 mb-1">Paper Trading Balance</p>
+            <p className="text-sm opacity-90 mb-1">
+              {mode === 'paper' ? 'Paper Trading Balance' : 'Live Trading Balance'}
+            </p>
             <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
               ${accountBalance !== null ? accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Loading...'}
             </h2>
-            <p className="text-sm opacity-75 mt-2">Virtual funds for testing strategies</p>
+            <p className="text-sm opacity-75 mt-2">
+              {mode === 'paper' ? 'Virtual funds for testing strategies' : 'Real money - trade carefully'}
+            </p>
           </div>
           {!isMobile && <div className="text-6xl opacity-20">💰</div>}
         </div>

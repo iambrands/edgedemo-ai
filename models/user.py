@@ -22,6 +22,11 @@ class User(db.Model):
     trading_mode = db.Column(db.String(10), default='paper')  # paper, live
     paper_balance = db.Column(db.Float, default=100000.0)  # Starting paper trading balance
     
+    # Tradier Credentials (encrypted in production)
+    tradier_api_key = db.Column(db.String(255), nullable=True)
+    tradier_account_id = db.Column(db.String(50), nullable=True)
+    tradier_environment = db.Column(db.String(20), default='sandbox')  # sandbox, live
+    
     # Rate Limiting for AI Analysis
     daily_ai_analyses = db.Column(db.Integer, default=0)  # Counter for daily AI analyses
     last_analysis_reset = db.Column(db.Date, default=datetime.utcnow)  # Date of last counter reset

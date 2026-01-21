@@ -139,6 +139,8 @@ def create_app(config_name=None):
     from api.admin import admin_bp
     from api.admin_status import admin_status_bp
     from api.spreads import spreads_bp
+    from api.user import user_bp
+    from api.tradier import tradier_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -162,6 +164,8 @@ def create_app(config_name=None):
     app.register_blueprint(spreads_bp, url_prefix='/api/spreads')
     app.register_blueprint(admin_bp, url_prefix='/api')  # /api/admin/* endpoints
     app.register_blueprint(admin_status_bp, url_prefix='/api')  # /api/admin/status endpoint
+    app.register_blueprint(user_bp)  # /api/user/* endpoints
+    app.register_blueprint(tradier_bp)  # /api/tradier/* endpoints
     
     # Log blueprint registration for debugging
     try:

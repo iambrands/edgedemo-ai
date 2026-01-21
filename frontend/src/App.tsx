@@ -20,10 +20,12 @@ import Opportunities from './pages/Opportunities';
 import OptimizationDashboard from './pages/OptimizationDashboard';
 import PerformanceDashboard from './pages/PerformanceDashboard';
 import AdminStatus from './pages/AdminStatus';
+import TradierSetup from './pages/TradierSetup';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { TradingModeProvider } from './contexts/TradingModeContext';
 
 // Admin route wrapper
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -123,6 +125,7 @@ function AppRoutes() {
                   <Route path="/history" element={<History />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/tradier-setup" element={<TradierSetup />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="/more" element={<More />} />
                   <Route path="/portfolio" element={<Portfolio />} />
@@ -179,7 +182,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <TradingModeProvider>
+        <AppRoutes />
+      </TradingModeProvider>
     </AuthProvider>
   );
 }
