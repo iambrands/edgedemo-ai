@@ -10,11 +10,45 @@ from config import config
 from datetime import datetime
 import os
 import atexit
+import logging
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
+
+logger = logging.getLogger(__name__)
+
+def check_tradier_client():
+    """Verify Tradier client is properly initialized."""
+    try:
+        from services.tradier_connector import TradierConnector
+        
+        # Try to initialize the client
+        try:
+            tradier = TradierConnector()
+        except Exception as e:
+            logger.error(f"Failed to create Tradier client instance: {str(e)}")
+            return False
+        
+        # Check if API key is set
+        if not hasattr(tradier, 'api_key'):
+            logger.error("Tradier client missing api_key attribute")
+            return False
+            
+        if not tradier.api_key:
+            logger.error("Tradier API key not set")
+            return False
+            
+        logger.info("✅ Tradier client initialized successfully")
+        return True
+        
+    except ImportError as e:
+        logger.error(f"Failed to import Tradier client: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Error checking Tradier client: {str(e)}")
+        return False
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -533,6 +567,13 @@ def create_app(config_name=None):
     # Database tables are created via migrations
     # This ensures migrations run even if Procfile command didn't execute
     app.logger.info("✅ Application initialized. Database migrations running in background.")
+    
+    # Verify Tradier client on startup
+    with app.app_context():
+        if not check_tradier_client():
+            app.logger.warning("⚠️ Tradier client not available - options trading disabled")
+        else:
+            app.logger.info("✅ Tradier client verified successfully")
     
     # Health check endpoint
     @app.route('/health')

@@ -6,6 +6,11 @@ from utils.decorators import token_required
 from utils.helpers import validate_symbol
 from utils.performance import log_performance
 from utils.redis_cache import cached
+import logging
+import requests
+import traceback
+
+logger = logging.getLogger(__name__)
 
 options_bp = Blueprint('options', __name__)
 
@@ -45,79 +50,119 @@ def get_quote(symbol=None):
             pass
         return jsonify({'error': 'Invalid symbol'}), 400
     
-    try:
-        # DISABLED: Yahoo Finance - use Tradier directly
-        # use_yahoo = current_app.config.get('USE_YAHOO_DATA', False)
-        # 
-        # # Try Yahoo Finance first if enabled
-        # if use_yahoo:
-        #     try:
-        #         from services.yahoo_connector import YahooConnector
-        #         yahoo = YahooConnector()
-        #         quote = yahoo.get_quote(symbol)
-        #         
-        #         if 'quotes' in quote and 'quote' in quote['quotes']:
-        #             quote_data = quote['quotes']['quote']
-        #             current_price = quote_data.get('last')
-        #             if current_price and current_price > 0:
-        #                 return jsonify({
-        #                     'symbol': symbol,
-        #                     'current_price': float(current_price),
-        #                     'change': quote_data.get('change', 0),
-        #                     'change_percent': ((quote_data.get('change', 0) / quote_data.get('close', current_price)) * 100) if quote_data.get('close') else 0,
-        #                     'volume': quote_data.get('volume', 0),
-        #                     'high': None,
-        #                     'low': None,
-        #                     'open': None
-        #                 }), 200
-        #     except Exception as e:
-        #         try:
-        #             current_app.logger.warning(f'Yahoo Finance quote failed: {str(e)}')
-        #         except:
-        #             pass
-        
         # Use Tradier directly
-        from services.tradier_connector import TradierConnector
-        tradier = TradierConnector()
-        quote = tradier.get_quote(symbol)
+        try:
+            tradier = TradierConnector()
+        except AttributeError as e:
+            logger.error(f"Tradier client initialization error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        except Exception as e:
+            logger.error(f"Failed to initialize Tradier client: {str(e)}")
+            return jsonify({
+                'error': 'Service error',
+                'message': 'Unable to initialize trading service'
+            }), 503
         
         try:
-            current_app.logger.info(f'Tradier quote response: {quote}')
+            quote = tradier.get_quote(symbol)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Tradier API request failed: {str(e)}")
+            return jsonify({
+                'error': 'External API error',
+                'message': 'Unable to fetch quote from trading service'
+            }), 502
+        except AttributeError as e:
+            logger.error(f"Tradier client error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        
+        if not quote:
+            logger.warning(f"No quote data returned for {symbol}")
+            return jsonify({
+                'error': 'Quote not found',
+                'message': f'No quote data available for {symbol}'
+            }), 404
+        
+        try:
+            logger.info(f'Tradier quote response: {quote}')
         except:
             pass
         
-        if 'quotes' in quote and 'quote' in quote['quotes']:
-            quote_data = quote['quotes']['quote']
-            try:
-                current_app.logger.info(f'Quote data: {quote_data}')
-            except:
-                pass
-            current_price = quote_data.get('last')
-            if current_price and current_price > 0:
-                return jsonify({
-                    'symbol': symbol,
-                    'current_price': float(current_price),
-                    'change': quote_data.get('change', 0),
-                    'change_percent': quote_data.get('change_percentage', 0),
-                    'volume': quote_data.get('volume', 0),
-                    'high': quote_data.get('high'),
-                    'low': quote_data.get('low'),
-                    'open': quote_data.get('open')
-                }), 200
-        
         try:
-            current_app.logger.error(f'Quote not available for {symbol}. Response: {quote}')
-        except:
-            pass
-        return jsonify({'error': 'Quote not available'}), 404
+            if 'quotes' in quote and 'quote' in quote['quotes']:
+                quote_data = quote['quotes']['quote']
+                # Handle both dict and list responses
+                if isinstance(quote_data, list):
+                    if len(quote_data) > 0:
+                        quote_data = quote_data[0]
+                    else:
+                        logger.warning(f"Empty quote list for {symbol}")
+                        return jsonify({
+                            'error': 'Quote not found',
+                            'message': f'No quote data available for {symbol}'
+                        }), 404
+                
+                try:
+                    logger.info(f'Quote data: {quote_data}')
+                except:
+                    pass
+                current_price = quote_data.get('last')
+                if current_price and current_price > 0:
+                    return jsonify({
+                        'symbol': symbol,
+                        'current_price': float(current_price),
+                        'change': quote_data.get('change', 0),
+                        'change_percent': quote_data.get('change_percentage', 0),
+                        'volume': quote_data.get('volume', 0),
+                        'high': quote_data.get('high'),
+                        'low': quote_data.get('low'),
+                        'open': quote_data.get('open')
+                    }), 200
+        except KeyError as e:
+            logger.error(f"Unexpected Tradier response format: {str(e)}")
+            return jsonify({
+                'error': 'Data format error',
+                'message': 'Received unexpected data from trading service'
+            }), 500
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid quote data format: {str(e)}")
+            return jsonify({
+                'error': 'Data format error',
+                'message': 'Invalid quote data format'
+            }), 500
+        
+        logger.warning(f'Quote not available for {symbol}. Response: {quote}')
+        return jsonify({
+            'error': 'Quote not available',
+            'message': f'No valid quote data for {symbol}'
+        }), 404
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Tradier API request failed in quote: {str(e)}")
+        return jsonify({
+            'error': 'External API error',
+            'message': 'Unable to fetch quote from trading service'
+        }), 502
+        
+    except KeyError as e:
+        logger.error(f"Unexpected Tradier response format in quote: {str(e)}")
+        return jsonify({
+            'error': 'Data format error',
+            'message': 'Received unexpected data from trading service'
+        }), 500
+        
     except Exception as e:
-        try:
-            current_app.logger.error(f'Quote error: {str(e)}')
-            import traceback
-            current_app.logger.error(traceback.format_exc())
-        except:
-            pass
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Unexpected error in get_quote: {str(e)}")
+        logger.exception(e)  # Log full stack trace
+        return jsonify({
+            'error': 'Internal server error',
+            'message': 'An unexpected error occurred'
+        }), 500
 
 @options_bp.route('/analyze', methods=['POST'])
 @log_performance(threshold=5.0)
@@ -409,64 +454,110 @@ def get_options_chain(current_user, symbol, expiration):
 @options_bp.route('/quote', methods=['POST'])
 def get_option_quote():
     """Get current market price for a specific option contract (PUBLIC ENDPOINT)"""
-    from flask import current_app
-    import traceback
-    
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'error': 'Request body required'}), 400
-    
     try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'error': 'Invalid request',
+                'message': 'Request body must be JSON'
+            }), 400
+        
         symbol = data.get('symbol', '').upper()
         option_type = data.get('option_type', '').lower()
         strike = data.get('strike')
         expiration = data.get('expiration')
         
         if not symbol:
-            return jsonify({'error': 'Symbol required'}), 400
+            return jsonify({
+                'error': 'Missing parameter',
+                'message': 'Symbol is required'
+            }), 400
         if option_type not in ['call', 'put']:
-            return jsonify({'error': 'option_type must be "call" or "put"'}), 400
+            return jsonify({
+                'error': 'Invalid parameter',
+                'message': 'option_type must be "call" or "put"'
+            }), 400
         if not strike:
-            return jsonify({'error': 'Strike price required'}), 400
+            return jsonify({
+                'error': 'Missing parameter',
+                'message': 'Strike price is required'
+            }), 400
         if not expiration:
-            return jsonify({'error': 'Expiration date required'}), 400
+            return jsonify({
+                'error': 'Missing parameter',
+                'message': 'Expiration date is required'
+            }), 400
         
         try:
             strike_float = float(strike)
         except (ValueError, TypeError):
-            return jsonify({'error': 'Invalid strike price'}), 400
+            return jsonify({
+                'error': 'Invalid parameter',
+                'message': 'Strike price must be a valid number'
+            }), 400
         
         # Validate symbol
         if not validate_symbol(symbol):
-            return jsonify({'error': 'Invalid symbol'}), 400
+            return jsonify({
+                'error': 'Invalid symbol',
+                'message': 'Symbol must be between 1-10 characters and contain only letters'
+            }), 400
         
-        try:
-            current_app.logger.info(
-                f'[OPTION QUOTE] Request: {symbol} {option_type} ${strike_float} exp {expiration}'
-            )
-        except:
-            pass
-        
-        # Get quote from Tradier
-        tradier = get_tradier()
-        quote = tradier.get_option_quote(
-            symbol=symbol,
-            option_type=option_type,
-            strike=strike_float,
-            expiration=expiration
+        logger.info(
+            f'[OPTION QUOTE] Request: {symbol} {option_type} ${strike_float} exp {expiration}'
         )
         
+        # Get quote from Tradier
+        try:
+            tradier = get_tradier()
+        except AttributeError as e:
+            logger.error(f"Tradier client initialization error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        except Exception as e:
+            logger.error(f"Failed to initialize Tradier client: {str(e)}")
+            return jsonify({
+                'error': 'Service error',
+                'message': 'Unable to initialize trading service'
+            }), 503
+        
+        try:
+            quote = tradier.get_option_quote(
+                symbol=symbol,
+                option_type=option_type,
+                strike=strike_float,
+                expiration=expiration
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Tradier API request failed: {str(e)}")
+            return jsonify({
+                'error': 'External API error',
+                'message': 'Unable to fetch option quote from trading service'
+            }), 502
+        except AttributeError as e:
+            logger.error(f"Tradier client error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        
         if not quote:
+            logger.warning(
+                f'Option not found: {symbol} {option_type} ${strike_float} exp {expiration}'
+            )
             return jsonify({
                 'success': False,
-                'error': f'Option not found: {symbol} {option_type} ${strike_float} exp {expiration}'
+                'error': 'Option not found',
+                'message': f'No quote data available for {symbol} {option_type} ${strike_float} {expiration}'
             }), 404
         
         try:
-            current_app.logger.info(
+            logger.info(
                 f'[OPTION QUOTE] Success: {symbol} {option_type} ${strike_float} - '
-                f'mid=${quote["mid"]:.2f}, bid=${quote["bid"]:.2f}, ask=${quote["ask"]:.2f}'
+                f'mid=${quote.get("mid", 0):.2f}, bid=${quote.get("bid", 0):.2f}, ask=${quote.get("ask", 0):.2f}'
             )
         except:
             pass
@@ -486,58 +577,122 @@ def get_option_quote():
             'greeks': quote.get('greeks', {})
         }), 200
         
+    except KeyError as e:
+        logger.error(f"Unexpected response format in option quote: {str(e)}")
+        return jsonify({
+            'error': 'Data format error',
+            'message': 'Received unexpected data from trading service'
+        }), 500
+        
+    except ValueError as e:
+        logger.error(f"Invalid data in option quote: {str(e)}")
+        return jsonify({
+            'error': 'Invalid data',
+            'message': str(e)
+        }), 400
+        
     except Exception as e:
-        try:
-            current_app.logger.error(f'Error getting option quote: {str(e)}')
-            current_app.logger.error(traceback.format_exc())
-        except:
-            pass
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"Unexpected error in get_option_quote: {str(e)}")
+        logger.exception(e)  # Log full stack trace
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error',
+            'message': 'An unexpected error occurred'
+        }), 500
 
 @options_bp.route('/expirations', methods=['GET'])
 @options_bp.route('/expirations/<symbol>', methods=['GET'])
 def get_expirations(symbol=None):
     """Get available expiration dates for symbol (PUBLIC ENDPOINT)"""
-    # Handle query parameter or path parameter
-    if symbol is None:
-        symbol = request.args.get('symbol')
-    
-    if not symbol:
-        return jsonify({'error': 'Symbol required'}), 400
-    
-    symbol = symbol.upper()
-    if not validate_symbol(symbol):
-        try:
-            current_app.logger.error(f'Invalid symbol: {symbol}')
-        except:
-            pass
-        return jsonify({'error': 'Invalid symbol'}), 400
-    
     try:
-        import time
-        start_time = time.time()
+        # Handle query parameter or path parameter
+        if symbol is None:
+            symbol = request.args.get('symbol')
         
-        tradier = get_tradier()
-        expirations = tradier.get_options_expirations(symbol, use_cache=True)
+        if not symbol:
+            return jsonify({
+                'error': 'Invalid request',
+                'message': 'Symbol is required'
+            }), 400
+        
+        symbol = symbol.upper()
+        if not validate_symbol(symbol):
+            logger.error(f'Invalid symbol: {symbol}')
+            return jsonify({
+                'error': 'Invalid symbol',
+                'message': 'Symbol must be between 1-10 characters and contain only letters'
+            }), 400
+        
+        try:
+            import time
+            start_time = time.time()
+            
+            tradier = get_tradier()
+        except AttributeError as e:
+            logger.error(f"Tradier client initialization error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        except Exception as e:
+            logger.error(f"Failed to initialize Tradier client: {str(e)}")
+            return jsonify({
+                'error': 'Service error',
+                'message': 'Unable to initialize trading service'
+            }), 503
+        
+        try:
+            expirations = tradier.get_options_expirations(symbol, use_cache=True)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Tradier API request failed: {str(e)}")
+            return jsonify({
+                'error': 'External API error',
+                'message': 'Unable to fetch expiration dates from trading service'
+            }), 502
+        except AttributeError as e:
+            logger.error(f"Tradier client error: {str(e)}")
+            return jsonify({
+                'error': 'Service configuration error',
+                'message': 'Trading service not available'
+            }), 503
+        
+        if not expirations:
+            logger.warning(f"No expirations returned for {symbol}")
+            return jsonify({
+                'error': 'Expirations not found',
+                'message': f'No expiration dates available for {symbol}'
+            }), 404
+        
+        if not isinstance(expirations, list):
+            logger.error(f"Unexpected expirations format for {symbol}: {type(expirations)}")
+            return jsonify({
+                'error': 'Data format error',
+                'message': 'Received unexpected data from trading service'
+            }), 500
         
         elapsed = time.time() - start_time
-        try:
-            current_app.logger.info(f'✅ Expirations for {symbol}: {len(expirations) if isinstance(expirations, list) else 0} dates (took {elapsed:.2f}s)')
-        except:
-            pass
+        logger.info(f'✅ Expirations for {symbol}: {len(expirations)} dates (took {elapsed:.2f}s)')
+        
         return jsonify({
             'symbol': symbol,
             'expirations': expirations,
             'cached': elapsed < 0.1  # If very fast, likely from cache
         }), 200
+        
+    except KeyError as e:
+        logger.error(f"Unexpected Tradier response format: {str(e)}")
+        return jsonify({
+            'error': 'Data format error',
+            'message': 'Received unexpected data from trading service'
+        }), 500
+        
     except Exception as e:
-        try:
-            current_app.logger.error(f'Error getting expirations: {str(e)}')
-            import traceback
-            current_app.logger.error(traceback.format_exc())
-        except:
-            pass
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Unexpected error in get_expirations: {str(e)}")
+        logger.exception(e)  # Log full stack trace
+        return jsonify({
+            'error': 'Internal server error',
+            'message': 'An unexpected error occurred'
+        }), 500
 
 @options_bp.route('/signals/<symbol>', methods=['GET'])
 @token_required
