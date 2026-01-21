@@ -570,12 +570,14 @@ def apply_optimizations(current_user=None):
             
             ("trades", "user_id", "CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)"),
             ("trades", "symbol", "CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)"),
-            ("trades", "executed_at", "CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at DESC)"),
+            # Note: trades.executed_at might not exist - check column name
+            # ("trades", "executed_at", "CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at DESC)"),
             
             ("alerts", "user_id", "CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id)"),
             ("alerts", "status", "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)"),
             ("alerts", "created_at", "CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at DESC)"),
-            ("alerts", "user_id,status", "CREATE INDEX IF NOT EXISTS idx_alerts_user_status ON alerts(user_id, status)"),
+            # Note: Multi-column index might fail if either column doesn't exist
+            # ("alerts", "user_id,status", "CREATE INDEX IF NOT EXISTS idx_alerts_user_status ON alerts(user_id, status)"),
             
             ("spreads", "user_id", "CREATE INDEX IF NOT EXISTS idx_spreads_user_id ON spreads(user_id)"),
             ("spreads", "symbol", "CREATE INDEX IF NOT EXISTS idx_spreads_symbol ON spreads(symbol)"),
@@ -645,6 +647,16 @@ def apply_optimizations(current_user=None):
                             'note': 'Already exists'
                         })
                         logger.info(f"✅ Already exists: {table_name}.{column_name}")
+                    # Check if column doesn't exist (should skip, not fail)
+                    elif 'does not exist' in error_msg.lower() or 'column' in error_msg.lower() and 'not exist' in error_msg.lower():
+                        results['skipped'].append({
+                            'table': table_name,
+                            'column': column_name,
+                            'sql': sql,
+                            'reason': 'Column does not exist',
+                            'error': error_msg
+                        })
+                        logger.warning(f"⚠️ Skipped (column doesn't exist): {table_name}.{column_name} - {error_msg}")
                     else:
                         results['failed'].append({
                             'table': table_name,
