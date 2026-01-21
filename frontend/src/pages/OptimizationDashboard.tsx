@@ -152,7 +152,7 @@ const OptimizationDashboard: React.FC = () => {
   };
 
   const applyOptimizations = async () => {
-    if (!confirm('Apply database optimizations? This will create indices.\n\nThis action cannot be undone.')) {
+    if (!window.confirm('Apply database optimizations? This will create indices.\n\nThis action cannot be undone.')) {
       return;
     }
 
