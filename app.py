@@ -492,32 +492,24 @@ def create_app(config_name=None):
     )
     app.logger.info("✅ Scheduled precompute service (every 5 minutes during market hours)")
     
-    # PHASE 5: Cache warming on startup
+    # PHASE 5: Cache warming on startup and periodically
     def warm_cache_on_startup():
         """
         Warm cache on application startup to avoid cold start delays.
-        Pre-computes top 5 symbols so first requests are instant.
+        Uses the new CacheWarmer service for comprehensive warming.
         """
         try:
             with app.app_context():
-                app.logger.info("🔥 Warming cache on startup...")
+                from services.cache_warmer import CacheWarmer
                 
-                from services.precompute_service import PrecomputeService
+                warmer = CacheWarmer()
+                results = warmer.warm_all()
                 
-                precompute = PrecomputeService()
-                
-                # Warm only top 5 symbols (fast startup)
-                top_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']
-                
-                for symbol in top_symbols:
-                    try:
-                        result = precompute._precompute_symbol(symbol)
-                        if result == 'success':
-                            app.logger.info(f"✅ Warmed cache: {symbol}")
-                    except Exception as e:
-                        app.logger.warning(f"⚠️ Failed to warm {symbol}: {e}")
-                
-                app.logger.info("🔥 Cache warming complete")
+                app.logger.info(
+                    f"✅ Cache warming complete: "
+                    f"{results['quotes']} quotes, {results['chains']} chains, "
+                    f"{results['expirations']} expirations in {results['duration_seconds']}s"
+                )
         except Exception as e:
             app.logger.error(f"❌ Cache warming failed: {e}", exc_info=True)
             # Don't crash app if warming fails
@@ -530,6 +522,38 @@ def create_app(config_name=None):
         warm_cache_on_startup()
     
     threading.Thread(target=delayed_cache_warm, daemon=True).start()
+    
+    # Schedule periodic cache warming during market hours (every 5 minutes)
+    def periodic_cache_warm():
+        """Warm cache periodically during market hours."""
+        try:
+            with app.app_context():
+                from services.cache_warmer import CacheWarmer
+                from datetime import datetime
+                import pytz
+                
+                # Only warm during market hours
+                now = datetime.now(pytz.timezone('US/Eastern'))
+                is_market_hours = (
+                    now.weekday() < 5 and  # Monday-Friday
+                    9 <= now.hour < 16
+                )
+                
+                if is_market_hours:
+                    warmer = CacheWarmer()
+                    # Only warm quotes (fast) during periodic runs
+                    warmer.warm_quotes()
+        except Exception as e:
+            app.logger.error(f"Periodic cache warming failed: {e}", exc_info=True)
+    
+    scheduler.add_job(
+        func=periodic_cache_warm,
+        trigger=IntervalTrigger(minutes=5),
+        id='periodic_cache_warm',
+        name='Periodic cache warming',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled periodic cache warming (every 5 minutes during market hours)")
     
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())

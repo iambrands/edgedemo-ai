@@ -66,12 +66,17 @@ class CacheManager:
             return None
         
         try:
-            key = f"chain:{symbol.upper()}:{expiration}"
+            from utils.cache_keys import options_chain_key
+            from utils.cache_metrics import CacheMetrics
+            
+            key = options_chain_key(symbol, expiration)
             cached = self.redis.get(key)
             if cached:
                 logger.debug(f"💾 Cache HIT: {key}")
+                CacheMetrics.record_hit(key)
                 return json.loads(cached)
             logger.debug(f"❌ Cache MISS: {key}")
+            CacheMetrics.record_miss(key)
             return None
         except Exception as e:
             logger.warning(f"Cache get failed: {e}")
@@ -89,24 +94,25 @@ class CacheManager:
         if not self.enabled or not self.redis:
             return
         
-        key = f"chain:{symbol.upper()}:{expiration}"
-        
+            from utils.cache_keys import options_chain_key
+            key = options_chain_key(symbol, expiration)
+            
         try:
             # Add cache metadata
             data['_cache_time'] = time.time()
             data['_cache_key'] = key
             
-            # Intelligent TTL based on symbol characteristics (PHASE 2)
+            # Intelligent TTL based on symbol characteristics - INCREASED for better hit rates
             if ttl is None:
                 POPULAR_SYMBOLS = ['SPY', 'QQQ', 'IWM', 'DIA', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'META', 'GOOGL']
                 COMPLEX_SYMBOLS = ['SPY', 'QQQ', 'TSLA', 'AAPL']  # Large chains, expensive to fetch
                 
                 if symbol.upper() in POPULAR_SYMBOLS:
-                    ttl = 900  # 15 minutes for popular symbols (high demand)
+                    ttl = 1800  # 30 minutes for popular symbols (was 15, increased for better hit rate)
                 elif symbol.upper() in COMPLEX_SYMBOLS:
-                    ttl = 720  # 12 minutes for complex symbols (expensive)
+                    ttl = 1500  # 25 minutes for complex symbols (was 12, increased)
                 else:
-                    ttl = 600  # 10 minutes default
+                    ttl = 1200  # 20 minutes default (was 10, increased)
             
             self.redis.setex(key, ttl, json.dumps(data))
             logger.debug(f"💾 Cached chain: {key} (TTL: {ttl}s)")
@@ -119,11 +125,17 @@ class CacheManager:
             return None
         
         try:
-            key = f"quote:{symbol.upper()}"
+            from utils.cache_keys import quote_key
+            from utils.cache_metrics import CacheMetrics
+            
+            key = quote_key(symbol)
             cached = self.redis.get(key)
             if cached:
                 logger.debug(f"💾 Cache HIT: {key}")
+                CacheMetrics.record_hit(key)
                 return json.loads(cached)
+            logger.debug(f"❌ Cache MISS: {key}")
+            CacheMetrics.record_miss(key)
             return None
         except Exception as e:
             logger.warning(f"Cache get failed: {e}")
@@ -140,10 +152,11 @@ class CacheManager:
         if not self.enabled or not self.redis:
             return
         
-        key = f"quote:{symbol.upper()}"
-        
+            from utils.cache_keys import quote_key
+            key = quote_key(symbol)
+            
         try:
-            # Check if market is open (PHASE 2: Market-aware TTL)
+            # Check if market is open (Market-aware TTL) - INCREASED for better hit rates
             if ttl is None:
                 now = datetime.now(pytz.timezone('US/Eastern'))
                 is_market_open = (
@@ -152,8 +165,8 @@ class CacheManager:
                     not (now.hour == 9 and now.minute < 30)
                 )
                 
-                # Shorter TTL during market hours
-                ttl = 30 if is_market_open else 300
+                # Increased TTLs: 60s during market hours (was 30), 10min after hours (was 5min)
+                ttl = 60 if is_market_open else 600
             
             data['_cache_time'] = time.time()
             self.redis.setex(key, ttl, json.dumps(data))
@@ -167,23 +180,30 @@ class CacheManager:
             return None
         
         try:
-            key = f"analysis:{symbol.upper()}:{expiration}:{preference}"
+            from utils.cache_keys import analysis_key
+            from utils.cache_metrics import CacheMetrics
+            
+            key = analysis_key(symbol, expiration, preference)
             cached = self.redis.get(key)
             if cached:
                 logger.debug(f"💾 Cache HIT: {key}")
+                CacheMetrics.record_hit(key)
                 return json.loads(cached)
+            logger.debug(f"❌ Cache MISS: {key}")
+            CacheMetrics.record_miss(key)
             return None
         except Exception as e:
             logger.warning(f"Cache get failed: {e}")
             return None
     
-    def set_analysis(self, symbol: str, expiration: str, preference: str, data: Dict, ttl: int = 300) -> None:
+    def set_analysis(self, symbol: str, expiration: str, preference: str, data: Dict, ttl: int = 900) -> None:
         """Cache analysis result"""
         if not self.enabled or not self.redis:
             return
         
         try:
-            key = f"analysis:{symbol.upper()}:{expiration}:{preference}"
+            from utils.cache_keys import analysis_key
+            key = analysis_key(symbol, expiration, preference)
             data['_cache_time'] = time.time()
             self.redis.setex(key, ttl, json.dumps(data))
             logger.debug(f"💾 Cached analysis: {key} (TTL: {ttl}s)")

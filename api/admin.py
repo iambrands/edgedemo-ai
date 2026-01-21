@@ -204,6 +204,11 @@ def cache_stats():
     try:
         cache = get_redis_cache()
         stats = cache.get_stats()
+        
+        # Add cache metrics
+        from utils.cache_metrics import CacheMetrics
+        cache_metrics = CacheMetrics.get_stats()
+        stats.update(cache_metrics)
         return jsonify({
             'status': 'success',
             'stats': stats,
