@@ -169,21 +169,41 @@ def create_app(config_name=None):
                 # Skip static routes
                 if rule.endpoint == 'static':
                     continue
-                routes.append({
-                    'endpoint': rule.endpoint,
-                    'methods': [m for m in rule.methods if m not in ['OPTIONS', 'HEAD']],
-                    'path': str(rule)
-                })
-            # Filter admin routes
-            admin_routes = [r for r in routes if 'admin' in r['path'].lower()]
+                try:
+                    # Safely extract route info
+                    rule_info = {
+                        'endpoint': str(rule.endpoint),
+                        'methods': [str(m) for m in rule.methods if m not in ['OPTIONS', 'HEAD']],
+                        'path': str(rule)
+                    }
+                    routes.append(rule_info)
+                except Exception as rule_error:
+                    # Skip problematic routes
+                    app.logger.warning(f"Error processing route {rule}: {rule_error}")
+                    continue
+            
+            # Filter admin routes safely
+            admin_routes = []
+            for r in routes:
+                try:
+                    if 'admin' in str(r.get('path', '')).lower():
+                        admin_routes.append(r)
+                except:
+                    continue
+            
             return jsonify({
                 'total_routes': len(routes),
                 'admin_routes': admin_routes,
-                'all_routes': sorted(routes, key=lambda x: x['path'])
+                'analyze_routes': [r for r in admin_routes if 'analyze' in str(r.get('path', '')).lower()],
+                'message': 'Routes retrieved successfully'
             }), 200
         except Exception as e:
             app.logger.error(f"Error listing routes: {e}", exc_info=True)
-            return jsonify({'error': str(e)}), 500
+            import traceback
+            return jsonify({
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            }), 500
     
     # Start automatic position monitoring on app startup
     # This ensures positions are checked and closed when thresholds are hit
