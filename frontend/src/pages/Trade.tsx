@@ -28,6 +28,8 @@ const Trade: React.FC = () => {
   
   // Spread state
   const [isSpread, setIsSpread] = useState(false);
+  const [spreadAmount, setSpreadAmount] = useState<number | null>(null);
+  const [baseStrike, setBaseStrike] = useState('');
   const [longStrike, setLongStrike] = useState('');
   const [shortStrike, setShortStrike] = useState('');
   const [spreadMetrics, setSpreadMetrics] = useState<any>(null);
@@ -89,6 +91,29 @@ const Trade: React.FC = () => {
     }
   }, [symbol, expiration, strike, contractType, isSpread]);
   
+  // Auto-calculate strikes when base strike or spread amount changes
+  useEffect(() => {
+    if (isSpread && baseStrike && spreadAmount !== null) {
+      const base = parseFloat(baseStrike);
+      if (!isNaN(base)) {
+        const long = base;
+        const short = contractType === 'call' 
+          ? base + spreadAmount 
+          : base - spreadAmount;
+        
+        setLongStrike(long.toString());
+        
+        // Only set short strike if it's positive (for puts)
+        if (short > 0) {
+          setShortStrike(short.toString());
+        } else {
+          setShortStrike('');
+          toast.error('Short strike cannot be negative for put spreads');
+        }
+      }
+    }
+  }, [baseStrike, spreadAmount, contractType, isSpread]);
+
   // Calculate spread metrics when strikes change
   useEffect(() => {
     if (isSpread && symbol && expiration && longStrike && shortStrike && contractType) {
@@ -241,8 +266,39 @@ const Trade: React.FC = () => {
   };
   
   const executeSpread = async () => {
-    if (!symbol || !expiration || !longStrike || !shortStrike || !contractType) {
-      toast.error('Please fill in all spread fields');
+    if (!symbol || !expiration || !longStrike || !shortStrike || !contractType || spreadAmount === null) {
+      toast.error('Please fill in all spread fields including spread amount');
+      return;
+    }
+
+    // Validate strikes
+    const long = parseFloat(longStrike);
+    const short = parseFloat(shortStrike);
+    
+    if (isNaN(long) || isNaN(short)) {
+      toast.error('Invalid strike prices');
+      return;
+    }
+
+    // Validate strike increments (must be $0.50 or $1.00)
+    if (long % 0.5 !== 0 || short % 0.5 !== 0) {
+      toast.error('Strike prices must be in $0.50 increments');
+      return;
+    }
+
+    // Validate put spread doesn't have negative short strike
+    if (contractType === 'put' && short <= 0) {
+      toast.error('Short strike cannot be negative for put spreads');
+      return;
+    }
+
+    // Validate spread width matches
+    const calculatedWidth = contractType === 'call' 
+      ? short - long 
+      : long - short;
+    
+    if (Math.abs(calculatedWidth - spreadAmount) > 0.01) {
+      toast.error(`Spread width mismatch. Expected $${spreadAmount}, got $${calculatedWidth.toFixed(2)}`);
       return;
     }
     
@@ -267,6 +323,8 @@ const Trade: React.FC = () => {
         // Reset form
         setSymbol('');
         setExpiration('');
+        setBaseStrike('');
+        setSpreadAmount(null);
         setLongStrike('');
         setShortStrike('');
         setStrike('');
@@ -431,6 +489,15 @@ const Trade: React.FC = () => {
                   if (e.target.checked) {
                     setPrice(null);
                     setStrike('');
+                    setBaseStrike('');
+                    setSpreadAmount(null);
+                    setLongStrike('');
+                    setShortStrike('');
+                  } else {
+                    setBaseStrike('');
+                    setSpreadAmount(null);
+                    setLongStrike('');
+                    setShortStrike('');
                   }
                 }}
                 className="w-6 h-6 text-primary border-gray-300 rounded focus:ring-primary min-h-[44px] min-w-[44px]"
@@ -449,13 +516,70 @@ const Trade: React.FC = () => {
             )}
           </div>
 
+          {/* Spread Amount Selector - Only show when spread is enabled */}
+          {isSpread && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Spread Amount *
+              </label>
+              <select
+                value={spreadAmount !== null ? spreadAmount.toString() : ''}
+                onChange={(e) => {
+                  const value = e.target.value ? parseFloat(e.target.value) : null;
+                  setSpreadAmount(value);
+                  // Recalculate strikes when spread amount changes
+                  if (baseStrike && value !== null) {
+                    const base = parseFloat(baseStrike);
+                    if (!isNaN(base)) {
+                      const long = base;
+                      const short = contractType === 'call' 
+                        ? base + value 
+                        : base - value;
+                      
+                      setLongStrike(long.toString());
+                      if (short > 0) {
+                        setShortStrike(short.toString());
+                      } else {
+                        setShortStrike('');
+                      }
+                    }
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                required
+                style={{ fontSize: '16px' }} // Prevent iOS zoom
+              >
+                <option value="">Select Spread Amount</option>
+                <option value="5">$5 Spread</option>
+                <option value="10">$10 Spread</option>
+                <option value="15">$15 Spread</option>
+                <option value="20">$20 Spread</option>
+                <option value="25">$25 Spread</option>
+                <option value="50">$50 Spread</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Select the width between long and short strikes
+              </p>
+            </div>
+          )}
+
           {/* Contract Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Contract Type *</label>
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setContractType('call')}
+                onClick={() => {
+                  setContractType('call');
+                  // Recalculate strikes if spread is enabled
+                  if (isSpread && baseStrike && spreadAmount !== null) {
+                    const base = parseFloat(baseStrike);
+                    if (!isNaN(base)) {
+                      setLongStrike(base.toString());
+                      setShortStrike((base + spreadAmount).toString());
+                    }
+                  }
+                }}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   contractType === 'call'
                     ? 'bg-primary text-white'
@@ -466,7 +590,23 @@ const Trade: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setContractType('put')}
+                onClick={() => {
+                  setContractType('put');
+                  // Recalculate strikes if spread is enabled
+                  if (isSpread && baseStrike && spreadAmount !== null) {
+                    const base = parseFloat(baseStrike);
+                    if (!isNaN(base)) {
+                      setLongStrike(base.toString());
+                      const short = base - spreadAmount;
+                      if (short > 0) {
+                        setShortStrike(short.toString());
+                      } else {
+                        setShortStrike('');
+                        toast.error('Short strike would be negative. Please adjust base strike or spread amount.');
+                      }
+                    }
+                  }
+                }}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   contractType === 'put'
                     ? 'bg-error text-white'
@@ -519,51 +659,101 @@ const Trade: React.FC = () => {
           {/* Spread Fields or Single Strike */}
           {isSpread ? (
             <>
-              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Long Strike (Buy) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={longStrike}
-                    onChange={(e) => setLongStrike(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
-                    placeholder={contractType === 'put' ? 'Higher strike' : 'Lower strike'}
-                    required
-                    inputMode="decimal"
-                    style={{ fontSize: '16px' }} // Prevent iOS zoom
-                  />
-                  {spreadMetrics && (
-                    <p className="mt-1 text-xs text-gray-500">
-                      Premium: ${spreadMetrics.long_premium?.toFixed(2) || '0.00'}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Short Strike (Sell) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={shortStrike}
-                    onChange={(e) => setShortStrike(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
-                    placeholder={contractType === 'put' ? 'Lower strike' : 'Higher strike'}
-                    required
-                    inputMode="decimal"
-                    style={{ fontSize: '16px' }} // Prevent iOS zoom
-                  />
-                  {spreadMetrics && (
-                    <p className="mt-1 text-xs text-gray-500">
-                      Premium: ${spreadMetrics.short_premium?.toFixed(2) || '0.00'}
-                    </p>
-                  )}
-                </div>
+              {/* Base Strike Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Base Strike (Long Leg) *
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={baseStrike}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setBaseStrike(value);
+                    // Auto-calculate strikes
+                    if (value && spreadAmount !== null) {
+                      const base = parseFloat(value);
+                      if (!isNaN(base)) {
+                        const long = base;
+                        const short = contractType === 'call' 
+                          ? base + spreadAmount 
+                          : base - spreadAmount;
+                        
+                        setLongStrike(long.toString());
+                        if (short > 0) {
+                          setShortStrike(short.toString());
+                        } else {
+                          setShortStrike('');
+                        }
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                  placeholder="e.g., 180.00"
+                  required
+                  inputMode="decimal"
+                  style={{ fontSize: '16px' }} // Prevent iOS zoom
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the strike price for the long leg (the option you're buying)
+                </p>
               </div>
+
+              {/* Auto-Calculated Strikes Display */}
+              {baseStrike && spreadAmount !== null && longStrike && shortStrike && (
+                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-blue-900 mb-2">
+                      Long Strike (Buy) <span className="text-xs bg-blue-200 px-2 py-1 rounded">Auto-calculated</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={longStrike}
+                      readOnly
+                      className="w-full px-4 py-2 bg-white border-2 border-blue-300 rounded-lg text-base min-h-[48px] font-semibold text-blue-900"
+                      style={{ fontSize: '16px' }}
+                    />
+                    {spreadMetrics && (
+                      <p className="mt-1 text-xs text-blue-700">
+                        Premium: ${spreadMetrics.long_premium?.toFixed(2) || '0.00'}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-green-900 mb-2">
+                      Short Strike (Sell) <span className="text-xs bg-green-200 px-2 py-1 rounded">Auto-calculated</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={shortStrike}
+                      readOnly
+                      className="w-full px-4 py-2 bg-white border-2 border-green-300 rounded-lg text-base min-h-[48px] font-semibold text-green-900"
+                      style={{ fontSize: '16px' }}
+                    />
+                    {spreadMetrics && (
+                      <p className="mt-1 text-xs text-green-700">
+                        Premium: ${spreadMetrics.short_premium?.toFixed(2) || '0.00'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Spread Preview */}
+              {baseStrike && spreadAmount !== null && longStrike && shortStrike && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Spread Preview:</span>
+                    <span className="font-semibold text-secondary">
+                      Long: ${parseFloat(longStrike).toFixed(2)} | Short: ${parseFloat(shortStrike).toFixed(2)} | Width: ${spreadAmount}
+                    </span>
+                  </div>
+                </div>
+              )}
               
               {/* Spread Metrics */}
               {calculatingSpread && (
@@ -729,7 +919,7 @@ const Trade: React.FC = () => {
               !expiration || 
               !quantity || 
               (isSpread 
-                ? (!longStrike || !shortStrike)
+                ? (!baseStrike || spreadAmount === null || !longStrike || !shortStrike)
                 : (!strike || price === null)
               )
             }
