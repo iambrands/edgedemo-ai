@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useDevice } from '../hooks/useDevice';
 
 interface Expiration {
   date: string;
@@ -10,6 +11,7 @@ interface Expiration {
 const Trade: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useDevice();
   const [symbol, setSymbol] = useState('');
   const [expiration, setExpiration] = useState('');
   const [expirations, setExpirations] = useState<Expiration[]>([]);
@@ -347,32 +349,32 @@ const Trade: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Account Balance Card */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-4 md:p-6">
+        <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'}`}>
           <div>
             <p className="text-sm opacity-90 mb-1">Paper Trading Balance</p>
-            <h2 className="text-4xl font-bold">
+            <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
               ${accountBalance !== null ? accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Loading...'}
             </h2>
             <p className="text-sm opacity-75 mt-2">Virtual funds for testing strategies</p>
           </div>
-          <div className="text-6xl opacity-20">💰</div>
+          {!isMobile && <div className="text-6xl opacity-20">💰</div>}
         </div>
       </div>
 
       {/* Trade Form */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-secondary mb-6">Manual Trade</h1>
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-secondary mb-4 md:mb-6`}>Manual Trade</h1>
 
-        <form onSubmit={handleTrade} className="space-y-6">
+        <form onSubmit={handleTrade} className="space-y-4 md:space-y-6">
           {/* Action Selection */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
             <button
               type="button"
               onClick={() => setAction('buy')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-lg font-medium transition-colors min-h-[48px] ${
                 action === 'buy'
                   ? 'bg-success text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -383,7 +385,7 @@ const Trade: React.FC = () => {
             <button
               type="button"
               onClick={() => setAction('sell')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-lg font-medium transition-colors min-h-[48px] ${
                 action === 'sell'
                   ? 'bg-error text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -401,10 +403,11 @@ const Trade: React.FC = () => {
                 type="text"
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                 placeholder="e.g., AAPL"
                 maxLength={10}
                 required
+                style={{ fontSize: '16px' }} // Prevent iOS zoom
               />
               {stockPrice !== null && (
                 <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium text-gray-700">
@@ -430,7 +433,7 @@ const Trade: React.FC = () => {
                     setStrike('');
                   }
                 }}
-                className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+                className="w-6 h-6 text-primary border-gray-300 rounded focus:ring-primary min-h-[44px] min-w-[44px]"
               />
               <span className="text-sm font-medium text-gray-700">
                 Trade as Debit Spread
@@ -489,8 +492,9 @@ const Trade: React.FC = () => {
                 }
               }}
               disabled={loadingExpirations || !symbol || symbol.length < 1}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-base min-h-[48px]"
               required
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
             >
               {loadingExpirations ? (
                 <option value="">Loading expiration dates...</option>
@@ -515,7 +519,7 @@ const Trade: React.FC = () => {
           {/* Spread Fields or Single Strike */}
           {isSpread ? (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Long Strike (Buy) *
@@ -525,9 +529,11 @@ const Trade: React.FC = () => {
                     step="0.5"
                     value={longStrike}
                     onChange={(e) => setLongStrike(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                     placeholder={contractType === 'put' ? 'Higher strike' : 'Lower strike'}
                     required
+                    inputMode="decimal"
+                    style={{ fontSize: '16px' }} // Prevent iOS zoom
                   />
                   {spreadMetrics && (
                     <p className="mt-1 text-xs text-gray-500">
@@ -545,9 +551,11 @@ const Trade: React.FC = () => {
                     step="0.5"
                     value={shortStrike}
                     onChange={(e) => setShortStrike(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                     placeholder={contractType === 'put' ? 'Lower strike' : 'Higher strike'}
                     required
+                    inputMode="decimal"
+                    style={{ fontSize: '16px' }} // Prevent iOS zoom
                   />
                   {spreadMetrics && (
                     <p className="mt-1 text-xs text-gray-500">
@@ -618,9 +626,11 @@ const Trade: React.FC = () => {
                 step="0.01"
                 value={strike}
                 onChange={(e) => setStrike(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                 placeholder="e.g., 150.00"
                 required
+                inputMode="decimal"
+                style={{ fontSize: '16px' }} // Prevent iOS zoom
               />
             </div>
           )}
@@ -633,8 +643,10 @@ const Trade: React.FC = () => {
               min="1"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
               required
+              inputMode="numeric"
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
             />
           </div>
 
@@ -644,21 +656,23 @@ const Trade: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Price per Contract (Premium) *
               </label>
-              <div className="flex gap-2">
+              <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-2`}>
                 <input
                   type="number"
                   step="0.01"
                   value={price || ''}
                   onChange={(e) => setPrice(e.target.value ? parseFloat(e.target.value) : null)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                   placeholder="e.g., 2.50"
                   required
+                  inputMode="decimal"
+                  style={{ fontSize: '16px' }} // Prevent iOS zoom
                 />
                 <button
                   type="button"
                   onClick={fetchOptionPrice}
                   disabled={loadingPrice || !symbol || !expiration || !strike}
-                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm min-h-[48px]`}
                 >
                   {loadingPrice ? '...' : 'Fetch'}
                 </button>
@@ -719,7 +733,7 @@ const Trade: React.FC = () => {
                 : (!strike || price === null)
               )
             }
-            className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-colors ${
+            className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-colors min-h-[56px] text-base ${
               isSpread
                 ? 'bg-primary hover:bg-indigo-600'
                 : action === 'buy'

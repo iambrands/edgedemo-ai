@@ -6,10 +6,12 @@ import { watchlistService } from '../services/watchlist';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
+import { useDevice } from '../hooks/useDevice';
 
 const OptionsAnalyzer: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useDevice();
   const [symbol, setSymbol] = useState('AAPL');
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [expiration, setExpiration] = useState('');
@@ -271,19 +273,19 @@ const OptionsAnalyzer: React.FC = () => {
   const formatPercent = (value: number) => `${value.toFixed(2)}%`;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-secondary">Options Chain Analyzer</h1>
+    <div className="space-y-4 md:space-y-6">
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-secondary`}>Options Chain Analyzer</h1>
           {stockPrice !== null && (
-            <div className="flex items-center gap-4">
-              <div className="text-right">
+            <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
+              <div className={`text-${isMobile ? 'left' : 'right'}`}>
                 <p className="text-sm text-gray-500">Stock Price</p>
-                <p className="text-xl font-bold text-secondary">${stockPrice.toFixed(2)}</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${stockPrice.toFixed(2)}</p>
               </div>
               <button
                 onClick={handleAddToWatchlist}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium text-sm"
+                className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium text-sm min-h-[44px]`}
               >
                 Add to Watchlist
               </button>
@@ -291,7 +293,7 @@ const OptionsAnalyzer: React.FC = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'} gap-4 mb-4 md:mb-6`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
             <form onSubmit={handleSymbolSubmit}>
@@ -299,9 +301,10 @@ const OptionsAnalyzer: React.FC = () => {
                 type="text"
                 value={symbol}
                 onChange={handleSymbolChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                 placeholder="Enter symbol (e.g., AAPL)"
                 maxLength={10}
+                style={{ fontSize: '16px' }} // Prevent iOS zoom
               />
             </form>
           </div>
@@ -315,7 +318,8 @@ const OptionsAnalyzer: React.FC = () => {
                 setExpiration(e.target.value);
               }}
               disabled={loadingExpirations || expirations.length === 0}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 text-base min-h-[48px]"
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
             >
               {loadingExpirations ? (
                 <option value="">Loading...</option>
@@ -344,7 +348,8 @@ const OptionsAnalyzer: React.FC = () => {
             <select
               value={preference}
               onChange={(e) => setPreference(e.target.value as 'income' | 'growth' | 'balanced')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
             >
               <option value="income">Income</option>
               <option value="balanced">Balanced</option>
@@ -356,7 +361,7 @@ const OptionsAnalyzer: React.FC = () => {
         <button
           onClick={analyzeOptions}
           disabled={loading || !symbol || !expiration}
-          className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`${isMobile ? 'w-full' : ''} bg-primary text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base`}
         >
           {loading ? 'Analyzing...' : 'Analyze Options'}
         </button>

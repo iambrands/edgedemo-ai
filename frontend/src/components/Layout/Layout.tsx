@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useDevice } from '../../hooks/useDevice';
 import FloatingFeedbackButton from '../FloatingFeedbackButton';
+import BottomNav from '../navigation/BottomNav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +18,7 @@ interface NavSection {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { isMobile, isTablet, isDesktop } = useDevice();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     trading: true,
     discovery: false,
@@ -25,6 +28,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Check if current user is admin
   const isAdmin = user?.email === 'leslie@iabadvisors.com';
+  
+  // Show sidebar only on desktop
+  const showSidebar = isDesktop;
 
   const navigationSections: NavSection[] = [
     {
@@ -76,9 +82,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-secondary text-white shadow-lg">
+    <div className={`min-h-screen bg-gray-50 ${isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'}`}>
+      {/* Sidebar - Desktop Only */}
+      {showSidebar && (
+        <div className="fixed inset-y-0 left-0 w-64 bg-secondary text-white shadow-lg hidden lg:block">
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-700">
@@ -147,14 +154,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Content */}
-      <div className="ml-64">
-        <main className="p-8">{children}</main>
+      <div className={showSidebar ? 'ml-64' : ''}>
+        <main 
+          className={`p-4 md:p-6 lg:p-8 ${
+            (isMobile || isTablet) ? 'pb-20' : ''
+          }`}
+          style={{
+            paddingBottom: (isMobile || isTablet) 
+              ? 'calc(4rem + env(safe-area-inset-bottom, 0))' 
+              : undefined
+          }}
+        >
+          {children}
+        </main>
       </div>
 
-      {/* Floating Feedback Button */}
-      <FloatingFeedbackButton />
+      {/* Bottom Navigation - Mobile/Tablet Only */}
+      {(isMobile || isTablet) && <BottomNav />}
+
+      {/* Floating Feedback Button - Desktop Only */}
+      {isDesktop && <FloatingFeedbackButton />}
     </div>
   );
 };

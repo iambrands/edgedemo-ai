@@ -2,6 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDevice } from '../../hooks/useDevice';
 
+interface NavItem {
+  name: string;
+  href: string;
+  icon: string;
+}
+
 const BottomNav: React.FC = () => {
   const location = useLocation();
   const { isMobile, isTablet } = useDevice();
@@ -11,40 +17,24 @@ const BottomNav: React.FC = () => {
     return null;
   }
 
+  // Primary navigation items (4-5 most important)
+  const navItems: NavItem[] = [
+    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { name: 'Analyze', href: '/analyzer', icon: '🔍' },
+    { name: 'Trade', href: '/trade', icon: '💹' },
+    { name: 'Portfolio', href: '/positions', icon: '📈' },
+  ];
+
   const isActive = (path: string) => {
-    if (path === '/dashboard' || path === '/') {
-      return location.pathname === '/dashboard' || location.pathname === '/';
+    if (path === '/dashboard') {
+      return location.pathname === '/' || location.pathname === '/dashboard';
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  // Primary navigation items (4 most important)
-  const navItems = [
-    {
-      path: '/dashboard',
-      label: 'Dashboard',
-      icon: '📊',
-    },
-    {
-      path: '/analyzer',
-      label: 'Analyze',
-      icon: '🔍',
-    },
-    {
-      path: '/trade',
-      label: 'Trade',
-      icon: '💹',
-    },
-    {
-      path: '/opportunities',
-      label: 'Discover',
-      icon: '🎯',
-    },
-  ];
-
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg"
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
       style={{
         paddingBottom: 'env(safe-area-inset-bottom, 0)',
         height: 'calc(64px + env(safe-area-inset-bottom, 0))',
@@ -52,11 +42,11 @@ const BottomNav: React.FC = () => {
     >
       <div className="grid grid-cols-4 h-16">
         {navItems.map((item) => {
-          const active = isActive(item.path);
+          const active = isActive(item.href);
           return (
             <Link
-              key={item.path}
-              to={item.path}
+              key={item.href}
+              to={item.href}
               className={`
                 flex flex-col items-center justify-center gap-1
                 min-h-[44px] min-w-[44px]
@@ -72,7 +62,7 @@ const BottomNav: React.FC = () => {
             >
               <span className="text-2xl leading-none">{item.icon}</span>
               <span className={`text-xs font-medium ${active ? 'font-semibold' : ''}`}>
-                {item.label}
+                {item.name}
               </span>
             </Link>
           );

@@ -8,6 +8,8 @@ import { Position, Trade } from '../types/trades';
 import { Stock } from '../types/watchlist';
 import { Line, Bar } from 'react-chartjs-2';
 import OnboardingModal from '../components/OnboardingModal';
+import { useDevice } from '../hooks/useDevice';
+import ResponsiveTable, { ColumnDef } from '../components/common/ResponsiveTable';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -73,6 +75,7 @@ const setCachedData = (data: CachedData) => {
 };
 
 const Dashboard: React.FC = () => {
+  const { isMobile, isTablet } = useDevice();
   const [positions, setPositions] = useState<Position[]>([]);
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
@@ -665,7 +668,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingModal
@@ -674,9 +677,9 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-3xl font-bold text-secondary">Dashboard</h1>
-        <div className="flex gap-3">
+      <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} flex-wrap gap-4`}>
+        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-secondary`}>Dashboard</h1>
+        <div className={`flex ${isMobile ? 'flex-col w-full' : 'flex-row'} gap-3`}>
           <button
             onClick={async () => {
               toast.loading('Refreshing dashboard data...', { id: 'refresh' });
@@ -684,7 +687,7 @@ const Dashboard: React.FC = () => {
               toast.success('Dashboard refreshed!', { id: 'refresh' });
             }}
             disabled={refreshing}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+            className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium min-h-[48px]`}
             title="Manually refresh dashboard data and update position prices"
           >
             {refreshing ? (
@@ -702,7 +705,7 @@ const Dashboard: React.FC = () => {
           <button
             onClick={checkPositionExits}
             disabled={checkingExits}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+            className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium min-h-[48px]`}
             title="Check all positions for exit conditions (profit targets and stop losses)"
           >
             {checkingExits ? (
@@ -724,7 +727,7 @@ const Dashboard: React.FC = () => {
               toast.success(widgetsEnabled ? 'Widgets disabled for better performance' : 'Widgets enabled');
               window.location.reload();
             }}
-            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium text-sm"
+            className={`${isMobile ? 'w-full' : ''} bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium text-sm min-h-[48px]`}
             title={localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? 'Disable widgets for faster loading' : 'Enable widgets'}
           >
             {localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? '⚡ Fast Mode' : '📊 Full Mode'}
@@ -733,7 +736,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Links to Opportunities Page */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'} gap-4 mb-4 md:mb-6`}>
         <Link
           to="/opportunities?tab=signals"
           className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-md p-6 border border-indigo-200 hover:shadow-lg transition-shadow cursor-pointer"
@@ -773,64 +776,64 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Account Balance Card */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-lg shadow-lg p-4 md:p-6">
+        <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'}`}>
           <div>
             <p className="text-sm opacity-90 mb-1">Paper Trading Balance</p>
-            <h2 className="text-4xl font-bold">
+            <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
               ${accountBalance !== null ? accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Loading...'}
             </h2>
             <p className="text-sm opacity-75 mt-2">Virtual funds for testing strategies</p>
           </div>
-          <div className="text-6xl opacity-20">💰</div>
+          {!isMobile && <div className="text-6xl opacity-20">💰</div>}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Total Positions</h3>
-          <p className="text-3xl font-bold text-secondary">{positions.length}</p>
+      <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-4'} gap-4 md:gap-6`}>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Total Positions</h3>
+          <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-secondary`}>{positions.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Unrealized P/L</h3>
-          <p className={`text-3xl font-bold ${totalUnrealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Unrealized P/L</h3>
+          <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${totalUnrealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
             ${totalUnrealizedPnl.toFixed(2)}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Realized P/L (30d)</h3>
-          <p className={`text-3xl font-bold ${totalRealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Realized P/L (30d)</h3>
+          <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${totalRealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
             ${totalRealizedPnl.toFixed(2)}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Win Rate</h3>
-          <p className="text-3xl font-bold text-primary">{winRate.toFixed(1)}%</p>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Win Rate</h3>
+          <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-primary`}>{winRate.toFixed(1)}%</p>
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-secondary mb-4">Performance Trend</h2>
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'} gap-4 md:gap-6`}>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary mb-4`}>Performance Trend</h2>
           {performanceData.labels.length > 0 && performanceData.labels[0] !== 'No data' ? (
-            <div className="h-64">
+            <div className={`${isMobile ? 'h-48' : 'h-64'}`}>
               <Line data={performanceData} options={chartOptions} />
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-500">
+            <div className={`${isMobile ? 'h-48' : 'h-64'} flex items-center justify-center text-gray-500`}>
               <div className="text-center">
-                <p className="text-lg mb-2">No performance data yet</p>
+                <p className={`${isMobile ? 'text-base' : 'text-lg'} mb-2`}>No performance data yet</p>
                 <p className="text-sm">Close some positions to see your performance trend</p>
               </div>
             </div>
           )}
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-secondary mb-4">Positions by Symbol</h2>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary mb-4`}>Positions by Symbol</h2>
           {Object.keys(positionsBySymbol).length > 0 ? (
-            <div className="h-64">
+            <div className={`${isMobile ? 'h-48' : 'h-64'}`}>
               <Bar data={positionsChartData} options={{ 
                 responsive: true,
                 maintainAspectRatio: true,
@@ -842,7 +845,7 @@ const Dashboard: React.FC = () => {
               }} />
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-500">
+            <div className={`${isMobile ? 'h-48' : 'h-64'} flex items-center justify-center text-gray-500`}>
               <p>No positions to display</p>
             </div>
           )}
@@ -852,9 +855,9 @@ const Dashboard: React.FC = () => {
       {/* Active Positions */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 md:p-6 border-b border-gray-200">
-          <h2 className="text-lg md:text-xl font-bold text-secondary">Active Positions</h2>
+          <h2 className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'} font-bold text-secondary`}>Active Positions</h2>
         </div>
-        <div className="overflow-x-auto -mx-4 md:mx-0">
+        <div className={`overflow-x-auto ${isMobile ? '-mx-4 px-4' : 'md:mx-0'}`}>
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -1036,9 +1039,9 @@ const Dashboard: React.FC = () => {
       {/* Recent Trades */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 md:p-6 border-b border-gray-200">
-          <h2 className="text-lg md:text-xl font-bold text-secondary">Recent Trades</h2>
+          <h2 className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'} font-bold text-secondary`}>Recent Trades</h2>
         </div>
-        <div className="overflow-x-auto -mx-4 md:mx-0">
+        <div className={`overflow-x-auto ${isMobile ? '-mx-4 px-4' : 'md:mx-0'}`}>
           <div className="inline-block min-w-full align-middle">
             <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -1140,21 +1143,12 @@ const Dashboard: React.FC = () => {
 
       {/* Position Details Modal */}
       {selectedPosition && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
-          <div className="bg-white rounded-lg p-4 md:p-6 w-full h-full md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto md:mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-secondary">
-                Position Details: {selectedPosition.symbol} {selectedPosition.contract_type?.toUpperCase()}
-              </h2>
-              <button
-                onClick={() => setSelectedPosition(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
+        <ResponsiveModal
+          isOpen={!!selectedPosition}
+          onClose={() => setSelectedPosition(null)}
+          title={`Position Details: ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}`}
+        >
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 md:gap-6`}>
               {/* Basic Info */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-700 border-b pb-2">Basic Information</h3>
@@ -1472,7 +1466,7 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 md:gap-6`}>
               {/* Basic Info */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-700 border-b pb-2">Trade Information</h3>
@@ -1624,13 +1618,12 @@ const Dashboard: React.FC = () => {
             <div className="mt-6">
               <button
                 onClick={() => setSelectedTrade(null)}
-                className="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className={`${isMobile ? 'w-full' : ''} bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium min-h-[48px]`}
               >
                 Close
               </button>
             </div>
-          </div>
-        </div>
+        </ResponsiveModal>
       )}
     </div>
   );

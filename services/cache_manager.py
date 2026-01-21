@@ -161,8 +161,8 @@ class CacheManager:
         except Exception as e:
             logger.warning(f"Cache set failed: {e}")
     
-    def get_analysis(self, symbol: str, expiration: str, preference: str):
-        """Get cached analysis result (returns list or dict as originally cached)"""
+    def get_analysis(self, symbol: str, expiration: str, preference: str) -> Optional[Dict]:
+        """Get cached analysis result"""
         if not self.enabled or not self.redis:
             return None
         
@@ -171,49 +171,22 @@ class CacheManager:
             cached = self.redis.get(key)
             if cached:
                 logger.debug(f"💾 Cache HIT: {key}")
-                cached_data = json.loads(cached)
-                
-                # Unwrap if it was a list
-                if isinstance(cached_data, dict) and '_type' in cached_data:
-                    if cached_data['_type'] == 'list':
-                        return cached_data.get('_data', [])
-                    elif cached_data['_type'] == 'dict':
-                        # Remove metadata fields
-                        result = {k: v for k, v in cached_data.items() 
-                                 if not k.startswith('_')}
-                        return result
-                
-                return cached_data
+                return json.loads(cached)
             return None
         except Exception as e:
             logger.warning(f"Cache get failed: {e}")
             return None
     
-    def set_analysis(self, symbol: str, expiration: str, preference: str, data, ttl: int = 300) -> None:
-        """Cache analysis result (accepts list or dict)"""
+    def set_analysis(self, symbol: str, expiration: str, preference: str, data: Dict, ttl: int = 300) -> None:
+        """Cache analysis result"""
         if not self.enabled or not self.redis:
             return
         
         try:
             key = f"analysis:{symbol.upper()}:{expiration}:{preference}"
-            
-            # Handle both list and dict - wrap list in dict if needed
-            if isinstance(data, list):
-                cache_data = {
-                    '_type': 'list',
-                    '_cache_time': time.time(),
-                    '_data': data
-                }
-            elif isinstance(data, dict):
-                cache_data = dict(data)  # Copy to avoid modifying original
-                cache_data['_cache_time'] = time.time()
-                cache_data['_type'] = 'dict'
-            else:
-                logger.warning(f"Unexpected data type for analysis cache: {type(data)}")
-                return
-            
-            self.redis.setex(key, ttl, json.dumps(cache_data))
-            logger.debug(f"💾 Cached analysis: {key} (TTL: {ttl}s, type: {type(data).__name__})")
+            data['_cache_time'] = time.time()
+            self.redis.setex(key, ttl, json.dumps(data))
+            logger.debug(f"💾 Cached analysis: {key} (TTL: {ttl}s)")
         except Exception as e:
             logger.warning(f"Cache set failed: {e}")
     
