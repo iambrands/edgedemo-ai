@@ -13,13 +13,12 @@ const AdminStatus: React.FC = () => {
   const loadStatus = async () => {
     setLoading(true);
     try {
-      // Try simple status endpoint first (no auth required)
-      const response = await fetch('/api/admin/status');
-      const data = await response.json();
-      setStatus(data);
+      // Use API client to ensure authentication header is included
+      const response = await api.get('/api/admin/status');
+      setStatus(response.data);
     } catch (error: any) {
       console.error('Failed to load status:', error);
-      toast.error('Failed to load admin status');
+      toast.error(error?.response?.data?.error || 'Failed to load admin status');
     } finally {
       setLoading(false);
     }
