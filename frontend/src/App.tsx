@@ -21,6 +21,7 @@ import OptimizationDashboard from './pages/OptimizationDashboard';
 import PerformanceDashboard from './pages/PerformanceDashboard';
 import AdminStatus from './pages/AdminStatus';
 import TradierSetup from './pages/TradierSetup';
+import HealthCheck from './pages/HealthCheck';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
@@ -109,6 +110,10 @@ function AppRoutes() {
               <Register />
             )
           } 
+        />
+        <Route 
+          path="/health" 
+          element={<HealthCheck />} 
         />
         <Route
           path="/*"
