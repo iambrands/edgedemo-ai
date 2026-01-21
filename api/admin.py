@@ -570,8 +570,8 @@ def apply_optimizations(current_user=None):
             
             ("trades", "user_id", "CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id)"),
             ("trades", "symbol", "CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol)"),
-            # Note: trades.executed_at might not exist - check column name
-            # ("trades", "executed_at", "CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at DESC)"),
+            # Note: trades table uses 'trade_date', not 'executed_at'
+            ("trades", "trade_date", "CREATE INDEX IF NOT EXISTS idx_trades_trade_date ON trades(trade_date DESC)"),
             
             ("alerts", "user_id", "CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON alerts(user_id)"),
             ("alerts", "status", "CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)"),
