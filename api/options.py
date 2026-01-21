@@ -48,8 +48,12 @@ def get_quote(symbol=None):
             current_app.logger.warning(f'Invalid symbol: {symbol}')
         except:
             pass
-        return jsonify({'error': 'Invalid symbol'}), 400
+        return jsonify({
+            'error': 'Invalid symbol',
+            'message': 'Symbol must be between 1-10 characters and contain only letters'
+        }), 400
     
+    try:
         # Use Tradier directly
         try:
             tradier = TradierConnector()
