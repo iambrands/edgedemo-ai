@@ -306,6 +306,7 @@ const Dashboard: React.FC = () => {
       });
       
       setLastLoadTime(Date.now());
+      setLastUpdated(new Date());
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
       // Only show error toast for manual refreshes, not silent background loads
