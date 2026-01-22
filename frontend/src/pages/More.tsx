@@ -20,6 +20,29 @@ const More: React.FC = () => {
     logout();
   };
 
+  const managementItems: MenuItem[] = [
+    {
+      icon: '📊',
+      label: 'Management Hub',
+      path: '/management',
+    },
+    {
+      icon: '📋',
+      label: 'Watchlist',
+      path: '/watchlist',
+    },
+    {
+      icon: '🤖',
+      label: 'Automations',
+      path: '/automations',
+    },
+    {
+      icon: '🔔',
+      label: 'Alerts',
+      path: '/alerts',
+    },
+  ];
+
   const accountItems: MenuItem[] = [
     {
       icon: '⚙️',
@@ -57,6 +80,49 @@ const More: React.FC = () => {
             <h2 className="text-lg font-semibold text-secondary">{user?.username || 'User'}</h2>
             <p className="text-sm text-gray-600">{user?.email || ''}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Management Section */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-secondary">Management</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {managementItems.map((item, index) => {
+            const content = (
+              <div
+                className={`
+                  flex items-center gap-4 p-4 md:p-6
+                  transition-colors
+                  text-gray-700 hover:bg-gray-50
+                  ${item.path ? 'cursor-pointer' : ''}
+                  min-h-[60px]
+                `}
+                onClick={item.onClick}
+              >
+                <span className="text-2xl">{item.icon}</span>
+                <span className="flex-1 font-medium">{item.label}</span>
+                {item.path && (
+                  <span className="text-gray-400">›</span>
+                )}
+              </div>
+            );
+
+            if (item.path) {
+              return (
+                <Link key={index} to={item.path} className="block">
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={index}>
+                {content}
+              </div>
+            );
+          })}
         </div>
       </div>
 

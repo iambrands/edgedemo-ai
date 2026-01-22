@@ -22,6 +22,7 @@ import PerformanceDashboard from './pages/PerformanceDashboard';
 import AdminStatus from './pages/AdminStatus';
 import TradierSetup from './pages/TradierSetup';
 import HealthCheck from './pages/HealthCheck';
+import Management from './pages/Management';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
@@ -131,6 +132,7 @@ function AppRoutes() {
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/settings/tradier-setup" element={<TradierSetup />} />
+                  <Route path="/management" element={<Management />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="/more" element={<More />} />
                   <Route path="/portfolio" element={<Portfolio />} />
