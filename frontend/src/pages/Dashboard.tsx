@@ -100,6 +100,7 @@ const Dashboard: React.FC = () => {
   const [checkingExits, setCheckingExits] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -175,10 +176,17 @@ const Dashboard: React.FC = () => {
       }
     }, 30000); // 30 seconds
     
+    // Auto-refresh stale position prices after initial load
+    // Wait a bit for positions to load first
+    const autoRefreshTimeout = setTimeout(() => {
+      autoRefreshStalePrices();
+    }, 2000); // Wait 2 seconds after mount
+    
     return () => {
       clearInterval(autoRefreshInterval);
+      clearTimeout(autoRefreshTimeout);
     };
-  }, []);
+  }, [positions]); // Add positions as dependency so it re-runs when positions change
 
   const loadDashboardData = async (updatePrices: boolean = false, silent: boolean = false) => {
     // Only show loading state if it's a manual refresh (not silent background load)
@@ -693,8 +701,101 @@ const Dashboard: React.FC = () => {
     toast.success('Dashboard refreshed!', { id: 'refresh' });
   };
 
+  const refreshSinglePosition = async (positionId: number | string): Promise<void> => {
+    try {
+      // Extract numeric ID if it's a string like "spread_1"
+      let numericId: number;
+      if (typeof positionId === 'string') {
+        const match = positionId.toString().match(/\d+/);
+        if (!match) {
+          console.warn(`Invalid position ID format: ${positionId}`);
+          return;
+        }
+        numericId = parseInt(match[0], 10);
+      } else {
+        numericId = positionId;
+      }
+      
+      const response = await api.post(`/trades/positions/${numericId}/refresh`);
+      
+      if (!response.data) {
+        console.warn(`Failed to refresh position ${positionId}`);
+      }
+    } catch (error: any) {
+      // Silently handle errors - don't spam console
+      if (error.response?.status !== 404) {
+        console.debug(`Error refreshing position ${positionId}:`, error.message);
+      }
+    }
+  };
+
+  const autoRefreshStalePrices = async () => {
+    try {
+      // Only refresh if we have positions loaded
+      if (positions.length === 0) {
+        return;
+      }
+
+      // Only refresh OPEN positions
+      const openPositions = positions.filter(pos => pos.status === 'open');
+      
+      // Check for stale prices (>5 minutes old or NULL)
+      const stalePositions = openPositions.filter(pos => {
+        // No current price - definitely stale
+        if (!pos.current_price) return true;
+        
+        // Check if last_updated is stale
+        if (pos.last_updated) {
+          const lastUpdate = new Date(pos.last_updated);
+          const now = new Date();
+          const minutesOld = (now.getTime() - lastUpdate.getTime()) / (1000 * 60);
+          return minutesOld > 5; // Refresh if older than 5 minutes
+        }
+        
+        // No last_updated timestamp - refresh it
+        return true;
+      });
+      
+      if (stalePositions.length > 0) {
+        setAutoRefreshing(true);
+        console.log(`Auto-refreshing ${stalePositions.length} stale positions`);
+        
+        // Batch refresh (5 at a time to avoid rate limits)
+        const batchSize = 5;
+        for (let i = 0; i < stalePositions.length; i += batchSize) {
+          const batch = stalePositions.slice(i, i + batchSize);
+          await Promise.all(
+            batch.map(pos => refreshSinglePosition(pos.id))
+          );
+          
+          // Small delay between batches to avoid overwhelming API
+          if (i + batchSize < stalePositions.length) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        
+        // Reload positions to get updated prices
+        await loadDashboardData(false, true); // Silent refresh
+        setLastUpdated(new Date());
+      }
+    } catch (error) {
+      console.error('Auto-refresh failed:', error);
+      // Don't show error toast - this is background operation
+    } finally {
+      setAutoRefreshing(false);
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Auto-refresh indicator */}
+      {autoRefreshing && (
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          <span>Updating prices...</span>
+        </div>
+      )}
+      
       {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingModal
