@@ -387,12 +387,14 @@ def refresh_position(current_user, position_id):
         if exit_triggered:
             db.session.refresh(position)
             db.session.commit()
+            logger.info(f"Position {numeric_id} closed due to exit condition")
             return jsonify({
                 'message': 'Position refreshed and closed due to exit condition',
                 'position': position.to_dict(),
                 'exit_triggered': True
             }), 200
         
+        logger.info(f"Position {numeric_id} refreshed successfully")
         return jsonify({
             'message': 'Position refreshed',
             'position': position.to_dict(),
