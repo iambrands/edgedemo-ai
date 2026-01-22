@@ -702,3 +702,28 @@ def apply_optimizations(current_user):
         logger.error(f"Optimization apply failed: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+
+@admin_bp.route('/admin/cache/warm', methods=['POST'])
+@admin_required
+def force_cache_warming(current_user):
+    """Manually trigger cache warming for testing."""
+    try:
+        from services.cache_warmer import CacheWarmer
+        
+        logger.info("🔄 Manual cache warming triggered by admin")
+        warmer = CacheWarmer()
+        results = warmer.warm_all()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Cache warming completed',
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Manual cache warming failed: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
