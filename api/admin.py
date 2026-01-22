@@ -727,3 +727,77 @@ def force_cache_warming(current_user):
             'error': str(e)
         }), 500
 
+
+@admin_bp.route('/admin/debug/positions', methods=['GET'])
+@token_required
+def debug_positions(current_user):
+    """Debug endpoint to verify all positions exist in database.
+    
+    This endpoint allows any logged-in user to check their own positions.
+    Use this to verify data is safe before making changes.
+    
+    Access at: /api/admin/debug/positions
+    """
+    try:
+        from models.position import Position
+        
+        db = current_app.extensions['sqlalchemy']
+        
+        # Get current user's positions
+        positions = db.session.query(Position).filter_by(
+            user_id=current_user.id
+        ).order_by(Position.created_at.desc()).all()
+        
+        # Get detailed info
+        position_data = []
+        for pos in positions:
+            position_data.append({
+                'id': pos.id,
+                'symbol': pos.symbol,
+                'contract_type': pos.contract_type,
+                'strike_price': float(pos.strike_price) if pos.strike_price else None,
+                'expiration_date': pos.expiration_date.isoformat() if pos.expiration_date else None,
+                'quantity': pos.quantity,
+                'entry_price': float(pos.entry_price) if pos.entry_price else None,
+                'current_price': float(pos.current_price) if pos.current_price else None,
+                'status': pos.status,
+                'spread_id': getattr(pos, 'spread_id', None),
+                'position_type': getattr(pos, 'position_type', None),
+                'created_at': pos.created_at.isoformat() if pos.created_at else None,
+                'last_updated': pos.last_updated.isoformat() if pos.last_updated else None,
+                'unrealized_pnl': float(pos.unrealized_pnl) if pos.unrealized_pnl else None,
+                'realized_pnl': float(pos.realized_pnl) if pos.realized_pnl else None,
+                'is_spread': getattr(pos, 'is_spread', False)
+            })
+        
+        # Summary statistics
+        total_positions = len(positions)
+        open_positions = len([p for p in positions if p.status == 'open'])
+        closed_positions = len([p for p in positions if p.status == 'closed'])
+        spread_positions = len([p for p in positions if getattr(p, 'is_spread', False) or getattr(p, 'spread_id', None)])
+        positions_with_price = len([p for p in positions if p.current_price is not None])
+        positions_without_price = len([p for p in positions if p.current_price is None and p.status == 'open'])
+        
+        return jsonify({
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email,
+            'summary': {
+                'total_positions': total_positions,
+                'open_positions': open_positions,
+                'closed_positions': closed_positions,
+                'spread_positions': spread_positions,
+                'positions_with_price': positions_with_price,
+                'positions_without_price': positions_without_price
+            },
+            'positions': position_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error in debug positions endpoint: {e}", exc_info=True)
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
