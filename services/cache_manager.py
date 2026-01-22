@@ -94,10 +94,11 @@ class CacheManager:
         if not self.enabled or not self.redis:
             return
         
+        # Generate key BEFORE try block to ensure it's in scope for error handling
+        from utils.cache_keys import options_chain_key
+        key = options_chain_key(symbol, expiration)
+        
         try:
-            from utils.cache_keys import options_chain_key
-            key = options_chain_key(symbol, expiration)
-            
             # Add cache metadata
             data['_cache_time'] = time.time()
             data['_cache_key'] = key
@@ -150,15 +151,16 @@ class CacheManager:
         Cache quote with market-aware TTL.
         
         Strategy:
-        - During market hours: 30 seconds (fresher data)
-        - After hours: 5 minutes (less critical)
+        - During market hours: 5 minutes (fresher data)
+        - After hours: 10 minutes (less critical)
         """
         if not self.enabled or not self.redis:
             return
         
-            from utils.cache_keys import quote_key
-            key = quote_key(symbol)
-            
+        # Generate key BEFORE try block to ensure it's in scope for error handling
+        from utils.cache_keys import quote_key
+        key = quote_key(symbol)
+        
         try:
             # Check if market is open (Market-aware TTL) - INCREASED for better hit rates
             if ttl is None:
@@ -209,9 +211,11 @@ class CacheManager:
         if not self.enabled or not self.redis:
             return
         
+        # Generate key BEFORE try block to ensure it's in scope for error handling
+        from utils.cache_keys import analysis_key
+        key = analysis_key(symbol, expiration, preference)
+        
         try:
-            from utils.cache_keys import analysis_key
-            key = analysis_key(symbol, expiration, preference)
             data['_cache_time'] = time.time()
             # Serialize data to JSON
             serialized_data = json.dumps(data, default=str)
