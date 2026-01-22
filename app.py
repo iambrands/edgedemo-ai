@@ -515,10 +515,11 @@ def create_app(config_name=None):
             # Don't crash app if warming fails
     
     # Run cache warming in background thread (don't block startup)
+    # Delay by 2 minutes to ensure health check passes first
     import threading
     def delayed_cache_warm():
         import time
-        time.sleep(10)  # Wait 10 seconds for app to fully initialize
+        time.sleep(120)  # Wait 2 minutes for app to fully initialize and health check to pass
         warm_cache_on_startup()
     
     threading.Thread(target=delayed_cache_warm, daemon=True).start()
