@@ -100,6 +100,7 @@ const Dashboard: React.FC = () => {
   const [checkingExits, setCheckingExits] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [refreshingPrices, setRefreshingPrices] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -693,6 +694,54 @@ const Dashboard: React.FC = () => {
     toast.success('Dashboard refreshed!', { id: 'refresh' });
   };
 
+  const handleRefreshPrices = async () => {
+    try {
+      setRefreshingPrices(true);
+      toast.loading('Fetching fresh prices from Tradier...', { id: 'refresh-prices' });
+      
+      // Call backend to refresh all positions from Tradier
+      const response = await api.post('/trades/positions/refresh-all');
+      
+      if (!response.ok) {
+        throw new Error('Failed to refresh prices');
+      }
+      
+      const result = response.data;
+      
+      // Reload positions to get updated prices
+      await loadDashboardData(false, false);
+      setLastUpdated(new Date());
+      
+      // Show success message
+      if (result.updated > 0) {
+        toast.success(
+          `Updated prices for ${result.updated} position${result.updated > 1 ? 's' : ''}`,
+          { id: 'refresh-prices', duration: 3000 }
+        );
+      } else {
+        toast.success('No positions to update', { id: 'refresh-prices', duration: 2000 });
+      }
+      
+      // Show errors if any
+      if (result.errors && result.errors.length > 0) {
+        console.warn('Some positions failed to update:', result.errors);
+        toast.error(
+          `${result.errors.length} position${result.errors.length > 1 ? 's' : ''} failed to update`,
+          { id: 'refresh-prices-errors', duration: 4000 }
+        );
+      }
+      
+    } catch (error: any) {
+      console.error('Error refreshing prices:', error);
+      toast.error(
+        error.response?.data?.error || 'Failed to refresh prices. Please try again.',
+        { id: 'refresh-prices', duration: 5000 }
+      );
+    } finally {
+      setRefreshingPrices(false);
+    }
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Onboarding Modal */}
@@ -720,19 +769,46 @@ const Dashboard: React.FC = () => {
             )}
           </div>
           
-          {/* Subtle manual refresh button */}
-          <button
-            onClick={handleManualRefresh}
-            disabled={refreshing}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Refresh now"
-          >
-            {refreshing ? (
-              <span className="animate-spin text-lg">⏳</span>
-            ) : (
-              <span className="text-lg">🔄</span>
-            )}
-          </button>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            {/* Subtle manual refresh button (reload from DB) */}
+            <button
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh dashboard data"
+            >
+              {refreshing ? (
+                <span className="animate-spin text-lg">⏳</span>
+              ) : (
+                <span className="text-lg">🔄</span>
+              )}
+            </button>
+            
+            {/* Refresh Prices button (fetch from Tradier) */}
+            <button
+              onClick={handleRefreshPrices}
+              disabled={refreshingPrices}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                refreshingPrices
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              title="Fetch fresh prices from Tradier API"
+            >
+              {refreshingPrices ? (
+                <>
+                  <span className="animate-spin text-sm">⏳</span>
+                  <span className="text-sm hidden sm:inline">Updating...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm">💰</span>
+                  <span className="text-sm hidden sm:inline">Refresh Prices</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

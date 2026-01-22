@@ -339,6 +339,68 @@ def refresh_position(current_user, position_id):
         current_app.logger.error(f"Error refreshing position {position_id}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
+@trades_bp.route('/positions/refresh-all', methods=['POST', 'OPTIONS'])
+@token_required
+def refresh_all_positions(current_user):
+    """Refresh prices for all open positions from Tradier."""
+    # OPTIONS is handled by token_required decorator
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    try:
+        from models.position import Position
+        from services.position_monitor import PositionMonitor
+        from flask import current_app
+        from datetime import datetime
+        
+        db = current_app.extensions['sqlalchemy']
+        
+        # Get all open positions for current user
+        positions = db.session.query(Position).filter_by(
+            user_id=current_user.id,
+            status='open'
+        ).all()
+        
+        if not positions:
+            return jsonify({
+                'message': 'No open positions to refresh',
+                'updated': 0,
+                'total': 0
+            }), 200
+        
+        # Use PositionMonitor to update all positions
+        monitor = PositionMonitor()
+        updated_count = 0
+        errors = []
+        
+        for position in positions:
+            try:
+                # Update position data from Tradier
+                monitor.update_position_data(position, force_update=True)
+                updated_count += 1
+                current_app.logger.info(f"Updated position {position.id}: {position.symbol} ${position.current_price}")
+            except Exception as e:
+                error_msg = str(e)
+                current_app.logger.error(f"Error refreshing position {position.id}: {error_msg}")
+                errors.append(f"{position.symbol}: {error_msg}")
+                continue
+        
+        # Save all updates
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Refreshed {updated_count} of {len(positions)} positions',
+            'updated': updated_count,
+            'total': len(positions),
+            'errors': errors if errors else None
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error refreshing all positions: {e}", exc_info=True)
+        db = current_app.extensions['sqlalchemy']
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @trades_bp.route('/positions/<int:position_id>/close', methods=['POST', 'OPTIONS'])
 @token_required
 def close_position(current_user, position_id):
