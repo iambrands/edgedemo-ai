@@ -953,8 +953,11 @@ const Dashboard: React.FC = () => {
                         )}
                       </td>
                       <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${position.current_price?.toFixed(2) || 'N/A'}
-                        {position.contract_type && (
+                        {position.current_price !== null && position.current_price !== undefined
+                          ? `$${position.current_price.toFixed(2)}`
+                          : <span className="text-gray-400">Not loaded</span>
+                        }
+                        {position.contract_type && position.current_price !== null && position.current_price !== undefined && (
                           <span className="text-xs text-gray-500 ml-1 hidden lg:inline">(premium)</span>
                         )}
                       </td>
@@ -1255,7 +1258,12 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current Price:</span>
-                    <span className="font-medium">${selectedPosition.current_price?.toFixed(2) || 'N/A'}</span>
+                    <span className="font-medium">
+                      {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
+                        ? `$${selectedPosition.current_price.toFixed(2)}`
+                        : <span className="text-gray-400">Not loaded</span>
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Cost:</span>
@@ -1271,12 +1279,15 @@ const Dashboard: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Current Value:</span>
                     <span className="font-medium">
-                      ${(() => {
-                        const isOption = selectedPosition.contract_type && 
-                          ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
-                        const multiplier = isOption ? 100 : 1;
-                        return ((selectedPosition.current_price || 0) * selectedPosition.quantity * multiplier).toFixed(2);
-                      })()}
+                      {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
+                        ? `$${(() => {
+                            const isOption = selectedPosition.contract_type && 
+                              ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
+                            const multiplier = isOption ? 100 : 1;
+                            return (selectedPosition.current_price * selectedPosition.quantity * multiplier).toFixed(2);
+                          })()}`
+                        : <span className="text-gray-400">$0.00</span>
+                      }
                     </span>
                   </div>
                   <div className={`flex justify-between pt-2 border-t ${
@@ -1436,22 +1447,31 @@ const Dashboard: React.FC = () => {
                   <button
                     onClick={async () => {
                       try {
-                        // Skip refresh for spreads (they don't have a refresh endpoint)
-                        if (selectedPosition.is_spread) {
-                          toast.error('Spread positions cannot be refreshed individually. Use the main refresh button.', { id: 'refresh-position' });
-                          return;
-                        }
                         toast.loading('Refreshing position...', { id: 'refresh-position' });
-                        const positionId = typeof selectedPosition.id === 'string' 
-                          ? parseInt(selectedPosition.id.replace('spread_', ''), 10) 
-                          : selectedPosition.id;
+                        
+                        // Handle position ID - could be number or string
+                        let positionId: number;
+                        if (typeof selectedPosition.id === 'string') {
+                          // If it's a string like "spread_X", extract the number
+                          const match = selectedPosition.id.match(/\d+/);
+                          if (!match) {
+                            throw new Error('Invalid position ID format');
+                          }
+                          positionId = parseInt(match[0], 10);
+                        } else {
+                          positionId = selectedPosition.id;
+                        }
+                        
                         const result = await tradesService.refreshPosition(positionId);
                         toast.success('Position refreshed successfully', { id: 'refresh-position' });
+                        
                         // Update the selected position with new data
                         setSelectedPosition(result.position);
-                        // Also refresh the dashboard
+                        
+                        // Also refresh the dashboard to update all positions
                         loadDashboardData(true);
                       } catch (error: any) {
+                        console.error('Error refreshing position:', error);
                         toast.error(error.response?.data?.error || 'Failed to refresh position', { id: 'refresh-position' });
                       }
                     }}
