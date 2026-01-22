@@ -458,7 +458,7 @@ const Portfolio: React.FC = () => {
         <ResponsiveModal
           isOpen={!!selectedPosition}
           onClose={() => setSelectedPosition(null)}
-          title={`Position: ${selectedPosition.symbol}`}
+          title={`Position: ${selectedPosition.symbol} ${selectedPosition.is_spread ? selectedPosition.spread_type?.replace('_', ' ').toUpperCase() || 'SPREAD' : selectedPosition.contract_type?.toUpperCase() || ''}`}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -467,20 +467,68 @@ const Portfolio: React.FC = () => {
                 <span className="font-medium ml-2">{selectedPosition.symbol}</span>
               </div>
               <div>
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium ml-2">
+                  {selectedPosition.is_spread ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      {selectedPosition.spread_type?.replace('_', ' ').toUpperCase() || 'SPREAD'}
+                    </span>
+                  ) : (
+                    selectedPosition.contract_type?.toUpperCase() || 'STOCK'
+                  )}
+                </span>
+              </div>
+              <div>
                 <span className="text-gray-600">Quantity:</span>
-                <span className="font-medium ml-2">{selectedPosition.quantity}</span>
+                <span className="font-medium ml-2">{selectedPosition.quantity} {selectedPosition.is_spread ? 'spreads' : 'contracts'}</span>
               </div>
-              <div>
-                <span className="text-gray-600">Entry Price:</span>
-                <span className="font-medium ml-2">${selectedPosition.entry_price.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Current Price:</span>
-                <span className="font-medium ml-2">${selectedPosition.current_price?.toFixed(2) || 'N/A'}</span>
-              </div>
-              <div>
+              
+              {/* Spread-specific fields */}
+              {selectedPosition.is_spread ? (
+                <>
+                  <div>
+                    <span className="text-gray-600">Long Strike:</span>
+                    <span className="font-medium ml-2 text-success">${selectedPosition.long_strike?.toFixed(2) || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Short Strike:</span>
+                    <span className="font-medium ml-2 text-error">${selectedPosition.short_strike?.toFixed(2) || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Net Debit:</span>
+                    <span className="font-medium ml-2">${(selectedPosition.net_debit || selectedPosition.entry_price * selectedPosition.quantity * 100).toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Max Profit:</span>
+                    <span className="font-medium ml-2 text-success">${selectedPosition.max_profit?.toFixed(2) || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Max Loss:</span>
+                    <span className="font-medium ml-2 text-error">${selectedPosition.max_loss?.toFixed(2) || 'N/A'}</span>
+                  </div>
+                  {selectedPosition.breakeven && (
+                    <div>
+                      <span className="text-gray-600">Breakeven:</span>
+                      <span className="font-medium ml-2">${selectedPosition.breakeven.toFixed(2)}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-gray-600">Entry Price:</span>
+                    <span className="font-medium ml-2">${selectedPosition.entry_price.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Current Price:</span>
+                    <span className="font-medium ml-2">${selectedPosition.current_price?.toFixed(2) || 'N/A'}</span>
+                  </div>
+                </>
+              )}
+              
+              <div className="col-span-2 pt-2 border-t">
                 <span className="text-gray-600">Unrealized P/L:</span>
-                <span className={`font-medium ml-2 ${(selectedPosition.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'}`}>
+                <span className={`font-bold ml-2 text-lg ${(selectedPosition.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'}`}>
                   ${(selectedPosition.unrealized_pnl || 0).toFixed(2)} ({(selectedPosition.unrealized_pnl_percent || 0).toFixed(2)}%)
                 </span>
               </div>

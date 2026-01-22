@@ -1263,10 +1263,10 @@ const Dashboard: React.FC = () => {
         <ResponsiveModal
           isOpen={!!selectedPosition}
           onClose={() => setSelectedPosition(null)}
-          title={`Position Details: ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}`}
+          title={`Position Details: ${selectedPosition.symbol} ${selectedPosition.is_spread ? selectedPosition.spread_type?.replace('_', ' ').toUpperCase() || 'SPREAD' : selectedPosition.contract_type?.toUpperCase() || 'STOCK'}`}
         >
             <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 md:gap-6`}>
-              {/* Basic Info */}
+              {/* Basic Info - Different for spreads vs single options */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-700 border-b pb-2">Basic Information</h3>
                 <div className="space-y-2 text-sm">
@@ -1275,19 +1275,47 @@ const Dashboard: React.FC = () => {
                     <span className="font-medium">{selectedPosition.symbol}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Contract Type:</span>
-                    <span className="font-medium">{selectedPosition.contract_type?.toUpperCase() || 'STOCK'}</span>
+                    <span className="text-gray-600">Type:</span>
+                    <span className="font-medium">
+                      {selectedPosition.is_spread ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {selectedPosition.spread_type?.replace('_', ' ').toUpperCase() || 'SPREAD'}
+                        </span>
+                      ) : (
+                        selectedPosition.contract_type?.toUpperCase() || 'STOCK'
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Quantity:</span>
-                    <span className="font-medium">{selectedPosition.quantity}</span>
+                    <span className="font-medium">{selectedPosition.quantity} {selectedPosition.is_spread ? 'spreads' : 'contracts'}</span>
                   </div>
-                  {selectedPosition.strike_price && (
+                  
+                  {/* Spread-specific strike information */}
+                  {selectedPosition.is_spread ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Long Strike:</span>
+                        <span className="font-medium text-success">${selectedPosition.long_strike?.toFixed(2) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Short Strike:</span>
+                        <span className="font-medium text-error">${selectedPosition.short_strike?.toFixed(2) || 'N/A'}</span>
+                      </div>
+                      {selectedPosition.strike_width && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Strike Width:</span>
+                          <span className="font-medium">${selectedPosition.strike_width.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : selectedPosition.strike_price ? (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Strike Price:</span>
                       <span className="font-medium">${selectedPosition.strike_price.toFixed(2)}</span>
                     </div>
-                  )}
+                  ) : null}
+                  
                   {selectedPosition.expiration_date && (
                     <>
                       <div className="flex justify-between">
@@ -1312,7 +1340,7 @@ const Dashboard: React.FC = () => {
                     <span className="text-gray-600">Entry Date:</span>
                     <span className="font-medium">{formatDate(selectedPosition.entry_date)}</span>
                   </div>
-                  {selectedPosition.option_symbol && (
+                  {!selectedPosition.is_spread && selectedPosition.option_symbol && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Option Symbol:</span>
                       <span className="font-medium text-xs">{selectedPosition.option_symbol}</span>
@@ -1321,65 +1349,111 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Pricing & P/L */}
+              {/* Pricing & P/L - Different for spreads vs single options */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-700 border-b pb-2">Pricing & P/L</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Entry Price:</span>
-                    <span className="font-medium">${selectedPosition.entry_price.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Current Price:</span>
-                    <span className="font-medium">
-                      {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
-                        ? `$${selectedPosition.current_price.toFixed(2)}`
-                        : <span className="text-gray-400">Not loaded</span>
-                      }
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Cost:</span>
-                    <span className="font-medium">
-                      ${(() => {
-                        const isOption = selectedPosition.contract_type && 
-                          ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
-                        const multiplier = isOption ? 100 : 1;
-                        return (selectedPosition.entry_price * selectedPosition.quantity * multiplier).toFixed(2);
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Current Value:</span>
-                    <span className="font-medium">
-                      {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
-                        ? `$${(() => {
+                  {selectedPosition.is_spread ? (
+                    /* Spread-specific pricing */
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Net Debit:</span>
+                        <span className="font-medium">${(selectedPosition.net_debit || selectedPosition.entry_price * selectedPosition.quantity * 100).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Current Value:</span>
+                        <span className="font-medium">
+                          {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
+                            ? `$${(selectedPosition.current_price * selectedPosition.quantity * 100).toFixed(2)}`
+                            : <span className="text-gray-400">Not loaded</span>
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="text-gray-600">Max Profit:</span>
+                        <span className="font-medium text-success">${selectedPosition.max_profit?.toFixed(2) || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Max Loss:</span>
+                        <span className="font-medium text-error">${selectedPosition.max_loss?.toFixed(2) || 'N/A'}</span>
+                      </div>
+                      {selectedPosition.breakeven && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Breakeven:</span>
+                          <span className="font-medium">${selectedPosition.breakeven.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className={`flex justify-between pt-2 border-t ${
+                        (selectedPosition.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
+                      }`}>
+                        <span className="font-semibold">Unrealized P/L:</span>
+                        <span className="font-bold text-lg">
+                          ${(selectedPosition.unrealized_pnl || 0).toFixed(2)} 
+                          ({(selectedPosition.unrealized_pnl_percent || 0).toFixed(2)}%)
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    /* Single option pricing */
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Entry Price:</span>
+                        <span className="font-medium">${selectedPosition.entry_price.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Current Price:</span>
+                        <span className="font-medium">
+                          {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
+                            ? `$${selectedPosition.current_price.toFixed(2)}`
+                            : <span className="text-gray-400">Not loaded</span>
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Cost:</span>
+                        <span className="font-medium">
+                          ${(() => {
                             const isOption = selectedPosition.contract_type && 
                               ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
                             const multiplier = isOption ? 100 : 1;
-                            return (selectedPosition.current_price * selectedPosition.quantity * multiplier).toFixed(2);
-                          })()}`
-                        : <span className="text-gray-400">$0.00</span>
-                      }
-                    </span>
-                  </div>
-                  <div className={`flex justify-between pt-2 border-t ${
-                    (selectedPosition.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
-                  }`}>
-                    <span className="font-semibold">Unrealized P/L:</span>
-                    <span className="font-bold text-lg">
-                      ${(selectedPosition.unrealized_pnl || 0).toFixed(2)} 
-                      ({(selectedPosition.unrealized_pnl_percent || 0).toFixed(2)}%)
-                    </span>
-                  </div>
+                            return (selectedPosition.entry_price * selectedPosition.quantity * multiplier).toFixed(2);
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Current Value:</span>
+                        <span className="font-medium">
+                          {selectedPosition.current_price !== null && selectedPosition.current_price !== undefined
+                            ? `$${(() => {
+                                const isOption = selectedPosition.contract_type && 
+                                  ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
+                                const multiplier = isOption ? 100 : 1;
+                                return (selectedPosition.current_price * selectedPosition.quantity * multiplier).toFixed(2);
+                              })()}`
+                            : <span className="text-gray-400">$0.00</span>
+                          }
+                        </span>
+                      </div>
+                      <div className={`flex justify-between pt-2 border-t ${
+                        (selectedPosition.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-error'
+                      }`}>
+                        <span className="font-semibold">Unrealized P/L:</span>
+                        <span className="font-bold text-lg">
+                          ${(selectedPosition.unrealized_pnl || 0).toFixed(2)} 
+                          ({(selectedPosition.unrealized_pnl_percent || 0).toFixed(2)}%)
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* AI Analysis */}
-              <div className="space-y-4 col-span-2">
+              <div className={`space-y-4 ${isMobile ? '' : 'col-span-2'}`}>
                 <h3 className="font-semibold text-gray-700 border-b pb-2">AI Analysis</h3>
                 <div className="bg-blue-50 rounded-lg p-4 text-sm">
                   {(() => {
+                    const isSpread = selectedPosition.is_spread;
                     const isOption = selectedPosition.contract_type && 
                       ['call', 'put', 'option'].includes(selectedPosition.contract_type.toLowerCase());
                     const pnlPercent = selectedPosition.unrealized_pnl_percent || 0;
@@ -1402,17 +1476,47 @@ const Dashboard: React.FC = () => {
                       analysis.push(`➡️ Flat position: Currently ${pnlPercent >= 0 ? 'up' : 'down'} ${Math.abs(pnlPercent).toFixed(1)}%. Continue monitoring.`);
                     }
                     
-                    // DTE Analysis (for options)
-                    if (isOption && dte !== null) {
+                    // Spread-specific analysis
+                    if (isSpread) {
+                      const maxProfit = selectedPosition.max_profit || 0;
+                      const maxLoss = selectedPosition.max_loss || 0;
+                      const currentPnl = selectedPosition.unrealized_pnl || 0;
+                      
+                      // Check profit proximity
+                      if (maxProfit > 0 && currentPnl > 0) {
+                        const profitPercent = (currentPnl / maxProfit) * 100;
+                        if (profitPercent >= 75) {
+                          analysis.push(`🎯 Near max profit: You've captured ${profitPercent.toFixed(0)}% of max profit ($${maxProfit.toFixed(2)}). Consider closing to lock in gains.`);
+                        } else if (profitPercent >= 50) {
+                          analysis.push(`📊 Good progress: You've captured ${profitPercent.toFixed(0)}% of max profit. Consider taking profits or letting it run.`);
+                        }
+                      }
+                      
+                      // Check loss proximity
+                      if (maxLoss > 0 && currentPnl < 0) {
+                        const lossPercent = (Math.abs(currentPnl) / maxLoss) * 100;
+                        if (lossPercent >= 75) {
+                          analysis.push(`⚠️ Near max loss: Loss is ${lossPercent.toFixed(0)}% of max loss ($${maxLoss.toFixed(2)}). Consider closing to limit further losses.`);
+                        }
+                      }
+                      
+                      // Breakeven analysis
+                      if (selectedPosition.breakeven) {
+                        analysis.push(`📍 Breakeven: Stock needs to reach $${selectedPosition.breakeven.toFixed(2)} at expiration for this spread to break even.`);
+                      }
+                    }
+                    
+                    // DTE Analysis (for options and spreads)
+                    if ((isOption || isSpread) && dte !== null) {
                       if (dte <= 7) {
-                        analysis.push(`⏰ Time decay risk: Only ${dte} days until expiration. Time decay (theta) will accelerate. Consider closing if near target.`);
+                        analysis.push(`⏰ Time decay risk: Only ${dte} days until expiration. ${isSpread ? 'Spread value will converge toward intrinsic value.' : 'Time decay (theta) will accelerate.'} Consider closing if near target.`);
                       } else if (dte <= 21) {
                         analysis.push(`⏱️ Approaching expiration: ${dte} days remaining. Time decay will increase.`);
                       }
                     }
                     
-                    // Delta Analysis (for options)
-                    if (isOption && currentDelta !== null && currentDelta !== undefined) {
+                    // Delta Analysis (for single options only)
+                    if (!isSpread && isOption && currentDelta !== null && currentDelta !== undefined) {
                       const deltaPercent = Math.abs(currentDelta * 100);
                       if (deltaPercent > 70) {
                         analysis.push(`🎯 High delta (${(currentDelta * 100).toFixed(1)}%): Position behaves more like stock. Large price moves will have significant impact.`);
@@ -1421,8 +1525,8 @@ const Dashboard: React.FC = () => {
                       }
                     }
                     
-                    // IV Analysis (for options)
-                    if (isOption && currentIV !== null && currentIV !== undefined) {
+                    // IV Analysis (for single options only)
+                    if (!isSpread && isOption && currentIV !== null && currentIV !== undefined) {
                       const ivPercent = currentIV * 100;
                       if (ivPercent > 50) {
                         analysis.push(`📊 High implied volatility (${ivPercent.toFixed(1)}%): Premiums are elevated. Good for selling, challenging for buying.`);
@@ -1433,7 +1537,7 @@ const Dashboard: React.FC = () => {
                     
                     // Overall recommendation
                     if (analysis.length === 0) {
-                      analysis.push(`📋 Position appears stable. Continue monitoring price action and Greeks.`);
+                      analysis.push(`📋 Position appears stable. Continue monitoring price action${isSpread ? '' : ' and Greeks'}.`);
                     }
                     
                     return analysis.map((item, idx) => (
@@ -1445,8 +1549,8 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Entry Greeks */}
-              {selectedPosition.entry_delta !== null && selectedPosition.entry_delta !== undefined && (
+              {/* Entry Greeks - Only for single options, not spreads */}
+              {!selectedPosition.is_spread && selectedPosition.entry_delta !== null && selectedPosition.entry_delta !== undefined && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-700 border-b pb-2">Greeks at Entry</h3>
                   <div className="space-y-2 text-sm">
@@ -1476,8 +1580,8 @@ const Dashboard: React.FC = () => {
                 </div>
               )}
 
-              {/* Current Greeks */}
-              {selectedPosition.current_delta !== null && selectedPosition.current_delta !== undefined && (
+              {/* Current Greeks - Only for single options, not spreads */}
+              {!selectedPosition.is_spread && selectedPosition.current_delta !== null && selectedPosition.current_delta !== undefined && (
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-700 border-b pb-2">Current Greeks</h3>
                   <div className="space-y-2 text-sm">
@@ -1522,24 +1626,41 @@ const Dashboard: React.FC = () => {
                       try {
                         toast.loading('Refreshing position...', { id: 'refresh-position' });
                         
-                        // Handle position ID - could be number or string
-                        let positionId: number;
-                        if (typeof selectedPosition.id === 'string') {
-                          // If it's a string like "spread_X", extract the number
-                          const match = selectedPosition.id.match(/\d+/);
-                          if (!match) {
-                            throw new Error('Invalid position ID format');
+                        // Handle spreads differently from single options
+                        if (selectedPosition.is_spread && selectedPosition.spread_id) {
+                          // Refresh spread
+                          const result = await api.post(`/spreads/${selectedPosition.spread_id}/refresh`);
+                          toast.success('Spread refreshed successfully', { id: 'refresh-position' });
+                          
+                          // Update the selected position with new spread data
+                          if (result.data.spread) {
+                            setSelectedPosition({
+                              ...selectedPosition,
+                              current_price: result.data.spread.current_value / (selectedPosition.quantity * 100),
+                              unrealized_pnl: result.data.spread.unrealized_pnl,
+                              unrealized_pnl_percent: result.data.spread.unrealized_pnl_percent
+                            });
                           }
-                          positionId = parseInt(match[0], 10);
                         } else {
-                          positionId = selectedPosition.id;
+                          // Handle single option position
+                          let positionId: number;
+                          if (typeof selectedPosition.id === 'string') {
+                            // If it's a string like "spread_X", extract the number
+                            const match = selectedPosition.id.match(/\d+/);
+                            if (!match) {
+                              throw new Error('Invalid position ID format');
+                            }
+                            positionId = parseInt(match[0], 10);
+                          } else {
+                            positionId = selectedPosition.id;
+                          }
+                          
+                          const result = await tradesService.refreshPosition(positionId);
+                          toast.success('Position refreshed successfully', { id: 'refresh-position' });
+                          
+                          // Update the selected position with new data
+                          setSelectedPosition(result.position);
                         }
-                        
-                        const result = await tradesService.refreshPosition(positionId);
-                        toast.success('Position refreshed successfully', { id: 'refresh-position' });
-                        
-                        // Update the selected position with new data
-                        setSelectedPosition(result.position);
                         
                         // Also refresh the dashboard to update all positions
                         loadDashboardData(true);
@@ -1554,7 +1675,11 @@ const Dashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={async () => {
-                      if (window.confirm(`Close position: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}?`)) {
+                      const confirmMsg = selectedPosition.is_spread
+                        ? `Close spread: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.spread_type?.replace('_', ' ').toUpperCase()}?`
+                        : `Close position: ${selectedPosition.quantity} ${selectedPosition.symbol} ${selectedPosition.contract_type?.toUpperCase()}?`;
+                      
+                      if (window.confirm(confirmMsg)) {
                         try {
                           // Handle spreads differently
                           if (selectedPosition.is_spread && selectedPosition.spread_id) {
@@ -1565,7 +1690,7 @@ const Dashboard: React.FC = () => {
                               : selectedPosition.id;
                             await api.post(`/trades/positions/${positionId}/close`);
                           }
-                          toast.success('Position closed');
+                          toast.success(selectedPosition.is_spread ? 'Spread closed' : 'Position closed');
                           setSelectedPosition(null);
                           loadDashboardData();
                         } catch (error: any) {
@@ -1584,14 +1709,14 @@ const Dashboard: React.FC = () => {
                               toast.error('Authentication error. Please try again.');
                             }
                           } else {
-                            toast.error(error.response?.data?.error || 'Failed to close position');
+                            toast.error(error.response?.data?.error || `Failed to close ${selectedPosition.is_spread ? 'spread' : 'position'}`);
                           }
                         }
                       }
                     }}
                     className="flex-1 bg-error text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
                   >
-                    Close Position
+                    {selectedPosition.is_spread ? 'Close Spread' : 'Close Position'}
                   </button>
                 </>
               )}

@@ -181,6 +181,72 @@ def close_spread(current_user, spread_id):
         logger.error(f"Spread close failed: {e}", exc_info=True)
         return jsonify({'error': 'Close failed', 'details': str(e)}), 500
 
+@spreads_bp.route('/<int:spread_id>/refresh', methods=['POST'])
+@token_required
+def refresh_spread(current_user, spread_id):
+    """Refresh spread price and P/L"""
+    try:
+        spread = Spread.query.get_or_404(spread_id)
+        
+        # Check ownership
+        if spread.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Only refresh open spreads
+        if spread.status != 'open':
+            return jsonify({
+                'success': True,
+                'spread': spread.to_dict(),
+                'message': 'Spread is already closed'
+            }), 200
+        
+        # Get current prices
+        tradier = get_tradier()
+        executor = SpreadExecutor(tradier)
+        
+        try:
+            # Calculate current spread value
+            metrics = executor.calculate_spread_metrics(
+                symbol=spread.symbol,
+                option_type='call' if 'call' in spread.spread_type else 'put',
+                long_strike=spread.long_strike,
+                short_strike=spread.short_strike,
+                expiration=spread.expiration.isoformat(),
+                quantity=spread.quantity
+            )
+            
+            # Update spread with current values
+            if metrics and 'net_debit' in metrics:
+                current_value = abs(metrics['net_debit'])
+                spread.current_value = current_value
+                spread.unrealized_pnl = current_value - spread.net_debit
+                if spread.net_debit != 0:
+                    spread.unrealized_pnl_percent = (spread.unrealized_pnl / spread.net_debit) * 100
+                else:
+                    spread.unrealized_pnl_percent = 0
+                
+                from datetime import datetime
+                spread.last_updated = datetime.utcnow()
+                db.session.commit()
+                
+                logger.info(f"Refreshed spread {spread_id}: current_value=${current_value:.2f}, pnl=${spread.unrealized_pnl:.2f}")
+            
+        except Exception as e:
+            logger.warning(f"Could not get live prices for spread {spread_id}: {e}")
+            # Return existing data even if refresh failed
+        
+        return jsonify({
+            'success': True,
+            'spread': spread.to_dict(),
+            'message': 'Spread refreshed'
+        }), 200
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Spread refresh failed: {e}", exc_info=True)
+        return jsonify({'error': 'Refresh failed', 'details': str(e)}), 500
+
 @spreads_bp.route('', methods=['GET'])
 @token_required
 def get_spreads(current_user):
