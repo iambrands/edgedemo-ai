@@ -407,14 +407,16 @@ def refresh_position(current_user, position_id):
 @trades_bp.route('/positions/refresh-all', methods=['POST', 'OPTIONS'])
 @token_required
 def refresh_all_positions(current_user):
-    """Refresh prices for all open positions from Tradier."""
+    """Refresh prices for all open positions and spreads from Tradier."""
     # OPTIONS is handled by token_required decorator
     if request.method == 'OPTIONS':
         return jsonify({}), 200
     
     try:
         from models.position import Position
+        from models.spread import Spread
         from services.position_monitor import PositionMonitor
+        from services.tradier_connector import TradierConnector
         from flask import current_app
         from datetime import datetime
         
@@ -426,18 +428,27 @@ def refresh_all_positions(current_user):
             status='open'
         ).all()
         
-        if not positions:
+        # Get all open spreads for current user
+        spreads = db.session.query(Spread).filter_by(
+            user_id=current_user.id,
+            status='open'
+        ).all()
+        
+        if not positions and not spreads:
             return jsonify({
-                'message': 'No open positions to refresh',
+                'message': 'No open positions or spreads to refresh',
                 'updated': 0,
-                'total': 0
+                'total': 0,
+                'spreads_updated': 0
             }), 200
         
         # Use PositionMonitor to update all positions
         monitor = PositionMonitor()
         updated_count = 0
+        spreads_updated = 0
         errors = []
         
+        # Update regular positions
         for position in positions:
             try:
                 # Update position data from Tradier
@@ -450,13 +461,75 @@ def refresh_all_positions(current_user):
                 errors.append(f"{position.symbol}: {error_msg}")
                 continue
         
+        # Update spreads
+        tradier = TradierConnector()
+        for spread in spreads:
+            try:
+                option_type = 'put' if 'put' in spread.spread_type else 'call'
+                expiration_str = spread.expiration.isoformat()
+                
+                # Get current prices for both legs
+                long_option = tradier.get_option_quote(
+                    spread.symbol, option_type, spread.long_strike, expiration_str
+                )
+                short_option = tradier.get_option_quote(
+                    spread.symbol, option_type, spread.short_strike, expiration_str
+                )
+                
+                if not long_option or not short_option:
+                    errors.append(f"{spread.symbol} spread: Unable to get option quotes")
+                    continue
+                
+                # Get current prices (use mid or last)
+                current_long_price = long_option.get('mid', 0) or long_option.get('last', 0)
+                current_short_price = short_option.get('mid', 0) or short_option.get('last', 0)
+                
+                if current_long_price <= 0 or current_short_price <= 0:
+                    errors.append(f"{spread.symbol} spread: Invalid option prices")
+                    continue
+                
+                # Calculate current spread value
+                # Current value = (current_long_price - current_short_price) * quantity * 100
+                current_value = (current_long_price - current_short_price) * spread.quantity * 100
+                
+                # Update spread
+                spread.current_value = current_value
+                
+                # Calculate unrealized P&L
+                # P&L = current_value - net_debit (net_debit is what we paid, negative for credit)
+                spread.unrealized_pnl = current_value - abs(spread.net_debit)
+                
+                # Calculate P&L percentage
+                if spread.net_debit != 0:
+                    spread.unrealized_pnl_percent = (spread.unrealized_pnl / abs(spread.net_debit)) * 100
+                else:
+                    spread.unrealized_pnl_percent = 0
+                
+                spread.last_updated = datetime.utcnow()
+                
+                spreads_updated += 1
+                current_app.logger.info(
+                    f"Updated spread {spread.id}: {spread.symbol} "
+                    f"${spread.long_strike}/${spread.short_strike} "
+                    f"current_value=${current_value:.2f} P&L=${spread.unrealized_pnl:.2f}"
+                )
+            except Exception as e:
+                error_msg = str(e)
+                current_app.logger.error(f"Error refreshing spread {spread.id}: {error_msg}")
+                errors.append(f"{spread.symbol} spread: {error_msg}")
+                continue
+        
         # Save all updates
         db.session.commit()
         
+        total_updated = updated_count + spreads_updated
+        total_items = len(positions) + len(spreads)
+        
         return jsonify({
-            'message': f'Refreshed {updated_count} of {len(positions)} positions',
+            'message': f'Refreshed {total_updated} of {total_items} items ({updated_count} positions, {spreads_updated} spreads)',
             'updated': updated_count,
-            'total': len(positions),
+            'spreads_updated': spreads_updated,
+            'total': total_items,
             'errors': errors if errors else None
         }), 200
         
