@@ -8,10 +8,38 @@ import toast from 'react-hot-toast';
 import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
 import { useDevice } from '../hooks/useDevice';
 
+type AnalyzerTab = 'single' | 'debit-spread' | 'credit-spread';
+
+// Spread Analysis Interface
+interface SpreadAnalysis {
+  symbol: string;
+  spread_type: string;
+  long_strike: number;
+  short_strike: number;
+  expiration: string;
+  long_price: number;
+  short_price: number;
+  net_debit: number;
+  max_profit: number;
+  max_loss: number;
+  breakeven: number;
+  strike_width: number;
+  quantity: number;
+  total_cost: number;
+  total_max_profit: number;
+  total_max_loss: number;
+  ai_analysis?: string;
+}
+
 const OptionsAnalyzer: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useDevice();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<AnalyzerTab>('single');
+  
+  // Single options state
   const [symbol, setSymbol] = useState('AAPL');
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [expiration, setExpiration] = useState('');
@@ -21,6 +49,20 @@ const OptionsAnalyzer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingExpirations, setLoadingExpirations] = useState(false);
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
+  
+  // Spread analyzer state
+  const [spreadSymbol, setSpreadSymbol] = useState('');
+  const [spreadExpiration, setSpreadExpiration] = useState('');
+  const [spreadExpirations, setSpreadExpirations] = useState<string[]>([]);
+  const [spreadType, setSpreadType] = useState<'bull_call' | 'bear_put'>('bull_call');
+  const [longStrike, setLongStrike] = useState('');
+  const [shortStrike, setShortStrike] = useState('');
+  const [spreadQuantity, setSpreadQuantity] = useState(1);
+  const [spreadAnalysis, setSpreadAnalysis] = useState<SpreadAnalysis | null>(null);
+  const [spreadLoading, setSpreadLoading] = useState(false);
+  const [spreadError, setSpreadError] = useState('');
+  const [loadingSpreadExpirations, setLoadingSpreadExpirations] = useState(false);
+  const [spreadStockPrice, setSpreadStockPrice] = useState<number | null>(null);
 
   const fetchExpirations = async () => {
     if (!symbol || symbol.trim().length < 1) return;
@@ -272,11 +314,218 @@ const OptionsAnalyzer: React.FC = () => {
   const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
   const formatPercent = (value: number) => `${value.toFixed(2)}%`;
 
+  // ============ SPREAD ANALYZER FUNCTIONS ============
+  
+  const fetchSpreadExpirations = async () => {
+    if (!spreadSymbol || spreadSymbol.trim().length < 1) return;
+    
+    const trimmedSymbol = spreadSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+    
+    setLoadingSpreadExpirations(true);
+    try {
+      const data = await optionsService.getExpirations(trimmedSymbol);
+      if (data && data.expirations) {
+        const expArray = Array.isArray(data.expirations) ? data.expirations : [];
+        setSpreadExpirations(expArray);
+        if (expArray.length > 0 && !spreadExpiration) {
+          setSpreadExpiration(expArray[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch spread expirations:', error);
+      setSpreadExpirations([]);
+    } finally {
+      setLoadingSpreadExpirations(false);
+    }
+  };
+
+  const fetchSpreadStockPrice = async () => {
+    if (!spreadSymbol || spreadSymbol.trim().length < 1) return;
+    
+    const trimmedSymbol = spreadSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+    
+    try {
+      const response = await api.get(`/options/quote/${trimmedSymbol}`);
+      if (response.data && response.data.current_price) {
+        setSpreadStockPrice(response.data.current_price);
+      }
+    } catch (error) {
+      console.error('Failed to fetch spread stock price:', error);
+    }
+  };
+
+  // Fetch spread expirations when symbol changes
+  useEffect(() => {
+    if (spreadSymbol && spreadSymbol.trim().length >= 1) {
+      const trimmedSymbol = spreadSymbol.trim().toUpperCase();
+      if (/^[A-Z]+$/.test(trimmedSymbol)) {
+        const timeoutId = setTimeout(() => {
+          fetchSpreadExpirations();
+          fetchSpreadStockPrice();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [spreadSymbol]);
+
+  const analyzeSpread = async () => {
+    if (!spreadSymbol || !spreadExpiration || !longStrike || !shortStrike) {
+      setSpreadError('Please fill in all fields');
+      return;
+    }
+
+    const long = parseFloat(longStrike);
+    const short = parseFloat(shortStrike);
+
+    // Validate spread structure
+    if (spreadType === 'bull_call') {
+      if (long >= short) {
+        setSpreadError('For bull call spread, long strike must be lower than short strike');
+        return;
+      }
+    } else {
+      if (long <= short) {
+        setSpreadError('For bear put spread, long strike must be higher than short strike');
+        return;
+      }
+    }
+
+    setSpreadLoading(true);
+    setSpreadError('');
+    setSpreadAnalysis(null);
+
+    try {
+      // Use the existing /spreads/calculate endpoint
+      const response = await api.post('/spreads/calculate', {
+        symbol: spreadSymbol.toUpperCase(),
+        option_type: spreadType === 'bull_call' ? 'call' : 'put',
+        long_strike: long,
+        short_strike: short,
+        expiration: spreadExpiration,
+        quantity: spreadQuantity
+      });
+
+      if (response.data.success) {
+        // Now get AI analysis for the spread
+        let aiAnalysis = '';
+        try {
+          const aiResponse = await api.post('/options/analyze-spread-ai', {
+            symbol: spreadSymbol.toUpperCase(),
+            spread_type: spreadType,
+            long_strike: long,
+            short_strike: short,
+            expiration: spreadExpiration,
+            net_debit: response.data.net_debit,
+            max_profit: response.data.max_profit,
+            max_loss: response.data.max_loss,
+            breakeven: response.data.breakeven,
+            current_price: spreadStockPrice,
+            long_price: response.data.long_premium,
+            short_price: response.data.short_premium
+          });
+          aiAnalysis = aiResponse.data.analysis || '';
+        } catch (aiError) {
+          console.warn('AI analysis not available:', aiError);
+        }
+
+        setSpreadAnalysis({
+          symbol: spreadSymbol.toUpperCase(),
+          spread_type: spreadType,
+          long_strike: long,
+          short_strike: short,
+          expiration: spreadExpiration,
+          long_price: response.data.long_premium || 0,
+          short_price: response.data.short_premium || 0,
+          net_debit: response.data.net_debit || 0,
+          max_profit: response.data.max_profit || 0,
+          max_loss: response.data.max_loss || 0,
+          breakeven: response.data.breakeven || 0,
+          strike_width: response.data.strike_width || Math.abs(short - long),
+          quantity: spreadQuantity,
+          total_cost: (response.data.net_debit || 0) * spreadQuantity * 100,
+          total_max_profit: (response.data.max_profit || 0) * spreadQuantity * 100,
+          total_max_loss: (response.data.max_loss || 0) * spreadQuantity * 100,
+          ai_analysis: aiAnalysis
+        });
+      } else {
+        setSpreadError(response.data.error || 'Failed to analyze spread');
+      }
+    } catch (error: any) {
+      console.error('Spread analysis error:', error);
+      setSpreadError(error.response?.data?.error || 'Failed to analyze spread');
+    } finally {
+      setSpreadLoading(false);
+    }
+  };
+
+  const handleCreateSpread = () => {
+    if (!spreadAnalysis) return;
+
+    // Store spread data to pass to Trade page
+    const tradeData = {
+      symbol: spreadAnalysis.symbol,
+      expiration: spreadAnalysis.expiration,
+      isSpread: true,
+      spreadType: spreadAnalysis.spread_type,
+      longStrike: spreadAnalysis.long_strike.toString(),
+      shortStrike: spreadAnalysis.short_strike.toString(),
+      contractType: spreadAnalysis.spread_type === 'bull_call' ? 'call' : 'put',
+      quantity: spreadAnalysis.quantity
+    };
+
+    sessionStorage.setItem('spreadTradeData', JSON.stringify(tradeData));
+    navigate('/trade');
+    toast.success('Spread details loaded! Review and execute on the Trade page.');
+  };
+
+  // ============ END SPREAD ANALYZER FUNCTIONS ============
+
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Page Header */}
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-secondary mb-4`}>Options Analyzer</h1>
+        
+        {/* Tab Navigation */}
+        <div className="flex gap-1 md:gap-2 border-b-2 border-gray-200 mb-4">
+          <button
+            onClick={() => setActiveTab('single')}
+            className={`px-3 md:px-6 py-2 md:py-3 font-medium text-sm md:text-base border-b-3 transition-colors ${
+              activeTab === 'single'
+                ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-[2px]'
+            }`}
+          >
+            Single Options
+          </button>
+          <button
+            onClick={() => setActiveTab('debit-spread')}
+            className={`px-3 md:px-6 py-2 md:py-3 font-medium text-sm md:text-base border-b-3 transition-colors ${
+              activeTab === 'debit-spread'
+                ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-[2px]'
+            }`}
+          >
+            Debit Spreads
+          </button>
+          <button
+            disabled
+            className="px-3 md:px-6 py-2 md:py-3 font-medium text-sm md:text-base text-gray-300 cursor-not-allowed border-b-2 border-transparent -mb-[2px]"
+            title="Coming soon"
+          >
+            Credit Spreads
+          </button>
+        </div>
+      </div>
+
+      {/* Single Options Tab */}
+      {activeTab === 'single' && (
+      <>
       <div className="bg-white rounded-lg shadow p-4 md:p-6">
         <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
-          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-secondary`}>Options Chain Analyzer</h1>
+          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Options Chain Analyzer</h2>
           {stockPrice !== null && (
             <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
               <div className={`text-${isMobile ? 'left' : 'right'}`}>
@@ -739,6 +988,325 @@ const OptionsAnalyzer: React.FC = () => {
             />
           </div>
         </>
+      )}
+      </>
+      )}
+
+      {/* Debit Spread Tab */}
+      {activeTab === 'debit-spread' && (
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
+            <div>
+              <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Debit Spread Analyzer</h2>
+              <p className="text-sm text-gray-500 mt-1">Analyze bull call or bear put spreads with defined risk/reward</p>
+            </div>
+            {spreadStockPrice !== null && (
+              <div className={`text-${isMobile ? 'left' : 'right'}`}>
+                <p className="text-sm text-gray-500">Stock Price</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${spreadStockPrice.toFixed(2)}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Spread Form */}
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'} gap-4 mb-6`}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
+              <input
+                type="text"
+                value={spreadSymbol}
+                onChange={(e) => {
+                  setSpreadSymbol(e.target.value.toUpperCase());
+                  setSpreadExpiration('');
+                  setSpreadAnalysis(null);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder="TSLA"
+                maxLength={5}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expiration</label>
+              <select
+                value={spreadExpiration}
+                onChange={(e) => setSpreadExpiration(e.target.value)}
+                disabled={loadingSpreadExpirations || spreadExpirations.length === 0}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 text-base min-h-[48px]"
+                style={{ fontSize: '16px' }}
+              >
+                {loadingSpreadExpirations ? (
+                  <option value="">Loading...</option>
+                ) : spreadExpirations.length === 0 ? (
+                  <option value="">Enter symbol first</option>
+                ) : (
+                  <>
+                    {!spreadExpiration && <option value="">Select expiration</option>}
+                    {spreadExpirations.map((exp) => (
+                      <option key={exp} value={exp}>{exp}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Spread Type</label>
+              <select
+                value={spreadType}
+                onChange={(e) => {
+                  setSpreadType(e.target.value as 'bull_call' | 'bear_put');
+                  setLongStrike('');
+                  setShortStrike('');
+                  setSpreadAnalysis(null);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="bull_call">Bull Call Spread (Bullish)</option>
+                <option value="bear_put">Bear Put Spread (Bearish)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Long Strike (BUY) 
+                <span className="text-green-600 ml-1">▲</span>
+              </label>
+              <input
+                type="number"
+                value={longStrike}
+                onChange={(e) => setLongStrike(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder={spreadType === 'bull_call' ? '430 (lower)' : '440 (higher)'}
+                step="0.50"
+                style={{ fontSize: '16px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {spreadType === 'bull_call' ? 'Lower strike (you buy this call)' : 'Higher strike (you buy this put)'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Short Strike (SELL)
+                <span className="text-red-600 ml-1">▼</span>
+              </label>
+              <input
+                type="number"
+                value={shortStrike}
+                onChange={(e) => setShortStrike(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder={spreadType === 'bull_call' ? '440 (higher)' : '430 (lower)'}
+                step="0.50"
+                style={{ fontSize: '16px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {spreadType === 'bull_call' ? 'Higher strike (you sell this call)' : 'Lower strike (you sell this put)'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <input
+                type="number"
+                value={spreadQuantity}
+                onChange={(e) => setSpreadQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                min={1}
+                max={100}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+          </div>
+
+          {spreadError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {spreadError}
+            </div>
+          )}
+
+          <button
+            onClick={analyzeSpread}
+            disabled={spreadLoading || !spreadSymbol || !spreadExpiration || !longStrike || !shortStrike}
+            className={`${isMobile ? 'w-full' : ''} bg-primary text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base`}
+          >
+            {spreadLoading ? 'Analyzing...' : 'Analyze Spread'}
+          </button>
+
+          {/* Spread Analysis Results */}
+          {spreadAnalysis && (
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-bold text-secondary mb-4">Spread Analysis Results</h3>
+              
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
+                {/* Position Details */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Position Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Symbol:</span>
+                      <span className="font-medium">{spreadAnalysis.symbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="font-medium">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          spreadAnalysis.spread_type === 'bull_call' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {spreadAnalysis.spread_type === 'bull_call' ? 'Bull Call Spread' : 'Bear Put Spread'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Long Strike:</span>
+                      <span className="font-medium text-green-600">${spreadAnalysis.long_strike.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Short Strike:</span>
+                      <span className="font-medium text-red-600">${spreadAnalysis.short_strike.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Strike Width:</span>
+                      <span className="font-medium">${spreadAnalysis.strike_width.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Expiration:</span>
+                      <span className="font-medium">{spreadAnalysis.expiration}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="font-medium">{spreadAnalysis.quantity} spread(s)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Pricing</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Long Leg Cost:</span>
+                      <span className="font-medium">${spreadAnalysis.long_price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Short Leg Credit:</span>
+                      <span className="font-medium">-${spreadAnalysis.short_price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-700 font-semibold">Net Debit (per spread):</span>
+                      <span className="font-bold">${spreadAnalysis.net_debit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between bg-blue-50 p-2 rounded -mx-2 mt-2">
+                      <span className="text-blue-700 font-semibold">Total Cost:</span>
+                      <span className="font-bold text-blue-700">${spreadAnalysis.total_cost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk/Reward */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Risk/Reward</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Profit (per spread):</span>
+                      <span className="font-medium text-green-600">${spreadAnalysis.max_profit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Loss (per spread):</span>
+                      <span className="font-medium text-red-600">${spreadAnalysis.max_loss.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-600">ROI if Max Profit:</span>
+                      <span className="font-bold text-green-600">
+                        {spreadAnalysis.net_debit > 0 
+                          ? `${((spreadAnalysis.max_profit / spreadAnalysis.net_debit) * 100).toFixed(1)}%`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Risk/Reward Ratio:</span>
+                      <span className="font-medium">
+                        1:{spreadAnalysis.net_debit > 0 
+                          ? (spreadAnalysis.max_profit / spreadAnalysis.net_debit).toFixed(2)
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between bg-yellow-50 p-2 rounded -mx-2 mt-2">
+                      <span className="text-yellow-700 font-semibold">Breakeven:</span>
+                      <span className="font-bold text-yellow-700">${spreadAnalysis.breakeven.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Total Position ({spreadAnalysis.quantity} spreads)</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Max Profit:</span>
+                      <span className="font-bold text-green-600">${spreadAnalysis.total_max_profit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Max Loss:</span>
+                      <span className="font-bold text-red-600">${spreadAnalysis.total_max_loss.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-600">Total Investment:</span>
+                      <span className="font-bold">${spreadAnalysis.total_cost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Analysis */}
+              {spreadAnalysis.ai_analysis && (
+                <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                    <span>🤖</span> AI Analysis
+                  </h4>
+                  <p className="text-sm text-blue-900 leading-relaxed">
+                    {spreadAnalysis.ai_analysis}
+                  </p>
+                </div>
+              )}
+
+              {/* Quick Summary */}
+              <div className="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+                <h4 className="font-semibold text-indigo-800 mb-2">📋 Quick Summary</h4>
+                <div className="text-sm text-indigo-900 space-y-1">
+                  <p>
+                    <strong>Strategy:</strong> {spreadAnalysis.spread_type === 'bull_call' 
+                      ? `Bullish on ${spreadAnalysis.symbol}. Stock needs to rise above $${spreadAnalysis.breakeven.toFixed(2)} by expiration.`
+                      : `Bearish on ${spreadAnalysis.symbol}. Stock needs to fall below $${spreadAnalysis.breakeven.toFixed(2)} by expiration.`}
+                  </p>
+                  <p>
+                    <strong>Risk:</strong> You can lose at most ${spreadAnalysis.total_max_loss.toFixed(2)} (your total investment).
+                  </p>
+                  <p>
+                    <strong>Reward:</strong> You can gain at most ${spreadAnalysis.total_max_profit.toFixed(2)} if the stock is {spreadAnalysis.spread_type === 'bull_call' ? 'above' : 'below'} ${spreadAnalysis.short_strike.toFixed(2)} at expiration.
+                  </p>
+                </div>
+              </div>
+
+              {/* Create Spread Button */}
+              <div className="mt-6">
+                <button
+                  onClick={handleCreateSpread}
+                  className="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition-colors font-bold text-lg"
+                >
+                  Create This Spread →
+                </button>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Opens the Trade page with this spread pre-filled
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

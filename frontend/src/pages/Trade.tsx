@@ -46,7 +46,7 @@ const Trade: React.FC = () => {
       setSymbol(location.state.symbol);
     }
     
-    // Check if trade data was passed from Options Analyzer
+    // Check if trade data was passed from Options Analyzer (single options)
     const tradeDataStr = sessionStorage.getItem('tradeData');
     if (tradeDataStr) {
       try {
@@ -76,6 +76,56 @@ const Trade: React.FC = () => {
       } catch (error) {
         console.error('Failed to parse trade data:', error);
         toast.error('Failed to load trade data');
+      }
+    }
+    
+    // Check if spread trade data was passed from Spread Analyzer
+    const spreadTradeDataStr = sessionStorage.getItem('spreadTradeData');
+    if (spreadTradeDataStr) {
+      try {
+        const spreadData = JSON.parse(spreadTradeDataStr);
+        console.log('Loading spread trade data from sessionStorage:', spreadData);
+        
+        // Enable spread mode
+        setIsSpread(true);
+        
+        if (spreadData.symbol) {
+          setSymbol(spreadData.symbol);
+        }
+        if (spreadData.expiration) {
+          setExpiration(spreadData.expiration);
+        }
+        if (spreadData.contractType) {
+          setContractType(spreadData.contractType);
+        }
+        if (spreadData.longStrike) {
+          setLongStrike(spreadData.longStrike);
+          setBaseStrike(spreadData.longStrike);
+        }
+        if (spreadData.shortStrike) {
+          setShortStrike(spreadData.shortStrike);
+        }
+        if (spreadData.quantity) {
+          setQuantity(spreadData.quantity);
+        }
+        
+        // Calculate spread amount
+        if (spreadData.longStrike && spreadData.shortStrike) {
+          const long = parseFloat(spreadData.longStrike);
+          const short = parseFloat(spreadData.shortStrike);
+          const width = spreadData.contractType === 'call' 
+            ? short - long 
+            : long - short;
+          setSpreadAmount(Math.abs(width));
+        }
+        
+        // Clear the stored data after using it
+        sessionStorage.removeItem('spreadTradeData');
+        console.log('Spread trade data loaded successfully');
+        toast.success('Spread details loaded from analyzer');
+      } catch (error) {
+        console.error('Failed to parse spread trade data:', error);
+        toast.error('Failed to load spread data');
       }
     }
   }, [location.state]);

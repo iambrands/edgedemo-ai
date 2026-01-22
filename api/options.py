@@ -721,3 +721,125 @@ def get_signals(current_user, symbol):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@options_bp.route('/analyze-spread-ai', methods=['POST'])
+def analyze_spread_with_ai():
+    """Generate AI analysis for a debit spread (PUBLIC ENDPOINT)"""
+    import os
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Request body required'}), 400
+    
+    try:
+        symbol = data.get('symbol', '').upper()
+        spread_type = data.get('spread_type', 'bull_call')
+        long_strike = float(data.get('long_strike', 0))
+        short_strike = float(data.get('short_strike', 0))
+        expiration = data.get('expiration', '')
+        net_debit = float(data.get('net_debit', 0))
+        max_profit = float(data.get('max_profit', 0))
+        max_loss = float(data.get('max_loss', 0))
+        breakeven = float(data.get('breakeven', 0))
+        current_price = float(data.get('current_price', 0)) if data.get('current_price') else None
+        long_price = float(data.get('long_price', 0))
+        short_price = float(data.get('short_price', 0))
+        
+        # Calculate some metrics
+        roi_percent = (max_profit / net_debit * 100) if net_debit > 0 else 0
+        risk_reward = max_profit / net_debit if net_debit > 0 else 0
+        
+        # Distance to breakeven from current price
+        distance_to_breakeven = ''
+        distance_percent = 0
+        if current_price and current_price > 0:
+            distance = breakeven - current_price
+            distance_percent = (distance / current_price) * 100
+            if spread_type == 'bull_call':
+                if distance > 0:
+                    distance_to_breakeven = f"Stock needs to rise ${distance:.2f} ({distance_percent:.1f}%) to breakeven"
+                else:
+                    distance_to_breakeven = f"Stock is already ${abs(distance):.2f} ({abs(distance_percent):.1f}%) above breakeven"
+            else:  # bear_put
+                if distance < 0:
+                    distance_to_breakeven = f"Stock needs to fall ${abs(distance):.2f} ({abs(distance_percent):.1f}%) to breakeven"
+                else:
+                    distance_to_breakeven = f"Stock is already ${distance:.2f} ({distance_percent:.1f}%) below breakeven"
+        
+        # Try to get AI analysis
+        try:
+            import anthropic
+            
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                raise ValueError('ANTHROPIC_API_KEY not configured')
+            
+            client = anthropic.Anthropic(api_key=api_key)
+            
+            spread_type_display = 'Bull Call Spread' if spread_type == 'bull_call' else 'Bear Put Spread'
+            direction = 'bullish' if spread_type == 'bull_call' else 'bearish'
+            
+            prompt = f"""Analyze this options spread and provide a concise 2-3 sentence analysis:
+
+Symbol: {symbol}
+Spread Type: {spread_type_display}
+Long Strike: ${long_strike}
+Short Strike: ${short_strike}
+Expiration: {expiration}
+Current Stock Price: ${current_price:.2f} if current_price else 'Unknown'
+
+Net Debit: ${net_debit:.2f} per spread
+Max Profit: ${max_profit:.2f} (ROI: {roi_percent:.1f}%)
+Max Loss: ${max_loss:.2f}
+Breakeven: ${breakeven:.2f}
+{distance_to_breakeven}
+
+Provide a brief, actionable analysis covering:
+1. Market outlook implied by this {direction} spread
+2. Risk/reward assessment (is the ROI reasonable?)
+3. Key consideration (e.g., distance to breakeven, time value)
+
+Keep response under 100 words. Be direct and practical."""
+
+            message = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            ai_analysis = message.content[0].text
+            
+            logger.info(f"Generated AI analysis for {symbol} {spread_type_display}")
+            
+            return jsonify({
+                'success': True,
+                'analysis': ai_analysis
+            }), 200
+            
+        except Exception as ai_error:
+            logger.warning(f"AI analysis failed: {ai_error}")
+            
+            # Generate fallback analysis without AI
+            spread_type_display = 'Bull Call Spread' if spread_type == 'bull_call' else 'Bear Put Spread'
+            direction = 'bullish' if spread_type == 'bull_call' else 'bearish'
+            
+            fallback = f"This {spread_type_display} on {symbol} has a max profit potential of {roi_percent:.1f}% (${max_profit:.2f}) with a defined max loss of ${max_loss:.2f}. "
+            
+            if distance_to_breakeven:
+                fallback += distance_to_breakeven + ". "
+            
+            if roi_percent > 50:
+                fallback += "The ROI potential is attractive, but consider the probability of reaching max profit."
+            elif roi_percent > 25:
+                fallback += "This offers a moderate risk/reward profile suitable for defined-risk strategies."
+            else:
+                fallback += "The ROI is conservative, which may indicate lower probability of significant profit."
+            
+            return jsonify({
+                'success': True,
+                'analysis': fallback
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"Spread AI analysis error: {e}")
+        return jsonify({'error': str(e)}), 500
+
