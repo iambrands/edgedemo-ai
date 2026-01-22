@@ -99,6 +99,7 @@ const Dashboard: React.FC = () => {
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [checkingExits, setCheckingExits] = useState(false);
   const [lastLoadTime, setLastLoadTime] = useState<number>(0);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,6 +112,7 @@ const Dashboard: React.FC = () => {
       setWatchlist(cached.watchlist || []);
       setAccountBalance(cached.balance || 100000);
       setLastLoadTime(cached.timestamp);
+      setLastUpdated(new Date(cached.timestamp));
       console.log('✅ Using cached dashboard data');
     } else {
       // If no cache, set defaults so page can render immediately
@@ -162,12 +164,19 @@ const Dashboard: React.FC = () => {
       }, 1000); // Even longer delay - let core data render and settle first
     }
     
-    // REMOVED: Frontend auto-refresh - prices are now updated by backend cron job
-    // This prevents UI interruptions and blank screens
-    // Users can still manually refresh if needed
+    // Auto-refresh data every 30 seconds (silent background refresh)
+    // Prices are updated by backend cron job every 2 minutes
+    const autoRefreshInterval = setInterval(() => {
+      const cached = getCachedData();
+      const shouldRefresh = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
+      if (shouldRefresh) {
+        loadDashboardData(false, true); // Silent background refresh, no price update
+        setLastUpdated(new Date());
+      }
+    }, 30000); // 30 seconds
     
     return () => {
-      // No intervals to clear
+      clearInterval(autoRefreshInterval);
     };
   }, []);
 
@@ -668,6 +677,21 @@ const Dashboard: React.FC = () => {
     setShowOnboarding(false);
   };
 
+  const formatTimeAgo = (timestamp: Date): string => {
+    const seconds = Math.floor((new Date().getTime() - timestamp.getTime()) / 1000);
+    
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    return `${Math.floor(seconds / 3600)}h ago`;
+  };
+
+  const handleManualRefresh = async () => {
+    toast.loading('Refreshing dashboard data...', { id: 'refresh' });
+    await loadDashboardData(true, false); // Update prices on manual refresh, show loading
+    setLastUpdated(new Date());
+    toast.success('Dashboard refreshed!', { id: 'refresh' });
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Onboarding Modal */}
@@ -678,60 +702,35 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} flex-wrap gap-4`}>
+      {/* Header with auto-refresh indicator */}
+      <div className={`${isMobile ? 'space-y-3' : 'flex items-center justify-between'} mb-4 md:mb-6`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-secondary`}>Dashboard</h1>
-        <div className={`flex ${isMobile ? 'flex-col w-full' : 'flex-row'} gap-3`}>
+        
+        <div className={`flex items-center ${isMobile ? 'justify-between' : 'gap-4'}`}>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Auto-updating</span>
+            </div>
+            {lastUpdated && (
+              <span className="text-gray-400">
+                • Updated {formatTimeAgo(lastUpdated)}
+              </span>
+            )}
+          </div>
+          
+          {/* Subtle manual refresh button */}
           <button
-            onClick={async () => {
-              toast.loading('Refreshing dashboard data...', { id: 'refresh' });
-              await loadDashboardData(true, false); // Update prices on manual refresh, show loading
-              toast.success('Dashboard refreshed!', { id: 'refresh' });
-            }}
+            onClick={handleManualRefresh}
             disabled={refreshing}
-            className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium min-h-[48px]`}
-            title="Manually refresh dashboard data and update position prices"
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh now"
           >
             {refreshing ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span>Refreshing...</span>
-              </>
+              <span className="animate-spin text-lg">⏳</span>
             ) : (
-              <>
-                <span>🔄</span>
-                <span>Refresh</span>
-              </>
+              <span className="text-lg">🔄</span>
             )}
-          </button>
-          <button
-            onClick={checkPositionExits}
-            disabled={checkingExits}
-            className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium min-h-[48px]`}
-            title="Check all positions for exit conditions (profit targets and stop losses)"
-          >
-            {checkingExits ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                <span>Checking...</span>
-              </>
-            ) : (
-              <>
-                <span>🛡️</span>
-                <span>Check Exits</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => {
-              const widgetsEnabled = localStorage.getItem('dashboard_widgets_enabled') !== 'false';
-              localStorage.setItem('dashboard_widgets_enabled', String(!widgetsEnabled));
-              toast.success(widgetsEnabled ? 'Widgets disabled for better performance' : 'Widgets enabled');
-              window.location.reload();
-            }}
-            className={`${isMobile ? 'w-full' : ''} bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium text-sm min-h-[48px]`}
-            title={localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? 'Disable widgets for faster loading' : 'Enable widgets'}
-          >
-            {localStorage.getItem('dashboard_widgets_enabled') !== 'false' ? '⚡ Fast Mode' : '📊 Full Mode'}
           </button>
         </div>
       </div>
