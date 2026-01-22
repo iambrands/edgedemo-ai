@@ -10,7 +10,7 @@ import { useDevice } from '../hooks/useDevice';
 
 type AnalyzerTab = 'single' | 'debit-spread' | 'credit-spread';
 
-// Spread Analysis Interface
+// Spread Analysis Interface - supports both debit and credit spreads
 interface SpreadAnalysis {
   symbol: string;
   spread_type: string;
@@ -19,16 +19,19 @@ interface SpreadAnalysis {
   expiration: string;
   long_price: number;
   short_price: number;
-  net_debit: number;
+  net_debit?: number;   // For debit spreads
+  net_credit?: number;  // For credit spreads
   max_profit: number;
   max_loss: number;
   breakeven: number;
   strike_width: number;
   quantity: number;
-  total_cost: number;
+  total_cost?: number;   // For debit spreads
+  total_credit?: number; // For credit spreads
   total_max_profit: number;
   total_max_loss: number;
   ai_analysis?: string;
+  is_credit?: boolean;
 }
 
 const OptionsAnalyzer: React.FC = () => {
@@ -50,7 +53,7 @@ const OptionsAnalyzer: React.FC = () => {
   const [loadingExpirations, setLoadingExpirations] = useState(false);
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
   
-  // Spread analyzer state
+  // Debit Spread analyzer state
   const [spreadSymbol, setSpreadSymbol] = useState('');
   const [spreadExpiration, setSpreadExpiration] = useState('');
   const [spreadExpirations, setSpreadExpirations] = useState<string[]>([]);
@@ -63,6 +66,20 @@ const OptionsAnalyzer: React.FC = () => {
   const [spreadError, setSpreadError] = useState('');
   const [loadingSpreadExpirations, setLoadingSpreadExpirations] = useState(false);
   const [spreadStockPrice, setSpreadStockPrice] = useState<number | null>(null);
+  
+  // Credit Spread analyzer state
+  const [creditSymbol, setCreditSymbol] = useState('');
+  const [creditExpiration, setCreditExpiration] = useState('');
+  const [creditExpirations, setCreditExpirations] = useState<string[]>([]);
+  const [creditSpreadType, setCreditSpreadType] = useState<'bull_put' | 'bear_call'>('bull_put');
+  const [creditLongStrike, setCreditLongStrike] = useState('');
+  const [creditShortStrike, setCreditShortStrike] = useState('');
+  const [creditQuantity, setCreditQuantity] = useState(1);
+  const [creditAnalysis, setCreditAnalysis] = useState<SpreadAnalysis | null>(null);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState('');
+  const [loadingCreditExpirations, setLoadingCreditExpirations] = useState(false);
+  const [creditStockPrice, setCreditStockPrice] = useState<number | null>(null);
 
   const fetchExpirations = async () => {
     if (!symbol || symbol.trim().length < 1) return;
@@ -480,7 +497,181 @@ const OptionsAnalyzer: React.FC = () => {
     toast.success('Spread details loaded! Review and execute on the Trade page.');
   };
 
-  // ============ END SPREAD ANALYZER FUNCTIONS ============
+  // ============ END DEBIT SPREAD ANALYZER FUNCTIONS ============
+
+  // ============ CREDIT SPREAD ANALYZER FUNCTIONS ============
+  
+  const fetchCreditExpirations = async () => {
+    if (!creditSymbol || creditSymbol.trim().length < 1) return;
+    
+    const trimmedSymbol = creditSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+    
+    setLoadingCreditExpirations(true);
+    try {
+      const data = await optionsService.getExpirations(trimmedSymbol);
+      if (data && data.expirations) {
+        const expArray = Array.isArray(data.expirations) ? data.expirations : [];
+        setCreditExpirations(expArray);
+        if (expArray.length > 0 && !creditExpiration) {
+          setCreditExpiration(expArray[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch credit expirations:', error);
+      setCreditExpirations([]);
+    } finally {
+      setLoadingCreditExpirations(false);
+    }
+  };
+
+  const fetchCreditStockPrice = async () => {
+    if (!creditSymbol || creditSymbol.trim().length < 1) return;
+    
+    const trimmedSymbol = creditSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+    
+    try {
+      const response = await api.get(`/options/quote/${trimmedSymbol}`);
+      if (response.data && response.data.current_price) {
+        setCreditStockPrice(response.data.current_price);
+      }
+    } catch (error) {
+      console.error('Failed to fetch credit stock price:', error);
+    }
+  };
+
+  // Fetch credit expirations when symbol changes
+  useEffect(() => {
+    if (creditSymbol && creditSymbol.trim().length >= 1) {
+      const trimmedSymbol = creditSymbol.trim().toUpperCase();
+      if (/^[A-Z]+$/.test(trimmedSymbol)) {
+        const timeoutId = setTimeout(() => {
+          fetchCreditExpirations();
+          fetchCreditStockPrice();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [creditSymbol]);
+
+  const analyzeCreditSpread = async () => {
+    if (!creditSymbol || !creditExpiration || !creditLongStrike || !creditShortStrike) {
+      setCreditError('Please fill in all fields');
+      return;
+    }
+
+    const long = parseFloat(creditLongStrike);
+    const short = parseFloat(creditShortStrike);
+
+    // Validate credit spread structure
+    if (creditSpreadType === 'bull_put') {
+      // Bull Put: Sell higher put, buy lower put for protection
+      if (short <= long) {
+        setCreditError('For bull put spread, short strike must be higher than long strike');
+        return;
+      }
+    } else {
+      // Bear Call: Sell lower call, buy higher call for protection
+      if (short >= long) {
+        setCreditError('For bear call spread, short strike must be lower than long strike');
+        return;
+      }
+    }
+
+    setCreditLoading(true);
+    setCreditError('');
+    setCreditAnalysis(null);
+
+    try {
+      // Use the /spreads/calculate-credit endpoint
+      const response = await api.post('/spreads/calculate-credit', {
+        symbol: creditSymbol.toUpperCase(),
+        option_type: creditSpreadType === 'bull_put' ? 'put' : 'call',
+        spread_type: creditSpreadType,
+        long_strike: long,
+        short_strike: short,
+        expiration: creditExpiration,
+        quantity: creditQuantity
+      });
+
+      if (response.data.success) {
+        // Get AI analysis for the credit spread
+        let aiAnalysis = '';
+        try {
+          const aiResponse = await api.post('/options/analyze-spread-ai', {
+            symbol: creditSymbol.toUpperCase(),
+            spread_type: creditSpreadType,
+            long_strike: long,
+            short_strike: short,
+            expiration: creditExpiration,
+            net_credit: response.data.net_credit,
+            max_profit: response.data.max_profit,
+            max_loss: response.data.max_loss,
+            breakeven: response.data.breakeven,
+            current_price: creditStockPrice,
+            long_price: response.data.long_premium,
+            short_price: response.data.short_premium,
+            is_credit: true
+          });
+          aiAnalysis = aiResponse.data.analysis || '';
+        } catch (aiError) {
+          console.warn('AI analysis not available:', aiError);
+        }
+
+        setCreditAnalysis({
+          symbol: creditSymbol.toUpperCase(),
+          spread_type: creditSpreadType,
+          long_strike: long,
+          short_strike: short,
+          expiration: creditExpiration,
+          long_price: response.data.long_premium || 0,
+          short_price: response.data.short_premium || 0,
+          net_credit: response.data.net_credit || 0,
+          max_profit: response.data.max_profit || 0,
+          max_loss: response.data.max_loss || 0,
+          breakeven: response.data.breakeven || 0,
+          strike_width: response.data.strike_width || Math.abs(short - long),
+          quantity: creditQuantity,
+          total_credit: (response.data.net_credit || 0) * creditQuantity * 100,
+          total_max_profit: (response.data.max_profit || 0) * creditQuantity * 100,
+          total_max_loss: (response.data.max_loss || 0) * creditQuantity * 100,
+          ai_analysis: aiAnalysis,
+          is_credit: true
+        });
+      } else {
+        setCreditError(response.data.error || 'Failed to analyze credit spread');
+      }
+    } catch (error: any) {
+      console.error('Credit spread analysis error:', error);
+      setCreditError(error.response?.data?.error || 'Failed to analyze credit spread');
+    } finally {
+      setCreditLoading(false);
+    }
+  };
+
+  const handleCreateCreditSpread = () => {
+    if (!creditAnalysis) return;
+
+    // Store credit spread data to pass to Trade page
+    const tradeData = {
+      symbol: creditAnalysis.symbol,
+      expiration: creditAnalysis.expiration,
+      isSpread: true,
+      isCreditSpread: true,
+      spreadType: creditAnalysis.spread_type,
+      longStrike: creditAnalysis.long_strike.toString(),
+      shortStrike: creditAnalysis.short_strike.toString(),
+      contractType: creditAnalysis.spread_type === 'bull_put' ? 'put' : 'call',
+      quantity: creditAnalysis.quantity
+    };
+
+    sessionStorage.setItem('creditSpreadTradeData', JSON.stringify(tradeData));
+    navigate('/trade');
+    toast.success('Credit spread details loaded! Review and execute on the Trade page.');
+  };
+
+  // ============ END CREDIT SPREAD ANALYZER FUNCTIONS ============
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -511,9 +702,12 @@ const OptionsAnalyzer: React.FC = () => {
             Debit Spreads
           </button>
           <button
-            disabled
-            className="px-3 md:px-6 py-2 md:py-3 font-medium text-sm md:text-base text-gray-300 cursor-not-allowed border-b-2 border-transparent -mb-[2px]"
-            title="Coming soon"
+            onClick={() => setActiveTab('credit-spread')}
+            className={`px-3 md:px-6 py-2 md:py-3 font-medium text-sm md:text-base border-b-3 transition-colors ${
+              activeTab === 'credit-spread'
+                ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-[2px]'
+            }`}
           >
             Credit Spreads
           </button>
@@ -1198,11 +1392,11 @@ const OptionsAnalyzer: React.FC = () => {
                     </div>
                     <div className="flex justify-between pt-2 border-t">
                       <span className="text-gray-700 font-semibold">Net Debit (per spread):</span>
-                      <span className="font-bold">${spreadAnalysis.net_debit.toFixed(2)}</span>
+                      <span className="font-bold">${(spreadAnalysis.net_debit || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between bg-blue-50 p-2 rounded -mx-2 mt-2">
                       <span className="text-blue-700 font-semibold">Total Cost:</span>
-                      <span className="font-bold text-blue-700">${spreadAnalysis.total_cost.toFixed(2)}</span>
+                      <span className="font-bold text-blue-700">${(spreadAnalysis.total_cost || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -1222,16 +1416,16 @@ const OptionsAnalyzer: React.FC = () => {
                     <div className="flex justify-between pt-2 border-t">
                       <span className="text-gray-600">ROI if Max Profit:</span>
                       <span className="font-bold text-green-600">
-                        {spreadAnalysis.net_debit > 0 
-                          ? `${((spreadAnalysis.max_profit / spreadAnalysis.net_debit) * 100).toFixed(1)}%`
+                        {(spreadAnalysis.net_debit || 0) > 0 
+                          ? `${((spreadAnalysis.max_profit / (spreadAnalysis.net_debit || 1)) * 100).toFixed(1)}%`
                           : 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Risk/Reward Ratio:</span>
                       <span className="font-medium">
-                        1:{spreadAnalysis.net_debit > 0 
-                          ? (spreadAnalysis.max_profit / spreadAnalysis.net_debit).toFixed(2)
+                        1:{(spreadAnalysis.net_debit || 0) > 0 
+                          ? (spreadAnalysis.max_profit / (spreadAnalysis.net_debit || 1)).toFixed(2)
                           : 'N/A'}
                       </span>
                     </div>
@@ -1256,7 +1450,7 @@ const OptionsAnalyzer: React.FC = () => {
                     </div>
                     <div className="flex justify-between pt-2 border-t">
                       <span className="text-gray-600">Total Investment:</span>
-                      <span className="font-bold">${spreadAnalysis.total_cost.toFixed(2)}</span>
+                      <span className="font-bold">${(spreadAnalysis.total_cost || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -1299,6 +1493,330 @@ const OptionsAnalyzer: React.FC = () => {
                   className="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition-colors font-bold text-lg"
                 >
                   Create This Spread →
+                </button>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Opens the Trade page with this spread pre-filled
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Credit Spread Tab */}
+      {activeTab === 'credit-spread' && (
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
+            <div>
+              <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Credit Spread Analyzer</h2>
+              <p className="text-sm text-gray-500 mt-1">Analyze bull put or bear call spreads - collect premium upfront</p>
+            </div>
+            {creditStockPrice !== null && (
+              <div className={`text-${isMobile ? 'left' : 'right'}`}>
+                <p className="text-sm text-gray-500">Stock Price</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${creditStockPrice.toFixed(2)}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Credit Spread Form */}
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'} gap-4 mb-6`}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
+              <input
+                type="text"
+                value={creditSymbol}
+                onChange={(e) => {
+                  setCreditSymbol(e.target.value.toUpperCase());
+                  setCreditExpiration('');
+                  setCreditAnalysis(null);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder="SPY"
+                maxLength={5}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expiration</label>
+              <select
+                value={creditExpiration}
+                onChange={(e) => setCreditExpiration(e.target.value)}
+                disabled={loadingCreditExpirations || creditExpirations.length === 0}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 text-base min-h-[48px]"
+                style={{ fontSize: '16px' }}
+              >
+                {loadingCreditExpirations ? (
+                  <option value="">Loading...</option>
+                ) : creditExpirations.length === 0 ? (
+                  <option value="">Enter symbol first</option>
+                ) : (
+                  <>
+                    {!creditExpiration && <option value="">Select expiration</option>}
+                    {creditExpirations.map((exp) => (
+                      <option key={exp} value={exp}>{exp}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Spread Type</label>
+              <select
+                value={creditSpreadType}
+                onChange={(e) => {
+                  setCreditSpreadType(e.target.value as 'bull_put' | 'bear_call');
+                  setCreditLongStrike('');
+                  setCreditShortStrike('');
+                  setCreditAnalysis(null);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="bull_put">Bull Put Spread (Bullish/Neutral)</option>
+                <option value="bear_call">Bear Call Spread (Bearish/Neutral)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Short Strike (SELL)
+                <span className="text-green-600 ml-1">$</span>
+              </label>
+              <input
+                type="number"
+                value={creditShortStrike}
+                onChange={(e) => setCreditShortStrike(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder={creditSpreadType === 'bull_put' ? '600 (higher)' : '440 (lower)'}
+                step="0.50"
+                style={{ fontSize: '16px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {creditSpreadType === 'bull_put' 
+                  ? 'Higher strike put (you sell this for premium)' 
+                  : 'Lower strike call (you sell this for premium)'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Long Strike (BUY)
+                <span className="text-red-600 ml-1">↓</span>
+              </label>
+              <input
+                type="number"
+                value={creditLongStrike}
+                onChange={(e) => setCreditLongStrike(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                placeholder={creditSpreadType === 'bull_put' ? '590 (lower)' : '450 (higher)'}
+                step="0.50"
+                style={{ fontSize: '16px' }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {creditSpreadType === 'bull_put' 
+                  ? 'Lower strike put (protection if stock drops)' 
+                  : 'Higher strike call (protection if stock rises)'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <input
+                type="number"
+                value={creditQuantity}
+                onChange={(e) => setCreditQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
+                min={1}
+                max={100}
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+          </div>
+
+          {creditError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {creditError}
+            </div>
+          )}
+
+          <button
+            onClick={analyzeCreditSpread}
+            disabled={creditLoading || !creditSymbol || !creditExpiration || !creditLongStrike || !creditShortStrike}
+            className={`${isMobile ? 'w-full' : ''} bg-primary text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base`}
+          >
+            {creditLoading ? 'Analyzing...' : 'Analyze Credit Spread'}
+          </button>
+
+          {/* Credit Spread Analysis Results */}
+          {creditAnalysis && (
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-bold text-secondary mb-4">Credit Spread Analysis Results</h3>
+              
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
+                {/* Position Details */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Position Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Symbol:</span>
+                      <span className="font-medium">{creditAnalysis.symbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="font-medium">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          creditAnalysis.spread_type === 'bull_put' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {creditAnalysis.spread_type === 'bull_put' ? 'Bull Put Spread' : 'Bear Call Spread'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Short Strike (SELL):</span>
+                      <span className="font-medium text-green-600">${creditAnalysis.short_strike.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Long Strike (BUY):</span>
+                      <span className="font-medium text-red-600">${creditAnalysis.long_strike.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Strike Width:</span>
+                      <span className="font-medium">${creditAnalysis.strike_width.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Expiration:</span>
+                      <span className="font-medium">{creditAnalysis.expiration}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="font-medium">{creditAnalysis.quantity} spread(s)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Pricing</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Short Leg Premium (SELL):</span>
+                      <span className="font-medium text-green-600">+${creditAnalysis.short_price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Long Leg Cost (BUY):</span>
+                      <span className="font-medium text-red-600">-${creditAnalysis.long_price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-700 font-semibold">Net Credit (per spread):</span>
+                      <span className="font-bold text-green-600">${creditAnalysis.net_credit?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between bg-green-50 p-2 rounded -mx-2 mt-2 border border-green-200">
+                      <span className="text-green-700 font-semibold">Total Credit Received:</span>
+                      <span className="font-bold text-green-700">${creditAnalysis.total_credit?.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk/Reward */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Risk/Reward</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Profit (Keep Credit):</span>
+                      <span className="font-medium text-green-600">${creditAnalysis.max_profit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Loss (Width - Credit):</span>
+                      <span className="font-medium text-red-600">${creditAnalysis.max_loss.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-600">ROI if Max Profit:</span>
+                      <span className="font-bold text-green-600">
+                        {creditAnalysis.max_loss > 0 
+                          ? `${((creditAnalysis.max_profit / creditAnalysis.max_loss) * 100).toFixed(1)}%`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Risk/Reward Ratio:</span>
+                      <span className="font-medium">
+                        {creditAnalysis.max_loss > 0 
+                          ? `1:${(creditAnalysis.max_profit / creditAnalysis.max_loss).toFixed(2)}`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between bg-yellow-50 p-2 rounded -mx-2 mt-2">
+                      <span className="text-yellow-700 font-semibold">Breakeven:</span>
+                      <span className="font-bold text-yellow-700">${creditAnalysis.breakeven.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3 border-b pb-2">Total Position ({creditAnalysis.quantity} spreads)</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Max Profit:</span>
+                      <span className="font-bold text-green-600">${creditAnalysis.total_max_profit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Max Loss:</span>
+                      <span className="font-bold text-red-600">${creditAnalysis.total_max_loss.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-600">Collateral Required:</span>
+                      <span className="font-bold">${creditAnalysis.total_max_loss.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Analysis */}
+              {creditAnalysis.ai_analysis && (
+                <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                    <span>🤖</span> AI Analysis
+                  </h4>
+                  <p className="text-sm text-blue-900 leading-relaxed">
+                    {creditAnalysis.ai_analysis}
+                  </p>
+                </div>
+              )}
+
+              {/* Quick Summary */}
+              <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">📋 Credit Spread Summary</h4>
+                <div className="text-sm text-green-900 space-y-1">
+                  <p>
+                    <strong>Strategy:</strong> {creditAnalysis.spread_type === 'bull_put' 
+                      ? `Neutral-to-bullish on ${creditAnalysis.symbol}. You profit if the stock stays above $${creditAnalysis.breakeven.toFixed(2)} by expiration.`
+                      : `Neutral-to-bearish on ${creditAnalysis.symbol}. You profit if the stock stays below $${creditAnalysis.breakeven.toFixed(2)} by expiration.`}
+                  </p>
+                  <p>
+                    <strong>Credit Received:</strong> You collect ${creditAnalysis.total_credit?.toFixed(2)} upfront - this is yours to keep if the spread expires worthless.
+                  </p>
+                  <p>
+                    <strong>Max Risk:</strong> If the stock moves against you, you can lose up to ${creditAnalysis.total_max_loss.toFixed(2)}.
+                  </p>
+                  <p>
+                    <strong>Time Decay:</strong> <span className="text-green-700 font-medium">Works in your favor!</span> As time passes, option premiums decay, benefiting the seller.
+                  </p>
+                </div>
+              </div>
+
+              {/* Create Credit Spread Button */}
+              <div className="mt-6">
+                <button
+                  onClick={handleCreateCreditSpread}
+                  className="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition-colors font-bold text-lg"
+                >
+                  Create This Credit Spread →
                 </button>
                 <p className="text-xs text-gray-500 text-center mt-2">
                   Opens the Trade page with this spread pre-filled

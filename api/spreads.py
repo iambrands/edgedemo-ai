@@ -85,6 +85,136 @@ def calculate_spread_metrics(current_user):
         logger.error(f"Spread calculation failed: {e}", exc_info=True)
         return jsonify({'error': 'Calculation failed', 'details': str(e)}), 500
 
+@spreads_bp.route('/calculate-credit', methods=['POST'])
+@token_required
+def calculate_credit_spread_metrics(current_user):
+    """Calculate credit spread metrics without executing (bull put, bear call)"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        symbol = data.get('symbol', '').upper()
+        option_type = data.get('option_type', '').lower()
+        spread_type = data.get('spread_type', '').lower()  # bull_put or bear_call
+        long_strike = data.get('long_strike')
+        short_strike = data.get('short_strike')
+        expiration = data.get('expiration')
+        quantity = int(data.get('quantity', 1))
+        
+        # Validation
+        if not symbol:
+            return jsonify({'error': 'Symbol required'}), 400
+        if option_type not in ['call', 'put']:
+            return jsonify({'error': 'option_type must be "call" or "put"'}), 400
+        if spread_type not in ['bull_put', 'bear_call']:
+            return jsonify({'error': 'spread_type must be "bull_put" or "bear_call"'}), 400
+        if not long_strike or not short_strike:
+            return jsonify({'error': 'Both long_strike and short_strike required'}), 400
+        if not expiration:
+            return jsonify({'error': 'Expiration date required'}), 400
+        if quantity < 1:
+            return jsonify({'error': 'Quantity must be >= 1'}), 400
+        
+        try:
+            long_strike_float = float(long_strike)
+            short_strike_float = float(short_strike)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid strike prices'}), 400
+        
+        # Validate strike relationship for credit spreads
+        if spread_type == 'bull_put':
+            # Bull Put: Sell higher strike put, buy lower strike put
+            if short_strike_float <= long_strike_float:
+                return jsonify({'error': 'Bull put spread: short strike must be > long strike'}), 400
+        else:  # bear_call
+            # Bear Call: Sell lower strike call, buy higher strike call
+            if short_strike_float >= long_strike_float:
+                return jsonify({'error': 'Bear call spread: short strike must be < long strike'}), 400
+        
+        # Get option prices from Tradier
+        tradier = get_tradier()
+        
+        # Get long leg quote (the protection leg we buy)
+        long_quote = tradier.get_option_quote(
+            symbol=symbol,
+            option_type=option_type,
+            strike=long_strike_float,
+            expiration=expiration
+        )
+        
+        # Get short leg quote (the premium leg we sell)
+        short_quote = tradier.get_option_quote(
+            symbol=symbol,
+            option_type=option_type,
+            strike=short_strike_float,
+            expiration=expiration
+        )
+        
+        if not long_quote or not short_quote:
+            return jsonify({'error': 'Could not get option quotes'}), 400
+        
+        # Calculate premiums - use mid price or fall back to last
+        long_premium = long_quote.get('mid') or long_quote.get('last') or 0
+        short_premium = short_quote.get('mid') or short_quote.get('last') or 0
+        
+        if long_premium == 0 or short_premium == 0:
+            return jsonify({'error': 'Invalid option prices (zero premiums)'}), 400
+        
+        # Credit spread calculations
+        # Net credit = premium received (short) - premium paid (long)
+        net_credit = short_premium - long_premium
+        
+        if net_credit <= 0:
+            return jsonify({'error': f'Invalid credit spread: would be a debit of ${abs(net_credit):.2f}. Short premium (${short_premium:.2f}) must be greater than long premium (${long_premium:.2f})'}), 400
+        
+        # Strike width
+        strike_width = abs(short_strike_float - long_strike_float)
+        
+        # Max profit = Net credit received (keep all the premium)
+        max_profit = net_credit
+        
+        # Max loss = Strike width - Net credit
+        max_loss = strike_width - net_credit
+        
+        # Breakeven calculation
+        if spread_type == 'bull_put':
+            # Bull put breakeven = Short strike - Net credit
+            breakeven = short_strike_float - net_credit
+        else:  # bear_call
+            # Bear call breakeven = Short strike + Net credit
+            breakeven = short_strike_float + net_credit
+        
+        logger.info(f"Credit spread calculated: {spread_type} {symbol} {short_strike_float}/{long_strike_float} = ${net_credit:.2f} credit")
+        
+        return jsonify({
+            'success': True,
+            'symbol': symbol,
+            'spread_type': spread_type,
+            'option_type': option_type,
+            'long_strike': long_strike_float,
+            'short_strike': short_strike_float,
+            'long_premium': long_premium,
+            'short_premium': short_premium,
+            'net_credit': net_credit,
+            'strike_width': strike_width,
+            'max_profit': max_profit,
+            'max_loss': max_loss,
+            'breakeven': breakeven,
+            'quantity': quantity,
+            'total_credit': net_credit * quantity * 100,
+            'total_max_profit': max_profit * quantity * 100,
+            'total_max_loss': max_loss * quantity * 100,
+            'is_credit': True
+        }), 200
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Credit spread calculation failed: {e}", exc_info=True)
+        return jsonify({'error': 'Calculation failed', 'details': str(e)}), 500
+
 @spreads_bp.route('/execute', methods=['POST'])
 @token_required
 def execute_spread(current_user):

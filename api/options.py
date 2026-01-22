@@ -723,7 +723,7 @@ def get_signals(current_user, symbol):
 
 @options_bp.route('/analyze-spread-ai', methods=['POST'])
 def analyze_spread_with_ai():
-    """Generate AI analysis for a debit spread (PUBLIC ENDPOINT)"""
+    """Generate AI analysis for debit or credit spreads (PUBLIC ENDPOINT)"""
     import os
     
     data = request.get_json()
@@ -736,34 +736,67 @@ def analyze_spread_with_ai():
         long_strike = float(data.get('long_strike', 0))
         short_strike = float(data.get('short_strike', 0))
         expiration = data.get('expiration', '')
-        net_debit = float(data.get('net_debit', 0))
         max_profit = float(data.get('max_profit', 0))
         max_loss = float(data.get('max_loss', 0))
         breakeven = float(data.get('breakeven', 0))
         current_price = float(data.get('current_price', 0)) if data.get('current_price') else None
         long_price = float(data.get('long_price', 0))
         short_price = float(data.get('short_price', 0))
+        is_credit = data.get('is_credit', False)
         
-        # Calculate some metrics
-        roi_percent = (max_profit / net_debit * 100) if net_debit > 0 else 0
-        risk_reward = max_profit / net_debit if net_debit > 0 else 0
+        # Handle debit vs credit spreads
+        if is_credit:
+            net_credit = float(data.get('net_credit', 0))
+            cost_basis = max_loss  # For credit spreads, risk is the cost basis
+            roi_percent = (max_profit / max_loss * 100) if max_loss > 0 else 0
+        else:
+            net_debit = float(data.get('net_debit', 0))
+            cost_basis = net_debit
+            roi_percent = (max_profit / net_debit * 100) if net_debit > 0 else 0
+        
+        # Spread type display names
+        spread_type_names = {
+            'bull_call': 'Bull Call Spread',
+            'bear_put': 'Bear Put Spread',
+            'bull_put': 'Bull Put Spread',
+            'bear_call': 'Bear Call Spread'
+        }
+        spread_type_display = spread_type_names.get(spread_type, spread_type.replace('_', ' ').title())
+        
+        # Determine direction
+        if spread_type in ['bull_call', 'bull_put']:
+            direction = 'bullish' if spread_type == 'bull_call' else 'neutral-to-bullish'
+        else:
+            direction = 'bearish' if spread_type == 'bear_put' else 'neutral-to-bearish'
         
         # Distance to breakeven from current price
         distance_to_breakeven = ''
-        distance_percent = 0
         if current_price and current_price > 0:
             distance = breakeven - current_price
             distance_percent = (distance / current_price) * 100
+            
             if spread_type == 'bull_call':
                 if distance > 0:
                     distance_to_breakeven = f"Stock needs to rise ${distance:.2f} ({distance_percent:.1f}%) to breakeven"
                 else:
-                    distance_to_breakeven = f"Stock is already ${abs(distance):.2f} ({abs(distance_percent):.1f}%) above breakeven"
-            else:  # bear_put
+                    distance_to_breakeven = f"Stock is ${abs(distance):.2f} ({abs(distance_percent):.1f}%) above breakeven"
+            elif spread_type == 'bear_put':
                 if distance < 0:
                     distance_to_breakeven = f"Stock needs to fall ${abs(distance):.2f} ({abs(distance_percent):.1f}%) to breakeven"
                 else:
-                    distance_to_breakeven = f"Stock is already ${distance:.2f} ({distance_percent:.1f}%) below breakeven"
+                    distance_to_breakeven = f"Stock is ${distance:.2f} ({distance_percent:.1f}%) below breakeven"
+            elif spread_type == 'bull_put':
+                # Bull put profits if stock stays above breakeven
+                if current_price > breakeven:
+                    distance_to_breakeven = f"Stock is ${current_price - breakeven:.2f} ({((current_price - breakeven)/current_price*100):.1f}%) above breakeven - in profit zone"
+                else:
+                    distance_to_breakeven = f"Stock needs to rise ${breakeven - current_price:.2f} to get above breakeven"
+            elif spread_type == 'bear_call':
+                # Bear call profits if stock stays below breakeven
+                if current_price < breakeven:
+                    distance_to_breakeven = f"Stock is ${breakeven - current_price:.2f} ({((breakeven - current_price)/current_price*100):.1f}%) below breakeven - in profit zone"
+                else:
+                    distance_to_breakeven = f"Stock needs to fall ${current_price - breakeven:.2f} to get below breakeven"
         
         # Try to get AI analysis
         try:
@@ -775,30 +808,54 @@ def analyze_spread_with_ai():
             
             client = anthropic.Anthropic(api_key=api_key)
             
-            spread_type_display = 'Bull Call Spread' if spread_type == 'bull_call' else 'Bear Put Spread'
-            direction = 'bullish' if spread_type == 'bull_call' else 'bearish'
-            
-            prompt = f"""Analyze this options spread and provide a concise 2-3 sentence analysis:
+            if is_credit:
+                prompt = f"""Analyze this CREDIT spread and provide a concise 2-3 sentence analysis:
 
 Symbol: {symbol}
-Spread Type: {spread_type_display}
-Long Strike: ${long_strike}
-Short Strike: ${short_strike}
+Spread Type: {spread_type_display} (CREDIT SPREAD)
+Short Strike (SELL): ${short_strike}
+Long Strike (BUY): ${long_strike}
 Expiration: {expiration}
-Current Stock Price: ${current_price:.2f} if current_price else 'Unknown'
+Current Stock Price: ${current_price:.2f if current_price else 'Unknown'}
 
-Net Debit: ${net_debit:.2f} per spread
-Max Profit: ${max_profit:.2f} (ROI: {roi_percent:.1f}%)
-Max Loss: ${max_loss:.2f}
+Net Credit Received: ${net_credit:.2f} per spread
+Max Profit: ${max_profit:.2f} (keep the credit)
+Max Loss: ${max_loss:.2f} (spread width - credit)
 Breakeven: ${breakeven:.2f}
+ROI on Risk: {roi_percent:.1f}%
 {distance_to_breakeven}
 
-Provide a brief, actionable analysis covering:
-1. Market outlook implied by this {direction} spread
-2. Risk/reward assessment (is the ROI reasonable?)
-3. Key consideration (e.g., distance to breakeven, time value)
+This is a CREDIT spread - you collect premium upfront. Time decay (theta) works in your favor.
+Analyze:
+1. Probability outlook for this {direction} strategy
+2. Is the credit received worth the risk?
+3. Key price levels to watch
 
-Keep response under 100 words. Be direct and practical."""
+Keep under 100 words. Be direct and practical."""
+            else:
+                prompt = f"""Analyze this DEBIT spread and provide a concise 2-3 sentence analysis:
+
+Symbol: {symbol}
+Spread Type: {spread_type_display} (DEBIT SPREAD)
+Long Strike (BUY): ${long_strike}
+Short Strike (SELL): ${short_strike}
+Expiration: {expiration}
+Current Stock Price: ${current_price:.2f if current_price else 'Unknown'}
+
+Net Debit Paid: ${net_debit:.2f} per spread
+Max Profit: ${max_profit:.2f}
+Max Loss: ${max_loss:.2f} (your net debit)
+Breakeven: ${breakeven:.2f}
+ROI: {roi_percent:.1f}%
+{distance_to_breakeven}
+
+This is a DEBIT spread - you pay upfront and need directional movement.
+Analyze:
+1. Market outlook for this {direction} strategy
+2. Is the risk/reward attractive?
+3. Key consideration (distance to breakeven, time decay)
+
+Keep under 100 words. Be direct and practical."""
 
             message = client.messages.create(
                 model="claude-haiku-4-5-20251001",
@@ -819,20 +876,22 @@ Keep response under 100 words. Be direct and practical."""
             logger.warning(f"AI analysis failed: {ai_error}")
             
             # Generate fallback analysis without AI
-            spread_type_display = 'Bull Call Spread' if spread_type == 'bull_call' else 'Bear Put Spread'
-            direction = 'bullish' if spread_type == 'bull_call' else 'bearish'
-            
-            fallback = f"This {spread_type_display} on {symbol} has a max profit potential of {roi_percent:.1f}% (${max_profit:.2f}) with a defined max loss of ${max_loss:.2f}. "
-            
-            if distance_to_breakeven:
-                fallback += distance_to_breakeven + ". "
-            
-            if roi_percent > 50:
-                fallback += "The ROI potential is attractive, but consider the probability of reaching max profit."
-            elif roi_percent > 25:
-                fallback += "This offers a moderate risk/reward profile suitable for defined-risk strategies."
+            if is_credit:
+                fallback = f"This {spread_type_display} on {symbol} collects ${net_credit:.2f} credit per spread, with a max risk of ${max_loss:.2f}. "
+                fallback += f"ROI on risk is {roi_percent:.1f}%. "
+                if distance_to_breakeven:
+                    fallback += distance_to_breakeven + ". "
+                fallback += "Time decay works in your favor as a credit spread seller."
             else:
-                fallback += "The ROI is conservative, which may indicate lower probability of significant profit."
+                fallback = f"This {spread_type_display} on {symbol} has a max profit potential of {roi_percent:.1f}% (${max_profit:.2f}) with a defined max loss of ${max_loss:.2f}. "
+                if distance_to_breakeven:
+                    fallback += distance_to_breakeven + ". "
+                if roi_percent > 50:
+                    fallback += "The ROI potential is attractive, but consider the probability of reaching max profit."
+                elif roi_percent > 25:
+                    fallback += "This offers a moderate risk/reward profile suitable for defined-risk strategies."
+                else:
+                    fallback += "The ROI is conservative, which may indicate lower probability of significant profit."
             
             return jsonify({
                 'success': True,
