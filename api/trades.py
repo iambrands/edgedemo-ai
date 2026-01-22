@@ -288,7 +288,7 @@ def get_positions(current_user):
         )
         return jsonify({'error': str(e)}), 500
 
-@trades_bp.route('/positions/<int:position_id>/refresh', methods=['POST', 'OPTIONS'])
+@trades_bp.route('/positions/<position_id>/refresh', methods=['POST', 'OPTIONS'])
 @token_required
 def refresh_position(current_user, position_id):
     """Manually refresh a specific position's price and Greeks"""
@@ -300,16 +300,79 @@ def refresh_position(current_user, position_id):
         from services.position_monitor import PositionMonitor
         from models.position import Position
         from flask import current_app
+        import logging
         
+        logger = logging.getLogger(__name__)
         db = current_app.extensions['sqlalchemy']
+        
+        # ===== DEBUG LOGGING =====
+        logger.info("=" * 60)
+        logger.info("REFRESH POSITION DEBUG")
+        logger.info(f"Received position_id: '{position_id}' (type: {type(position_id).__name__})")
+        logger.info(f"Current user ID: {current_user.id}")
+        logger.info(f"Current user: {getattr(current_user, 'username', 'N/A')}")
+        
+        # Convert to integer - handle string IDs like "spread_123"
+        numeric_id = None
+        try:
+            if isinstance(position_id, str):
+                # Handle "spread_123" format
+                if '_' in position_id:
+                    numeric_id = int(position_id.split('_')[-1])
+                    logger.info(f"Extracted numeric ID from '{position_id}': {numeric_id}")
+                else:
+                    numeric_id = int(position_id)
+            else:
+                numeric_id = int(position_id)
+            
+            logger.info(f"Final position_id to query: {numeric_id}")
+        except (ValueError, AttributeError) as e:
+            logger.error(f"Failed to convert position_id to int: {e}")
+            return jsonify({'error': f'Invalid position ID format: {position_id}'}), 400
+        
+        # Query database
         position = db.session.query(Position).filter_by(
-            id=position_id, 
+            id=numeric_id, 
             user_id=current_user.id,
             status='open'
         ).first()
         
+        logger.info(f"Position query result: {position}")
+        
         if not position:
-            return jsonify({'error': 'Position not found'}), 404
+            # Check if position exists at all (for any user)
+            any_position = db.session.query(Position).filter_by(id=numeric_id).first()
+            
+            if any_position:
+                logger.error(f"Position {numeric_id} exists but belongs to user {any_position.user_id}, not {current_user.id}")
+                return jsonify({
+                    'error': 'Position not found or access denied',
+                    'debug': f'Position exists but belongs to different user'
+                }), 404
+            else:
+                logger.error(f"Position {numeric_id} does not exist in database at all")
+                
+                # Show what positions DO exist for this user
+                user_positions = db.session.query(Position).filter_by(user_id=current_user.id).all()
+                position_ids = [p.id for p in user_positions]
+                logger.info(f"User has {len(user_positions)} positions: {position_ids}")
+                
+                # Also check for spread positions
+                spread_positions = [p for p in user_positions if getattr(p, 'is_spread', False) or getattr(p, 'spread_id', None)]
+                if spread_positions:
+                    logger.info(f"User has {len(spread_positions)} spread positions: {[p.id for p in spread_positions]}")
+                
+                return jsonify({
+                    'error': f'Position ID {numeric_id} not found',
+                    'debug': {
+                        'requested_id': numeric_id,
+                        'user_positions': position_ids,
+                        'total_positions': len(user_positions)
+                    }
+                }), 404
+        
+        logger.info(f"Found position: ID={position.id}, Symbol={position.symbol}, Strike=${position.strike_price}, Type={position.contract_type}")
+        logger.info("=" * 60)
         
         # Update position data
         monitor = PositionMonitor()
