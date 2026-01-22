@@ -523,28 +523,23 @@ def create_app(config_name=None):
     
     threading.Thread(target=delayed_cache_warm, daemon=True).start()
     
-    # Schedule periodic cache warming during market hours (every 5 minutes)
+    # Schedule periodic cache warming (every 5 minutes, runs 24/7 for testing)
     def periodic_cache_warm():
-        """Warm cache periodically during market hours."""
+        """Warm cache periodically - runs 24/7 for testing."""
         try:
             with app.app_context():
                 from services.cache_warmer import CacheWarmer
-                from datetime import datetime
-                import pytz
                 
-                # Only warm during market hours
-                now = datetime.now(pytz.timezone('US/Eastern'))
-                is_market_hours = (
-                    now.weekday() < 5 and  # Monday-Friday
-                    9 <= now.hour < 16
+                app.logger.info("🔄 Running scheduled cache warming")
+                warmer = CacheWarmer()
+                results = warmer.warm_all()
+                app.logger.info(
+                    f"✅ Scheduled cache warming complete: "
+                    f"{results['quotes']} quotes, {results['chains']} chains, "
+                    f"{results['expirations']} expirations in {results['duration_seconds']}s"
                 )
-                
-                if is_market_hours:
-                    warmer = CacheWarmer()
-                    # Only warm quotes (fast) during periodic runs
-                    warmer.warm_quotes()
         except Exception as e:
-            app.logger.error(f"Periodic cache warming failed: {e}", exc_info=True)
+            app.logger.error(f"❌ Periodic cache warming failed: {e}", exc_info=True)
     
     scheduler.add_job(
         func=periodic_cache_warm,
@@ -553,7 +548,7 @@ def create_app(config_name=None):
         name='Periodic cache warming',
         replace_existing=True
     )
-    app.logger.info("✅ Scheduled periodic cache warming (every 5 minutes during market hours)")
+    app.logger.info("✅ Scheduled periodic cache warming (every 5 minutes, runs 24/7)")
     
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())

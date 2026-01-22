@@ -108,11 +108,11 @@ class CacheManager:
                 COMPLEX_SYMBOLS = ['SPY', 'QQQ', 'TSLA', 'AAPL']  # Large chains, expensive to fetch
                 
                 if symbol.upper() in POPULAR_SYMBOLS:
-                    ttl = 1800  # 30 minutes for popular symbols (was 15, increased for better hit rate)
+                    ttl = 3600  # 60 minutes for popular symbols (increased from 30min for better hit rate)
                 elif symbol.upper() in COMPLEX_SYMBOLS:
-                    ttl = 1500  # 25 minutes for complex symbols (was 12, increased)
+                    ttl = 3000  # 50 minutes for complex symbols (increased from 25min)
                 else:
-                    ttl = 1200  # 20 minutes default (was 10, increased)
+                    ttl = 2400  # 40 minutes default (increased from 20min)
             
             # Serialize data to JSON
             serialized_data = json.dumps(data, default=str)
@@ -169,8 +169,8 @@ class CacheManager:
                     not (now.hour == 9 and now.minute < 30)
                 )
                 
-                # Increased TTLs: 60s during market hours (was 30), 10min after hours (was 5min)
-                ttl = 60 if is_market_open else 600
+                # Increased TTLs: 5min during market hours (increased from 60s), 10min after hours
+                ttl = 300 if is_market_open else 600
             
             data['_cache_time'] = time.time()
             # Serialize data to JSON
@@ -204,7 +204,7 @@ class CacheManager:
             logger.warning(f"Cache get failed: {e}")
             return None
     
-    def set_analysis(self, symbol: str, expiration: str, preference: str, data: Dict, ttl: int = 900) -> None:
+    def set_analysis(self, symbol: str, expiration: str, preference: str, data: Dict, ttl: int = 1800) -> None:
         """Cache analysis result"""
         if not self.enabled or not self.redis:
             return
