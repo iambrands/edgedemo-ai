@@ -1,5 +1,6 @@
 # =============================================================================
 # Stage 1: Build Frontend
+# Updated: Jan 22, 2026 - Use npm install for lock file flexibility
 # =============================================================================
 FROM node:18-alpine AS frontend-builder
 
