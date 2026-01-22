@@ -1,19 +1,83 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
-venv/
-.venv
-node_modules/
-.git
-.gitignore
+*.so
+*.egg
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
 .env
+.venv
+venv/
+env/
+
+# Node
+node_modules
+frontend/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build (will be built in Docker)
+frontend/build
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs
+README.md
+LICENSE
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Tests
+tests
+*.test.js
+*.spec.js
+
+# Logs
+logs
+*.log
+
+# Development
+.devcontainer
+docker-compose.override.yml
+
+# Database
 *.db
 *.sqlite
 *.sqlite3
-frontend/node_modules
-frontend/build
-.DS_Store
+instance/
 
+# Cache
+.cache
+.pytest_cache
+__pycache__

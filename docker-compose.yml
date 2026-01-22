@@ -1,53 +1,53 @@
 version: '3.8'
 
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/optionsedge
+      - REDIS_URL=redis://redis:6379
+      - PORT=8080
+      - GUNICORN_WORKERS=2
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./:/app
+    command: gunicorn 'app:create_app()' --bind 0.0.0.0:8080 --reload --workers 2
+
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: iabuser
-      POSTGRES_PASSWORD: iabpass
-      POSTGRES_DB: iab_optionsbot
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=optionsedge
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U iabuser"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  backend:
-    build: .
-    command: python app.py
-    volumes:
-      - .:/app
+  redis:
+    image: redis:7-alpine
     ports:
-      - "5000:5000"
-    environment:
-      - FLASK_ENV=development
-      - DATABASE_URL=postgresql://iabuser:iabpass@db:5432/iab_optionsbot
-      - USE_MOCK_DATA=true
-    depends_on:
-      db:
-        condition: service_healthy
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      - "6379:6379"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "4000:4000"
-    environment:
-      - PORT=4000
-    environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
-    depends_on:
-      - backend
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
-
+  redis_data:
