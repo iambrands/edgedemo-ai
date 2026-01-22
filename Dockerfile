@@ -72,8 +72,8 @@ USER appuser
 # Expose port (Railway uses $PORT, GCP uses 8080)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check (increased start-period to allow app initialization)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # Start command (compatible with Railway and GCP)

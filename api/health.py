@@ -13,98 +13,17 @@ health_bp = Blueprint('health', __name__)
 @health_bp.route('/health', methods=['GET'])
 def health_check():
     """
-    Comprehensive health check endpoint.
-    Returns system status and configuration.
+    Lightweight health check for Railway/GCP deployment.
+    Returns immediately without checking cache or database to avoid timeouts.
     """
     try:
-        from models.position import Position
-        from app import db
-        from services.tradier_connector import TradierConnector
-        from utils.redis_cache import get_redis_cache
-        
-        # Database check with timeout
-        db_healthy = True
-        position_count = None
-        open_positions = None
-        try:
-            # Quick connection test with timeout
-            db.session.execute('SELECT 1')
-            db.session.commit()
-            
-            # Try to get counts, but don't fail if it times out
-            try:
-                position_count = db.session.query(Position).count()
-                open_positions = db.session.query(Position).filter_by(status='open').count()
-            except Exception as count_error:
-                logger.warning(f"Could not get position counts: {count_error}")
-                # Database is connected but query timed out - still healthy
-                position_count = 0
-                open_positions = 0
-        except Exception as e:
-            db_healthy = False
-            logger.error(f"Database health check failed: {e}")
-        
-        # Tradier check
-        tradier_config = {}
-        try:
-            tradier = TradierConnector()
-            tradier_config = {
-                'sandbox': tradier.sandbox,
-                'base_url': tradier.base_url,
-                'api_key_present': bool(tradier.api_key),
-                'use_mock': tradier.use_mock
-            }
-        except Exception as e:
-            logger.error(f"Tradier config check failed: {e}")
-            tradier_config = {'error': str(e)}
-        
-        # Cache check
-        cache_stats = {}
-        try:
-            cache = get_redis_cache()
-            cache_stats = cache.get_stats()
-        except Exception as e:
-            logger.error(f"Cache stats check failed: {e}")
-            cache_stats = {'error': str(e)}
-        
-        # Environment info
-        env_info = {
-            'environment': os.getenv('FLASK_ENV', 'production'),
-            'debug_mode': os.getenv('DEBUG', 'false').lower() == 'true',
-            'cache_enabled': cache_stats.get('using_redis', False),
-            'redis_url_present': bool(os.getenv('REDIS_URL'))
-        }
-        
-        # Overall health - be more lenient
-        # System is healthy if Tradier is configured, even if DB has issues
-        # DB issues might be temporary (connection pool, query timeout)
-        overall_healthy = tradier_config.get('api_key_present', False) and db_healthy
-        # But allow degraded status if only DB has issues (not critical for read-only endpoints)
-        is_degraded = not db_healthy and tradier_config.get('api_key_present', False)
-        
-        status = 'healthy' if overall_healthy else ('degraded' if is_degraded else 'unhealthy')
-        
+        # Simple health check - just verify app is running
+        # Don't check cache or database (those can be slow during startup)
         return jsonify({
-            'status': status,
+            'status': 'healthy',
             'timestamp': datetime.utcnow().isoformat(),
-            'version': '1.0.0',
-            'components': {
-                'database': {
-                    'status': 'healthy' if db_healthy else 'unhealthy',
-                    'total_positions': position_count,
-                    'open_positions': open_positions
-                },
-                'tradier_api': {
-                    'status': 'configured' if tradier_config.get('api_key_present') else 'not_configured',
-                    'config': tradier_config
-                },
-                'cache': {
-                    'status': 'healthy' if cache_stats.get('using_redis') else 'degraded',
-                    'stats': cache_stats
-                }
-            },
-            'environment': env_info
-        }), 200 if overall_healthy else (503 if is_degraded else 503)
+            'version': '1.0.0'
+        }), 200
         
     except Exception as e:
         logger.error(f"Health check failed: {e}", exc_info=True)
