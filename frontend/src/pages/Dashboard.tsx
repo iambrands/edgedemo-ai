@@ -700,11 +700,8 @@ const Dashboard: React.FC = () => {
       toast.loading('Fetching fresh prices from Tradier...', { id: 'refresh-prices' });
       
       // Call backend to refresh all positions from Tradier
+      // Axios automatically throws on non-2xx status, so no need to check response.ok
       const response = await api.post('/trades/positions/refresh-all');
-      
-      if (!response.ok) {
-        throw new Error('Failed to refresh prices');
-      }
       
       const result = response.data;
       
