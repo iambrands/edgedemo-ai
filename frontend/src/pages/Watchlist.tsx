@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { watchlistService } from '../services/watchlist';
 import { Stock } from '../types/watchlist';
 import toast from 'react-hot-toast';
 import BulkAddStocksModal from '../components/BulkAddStocksModal';
+
+type SortField = 'symbol' | 'company_name' | 'current_price' | 'change_percent' | 'volume';
+type SortDirection = 'asc' | 'desc';
 
 const Watchlist: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +16,8 @@ const Watchlist: React.FC = () => {
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkAddModal, setShowBulkAddModal] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('symbol');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     loadWatchlist();
@@ -103,6 +108,70 @@ const Watchlist: React.FC = () => {
     }
   };
 
+  // Handle sort
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending (except for change_percent and volume which default to desc)
+      setSortField(field);
+      setSortDirection(field === 'change_percent' || field === 'volume' ? 'desc' : 'asc');
+    }
+  };
+
+  // Sorted watchlist
+  const sortedWatchlist = useMemo(() => {
+    const sorted = [...watchlist].sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      // Handle null/undefined values
+      if (aVal === null || aVal === undefined) aVal = sortDirection === 'asc' ? Infinity : -Infinity;
+      if (bVal === null || bVal === undefined) bVal = sortDirection === 'asc' ? Infinity : -Infinity;
+
+      // String comparison for symbol and company_name
+      if (sortField === 'symbol' || sortField === 'company_name') {
+        aVal = (aVal || '').toString().toLowerCase();
+        bVal = (bVal || '').toString().toLowerCase();
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      // Numeric comparison for price, change_percent, volume
+      const aNum = typeof aVal === 'number' ? aVal : 0;
+      const bNum = typeof bVal === 'number' ? bVal : 0;
+      return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+    });
+    return sorted;
+  }, [watchlist, sortField, sortDirection]);
+
+  // Sort indicator component
+  const SortIndicator = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <span className="ml-1 text-gray-300">↕</span>;
+    }
+    return (
+      <span className="ml-1 text-primary">
+        {sortDirection === 'asc' ? '↑' : '↓'}
+      </span>
+    );
+  };
+
+  // Sortable header component
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <th
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center">
+        {children}
+        <SortIndicator field={field} />
+      </div>
+    </th>
+  );
+
   if (loading) {
     return <div className="text-center py-12">Loading watchlist...</div>;
   }
@@ -180,24 +249,24 @@ const Watchlist: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Change %</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Volume</th>
+                <SortableHeader field="symbol">Symbol</SortableHeader>
+                <SortableHeader field="company_name">Company</SortableHeader>
+                <SortableHeader field="current_price">Price</SortableHeader>
+                <SortableHeader field="change_percent">Change %</SortableHeader>
+                <SortableHeader field="volume">Volume</SortableHeader>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tags</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quick Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {watchlist.length === 0 ? (
+              {sortedWatchlist.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     No stocks in watchlist. Add some stocks to get started!
                   </td>
                 </tr>
               ) : (
-                watchlist.map((stock) => (
+                sortedWatchlist.map((stock) => (
                   <tr key={stock.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {stock.symbol}
