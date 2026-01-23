@@ -65,6 +65,11 @@ def create_automation(current_user):
         max_spread_percent = sanitize_float(data.get('max_spread_percent'), min_val=0.0, max_val=100.0) or 30.0  # Increased from 15
         quantity = sanitize_int(data.get('quantity'), min_val=1, max_val=100) or 1
         
+        # Validate contract_types
+        contract_types = data.get('contract_types', 'both')
+        if contract_types not in ['call', 'put', 'both']:
+            contract_types = 'both'
+        
         db = get_db()
         automation = Automation(
             user_id=current_user.id,
@@ -72,6 +77,7 @@ def create_automation(current_user):
             description=description,
             symbol=symbol,
             strategy_type=sanitize_input(data.get('strategy_type', 'covered_call'), max_length=50),
+            contract_types=contract_types,
             target_delta=target_delta,
             min_delta=min_delta,
             max_delta=max_delta,
@@ -144,6 +150,10 @@ def update_automation(current_user, automation_id):
         if 'max_days_to_hold' in data:
             from utils.helpers import sanitize_int
             automation.max_days_to_hold = sanitize_int(data['max_days_to_hold'], min_val=1, max_val=365)
+        if 'contract_types' in data:
+            contract_types = data['contract_types']
+            if contract_types in ['call', 'put', 'both']:
+                automation.contract_types = contract_types
         
         db.session.commit()
         

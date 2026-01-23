@@ -307,13 +307,25 @@ def test_trade_automation(current_user, automation_id):
             }), 400
         
         # Find any suitable option (relaxed criteria for testing)
-        # Get direction from signals, default to bullish for calls
+        # Get direction from signals - respect bearish signals for PUTs
         signal_data = signals.get('signals', {})
-        direction = signal_data.get('direction', 'bullish')
+        action = signal_data.get('action', 'hold')
+        direction = signal_data.get('direction', 'neutral')
         
-        # If direction is 'neutral' or missing, default to bullish (calls)
-        if not direction or direction == 'neutral':
-            direction = 'bullish'
+        # Map action to direction if direction is neutral
+        if direction == 'neutral' or not direction:
+            if action == 'buy_call':
+                direction = 'bullish'
+            elif action == 'buy_put':
+                direction = 'bearish'
+            else:
+                # For neutral with no clear action, use IV rank if available
+                iv_metrics = signals.get('iv_metrics', {})
+                iv_rank = iv_metrics.get('iv_rank', 50) if iv_metrics else 50
+                if iv_rank > 60:
+                    direction = 'bearish'  # High IV suggests bearish/puts
+                else:
+                    direction = 'bullish'  # Low IV suggests bullish/calls
         
         suitable_options = []
         

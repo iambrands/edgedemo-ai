@@ -13,6 +13,7 @@ class Automation(db.Model):
     
     # Strategy configuration
     strategy_type = db.Column(db.String(50), nullable=False)  # covered_call, cash_secured_put, etc.
+    contract_types = db.Column(db.String(20), default='both')  # 'call', 'put', or 'both' - which contract types to trade
     target_delta = db.Column(db.Float)  # Target delta range
     min_delta = db.Column(db.Float)
     max_delta = db.Column(db.Float)
@@ -79,6 +80,7 @@ class Automation(db.Model):
             'description': self.description,
             'symbol': self.symbol,
             'strategy_type': self.strategy_type,
+            'contract_types': self.contract_types or 'both',
             'target_delta': self.target_delta,
             'min_delta': self.min_delta,
             'max_delta': self.max_delta,

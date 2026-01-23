@@ -210,12 +210,25 @@ class OpportunityScanner:
         min_delta = getattr(automation, 'min_delta', None)
         max_delta = getattr(automation, 'max_delta', None)
         
+        # Get contract_types preference from automation (default: both)
+        contract_types_pref = getattr(automation, 'contract_types', 'both') or 'both'
+        
         for option in chain:
-            # Filter by direction
-            if direction == 'bullish' and option.get('contract_type') != 'call':
+            contract_type = option.get('contract_type', '').lower()
+            
+            # Filter by contract_types preference first
+            if contract_types_pref == 'call' and contract_type != 'call':
                 continue
-            if direction == 'bearish' and option.get('contract_type') != 'put':
+            if contract_types_pref == 'put' and contract_type != 'put':
                 continue
+            # If 'both', allow both calls and puts
+            
+            # Filter by direction (maps signal direction to appropriate contract type)
+            if direction == 'bullish' and contract_type != 'call':
+                continue
+            if direction == 'bearish' and contract_type != 'put':
+                continue
+            # For neutral direction, allow both (already filtered by contract_types_pref above)
             
             # Filter by premium
             if max_premium and option.get('mid_price', 0) > max_premium:

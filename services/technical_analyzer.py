@@ -218,7 +218,7 @@ class TechnicalAnalyzer:
         # Signal 1: Moving Average Crossover
         ma_enabled = custom_filters.get('ma_enabled', True)
         require_golden_cross = custom_filters.get('require_golden_cross', True)
-        require_death_cross = custom_filters.get('require_death_cross', False)
+        require_death_cross = custom_filters.get('require_death_cross', True)  # Enable bearish MA signals
         
         sma_20 = indicators['sma_20']
         sma_50 = indicators['sma_50']
@@ -315,7 +315,7 @@ class TechnicalAnalyzer:
         # Signal 4: MACD
         macd_enabled = custom_filters.get('macd_enabled', True)
         require_macd_bullish = custom_filters.get('require_macd_bullish', True)
-        require_macd_bearish = custom_filters.get('require_macd_bearish', False)
+        require_macd_bearish = custom_filters.get('require_macd_bearish', True)  # Enable bearish MACD signals
         min_macd_histogram = custom_filters.get('min_macd_histogram', 0.0)
         
         macd_hist = indicators['macd']['histogram']

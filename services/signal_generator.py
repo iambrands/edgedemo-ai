@@ -121,10 +121,27 @@ class SignalGenerator:
             action = 'buy_put'
             reason = f"Bearish signal with {final_confidence:.1%} confidence. {iv_reason}" if iv_reason else f"Bearish signal with {final_confidence:.1%} confidence"
         elif direction == 'neutral' and final_confidence >= effective_min_confidence * 0.8:
-            # For neutral signals, accept if confidence is close to threshold
-            # Default to bullish (calls) for neutral signals
-            action = 'buy_call'
-            reason = f"Neutral signal with {final_confidence:.1%} confidence - defaulting to bullish. {iv_reason}" if iv_reason else f"Neutral signal with {final_confidence:.1%} confidence - defaulting to bullish"
+            # For neutral signals, use IV rank to decide direction
+            # High IV (>50) favors puts (bearish bias - expecting mean reversion)
+            # Low IV (<50) favors calls (bullish bias - expecting expansion)
+            if iv_metrics and iv_metrics.get('iv_rank') is not None:
+                iv_rank = iv_metrics.get('iv_rank', 50)
+                if iv_rank > 60:
+                    # High IV - favor puts (expecting price drop or mean reversion)
+                    action = 'buy_put'
+                    reason = f"Neutral signal with {final_confidence:.1%} confidence - high IV rank ({iv_rank:.1f}) suggests bearish bias"
+                elif iv_rank < 40:
+                    # Low IV - favor calls (expecting expansion/bullish move)
+                    action = 'buy_call'
+                    reason = f"Neutral signal with {final_confidence:.1%} confidence - low IV rank ({iv_rank:.1f}) suggests bullish bias"
+                else:
+                    # Mid-range IV - hold, no clear direction
+                    action = 'hold'
+                    reason = f"Neutral signal with mid-range IV rank ({iv_rank:.1f}) - no clear direction"
+            else:
+                # No IV data available - hold instead of defaulting to calls
+                action = 'hold'
+                reason = f"Neutral signal with {final_confidence:.1%} confidence - no IV data to determine bias"
         else:
             action = 'hold'
             reason = f"Neutral or low confidence signal ({final_confidence:.1%})"
