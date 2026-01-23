@@ -19,6 +19,13 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+def get_app():
+    """Get or create the Flask app instance"""
+    from app import create_app, db
+    app = create_app()
+    return app, db
+
+
 def backfill_positions(user_id=None, dry_run=False):
     """
     Create positions for trades that didn't create them.
@@ -31,7 +38,7 @@ def backfill_positions(user_id=None, dry_run=False):
     Returns:
         dict with results
     """
-    from app import app, db
+    app, db = get_app()
     from models.trade import Trade
     from models.position import Position
     
@@ -288,7 +295,7 @@ def backfill_positions(user_id=None, dry_run=False):
 
 def verify_positions(user_id=None):
     """Verify positions vs trades for a user - shows grouped totals"""
-    from app import app, db
+    app, db = get_app()
     from models.trade import Trade
     from models.position import Position
     
