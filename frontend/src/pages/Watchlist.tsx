@@ -1,12 +1,95 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { watchlistService } from '../services/watchlist';
-import { Stock } from '../types/watchlist';
+import { Stock, IVRankData, EarningsData } from '../types/watchlist';
 import toast from 'react-hot-toast';
 import BulkAddStocksModal from '../components/BulkAddStocksModal';
 
-type SortField = 'symbol' | 'company_name' | 'current_price' | 'change_percent' | 'volume';
+type SortField = 'symbol' | 'company_name' | 'current_price' | 'change_percent' | 'volume' | 'iv_rank';
 type SortDirection = 'asc' | 'desc';
+
+// IV Rank Badge Component
+const IVRankBadge: React.FC<{ ivData?: IVRankData; ivRank?: number }> = ({ ivData, ivRank }) => {
+  // Use ivData if available, otherwise calculate from ivRank
+  if (ivData) {
+    const colorClasses: Record<string, string> = {
+      green: 'bg-green-500',
+      yellow: 'bg-amber-500',
+      red: 'bg-red-500'
+    };
+    
+    return (
+      <div className="flex items-center gap-2" title={ivData.strategy_hint}>
+        <span className={`px-2 py-1 ${colorClasses[ivData.color] || 'bg-gray-400'} text-white rounded text-xs font-semibold`}>
+          {ivData.label}
+        </span>
+        {ivData.iv_rank !== null && (
+          <span className="text-xs text-gray-500 font-medium">{Math.round(ivData.iv_rank)}</span>
+        )}
+      </div>
+    );
+  }
+  
+  // Fallback to simple iv_rank number
+  if (ivRank !== undefined && ivRank !== null) {
+    let color = 'bg-amber-500';
+    let label = 'Normal';
+    let hint = 'Neutral strategies';
+    
+    if (ivRank < 30) {
+      color = 'bg-green-500';
+      label = 'Low IV';
+      hint = 'Buy options (cheap premiums)';
+    } else if (ivRank >= 70) {
+      color = 'bg-red-500';
+      label = 'High IV';
+      hint = 'Sell premium (expensive options)';
+    }
+    
+    return (
+      <div className="flex items-center gap-2" title={hint}>
+        <span className={`px-2 py-1 ${color} text-white rounded text-xs font-semibold`}>
+          {label}
+        </span>
+        <span className="text-xs text-gray-500 font-medium">{Math.round(ivRank)}</span>
+      </div>
+    );
+  }
+  
+  return <span className="text-gray-400 text-xs">-</span>;
+};
+
+// Earnings Badge Component
+const EarningsBadge: React.FC<{ earnings?: EarningsData }> = ({ earnings }) => {
+  if (!earnings) return null;
+  
+  const daysUntil = earnings.days_until;
+  
+  let bgColor = 'bg-blue-500';
+  let text = `${daysUntil}d`;
+  
+  if (daysUntil === 0) {
+    bgColor = 'bg-red-500';
+    text = 'TODAY';
+  } else if (daysUntil === 1) {
+    bgColor = 'bg-orange-500';
+    text = 'TMRW';
+  } else if (daysUntil <= 7) {
+    bgColor = 'bg-amber-500';
+  }
+  
+  const timing = earnings.earnings_time === 'before_market' ? 'BMO' : 
+                 earnings.earnings_time === 'after_market' ? 'AMC' : '';
+  
+  return (
+    <span 
+      className={`inline-flex items-center gap-1 px-2 py-0.5 ${bgColor} text-white rounded text-xs font-semibold`}
+      title={`Earnings ${timing} on ${new Date(earnings.earnings_date).toLocaleDateString()}`}
+    >
+      📅 {text}
+    </span>
+  );
+};
 
 const Watchlist: React.FC = () => {
   const navigate = useNavigate();
@@ -123,8 +206,17 @@ const Watchlist: React.FC = () => {
   // Sorted watchlist
   const sortedWatchlist = useMemo(() => {
     const sorted = [...watchlist].sort((a, b) => {
-      let aVal: any = a[sortField];
-      let bVal: any = b[sortField];
+      let aVal: any;
+      let bVal: any;
+      
+      // Get the value based on sort field
+      if (sortField === 'iv_rank') {
+        aVal = a.iv_rank_data?.iv_rank ?? a.iv_rank;
+        bVal = b.iv_rank_data?.iv_rank ?? b.iv_rank;
+      } else {
+        aVal = a[sortField];
+        bVal = b[sortField];
+      }
 
       // Handle null/undefined values
       if (aVal === null || aVal === undefined) aVal = sortDirection === 'asc' ? Infinity : -Infinity;
@@ -139,7 +231,7 @@ const Watchlist: React.FC = () => {
         return 0;
       }
 
-      // Numeric comparison for price, change_percent, volume
+      // Numeric comparison for price, change_percent, volume, iv_rank
       const aNum = typeof aVal === 'number' ? aVal : 0;
       const bNum = typeof bVal === 'number' ? bVal : 0;
       return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
@@ -250,12 +342,22 @@ const Watchlist: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <SortableHeader field="symbol">Symbol</SortableHeader>
-                <SortableHeader field="company_name">Company</SortableHeader>
                 <SortableHeader field="current_price">Price</SortableHeader>
                 <SortableHeader field="change_percent">Change %</SortableHeader>
+                <SortableHeader field="iv_rank">
+                  <span className="flex items-center gap-1">
+                    IV Rank
+                    <span className="text-gray-400 cursor-help" title="Implied Volatility Rank: Where current IV falls in 52-week range. Low = buy options, High = sell premium">ⓘ</span>
+                  </span>
+                </SortableHeader>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <span className="flex items-center gap-1">
+                    Earnings
+                    <span className="text-gray-400 cursor-help" title="Upcoming earnings date. IV typically spikes before earnings.">ⓘ</span>
+                  </span>
+                </th>
                 <SortableHeader field="volume">Volume</SortableHeader>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tags</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quick Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -268,11 +370,13 @@ const Watchlist: React.FC = () => {
               ) : (
                 sortedWatchlist.map((stock) => (
                   <tr key={stock.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {stock.symbol}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {stock.company_name || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-gray-900">{stock.symbol}</span>
+                        <span className="text-xs text-gray-500 truncate max-w-[150px]" title={stock.company_name}>
+                          {stock.company_name || '-'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {stock.current_price ? `$${stock.current_price.toFixed(2)}` : '-'}
@@ -287,20 +391,14 @@ const Watchlist: React.FC = () => {
                         </div>
                       ) : '-'}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <IVRankBadge ivData={stock.iv_rank_data} ivRank={stock.iv_rank} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <EarningsBadge earnings={stock.earnings} />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {stock.volume ? stock.volume.toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div className="flex flex-wrap gap-1">
-                        {stock.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2 flex-wrap">
@@ -330,7 +428,7 @@ const Watchlist: React.FC = () => {
                           className="px-2 py-1 bg-error text-white rounded hover:bg-red-600 text-xs font-medium"
                           title="Remove"
                         >
-                          Remove
+                          ×
                         </button>
                       </div>
                     </td>

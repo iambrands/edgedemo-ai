@@ -1,25 +1,142 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from services.stock_manager import StockManager
+from services.iv_analyzer import IVAnalyzer
+from services.earnings_calendar import EarningsCalendarService
 from utils.decorators import token_required
 from utils.helpers import validate_symbol, sanitize_input, sanitize_symbol
+from datetime import date
 
 watchlist_bp = Blueprint('watchlist', __name__)
 
 def get_stock_manager():
     return StockManager()
 
+def get_iv_analyzer():
+    return IVAnalyzer()
+
+def get_earnings_service():
+    return EarningsCalendarService()
+
+def calculate_iv_rank_data(iv_rank: float = None, current_iv: float = None):
+    """Calculate IV Rank category and color"""
+    if iv_rank is None:
+        # Fallback to simple IV categorization
+        if current_iv is not None:
+            iv_percent = current_iv * 100 if current_iv < 1 else current_iv
+            if iv_percent < 20:
+                return {
+                    'iv_rank': None,
+                    'category': 'low',
+                    'color': 'green',
+                    'label': 'Low IV',
+                    'strategy_hint': 'Buy options (cheap premiums)',
+                    'current_iv': round(iv_percent, 1)
+                }
+            elif iv_percent < 40:
+                return {
+                    'iv_rank': None,
+                    'category': 'medium',
+                    'color': 'yellow',
+                    'label': 'Normal',
+                    'strategy_hint': 'Neutral strategies',
+                    'current_iv': round(iv_percent, 1)
+                }
+            else:
+                return {
+                    'iv_rank': None,
+                    'category': 'high',
+                    'color': 'red',
+                    'label': 'High IV',
+                    'strategy_hint': 'Sell premium (expensive options)',
+                    'current_iv': round(iv_percent, 1)
+                }
+        return None
+    
+    # Calculate based on IV Rank
+    if iv_rank < 30:
+        category, color, label = 'low', 'green', 'Low IV'
+        strategy_hint = 'Buy options (cheap premiums)'
+    elif iv_rank < 70:
+        category, color, label = 'medium', 'yellow', 'Normal'
+        strategy_hint = 'Neutral strategies'
+    else:
+        category, color, label = 'high', 'red', 'High IV'
+        strategy_hint = 'Sell premium (expensive options)'
+    
+    return {
+        'iv_rank': round(iv_rank, 1),
+        'category': category,
+        'color': color,
+        'label': label,
+        'strategy_hint': strategy_hint,
+        'current_iv': round(current_iv * 100, 1) if current_iv and current_iv < 1 else current_iv
+    }
+
 @watchlist_bp.route('', methods=['GET'])
 @token_required
 def get_watchlist(current_user):
-    """Get user's watchlist"""
+    """Get user's watchlist with IV Rank and Earnings data"""
     try:
         stock_manager = get_stock_manager()
         stocks = stock_manager.get_watchlist(current_user.id)
+        
+        # Get earnings service
+        try:
+            earnings_service = get_earnings_service()
+            symbols = [s.symbol for s in stocks]
+            earnings_list = earnings_service.get_upcoming_earnings(
+                days_ahead=30, 
+                user_id=current_user.id,
+                symbols=symbols
+            )
+            earnings_map = {e['symbol']: e for e in earnings_list}
+        except Exception as e:
+            current_app.logger.warning(f"Failed to fetch earnings: {e}")
+            earnings_map = {}
+        
+        # Get IV analyzer
+        try:
+            iv_analyzer = get_iv_analyzer()
+        except Exception as e:
+            current_app.logger.warning(f"Failed to initialize IV analyzer: {e}")
+            iv_analyzer = None
+        
+        # Build watchlist with enhanced data
+        watchlist_data = []
+        for stock in stocks:
+            stock_dict = stock.to_dict()
+            
+            # Add IV Rank data
+            iv_rank_data = None
+            if iv_analyzer:
+                try:
+                    iv_metrics = iv_analyzer.get_current_iv_metrics(stock.symbol)
+                    if iv_metrics and iv_metrics.get('iv_rank') is not None:
+                        iv_rank_data = calculate_iv_rank_data(
+                            iv_rank=iv_metrics.get('iv_rank'),
+                            current_iv=iv_metrics.get('implied_volatility')
+                        )
+                    elif stock.iv_rank is not None:
+                        iv_rank_data = calculate_iv_rank_data(
+                            iv_rank=stock.iv_rank,
+                            current_iv=stock.implied_volatility
+                        )
+                except Exception as e:
+                    current_app.logger.debug(f"IV rank fetch for {stock.symbol}: {e}")
+            
+            stock_dict['iv_rank_data'] = iv_rank_data
+            
+            # Add Earnings data
+            stock_dict['earnings'] = earnings_map.get(stock.symbol)
+            
+            watchlist_data.append(stock_dict)
+        
         return jsonify({
-            'watchlist': [stock.to_dict() for stock in stocks],
-            'count': len(stocks)
+            'watchlist': watchlist_data,
+            'count': len(watchlist_data)
         }), 200
     except Exception as e:
+        current_app.logger.error(f"Watchlist error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @watchlist_bp.route('/add', methods=['POST'])

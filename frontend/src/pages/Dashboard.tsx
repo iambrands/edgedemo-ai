@@ -8,6 +8,8 @@ import { Position, Trade } from '../types/trades';
 import { Stock } from '../types/watchlist';
 import { Line, Bar } from 'react-chartjs-2';
 import OnboardingModal from '../components/OnboardingModal';
+import EarningsWidget from '../components/EarningsWidget';
+import UnusualOptionsWidget from '../components/UnusualOptionsWidget';
 import { useDevice } from '../hooks/useDevice';
 import ResponsiveTable, { ColumnDef } from '../components/common/ResponsiveTable';
 import ResponsiveModal from '../components/common/ResponsiveModal';
@@ -890,6 +892,12 @@ const Dashboard: React.FC = () => {
           <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Win Rate</h3>
           <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-primary`}>{winRate.toFixed(1)}%</p>
         </div>
+      </div>
+
+      {/* Earnings & Unusual Activity Widgets */}
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'} gap-4 md:gap-6`}>
+        <EarningsWidget />
+        <UnusualOptionsWidget />
       </div>
 
       {/* Charts */}
