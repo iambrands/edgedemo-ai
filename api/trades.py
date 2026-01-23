@@ -1318,3 +1318,209 @@ def cleanup_and_recalculate(current_user):
         db.session.rollback()
         return jsonify({'error': error_msg}), 500
 
+@trades_bp.route('/backfill-positions', methods=['POST'])
+@token_required
+def backfill_positions_from_trades(current_user):
+    """
+    Backfill positions for BUY trades that didn't create positions.
+    This fixes the issue where automation trades created Trade records but not Position records.
+    """
+    db = current_app.extensions['sqlalchemy']
+    
+    try:
+        from models.trade import Trade
+        from models.position import Position
+        from datetime import datetime
+        
+        data = request.get_json() or {}
+        dry_run = data.get('dry_run', False)
+        
+        # Find BUY trades for current user
+        trades = db.session.query(Trade).filter(
+            Trade.user_id == current_user.id,
+            Trade.action.ilike('buy')
+        ).order_by(Trade.trade_date.asc()).all()
+        
+        created_positions = []
+        skipped_trades = []
+        errors = []
+        
+        for trade in trades:
+            try:
+                # Determine how to look up the position
+                existing_position = None
+                
+                if trade.option_symbol:
+                    # Look for open position by option_symbol
+                    existing_position = Position.query.filter_by(
+                        user_id=trade.user_id,
+                        option_symbol=trade.option_symbol,
+                        status='open'
+                    ).first()
+                    
+                    # Also check by strike + expiration if not found
+                    if not existing_position and trade.strike_price and trade.expiration_date:
+                        existing_position = Position.query.filter_by(
+                            user_id=trade.user_id,
+                            symbol=trade.symbol,
+                            strike_price=trade.strike_price,
+                            expiration_date=trade.expiration_date,
+                            status='open'
+                        ).first()
+                    
+                    # Check closed positions too
+                    if not existing_position:
+                        existing_position = Position.query.filter_by(
+                            user_id=trade.user_id,
+                            option_symbol=trade.option_symbol,
+                            status='closed'
+                        ).first()
+                else:
+                    # Stock position
+                    existing_position = Position.query.filter_by(
+                        user_id=trade.user_id,
+                        symbol=trade.symbol,
+                        option_symbol=None
+                    ).first()
+                
+                if existing_position:
+                    skipped_trades.append({
+                        'trade_id': trade.id,
+                        'symbol': trade.symbol,
+                        'reason': f'Position already exists (ID {existing_position.id}, status={existing_position.status})'
+                    })
+                    continue
+                
+                # Check if there's a SELL trade that closed this
+                sell_trade = Trade.query.filter(
+                    Trade.user_id == trade.user_id,
+                    Trade.symbol == trade.symbol,
+                    Trade.option_symbol == trade.option_symbol,
+                    Trade.action.ilike('sell'),
+                    Trade.trade_date > trade.trade_date
+                ).first()
+                
+                if sell_trade:
+                    status = 'closed'
+                    exit_price = sell_trade.price
+                    is_option = (
+                        trade.contract_type and trade.contract_type.lower() in ['call', 'put', 'option']
+                    ) or bool(trade.option_symbol)
+                    multiplier = 100 if is_option else 1
+                    realized_pnl = (exit_price - trade.price) * trade.quantity * multiplier
+                    realized_pnl_percent = ((exit_price - trade.price) / trade.price * 100) if trade.price > 0 else 0
+                    quantity = 0
+                else:
+                    status = 'open'
+                    exit_price = None
+                    realized_pnl = 0.0
+                    realized_pnl_percent = 0.0
+                    quantity = trade.quantity
+                
+                if dry_run:
+                    created_positions.append({
+                        'trade_id': trade.id,
+                        'symbol': trade.symbol,
+                        'contract_type': trade.contract_type,
+                        'strike': trade.strike_price,
+                        'quantity': quantity,
+                        'entry_price': trade.price,
+                        'status': status,
+                        'would_create': True
+                    })
+                    continue
+                
+                # Create the position
+                position = Position(
+                    user_id=trade.user_id,
+                    symbol=trade.symbol,
+                    option_symbol=trade.option_symbol,
+                    contract_type=trade.contract_type,
+                    quantity=quantity,
+                    entry_price=trade.price,
+                    current_price=exit_price if exit_price else trade.price,
+                    strike_price=trade.strike_price,
+                    expiration_date=trade.expiration_date,
+                    entry_date=trade.trade_date,
+                    entry_delta=trade.delta,
+                    entry_gamma=trade.gamma,
+                    entry_theta=trade.theta,
+                    entry_vega=trade.vega,
+                    entry_iv=trade.implied_volatility,
+                    current_delta=trade.delta,
+                    current_gamma=trade.gamma,
+                    current_theta=trade.theta,
+                    current_vega=trade.vega,
+                    current_iv=trade.implied_volatility,
+                    unrealized_pnl=realized_pnl,
+                    unrealized_pnl_percent=realized_pnl_percent,
+                    automation_id=trade.automation_id,
+                    status=status,
+                    last_updated=datetime.utcnow()
+                )
+                
+                db.session.add(position)
+                db.session.flush()  # Get the ID
+                
+                created_positions.append({
+                    'position_id': position.id,
+                    'trade_id': trade.id,
+                    'symbol': trade.symbol,
+                    'contract_type': trade.contract_type,
+                    'strike': trade.strike_price,
+                    'quantity': quantity,
+                    'entry_price': trade.price,
+                    'status': status
+                })
+                
+                current_app.logger.info(
+                    f"✅ Created position {position.id} from trade {trade.id}: "
+                    f"{trade.symbol} {trade.contract_type} x{quantity} @ ${trade.price:.2f} ({status})"
+                )
+                
+            except Exception as e:
+                errors.append({
+                    'trade_id': trade.id,
+                    'symbol': trade.symbol,
+                    'error': str(e)
+                })
+                current_app.logger.error(f"Error backfilling position for trade {trade.id}: {e}")
+        
+        if not dry_run:
+            db.session.commit()
+        
+        # Update positions with current prices if any were created as open
+        open_positions_created = [p for p in created_positions if p.get('status') == 'open' and p.get('position_id')]
+        if open_positions_created and not dry_run:
+            try:
+                from services.position_monitor import PositionMonitor
+                monitor = PositionMonitor()
+                
+                for pos_info in open_positions_created:
+                    position = Position.query.get(pos_info['position_id'])
+                    if position:
+                        monitor.update_position_data(position, force_update=True)
+                
+                db.session.commit()
+                current_app.logger.info(f"Updated prices for {len(open_positions_created)} backfilled positions")
+            except Exception as e:
+                current_app.logger.warning(f"Could not update prices for backfilled positions: {e}")
+        
+        return jsonify({
+            'message': 'Backfill completed' if not dry_run else 'Dry run completed (no changes made)',
+            'dry_run': dry_run,
+            'positions_created': len(created_positions),
+            'trades_skipped': len(skipped_trades),
+            'errors': len(errors),
+            'created_positions': created_positions,
+            'skipped_trades': skipped_trades[:10],  # Only show first 10
+            'error_details': errors
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"Failed to backfill positions: {str(e)}"
+        current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        db.session.rollback()
+        return jsonify({'error': error_msg}), 500
+

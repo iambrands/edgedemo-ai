@@ -272,9 +272,14 @@ class TradeExecutor:
         
         db.session.add(trade)
         
-        # Update position
-        position_created = self._update_position(user_id, symbol, action, quantity, price, option_symbol,
-                            strike, expiration_date, contract_type, delta, gamma, theta, vega, iv)
+        # Update position - pass automation_id for tracking
+        position_created = self._update_position(
+            user_id=user_id, symbol=symbol, action=action, quantity=quantity, 
+            price=price, option_symbol=option_symbol, strike=strike, 
+            expiration_date=expiration_date, contract_type=contract_type, 
+            delta=delta, gamma=gamma, theta=theta, vega=vega, iv=iv,
+            automation_id=automation_id
+        )
         
         db.session.commit()
         
@@ -434,7 +439,7 @@ class TradeExecutor:
                         price: float, option_symbol: str = None, strike: float = None,
                         expiration_date: str = None, contract_type: str = None,
                         delta: float = None, gamma: float = None, theta: float = None,
-                        vega: float = None, iv: float = None) -> bool:
+                        vega: float = None, iv: float = None, automation_id: int = None) -> bool:
         """Update position based on trade
         
         Returns:
@@ -442,18 +447,43 @@ class TradeExecutor:
         """
         db = self._get_db()
         
+        # CRITICAL: Always filter by status='open' to avoid finding closed positions
+        # and to properly create new positions when needed
+        try:
+            current_app.logger.info(
+                f"📊 _update_position called: user_id={user_id}, symbol={symbol}, action={action}, "
+                f"quantity={quantity}, price={price}, option_symbol={option_symbol}, "
+                f"strike={strike}, expiration={expiration_date}, automation_id={automation_id}"
+            )
+        except RuntimeError:
+            pass
+        
         if option_symbol:
-            # Options position
+            # Options position - look for OPEN position with same option_symbol
             position = db.session.query(Position).filter_by(
                 user_id=user_id,
-                option_symbol=option_symbol
+                option_symbol=option_symbol,
+                status='open'
             ).first()
+            
+            # If not found by option_symbol, try to find by symbol + strike + expiration
+            # This handles cases where option_symbol format might differ
+            if not position and strike and expiration_date:
+                exp_date = datetime.strptime(expiration_date, '%Y-%m-%d').date() if isinstance(expiration_date, str) else expiration_date
+                position = db.session.query(Position).filter_by(
+                    user_id=user_id,
+                    symbol=symbol,
+                    strike_price=strike,
+                    expiration_date=exp_date,
+                    status='open'
+                ).first()
         else:
-            # Stock position
+            # Stock position - look for OPEN position
             position = db.session.query(Position).filter_by(
                 user_id=user_id,
                 symbol=symbol,
-                option_symbol=None
+                option_symbol=None,
+                status='open'
             ).first()
         
         if action.lower() == 'buy':
@@ -462,6 +492,13 @@ class TradeExecutor:
                 total_cost = (position.quantity * position.entry_price) + (quantity * price)
                 position.quantity += quantity
                 position.entry_price = total_cost / position.quantity
+                try:
+                    current_app.logger.info(
+                        f"📊 Updated existing position {position.id}: "
+                        f"+{quantity} contracts, new qty={position.quantity}, new avg=${position.entry_price:.2f}"
+                    )
+                except RuntimeError:
+                    pass
                 return False  # Existing position updated
             else:
                 # Create new position
@@ -484,9 +521,17 @@ class TradeExecutor:
                     current_gamma=gamma,
                     current_theta=theta,
                     current_vega=vega,
-                    current_iv=iv
+                    current_iv=iv,
+                    automation_id=automation_id  # Link to automation for tracking
                 )
                 db.session.add(position)
+                try:
+                    current_app.logger.info(
+                        f"✅ Created NEW position: {symbol} {contract_type} x{quantity} @ ${price:.2f} "
+                        f"(option_symbol={option_symbol}, strike={strike}, automation_id={automation_id})"
+                    )
+                except RuntimeError:
+                    pass
                 return True  # New position created
         elif action.lower() == 'sell':
             if position:
