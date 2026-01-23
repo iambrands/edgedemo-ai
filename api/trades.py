@@ -1323,7 +1323,7 @@ def cleanup_and_recalculate(current_user):
 def backfill_positions_from_trades(current_user):
     """
     Backfill positions for BUY trades that didn't create positions.
-    This fixes the issue where automation trades created Trade records but not Position records.
+    Groups trades by option and combines quantities/prices correctly.
     """
     db = current_app.extensions['sqlalchemy']
     
@@ -1331,100 +1331,149 @@ def backfill_positions_from_trades(current_user):
         from models.trade import Trade
         from models.position import Position
         from datetime import datetime
+        from collections import defaultdict
         
         data = request.get_json() or {}
         dry_run = data.get('dry_run', False)
         
-        # Find BUY trades for current user
-        trades = db.session.query(Trade).filter(
+        # Find all BUY trades for current user
+        buy_trades = db.session.query(Trade).filter(
             Trade.user_id == current_user.id,
             Trade.action.ilike('buy')
         ).order_by(Trade.trade_date.asc()).all()
         
+        # Group trades by option (same symbol, contract_type, strike, expiration)
+        grouped_trades = defaultdict(list)
+        
+        for trade in buy_trades:
+            option_key = (
+                trade.symbol,
+                (trade.contract_type or '').lower(),
+                trade.strike_price,
+                trade.expiration_date.isoformat() if trade.expiration_date else None
+            )
+            grouped_trades[option_key].append(trade)
+        
         created_positions = []
-        skipped_trades = []
+        updated_positions = []
+        skipped_options = []
         errors = []
         
-        for trade in trades:
+        for option_key, option_trades in grouped_trades.items():
+            symbol, contract_type, strike_price, expiration_str = option_key
+            
             try:
-                # Determine how to look up the position
-                existing_position = None
+                # Calculate totals across all trades for this option
+                total_bought = sum(t.quantity for t in option_trades)
+                total_cost = sum(t.price * t.quantity for t in option_trades)
+                avg_entry_price = total_cost / total_bought if total_bought > 0 else 0
                 
-                if trade.option_symbol:
-                    # Look for open position by option_symbol
+                first_trade = option_trades[0]
+                expiration_date = first_trade.expiration_date
+                option_symbol = first_trade.option_symbol
+                automation_id = first_trade.automation_id
+                
+                # Check if position already exists
+                existing_position = Position.query.filter_by(
+                    user_id=current_user.id,
+                    symbol=symbol,
+                    strike_price=strike_price,
+                    expiration_date=expiration_date,
+                    status='open'
+                ).first()
+                
+                if not existing_position and option_symbol:
                     existing_position = Position.query.filter_by(
-                        user_id=trade.user_id,
-                        option_symbol=trade.option_symbol,
+                        user_id=current_user.id,
+                        option_symbol=option_symbol,
                         status='open'
-                    ).first()
-                    
-                    # Also check by strike + expiration if not found
-                    if not existing_position and trade.strike_price and trade.expiration_date:
-                        existing_position = Position.query.filter_by(
-                            user_id=trade.user_id,
-                            symbol=trade.symbol,
-                            strike_price=trade.strike_price,
-                            expiration_date=trade.expiration_date,
-                            status='open'
-                        ).first()
-                    
-                    # Check closed positions too
-                    if not existing_position:
-                        existing_position = Position.query.filter_by(
-                            user_id=trade.user_id,
-                            option_symbol=trade.option_symbol,
-                            status='closed'
-                        ).first()
-                else:
-                    # Stock position
-                    existing_position = Position.query.filter_by(
-                        user_id=trade.user_id,
-                        symbol=trade.symbol,
-                        option_symbol=None
                     ).first()
                 
                 if existing_position:
-                    skipped_trades.append({
-                        'trade_id': trade.id,
-                        'symbol': trade.symbol,
-                        'reason': f'Position already exists (ID {existing_position.id}, status={existing_position.status})'
+                    # Position exists - check if quantity needs updating
+                    if existing_position.quantity == total_bought:
+                        skipped_options.append({
+                            'symbol': symbol,
+                            'strike': strike_price,
+                            'contract_type': contract_type,
+                            'trades_count': len(option_trades),
+                            'reason': f'Position already correct (ID {existing_position.id}, qty={total_bought})'
+                        })
+                        continue
+                    else:
+                        # Update quantity and avg price
+                        if not dry_run:
+                            existing_position.quantity = total_bought
+                            existing_position.entry_price = avg_entry_price
+                            existing_position.last_updated = datetime.utcnow()
+                        
+                        updated_positions.append({
+                            'position_id': existing_position.id,
+                            'symbol': symbol,
+                            'strike': strike_price,
+                            'old_quantity': existing_position.quantity,
+                            'new_quantity': total_bought,
+                            'avg_price': avg_entry_price
+                        })
+                        continue
+                
+                # Check for closed position
+                closed_position = Position.query.filter_by(
+                    user_id=current_user.id,
+                    symbol=symbol,
+                    strike_price=strike_price,
+                    expiration_date=expiration_date,
+                    status='closed'
+                ).first()
+                
+                if closed_position:
+                    skipped_options.append({
+                        'symbol': symbol,
+                        'strike': strike_price,
+                        'contract_type': contract_type,
+                        'trades_count': len(option_trades),
+                        'reason': f'Closed position exists (ID {closed_position.id})'
                     })
                     continue
                 
-                # Check if there's a SELL trade that closed this
-                sell_trade = Trade.query.filter(
-                    Trade.user_id == trade.user_id,
-                    Trade.symbol == trade.symbol,
-                    Trade.option_symbol == trade.option_symbol,
-                    Trade.action.ilike('sell'),
-                    Trade.trade_date > trade.trade_date
-                ).first()
+                # Check for SELL trades
+                sell_trades = Trade.query.filter(
+                    Trade.user_id == current_user.id,
+                    Trade.symbol == symbol,
+                    Trade.strike_price == strike_price,
+                    Trade.expiration_date == expiration_date,
+                    Trade.action.ilike('sell')
+                ).all()
                 
-                if sell_trade:
+                total_sold = sum(t.quantity for t in sell_trades)
+                remaining_qty = total_bought - total_sold
+                
+                if remaining_qty <= 0:
+                    # Fully closed - create closed position
                     status = 'closed'
-                    exit_price = sell_trade.price
-                    is_option = (
-                        trade.contract_type and trade.contract_type.lower() in ['call', 'put', 'option']
-                    ) or bool(trade.option_symbol)
+                    final_qty = 0
+                    avg_sell_price = sum(t.price * t.quantity for t in sell_trades) / total_sold if total_sold > 0 else 0
+                    is_option = contract_type in ['call', 'put', 'option'] or bool(option_symbol)
                     multiplier = 100 if is_option else 1
-                    realized_pnl = (exit_price - trade.price) * trade.quantity * multiplier
-                    realized_pnl_percent = ((exit_price - trade.price) / trade.price * 100) if trade.price > 0 else 0
-                    quantity = 0
+                    realized_pnl = (avg_sell_price - avg_entry_price) * total_bought * multiplier
+                    realized_pnl_percent = ((avg_sell_price - avg_entry_price) / avg_entry_price * 100) if avg_entry_price > 0 else 0
                 else:
+                    # Open position
                     status = 'open'
-                    exit_price = None
+                    final_qty = remaining_qty
                     realized_pnl = 0.0
                     realized_pnl_percent = 0.0
-                    quantity = trade.quantity
                 
                 if dry_run:
                     created_positions.append({
-                        'trade_id': trade.id,
-                        'symbol': trade.symbol,
-                        'contract_type': trade.contract_type,
-                        'strike': trade.strike_price,
-                        'quantity': quantity,
-                        'entry_price': trade.price,
+                        'symbol': symbol,
+                        'strike': strike_price,
+                        'contract_type': contract_type,
+                        'trades_count': len(option_trades),
+                        'total_bought': total_bought,
+                        'total_sold': total_sold,
+                        'final_quantity': final_qty,
+                        'avg_entry_price': avg_entry_price,
                         'status': status,
                         'would_create': True
                     })
@@ -1432,88 +1481,94 @@ def backfill_positions_from_trades(current_user):
                 
                 # Create the position
                 position = Position(
-                    user_id=trade.user_id,
-                    symbol=trade.symbol,
-                    option_symbol=trade.option_symbol,
-                    contract_type=trade.contract_type,
-                    quantity=quantity,
-                    entry_price=trade.price,
-                    current_price=exit_price if exit_price else trade.price,
-                    strike_price=trade.strike_price,
-                    expiration_date=trade.expiration_date,
-                    entry_date=trade.trade_date,
-                    entry_delta=trade.delta,
-                    entry_gamma=trade.gamma,
-                    entry_theta=trade.theta,
-                    entry_vega=trade.vega,
-                    entry_iv=trade.implied_volatility,
-                    current_delta=trade.delta,
-                    current_gamma=trade.gamma,
-                    current_theta=trade.theta,
-                    current_vega=trade.vega,
-                    current_iv=trade.implied_volatility,
+                    user_id=current_user.id,
+                    symbol=symbol,
+                    option_symbol=option_symbol,
+                    contract_type=contract_type,
+                    strike_price=strike_price,
+                    quantity=final_qty,
+                    entry_price=avg_entry_price,
+                    current_price=avg_entry_price,
+                    expiration_date=expiration_date,
+                    entry_date=first_trade.trade_date,
+                    entry_delta=first_trade.delta,
+                    entry_gamma=first_trade.gamma,
+                    entry_theta=first_trade.theta,
+                    entry_vega=first_trade.vega,
+                    entry_iv=first_trade.implied_volatility,
+                    current_delta=first_trade.delta,
+                    current_gamma=first_trade.gamma,
+                    current_theta=first_trade.theta,
+                    current_vega=first_trade.vega,
+                    current_iv=first_trade.implied_volatility,
                     unrealized_pnl=realized_pnl,
                     unrealized_pnl_percent=realized_pnl_percent,
-                    automation_id=trade.automation_id,
+                    automation_id=automation_id,
                     status=status,
                     last_updated=datetime.utcnow()
                 )
                 
                 db.session.add(position)
-                db.session.flush()  # Get the ID
+                db.session.flush()
                 
                 created_positions.append({
                     'position_id': position.id,
-                    'trade_id': trade.id,
-                    'symbol': trade.symbol,
-                    'contract_type': trade.contract_type,
-                    'strike': trade.strike_price,
-                    'quantity': quantity,
-                    'entry_price': trade.price,
+                    'symbol': symbol,
+                    'strike': strike_price,
+                    'contract_type': contract_type,
+                    'trades_count': len(option_trades),
+                    'total_bought': total_bought,
+                    'total_sold': total_sold,
+                    'final_quantity': final_qty,
+                    'avg_entry_price': avg_entry_price,
                     'status': status
                 })
                 
                 current_app.logger.info(
-                    f"✅ Created position {position.id} from trade {trade.id}: "
-                    f"{trade.symbol} {trade.contract_type} x{quantity} @ ${trade.price:.2f} ({status})"
+                    f"✅ Created position {position.id}: {symbol} ${strike_price} {contract_type} "
+                    f"x{final_qty} @ ${avg_entry_price:.2f} ({status}) from {len(option_trades)} trades"
                 )
                 
             except Exception as e:
                 errors.append({
-                    'trade_id': trade.id,
-                    'symbol': trade.symbol,
+                    'symbol': symbol,
+                    'strike': strike_price,
                     'error': str(e)
                 })
-                current_app.logger.error(f"Error backfilling position for trade {trade.id}: {e}")
+                current_app.logger.error(f"Error backfilling position for {symbol} ${strike_price}: {e}")
         
         if not dry_run:
             db.session.commit()
-        
-        # Update positions with current prices if any were created as open
-        open_positions_created = [p for p in created_positions if p.get('status') == 'open' and p.get('position_id')]
-        if open_positions_created and not dry_run:
-            try:
-                from services.position_monitor import PositionMonitor
-                monitor = PositionMonitor()
-                
-                for pos_info in open_positions_created:
-                    position = Position.query.get(pos_info['position_id'])
-                    if position:
-                        monitor.update_position_data(position, force_update=True)
-                
-                db.session.commit()
-                current_app.logger.info(f"Updated prices for {len(open_positions_created)} backfilled positions")
-            except Exception as e:
-                current_app.logger.warning(f"Could not update prices for backfilled positions: {e}")
+            
+            # Update prices for newly created open positions
+            open_positions = [p for p in created_positions if p.get('status') == 'open' and p.get('position_id')]
+            if open_positions:
+                try:
+                    from services.position_monitor import PositionMonitor
+                    monitor = PositionMonitor()
+                    
+                    for pos_info in open_positions:
+                        position = Position.query.get(pos_info['position_id'])
+                        if position:
+                            monitor.update_position_data(position, force_update=True)
+                    
+                    db.session.commit()
+                    current_app.logger.info(f"Updated prices for {len(open_positions)} backfilled positions")
+                except Exception as e:
+                    current_app.logger.warning(f"Could not update prices: {e}")
         
         return jsonify({
             'message': 'Backfill completed' if not dry_run else 'Dry run completed (no changes made)',
             'dry_run': dry_run,
+            'total_trades': len(buy_trades),
+            'unique_options': len(grouped_trades),
             'positions_created': len(created_positions),
-            'trades_skipped': len(skipped_trades),
+            'positions_updated': len(updated_positions),
+            'options_skipped': len(skipped_options),
             'errors': len(errors),
             'created_positions': created_positions,
-            'skipped_trades': skipped_trades[:10],  # Only show first 10
+            'updated_positions': updated_positions,
+            'skipped_options': skipped_options[:10],
             'error_details': errors
         }), 200
         
