@@ -1373,15 +1373,21 @@ class TradeExecutor:
             contract_multiplier = 100 if is_option else 1
             
             # Calculate final P/L
-            position.unrealized_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
-            position.unrealized_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
+            final_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
+            final_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
+            
+            # Store final P/L in both unrealized (for backward compatibility) and realized fields
+            position.unrealized_pnl = final_pnl
+            position.unrealized_pnl_percent = final_pnl_percent
+            position.realized_pnl = final_pnl  # Store as realized P/L
+            position.realized_pnl_percent = final_pnl_percent
             
             # Update trade with realized P/L
             if 'trade' in result:
                 trade = db.session.query(Trade).filter_by(id=result['trade']['id']).first()
                 if trade:
-                    trade.realized_pnl = position.unrealized_pnl
-                    trade.realized_pnl_percent = position.unrealized_pnl_percent
+                    trade.realized_pnl = final_pnl
+                    trade.realized_pnl_percent = final_pnl_percent
             
             # CRITICAL: Commit all changes to database
             db.session.commit()

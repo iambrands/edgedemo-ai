@@ -462,11 +462,16 @@ const Dashboard: React.FC = () => {
   };
 
   const totalUnrealizedPnl = positions.reduce((sum, pos) => sum + (pos.unrealized_pnl || 0), 0);
-  const totalRealizedPnl = recentTrades
-    .filter(t => t.realized_pnl)
-    .reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
-  const winRate = recentTrades.length > 0
-    ? (recentTrades.filter(t => (t.realized_pnl || 0) > 0).length / recentTrades.length) * 100
+  
+  // Calculate realized P/L from ALL trades (not just recent 10) - only SELL trades have realized_pnl
+  const tradesWithPnl = allTrades.filter(t => t.realized_pnl !== null && t.realized_pnl !== undefined);
+  const totalRealizedPnl = tradesWithPnl.reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
+  
+  // Win rate based on trades with P/L (closed positions)
+  const winningTrades = tradesWithPnl.filter(t => (t.realized_pnl || 0) > 0).length;
+  const losingTrades = tradesWithPnl.filter(t => (t.realized_pnl || 0) < 0).length;
+  const winRate = tradesWithPnl.length > 0
+    ? (winningTrades / tradesWithPnl.length) * 100
     : 0;
 
   const calculateDTE = (expirationDate: string | undefined): number | null => {
@@ -1155,8 +1160,16 @@ const Dashboard: React.FC = () => {
 
       {/* Recent Trades */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-4 md:p-6 border-b border-gray-200">
-          <h2 className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'} font-bold text-secondary`}>Recent Trades</h2>
+        <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h2 className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'} font-bold text-secondary`}>Recent Trades</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              {allTrades.length} trades in last 30 days • {tradesWithPnl.length} closed ({winningTrades}W / {losingTrades}L)
+            </p>
+          </div>
+          <a href="/history" className="text-sm text-primary hover:text-indigo-700 font-medium">
+            View All →
+          </a>
         </div>
         <div className={`overflow-x-auto ${isMobile ? '-mx-4 px-4' : 'md:mx-0'}`}>
           <div className="inline-block min-w-full align-middle">
@@ -1186,7 +1199,14 @@ const Dashboard: React.FC = () => {
                   return (
                     <tr key={trade.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(trade.trade_date).toLocaleDateString()}
+                        <div className="flex items-center gap-1">
+                          {new Date(trade.trade_date).toLocaleDateString()}
+                          {trade.automation_id && (
+                            <span className="inline-block px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-medium" title="Automated trade">
+                              🤖
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {new Date(trade.trade_date).toLocaleTimeString()}
                         </div>

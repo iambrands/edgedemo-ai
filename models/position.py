@@ -35,6 +35,12 @@ class Position(db.Model):
     # P/L tracking
     unrealized_pnl = db.Column(db.Float, default=0.0)
     unrealized_pnl_percent = db.Column(db.Float, default=0.0)
+    realized_pnl = db.Column(db.Float)  # Final P/L when position is closed
+    realized_pnl_percent = db.Column(db.Float)  # Final P/L % when position is closed
+    
+    # Exit tracking
+    exit_price = db.Column(db.Float)  # Price when position was closed
+    exit_date = db.Column(db.DateTime)  # When position was closed (alias: closed_at)
     
     # Automation tracking
     automation_id = db.Column(db.Integer, db.ForeignKey('automations.id'), nullable=True)
@@ -65,6 +71,11 @@ class Position(db.Model):
             'current_iv': self.current_iv,
             'unrealized_pnl': self.unrealized_pnl,
             'unrealized_pnl_percent': self.unrealized_pnl_percent,
+            'realized_pnl': self.realized_pnl,
+            'realized_pnl_percent': self.realized_pnl_percent,
+            'exit_price': self.exit_price,
+            'exit_date': self.exit_date.isoformat() if self.exit_date else None,
+            'closed_at': self.exit_date.isoformat() if self.exit_date else None,  # Alias for exit_date
             'automation_id': self.automation_id,
             'status': self.status,
             'last_updated': self.last_updated.isoformat() if self.last_updated else None
