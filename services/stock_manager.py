@@ -143,4 +143,99 @@ class StockManager:
         db.session.commit()
         
         return stock.to_dict()
+    
+    def bulk_add_to_watchlist(self, user_id: int, symbols: List[str]) -> Dict:
+        """
+        Add multiple stocks to watchlist in one operation
+        
+        Args:
+            user_id: User ID
+            symbols: List of stock symbols to add
+            
+        Returns:
+            Dict with added, skipped, failed counts and failed_symbols list
+        """
+        db = self._get_db()
+        
+        # Get existing symbols for this user
+        existing_stocks = db.session.query(Stock.symbol).filter_by(user_id=user_id).all()
+        existing_symbols = set(s.symbol.upper() for s in existing_stocks)
+        
+        added = 0
+        skipped = 0
+        failed = 0
+        failed_symbols = []
+        
+        for symbol in symbols:
+            symbol_upper = symbol.upper()
+            
+            # Skip if already in watchlist
+            if symbol_upper in existing_symbols:
+                skipped += 1
+                continue
+            
+            try:
+                # Get quote to validate symbol and get initial data
+                quote = self.tradier.get_quote(symbol_upper)
+                
+                company_name = symbol_upper
+                current_price = None
+                change_percent = None
+                volume = None
+                
+                if 'quotes' in quote and 'quote' in quote['quotes']:
+                    quote_data = quote['quotes']['quote']
+                    
+                    # Check if we got valid data (symbol exists)
+                    if quote_data.get('last') is None and quote_data.get('bid') is None:
+                        failed += 1
+                        failed_symbols.append(symbol_upper)
+                        continue
+                    
+                    company_name = quote_data.get('description', symbol_upper)
+                    current_price = quote_data.get('last')
+                    change = quote_data.get('change', 0)
+                    prev_close = quote_data.get('close', current_price)
+                    if prev_close and prev_close > 0:
+                        change_percent = (change / prev_close * 100)
+                    volume = quote_data.get('volume')
+                else:
+                    # No quote data - symbol might not exist
+                    failed += 1
+                    failed_symbols.append(symbol_upper)
+                    continue
+                
+                # Create new stock entry
+                stock = Stock(
+                    user_id=user_id,
+                    symbol=symbol_upper,
+                    company_name=company_name,
+                    current_price=current_price,
+                    change_percent=change_percent,
+                    volume=volume
+                )
+                
+                db.session.add(stock)
+                existing_symbols.add(symbol_upper)  # Track to avoid duplicates in batch
+                added += 1
+                
+            except Exception as e:
+                current_app.logger.error(f"Failed to add {symbol_upper}: {e}")
+                failed += 1
+                failed_symbols.append(symbol_upper)
+        
+        # Commit all at once
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to commit bulk add: {e}")
+            raise
+        
+        return {
+            'added': added,
+            'skipped': skipped,
+            'failed': failed,
+            'failed_symbols': failed_symbols
+        }
 

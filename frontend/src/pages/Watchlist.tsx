@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { watchlistService } from '../services/watchlist';
 import { Stock } from '../types/watchlist';
 import toast from 'react-hot-toast';
+import BulkAddStocksModal from '../components/BulkAddStocksModal';
 
 const Watchlist: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Watchlist: React.FC = () => {
   const [newSymbol, setNewSymbol] = useState('');
   const [editingStock, setEditingStock] = useState<Stock | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkAddModal, setShowBulkAddModal] = useState(false);
 
   useEffect(() => {
     loadWatchlist();
@@ -82,26 +84,51 @@ const Watchlist: React.FC = () => {
     navigate('/trade', { state: { symbol } });
   };
 
+  const handleBulkAdd = async (symbols: string[]) => {
+    try {
+      const result = await watchlistService.bulkAdd(symbols);
+      
+      if (result.added > 0) {
+        toast.success(`Added ${result.added} stock${result.added !== 1 ? 's' : ''} to watchlist`);
+      }
+      
+      if (result.failed > 0) {
+        toast.error(`Failed to add: ${result.failed_symbols.join(', ')}`);
+      }
+      
+      loadWatchlist();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to add stocks');
+      throw error;
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading watchlist...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-3xl font-bold text-secondary">Watchlist</h1>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <button
             onClick={handleRefreshPrices}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             Refresh Prices
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium"
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
           >
             Add Stock
+          </button>
+          <button
+            onClick={() => setShowBulkAddModal(true)}
+            className="bg-success text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium"
+          >
+            Bulk Add
           </button>
         </div>
       </div>
@@ -272,6 +299,14 @@ const Watchlist: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Bulk Add Modal */}
+      <BulkAddStocksModal
+        isOpen={showBulkAddModal}
+        onClose={() => setShowBulkAddModal(false)}
+        onAdd={handleBulkAdd}
+        existingSymbols={watchlist.map(s => s.symbol)}
+      />
     </div>
   );
 };

@@ -34,5 +34,16 @@ export const watchlistService = {
     const response = await api.post('/watchlist/refresh');
     return response.data;
   },
+
+  bulkAdd: async (symbols: string[]): Promise<{
+    message: string;
+    added: number;
+    skipped: number;
+    failed: number;
+    failed_symbols: string[];
+  }> => {
+    const response = await api.post('/watchlist/bulk-add', { symbols });
+    return response.data;
+  },
 };
 

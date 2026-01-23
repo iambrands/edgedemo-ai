@@ -148,3 +148,45 @@ def update_tags(current_user, symbol):
         return jsonify({'error': str(e)}), 500
 
 
+@watchlist_bp.route('/bulk-add', methods=['POST'])
+@token_required
+def bulk_add_to_watchlist(current_user):
+    """
+    Add multiple stocks to watchlist in one operation
+    """
+    data = request.get_json()
+    
+    if not data or not data.get('symbols'):
+        return jsonify({'error': 'No symbols provided'}), 400
+    
+    symbols = data.get('symbols', [])
+    
+    # Validate and sanitize symbols
+    valid_symbols = []
+    for symbol in symbols:
+        sanitized = sanitize_symbol(symbol)
+        if sanitized:
+            valid_symbols.append(sanitized)
+    
+    if not valid_symbols:
+        return jsonify({'error': 'No valid symbols provided'}), 400
+    
+    # Remove duplicates
+    valid_symbols = list(set(valid_symbols))
+    
+    try:
+        stock_manager = get_stock_manager()
+        result = stock_manager.bulk_add_to_watchlist(current_user.id, valid_symbols)
+        
+        return jsonify({
+            'message': f"Successfully added {result['added']} stocks",
+            'added': result['added'],
+            'skipped': result['skipped'],
+            'failed': result['failed'],
+            'failed_symbols': result['failed_symbols']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
