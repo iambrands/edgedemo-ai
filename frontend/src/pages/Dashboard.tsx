@@ -83,9 +83,9 @@ const Dashboard: React.FC = () => {
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
-  const [loading, setLoading] = useState(false); // Start with false - show cached data immediately
+  const [initialLoading, setInitialLoading] = useState(true); // True until first data load completes
   const [refreshing, setRefreshing] = useState(false); // Separate state for manual refresh
-  const [accountBalance, setAccountBalance] = useState<number | null>(null);
+  const [accountBalance, setAccountBalance] = useState<number | null>(null); // null = not loaded yet
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [forcePriceUpdate, setForcePriceUpdate] = useState(false);
@@ -106,25 +106,21 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check cache first - if data is fresh, use it immediately (ALWAYS show something)
+    // Check cache first - if data is fresh, use it immediately
     const cached = getCachedData();
     if (cached) {
       setPositions(cached.positions || []);
       setAllTrades(cached.trades || []);
       setRecentTrades((cached.trades || []).slice(0, 10));
       setWatchlist(cached.watchlist || []);
-      setAccountBalance(cached.balance || 100000);
+      setAccountBalance(cached.balance); // Don't default to 100000 - keep actual cached value
       setLastLoadTime(cached.timestamp);
       setLastUpdated(new Date(cached.timestamp));
+      setInitialLoading(false); // We have cached data, no need for loading spinner
       console.log('✅ Using cached dashboard data');
-    } else {
-      // If no cache, set defaults so page can render immediately
-      setPositions([]);
-      setAllTrades([]);
-      setRecentTrades([]);
-      setWatchlist([]);
-      setAccountBalance(100000);
     }
+    // If no cache, keep initialLoading=true and accountBalance=null
+    // The loading spinner will show until data arrives
     
     // Load user preference for showing opportunities
     const savedPreference = localStorage.getItem('showOpportunities');
@@ -138,22 +134,21 @@ const Dashboard: React.FC = () => {
       // Show onboarding after a short delay to let dashboard load
       setTimeout(() => {
         setShowOnboarding(true);
-      }, 1000);
+      }, 1500);
     }
     
-    // Load fresh data in background (only if cache is stale or missing)
-    // This runs silently in the background - doesn't block UI
-    // NOTE: Prices are updated by backend cron job every 2 minutes, so we don't need to request updates here
+    // Load fresh data - if no cache, this is a blocking load; otherwise background refresh
     const shouldReload = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
     if (shouldReload) {
-      // Load in background without showing loading state
-      // Don't request price updates - backend cron job handles that
-      loadDashboardData(false, true); // Silent background load, no price update request
+      // If no cache, this is the initial load - show loading state
+      // If we have cache, this is a silent background refresh
+      loadDashboardData(false, !!cached).finally(() => {
+        setInitialLoading(false);
+      });
     }
     
     // Load optional widgets in background (non-blocking, with longer delay)
-    // These are expensive and can be loaded lazily
-    // Check if user has disabled widgets for performance
+    // Only load after initial data is loaded
     const widgetsEnabled = localStorage.getItem('dashboard_widgets_enabled') !== 'false';
     
     if (widgetsEnabled) {
@@ -164,16 +159,15 @@ const Dashboard: React.FC = () => {
         }
         loadMarketMovers();
         loadAiSuggestions();
-      }, 1000); // Even longer delay - let core data render and settle first
+      }, cached ? 1000 : 2000); // Longer delay if loading fresh
     }
     
     // Auto-refresh data every 30 seconds (silent background refresh)
-    // Prices are updated by backend cron job every 2 minutes
     const autoRefreshInterval = setInterval(() => {
       const cached = getCachedData();
       const shouldRefresh = !cached || (Date.now() - cached.timestamp) >= CACHE_DURATION;
       if (shouldRefresh) {
-        loadDashboardData(false, true); // Silent background refresh, no price update
+        loadDashboardData(false, true); // Silent background refresh
         setLastUpdated(new Date());
       }
     }, 30000); // 30 seconds
@@ -672,8 +666,28 @@ const Dashboard: React.FC = () => {
     ],
   };
 
-  // Never show blank screen - always render dashboard with cached/default data
-  // Loading state is now handled per-section, not for entire page
+  // Show loading screen while waiting for initial data (no cached data available)
+  if (initialLoading && accountBalance === null) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="text-center space-y-4">
+          {/* Animated spinner */}
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl">💰</span>
+            </div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-700">Loading your dashboard...</h2>
+          <p className="text-gray-500 text-sm">Fetching positions, trades, and account data</p>
+          {/* Subtle progress indicator */}
+          <div className="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('has_seen_onboarding', 'true');
@@ -861,9 +875,15 @@ const Dashboard: React.FC = () => {
         <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'}`}>
           <div>
             <p className="text-sm opacity-90 mb-1">Paper Trading Balance</p>
-            <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
-              ${accountBalance !== null ? accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Loading...'}
-            </h2>
+            {accountBalance !== null ? (
+              <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
+                ${accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+            ) : (
+              <div className={`${isMobile ? 'h-8' : 'h-12'} flex items-center`}>
+                <div className="animate-pulse bg-white/30 rounded h-8 w-40"></div>
+              </div>
+            )}
             <p className="text-sm opacity-75 mt-2">Virtual funds for testing strategies</p>
           </div>
           {!isMobile && <div className="text-6xl opacity-20">💰</div>}
