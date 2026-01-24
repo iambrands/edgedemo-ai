@@ -536,7 +536,7 @@ def create_app(config_name=None):
     app.logger.info("✅ Scheduled precompute service (every 5 minutes during market hours)")
     
     # PHASE 5: Cache warming on startup and periodically
-    import sys
+    # Note: sys is already imported at module level
     import traceback
     
     def run_cache_warming():
