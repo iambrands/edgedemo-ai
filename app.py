@@ -622,6 +622,24 @@ def create_app(config_name=None):
     )
     app.logger.info("✅ Scheduled periodic cache warming (every 4 minutes, runs 24/7)")
     
+    # NUCLEAR OPTION: Run cache warming SYNCHRONOUSLY on startup
+    # This bypasses the scheduler completely to verify the code works
+    app.logger.info("=" * 80)
+    app.logger.info("🧪 NUCLEAR OPTION: Running cache warmer SYNCHRONOUSLY on startup...")
+    app.logger.info("=" * 80)
+    print("=" * 80, flush=True)
+    print("🧪 NUCLEAR OPTION: Running cache warmer SYNCHRONOUSLY...", flush=True)
+    print("=" * 80, flush=True)
+    
+    try:
+        # Run synchronously (blocking) to verify code works
+        sync_result = run_cache_warming()
+        app.logger.info(f"✅ Synchronous cache warming result: {sync_result}")
+        print(f"✅ Synchronous cache warming result: {sync_result}", flush=True)
+    except Exception as sync_e:
+        app.logger.error(f"❌ Synchronous cache warming FAILED: {sync_e}", exc_info=True)
+        print(f"❌ Synchronous cache warming FAILED: {sync_e}", flush=True)
+    
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())
     
