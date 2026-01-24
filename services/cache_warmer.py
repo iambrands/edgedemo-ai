@@ -300,50 +300,158 @@ class CacheWarmer:
 
 def warm_all_caches():
     """
-    Convenience function to warm all caches - called by scheduler
+    SIMPLIFIED cache warming function with MAXIMUM logging
     
-    This function has EXTENSIVE logging to debug why it might be silent
+    This function bypasses the complex CacheWarmer class to debug issues.
+    It uses direct print() statements that CANNOT be suppressed.
     """
     import sys
     
-    # Force immediate output with print (bypasses logging config issues)
+    # FORCE immediate output - these print statements CANNOT be suppressed
     print("=" * 80, flush=True)
-    print(f"🔥 CACHE WARMER FUNCTION CALLED at {datetime.now().isoformat()}", flush=True)
+    print(f"🔥 warm_all_caches() STARTED at {datetime.now().isoformat()}", flush=True)
     print("=" * 80, flush=True)
     sys.stdout.flush()
     
-    # Also log via logger
     logger.info("=" * 80)
-    logger.info(f"🔥 warm_all_caches() CALLED at {datetime.now().isoformat()}")
+    logger.info(f"🔥 warm_all_caches() STARTED at {datetime.now().isoformat()}")
     logger.info("=" * 80)
     
+    results = {
+        'cache_test': False,
+        'quotes': 0,
+        'options_flow': 0,
+        'errors': []
+    }
+    
     try:
-        logger.info("Creating CacheWarmer instance...")
-        print("Creating CacheWarmer instance...", flush=True)
+        # PHASE 1: Test basic cache operations
+        print("🧪 PHASE 1: Testing cache operations...", flush=True)
+        logger.info("🧪 PHASE 1: Testing cache operations...")
         
-        warmer = CacheWarmer()
+        try:
+            test_key = 'cache_warmer_test'
+            test_value = {'test': True, 'time': datetime.now().isoformat()}
+            
+            print(f"   Setting test key: {test_key}", flush=True)
+            set_result = set_cache(test_key, test_value, timeout=60)
+            print(f"   Set result: {set_result}", flush=True)
+            
+            print(f"   Getting test key: {test_key}", flush=True)
+            get_result = get_cache(test_key)
+            print(f"   Get result: {get_result}", flush=True)
+            
+            if get_result:
+                print("   ✅ Cache operations WORKING", flush=True)
+                logger.info("✅ Cache operations WORKING")
+                results['cache_test'] = True
+            else:
+                print("   ❌ Cache GET returned None", flush=True)
+                logger.error("❌ Cache GET returned None")
+                
+        except Exception as e:
+            print(f"   ❌ Cache test FAILED: {e}", flush=True)
+            logger.error(f"❌ Cache test FAILED: {e}", exc_info=True)
+            results['errors'].append(f"Cache test: {e}")
         
-        logger.info("CacheWarmer created, calling warm_all()...")
-        print("CacheWarmer created, calling warm_all()...", flush=True)
+        # PHASE 2: Warm quotes for popular symbols
+        print("📊 PHASE 2: Warming quotes...", flush=True)
+        logger.info("📊 PHASE 2: Warming quotes...")
         
-        result = warmer.warm_all()
+        try:
+            print("   Importing TradierConnector...", flush=True)
+            from services.tradier_connector import TradierConnector
+            
+            print("   Creating TradierConnector instance...", flush=True)
+            tradier = TradierConnector()
+            
+            symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']
+            print(f"   Getting batch quotes for: {symbols}", flush=True)
+            
+            quotes = tradier.get_quotes(symbols)
+            print(f"   Got {len(quotes)} quotes", flush=True)
+            logger.info(f"Got {len(quotes)} quotes")
+            
+            results['quotes'] = len(quotes)
+            
+        except Exception as e:
+            print(f"   ❌ Quote warming FAILED: {e}", flush=True)
+            logger.error(f"❌ Quote warming FAILED: {e}", exc_info=True)
+            results['errors'].append(f"Quotes: {e}")
         
-        logger.info(f"warm_all() completed with result: {result}")
-        print(f"warm_all() completed with result: {result}", flush=True)
+        # PHASE 3: Warm options flow for popular symbols
+        print("🔗 PHASE 3: Warming options flow...", flush=True)
+        logger.info("🔗 PHASE 3: Warming options flow...")
         
-        return result
+        try:
+            print("   Importing OptionsFlowAnalyzer...", flush=True)
+            from services.options_flow import OptionsFlowAnalyzer
+            
+            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'SPY']
+            warmed = 0
+            
+            for symbol in symbols_to_warm:
+                try:
+                    cache_key = f'options_flow_analyze:{symbol}'
+                    
+                    # Check if already cached
+                    existing = get_cache(cache_key)
+                    if existing:
+                        print(f"   ⏭️ {symbol} already cached", flush=True)
+                        warmed += 1
+                        continue
+                    
+                    print(f"   Warming {symbol}...", flush=True)
+                    
+                    analyzer = OptionsFlowAnalyzer()
+                    analysis = analyzer.analyze_flow(symbol)
+                    
+                    if analysis:
+                        set_cache(cache_key, analysis, timeout=300)
+                        print(f"   ✅ {symbol} cached", flush=True)
+                        warmed += 1
+                    else:
+                        print(f"   ⚠️ {symbol} returned no analysis", flush=True)
+                        
+                except Exception as e:
+                    print(f"   ❌ {symbol} error: {e}", flush=True)
+                    continue
+            
+            results['options_flow'] = warmed
+            print(f"   Warmed {warmed}/{len(symbols_to_warm)} symbols", flush=True)
+            
+        except Exception as e:
+            print(f"   ❌ Options flow warming FAILED: {e}", flush=True)
+            logger.error(f"❌ Options flow warming FAILED: {e}", exc_info=True)
+            results['errors'].append(f"Options flow: {e}")
+        
+        # DONE
+        print("=" * 80, flush=True)
+        print(f"✅ CACHE WARMING COMPLETE: {results}", flush=True)
+        print("=" * 80, flush=True)
+        sys.stdout.flush()
+        
+        logger.info("=" * 80)
+        logger.info(f"✅ CACHE WARMING COMPLETE: {results}")
+        logger.info("=" * 80)
+        
+        return results
         
     except Exception as e:
         import traceback
-        error_msg = f"❌ Cache warming CRASHED: {e}"
+        error_msg = f"❌ CACHE WARMING CRASHED: {e}"
         tb = traceback.format_exc()
         
-        logger.error(error_msg)
-        logger.error(f"Traceback:\n{tb}")
-        
+        print("=" * 80, flush=True)
         print(error_msg, flush=True)
         print(f"Traceback:\n{tb}", flush=True)
+        print("=" * 80, flush=True)
         sys.stdout.flush()
+        
+        logger.error("=" * 80)
+        logger.error(error_msg)
+        logger.error(f"Traceback:\n{tb}")
+        logger.error("=" * 80)
         
         return None
 
