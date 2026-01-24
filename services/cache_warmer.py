@@ -206,33 +206,42 @@ class CacheWarmer:
             from services.options_flow import OptionsFlowAnalyzer
             
             warmed = 0
-            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'NVDA', 'SPY', 'QQQ']
+            # Expanded list - include all symbols users commonly look at
+            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'NVDA', 'SPY', 'QQQ', 'BA', 'COIN', 'DIA', 'META', 'MSFT']
             
             for symbol in symbols_to_warm:
                 try:
-                    # Check if already cached
-                    cache_key = f'options_flow_analyze:{symbol}'
-                    if get_cache(cache_key):
+                    # Use EXACT same cache key format as the endpoint
+                    cache_key = f'options_flow_analyze:{symbol.upper()}'
+                    
+                    # Check if already cached using the same cache method as endpoint
+                    existing = self.cache.get(cache_key)
+                    if existing:
                         logger.debug(f"⏭️ Options flow for {symbol} already cached")
+                        warmed += 1  # Count as warmed since it's cached
                         continue
+                    
+                    logger.info(f"  Warming options flow for {symbol}...")
                     
                     analyzer = OptionsFlowAnalyzer()
                     analysis = analyzer.analyze_flow(symbol)
                     
                     if analysis:
-                        # Cache using the same key format as the endpoint
+                        # Cache using the SAME cache instance as the endpoint
                         self.cache.set(cache_key, analysis, timeout=300)  # 5 minutes
                         warmed += 1
-                        logger.debug(f"✅ Warmed options flow for {symbol}")
+                        logger.info(f"  ✅ Warmed options flow for {symbol}")
+                    else:
+                        logger.warning(f"  ⚠️ No analysis returned for {symbol}")
                     
                 except Exception as e:
-                    logger.error(f"❌ Error warming options flow for {symbol}: {e}")
+                    logger.error(f"  ❌ Error warming options flow for {symbol}: {e}")
             
             logger.info(f"✅ Warmed options flow for {warmed}/{len(symbols_to_warm)} symbols")
             return warmed
             
         except Exception as e:
-            logger.error(f"❌ Error in options flow warming: {e}")
+            logger.error(f"❌ Error in options flow warming: {e}", exc_info=True)
             return 0
     
     def warm_all(self) -> dict:

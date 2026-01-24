@@ -536,13 +536,16 @@ def create_app(config_name=None):
     app.logger.info("✅ Scheduled precompute service (every 5 minutes during market hours)")
     
     # PHASE 5: Cache warming on startup and periodically
-    def warm_cache_on_startup():
+    from services.cache_warmer import warm_all_caches
+    
+    def run_cache_warming():
         """
-        Warm cache on application startup to avoid cold start delays.
-        Uses the new CacheWarmer service for comprehensive warming.
+        Run cache warming with app context.
+        This function is called by both immediate and scheduled jobs.
         """
         try:
             with app.app_context():
+                app.logger.info("🔄 Starting cache warming...")
                 from services.cache_warmer import CacheWarmer
                 
                 warmer = CacheWarmer()
@@ -555,48 +558,36 @@ def create_app(config_name=None):
                     f"market_movers={results.get('market_movers', False)}, "
                     f"options_flow={results.get('options_flow', 0)} in {results['duration_seconds']}s"
                 )
+                return results
         except Exception as e:
             app.logger.error(f"❌ Cache warming failed: {e}", exc_info=True)
-            # Don't crash app if warming fails
+            return None
     
-    # Run cache warming in background thread (don't block startup)
-    # Delay by 2 minutes to ensure health check passes first
-    import threading
-    def delayed_cache_warm():
-        import time
-        time.sleep(120)  # Wait 2 minutes for app to fully initialize and health check to pass
-        warm_cache_on_startup()
-    
-    threading.Thread(target=delayed_cache_warm, daemon=True).start()
-    
-    # Schedule periodic cache warming (every 5 minutes, runs 24/7 for testing)
-    def periodic_cache_warm():
-        """Warm cache periodically - runs 24/7 for testing."""
-        try:
-            with app.app_context():
-                from services.cache_warmer import CacheWarmer
-                
-                app.logger.info("🔄 Running scheduled cache warming")
-                warmer = CacheWarmer()
-                results = warmer.warm_all()
-                app.logger.info(
-                    f"✅ Scheduled cache warming complete: "
-                    f"{results['quotes']} quotes, {results['chains']} chains, "
-                    f"{results['expirations']} expirations, "
-                    f"market_movers={results.get('market_movers', False)}, "
-                    f"options_flow={results.get('options_flow', 0)} in {results['duration_seconds']}s"
-                )
-        except Exception as e:
-            app.logger.error(f"❌ Periodic cache warming failed: {e}", exc_info=True)
-    
+    # Schedule cache warming to run IMMEDIATELY after startup (30s delay for health check)
+    from datetime import timedelta as td
     scheduler.add_job(
-        func=periodic_cache_warm,
-        trigger=IntervalTrigger(minutes=5),
+        func=run_cache_warming,
+        trigger='date',
+        run_date=datetime.now() + td(seconds=30),
+        id='cache_warm_startup',
+        name='Initial cache warming (30s after startup)',
+        replace_existing=True,
+        misfire_grace_time=120
+    )
+    app.logger.info("✅ Scheduled initial cache warming (in 30 seconds)")
+    
+    # Schedule periodic cache warming (every 4 minutes - before 5min cache expires)
+    scheduler.add_job(
+        func=run_cache_warming,
+        trigger=IntervalTrigger(minutes=4),
         id='periodic_cache_warm',
         name='Periodic cache warming',
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1,  # Prevent overlapping executions
+        coalesce=True,    # If missed, run once not multiple times
+        misfire_grace_time=120  # Allow 2 min grace for missed jobs
     )
-    app.logger.info("✅ Scheduled periodic cache warming (every 5 minutes, runs 24/7)")
+    app.logger.info("✅ Scheduled periodic cache warming (every 4 minutes, runs 24/7)")
     
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())
