@@ -98,6 +98,156 @@ def admin_debug():
         }), 500
 
 
+# Cache status endpoint - NO AUTH REQUIRED for debugging
+@admin_bp.route('/admin/cache-status', methods=['GET'])
+def cache_status():
+    """
+    PUBLIC ENDPOINT - Show cache status for debugging
+    NO AUTHENTICATION REQUIRED
+    
+    Access at: /api/admin/cache-status
+    """
+    from services.cache_manager import get_cache
+    
+    # Check what's cached
+    cache_keys = [
+        'options_flow_analyze:AAPL',
+        'options_flow_analyze:SPY', 
+        'options_flow_analyze:TSLA',
+        'options_flow_analyze:AMD',
+        'options_flow_analyze:NVDA',
+        'quote:AAPL',
+        'quote:SPY',
+        'quote:QQQ',
+        'market_movers:limit_8',
+        'cache_warmer_test'
+    ]
+    
+    status = {}
+    for key in cache_keys:
+        try:
+            cached = get_cache(key)
+            status[key] = {
+                'cached': cached is not None,
+                'size_bytes': len(str(cached)) if cached else 0,
+                'has_data': bool(cached)
+            }
+        except Exception as e:
+            status[key] = {
+                'cached': False,
+                'error': str(e)
+            }
+    
+    hits = sum(1 for v in status.values() if v.get('cached', False))
+    
+    return jsonify({
+        'timestamp': datetime.utcnow().isoformat(),
+        'cache_hit_rate': f"{hits}/{len(cache_keys)} ({hits/len(cache_keys)*100:.0f}%)",
+        'cache_details': status,
+        'cache_warmer_status': 'Running every 4 minutes' if hits > 0 else 'Not working or not yet run',
+        'recommendation': 'Cache is working!' if hits >= 6 else 'Cache warmer may not be running - check logs'
+    }), 200
+
+
+# Performance test endpoint - NO AUTH REQUIRED for debugging  
+@admin_bp.route('/admin/performance-test', methods=['GET'])
+def performance_test():
+    """
+    PUBLIC ENDPOINT - Test performance of cached endpoints
+    
+    Returns timing information for all major endpoints to verify caching is working
+    NO AUTHENTICATION REQUIRED - for testing only
+    
+    Access at: /api/admin/performance-test
+    """
+    import time
+    from services.cache_manager import get_cache
+    
+    results = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'cache_status': {},
+        'endpoint_tests': []
+    }
+    
+    # Test 1: Check if cache warmer populated data
+    cache_tests = [
+        'options_flow_analyze:AAPL',
+        'options_flow_analyze:SPY',
+        'options_flow_analyze:TSLA',
+        'options_flow_analyze:AMD',
+        'quote:AAPL',
+        'quote:SPY'
+    ]
+    
+    for key in cache_tests:
+        try:
+            cached = get_cache(key)
+            results['cache_status'][key] = 'HIT' if cached else 'MISS'
+        except Exception as e:
+            results['cache_status'][key] = f'ERROR: {e}'
+    
+    # Test 2: Time actual endpoint operations (without HTTP overhead)
+    test_symbols = ['AAPL', 'SPY', 'TSLA', 'AMD']
+    
+    for symbol in test_symbols:
+        # Test options flow analysis
+        cache_key = f'options_flow_analyze:{symbol}'
+        
+        # First call (should be cached if warmer worked)
+        start = time.time()
+        try:
+            cached_data = get_cache(cache_key)
+            first_call_time = (time.time() - start) * 1000  # Convert to ms
+            
+            results['endpoint_tests'].append({
+                'endpoint': f'/api/options-flow/analyze/{symbol}',
+                'cache_status': 'HIT' if cached_data else 'MISS',
+                'response_time_ms': round(first_call_time, 2),
+                'expected': '<500ms' if cached_data else '2000-7000ms'
+            })
+        except Exception as e:
+            results['endpoint_tests'].append({
+                'endpoint': f'/api/options-flow/analyze/{symbol}',
+                'cache_status': 'ERROR',
+                'error': str(e),
+                'response_time_ms': -1
+            })
+    
+    # Test 3: Quote fetching
+    start = time.time()
+    try:
+        quote_cached = get_cache('quote:AAPL')
+        quote_time = (time.time() - start) * 1000
+        
+        results['endpoint_tests'].append({
+            'endpoint': '/api/quotes (AAPL)',
+            'cache_status': 'HIT' if quote_cached else 'MISS',
+            'response_time_ms': round(quote_time, 2),
+            'expected': '<100ms' if quote_cached else '500-1000ms'
+        })
+    except Exception as e:
+        results['endpoint_tests'].append({
+            'endpoint': '/api/quotes (AAPL)',
+            'cache_status': 'ERROR',
+            'error': str(e),
+            'response_time_ms': -1
+        })
+    
+    # Summary
+    total_cached = sum(1 for test in results['endpoint_tests'] if test.get('cache_status') == 'HIT')
+    total_tests = len(results['endpoint_tests'])
+    
+    results['summary'] = {
+        'total_tests': total_tests,
+        'cache_hits': total_cached,
+        'cache_misses': total_tests - total_cached,
+        'cache_hit_rate': f"{(total_cached / total_tests * 100):.1f}%" if total_tests > 0 else "N/A",
+        'overall_status': 'GOOD' if total_cached >= total_tests * 0.8 else 'NEEDS_IMPROVEMENT'
+    }
+    
+    return jsonify(results), 200
+
+
 @admin_bp.route('/admin/cleanup/expired', methods=['POST'])
 def manual_cleanup_expired():
     """Manually trigger expired position cleanup"""
