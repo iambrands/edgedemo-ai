@@ -299,11 +299,60 @@ class CacheWarmer:
 
 
 def warm_all_caches():
-    """Convenience function to warm all caches - called by scheduler"""
+    """
+    Convenience function to warm all caches - called by scheduler
+    
+    This function has EXTENSIVE logging to debug why it might be silent
+    """
+    import sys
+    
+    # Force immediate output with print (bypasses logging config issues)
+    print("=" * 80, flush=True)
+    print(f"🔥 CACHE WARMER FUNCTION CALLED at {datetime.now().isoformat()}", flush=True)
+    print("=" * 80, flush=True)
+    sys.stdout.flush()
+    
+    # Also log via logger
+    logger.info("=" * 80)
+    logger.info(f"🔥 warm_all_caches() CALLED at {datetime.now().isoformat()}")
+    logger.info("=" * 80)
+    
     try:
+        logger.info("Creating CacheWarmer instance...")
+        print("Creating CacheWarmer instance...", flush=True)
+        
         warmer = CacheWarmer()
-        return warmer.warm_all()
+        
+        logger.info("CacheWarmer created, calling warm_all()...")
+        print("CacheWarmer created, calling warm_all()...", flush=True)
+        
+        result = warmer.warm_all()
+        
+        logger.info(f"warm_all() completed with result: {result}")
+        print(f"warm_all() completed with result: {result}", flush=True)
+        
+        return result
+        
     except Exception as e:
-        logger.error(f"❌ Cache warming failed: {e}")
+        import traceback
+        error_msg = f"❌ Cache warming CRASHED: {e}"
+        tb = traceback.format_exc()
+        
+        logger.error(error_msg)
+        logger.error(f"Traceback:\n{tb}")
+        
+        print(error_msg, flush=True)
+        print(f"Traceback:\n{tb}", flush=True)
+        sys.stdout.flush()
+        
         return None
+
+
+# Allow direct execution for testing
+if __name__ == '__main__':
+    print("=" * 80)
+    print("Running cache warmer directly for testing...")
+    print("=" * 80)
+    result = warm_all_caches()
+    print(f"Final result: {result}")
 

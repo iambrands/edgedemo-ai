@@ -536,31 +536,64 @@ def create_app(config_name=None):
     app.logger.info("✅ Scheduled precompute service (every 5 minutes during market hours)")
     
     # PHASE 5: Cache warming on startup and periodically
-    from services.cache_warmer import warm_all_caches
+    import sys
+    import traceback
     
     def run_cache_warming():
         """
         Run cache warming with app context.
         This function is called by both immediate and scheduled jobs.
+        
+        Has EXTENSIVE logging to debug silent failures.
         """
+        # Force output immediately with print (bypasses any logging issues)
+        print("=" * 80, flush=True)
+        print(f"🔄 SCHEDULER CALLING run_cache_warming() at {datetime.now().isoformat()}", flush=True)
+        print("=" * 80, flush=True)
+        sys.stdout.flush()
+        
         try:
+            app.logger.info("=" * 80)
+            app.logger.info(f"🔄 run_cache_warming() called at {datetime.now().isoformat()}")
+            app.logger.info("=" * 80)
+            
             with app.app_context():
-                app.logger.info("🔄 Starting cache warming...")
-                from services.cache_warmer import CacheWarmer
+                app.logger.info("App context acquired, importing cache_warmer...")
+                print("App context acquired, importing cache_warmer...", flush=True)
                 
-                warmer = CacheWarmer()
-                results = warmer.warm_all()
+                from services.cache_warmer import warm_all_caches
                 
-                app.logger.info(
-                    f"✅ Cache warming complete: "
-                    f"{results['quotes']} quotes, {results['chains']} chains, "
-                    f"{results['expirations']} expirations, "
-                    f"market_movers={results.get('market_movers', False)}, "
-                    f"options_flow={results.get('options_flow', 0)} in {results['duration_seconds']}s"
-                )
+                app.logger.info("Calling warm_all_caches()...")
+                print("Calling warm_all_caches()...", flush=True)
+                
+                results = warm_all_caches()
+                
+                if results:
+                    app.logger.info(
+                        f"✅ Cache warming complete: "
+                        f"{results.get('quotes', 0)} quotes, {results.get('chains', 0)} chains, "
+                        f"{results.get('expirations', 0)} expirations, "
+                        f"market_movers={results.get('market_movers', False)}, "
+                        f"options_flow={results.get('options_flow', 0)} in {results.get('duration_seconds', 0)}s"
+                    )
+                    print(f"✅ Cache warming complete: {results}", flush=True)
+                else:
+                    app.logger.warning("⚠️ warm_all_caches() returned None")
+                    print("⚠️ warm_all_caches() returned None", flush=True)
+                
                 return results
+                
         except Exception as e:
-            app.logger.error(f"❌ Cache warming failed: {e}", exc_info=True)
+            error_msg = f"❌ Cache warming CRASHED: {e}"
+            tb = traceback.format_exc()
+            
+            app.logger.error(error_msg)
+            app.logger.error(f"Traceback:\n{tb}")
+            
+            print(error_msg, flush=True)
+            print(f"Traceback:\n{tb}", flush=True)
+            sys.stdout.flush()
+            
             return None
     
     # Schedule cache warming to run IMMEDIATELY after startup (30s delay for health check)
