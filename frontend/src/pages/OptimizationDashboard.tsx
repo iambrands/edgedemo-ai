@@ -103,13 +103,29 @@ const OptimizationDashboard: React.FC = () => {
         api.get('/admin/analyze/connections')
       ]);
       
-      // Handle database analysis
+      // Handle database analysis - with defensive defaults
       if (dbRes.status === 'fulfilled') {
         console.log('✅ Database analysis loaded:', dbRes.value.data);
-        setDbAnalysis(dbRes.value.data);
+        // Ensure all required properties have defaults
+        const dbData = dbRes.value.data || {};
+        setDbAnalysis({
+          tables: dbData.tables || [],
+          indices: dbData.indices || {},
+          missing_indices: dbData.missing_indices || [],
+          recommendations: dbData.recommendations || [],
+          timestamp: dbData.timestamp || new Date().toISOString()
+        });
       } else {
         console.error('Database analysis failed:', dbRes.reason);
         hasErrors = true;
+        // Set empty defaults so page doesn't crash
+        setDbAnalysis({
+          tables: [],
+          indices: {},
+          missing_indices: [],
+          recommendations: [],
+          timestamp: new Date().toISOString()
+        });
         if (dbRes.reason?.response?.status === 401 || dbRes.reason?.response?.status === 403) {
           toast.error('Authentication required. Please log in again.');
         } else {
@@ -117,25 +133,53 @@ const OptimizationDashboard: React.FC = () => {
         }
       }
       
-      // Handle Redis analysis
+      // Handle Redis analysis - with defensive defaults
       if (redisRes.status === 'fulfilled') {
         console.log('✅ Redis analysis loaded:', redisRes.value.data);
-        setRedisAnalysis(redisRes.value.data);
+        // Ensure all required properties have defaults
+        const redisData = redisRes.value.data || {};
+        setRedisAnalysis({
+          connected: redisData.connected ?? false,
+          info: redisData.info || {},
+          keys: redisData.keys || {},
+          recommendations: redisData.recommendations || [],
+          timestamp: redisData.timestamp || new Date().toISOString(),
+          error: redisData.error
+        });
       } else {
         console.error('Redis analysis failed:', redisRes.reason);
-        // Don't show error for Redis if it's just not configured
-        if (redisRes.reason?.response?.status !== 401 && redisRes.reason?.response?.status !== 403) {
-          setRedisAnalysis({ connected: false, info: {}, keys: {}, recommendations: [], timestamp: new Date().toISOString(), error: redisRes.reason?.response?.data?.error || 'Redis not available' });
-        }
+        // Set defaults so page doesn't crash - Redis not being available is OK
+        setRedisAnalysis({
+          connected: false,
+          info: {},
+          keys: {},
+          recommendations: [],
+          timestamp: new Date().toISOString(),
+          error: redisRes.reason?.response?.data?.error || 'Redis not available'
+        });
       }
       
-      // Handle connection analysis
+      // Handle connection analysis - with defensive defaults
       if (connRes.status === 'fulfilled') {
         console.log('✅ Connection analysis loaded:', connRes.value.data);
-        setConnAnalysis(connRes.value.data);
+        // Ensure all required properties have defaults
+        const connData = connRes.value.data || {};
+        setConnAnalysis({
+          pool: connData.pool || { size: 0, checked_out: 0, overflow: 0, max_overflow: 0 },
+          active_connections: connData.active_connections || { total: 0, active: 0, idle: 0, idle_in_transaction: 0 },
+          recommendations: connData.recommendations || [],
+          timestamp: connData.timestamp || new Date().toISOString()
+        });
       } else {
         console.error('Connection analysis failed:', connRes.reason);
         hasErrors = true;
+        // Set defaults so page doesn't crash
+        setConnAnalysis({
+          pool: { size: 0, checked_out: 0, overflow: 0, max_overflow: 0 },
+          active_connections: { total: 0, active: 0, idle: 0, idle_in_transaction: 0 },
+          recommendations: [],
+          timestamp: new Date().toISOString()
+        });
         if (connRes.reason?.response?.status === 401 || connRes.reason?.response?.status === 403) {
           if (!hasErrors) toast.error('Authentication required. Please log in again.');
         } else {
@@ -146,6 +190,35 @@ const OptimizationDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to load analyses:', error);
       toast.error('Failed to load optimization analysis');
+      
+      // Set safe defaults on any unexpected error to prevent crashes
+      if (!dbAnalysis) {
+        setDbAnalysis({
+          tables: [],
+          indices: {},
+          missing_indices: [],
+          recommendations: [],
+          timestamp: new Date().toISOString()
+        });
+      }
+      if (!redisAnalysis) {
+        setRedisAnalysis({
+          connected: false,
+          info: {},
+          keys: {},
+          recommendations: [],
+          timestamp: new Date().toISOString(),
+          error: 'Failed to load Redis analysis'
+        });
+      }
+      if (!connAnalysis) {
+        setConnAnalysis({
+          pool: { size: 0, checked_out: 0, overflow: 0, max_overflow: 0 },
+          active_connections: { total: 0, active: 0, idle: 0, idle_in_transaction: 0 },
+          recommendations: [],
+          timestamp: new Date().toISOString()
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -268,53 +341,57 @@ const OptimizationDashboard: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-xl font-bold mb-4">Database Tables</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Table</th>
-                    <th className="text-right py-2">Rows</th>
-                    <th className="text-right py-2">Size</th>
-                    <th className="text-right py-2">Indices</th>
-                    <th className="text-right py-2">FKs</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dbAnalysis.tables.map((table) => (
-                    <tr key={table.name} className="border-b hover:bg-gray-50">
-                      <td className="py-2 font-mono text-sm">{table.name}</td>
-                      <td className="text-right">{table.row_count.toLocaleString()}</td>
-                      <td className="text-right">{table.size}</td>
-                      <td className="text-right">{table.indices}</td>
-                      <td className="text-right">{table.foreign_keys}</td>
+            {(dbAnalysis.tables?.length || 0) === 0 ? (
+              <p className="text-gray-500 italic">No table data available</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Table</th>
+                      <th className="text-right py-2">Rows</th>
+                      <th className="text-right py-2">Size</th>
+                      <th className="text-right py-2">Indices</th>
+                      <th className="text-right py-2">FKs</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {(dbAnalysis.tables || []).map((table) => (
+                      <tr key={table?.name || 'unknown'} className="border-b hover:bg-gray-50">
+                        <td className="py-2 font-mono text-sm">{table?.name || 'N/A'}</td>
+                        <td className="text-right">{(table?.row_count ?? 0).toLocaleString()}</td>
+                        <td className="text-right">{table?.size || 'N/A'}</td>
+                        <td className="text-right">{table?.indices ?? 0}</td>
+                        <td className="text-right">{table?.foreign_keys ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
-          {dbAnalysis.missing_indices && dbAnalysis.missing_indices.length > 0 && (
+          {(dbAnalysis.missing_indices?.length || 0) > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4 text-yellow-800">
-                Missing Indices ({dbAnalysis.missing_indices.length})
+                Missing Indices ({dbAnalysis.missing_indices?.length || 0})
               </h2>
               <div className="space-y-2 mb-4">
-                {dbAnalysis.missing_indices.map((idx, i) => (
+                {(dbAnalysis.missing_indices || []).map((idx, i) => (
                   <div key={i} className="bg-white p-3 rounded border">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
                         <span className={`inline-block px-2 py-1 text-xs rounded ${
-                          idx.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                          idx?.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {idx.priority}
+                          {idx?.priority || 'medium'}
                         </span>
                         <span className="font-mono text-sm">
-                          {idx.table}.{idx.column}
+                          {idx?.table || 'N/A'}.{idx?.column || 'N/A'}
                         </span>
                       </div>
                       <code className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                        {idx.sql}
+                        {idx?.sql || 'N/A'}
                       </code>
                     </div>
                   </div>
@@ -331,13 +408,13 @@ const OptimizationDashboard: React.FC = () => {
             </div>
           )}
 
-          {dbAnalysis.recommendations && dbAnalysis.recommendations.length > 0 && (
+          {(dbAnalysis.recommendations?.length || 0) > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4 text-blue-800">Recommendations</h2>
               <ul className="space-y-2">
-                {dbAnalysis.recommendations.map((rec, i) => (
+                {(dbAnalysis.recommendations || []).map((rec, i) => (
                   <li key={i} className="text-blue-700">
-                    • {rec.message}
+                    • {rec?.message || 'No message available'}
                   </li>
                 ))}
               </ul>
@@ -356,50 +433,50 @@ const OptimizationDashboard: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Version</p>
-                    <p className="text-lg font-semibold">{redisAnalysis.info.version || 'Unknown'}</p>
+                    <p className="text-lg font-semibold">{redisAnalysis.info?.version || 'Unknown'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Memory Used</p>
-                    <p className="text-lg font-semibold">{redisAnalysis.info.used_memory || 'Unknown'}</p>
+                    <p className="text-lg font-semibold">{redisAnalysis.info?.used_memory || 'Unknown'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Max Memory</p>
-                    <p className="text-lg font-semibold">{redisAnalysis.info.max_memory || 'Not set'}</p>
+                    <p className="text-lg font-semibold">{redisAnalysis.info?.max_memory || 'Not set'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total Keys</p>
-                    <p className="text-lg font-semibold">{redisAnalysis.info.total_keys || 0}</p>
+                    <p className="text-lg font-semibold">{redisAnalysis.info?.total_keys ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Connected Clients</p>
-                    <p className="text-lg font-semibold">{redisAnalysis.info.connected_clients || 0}</p>
+                    <p className="text-lg font-semibold">{redisAnalysis.info?.connected_clients ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Cache Hit Rate</p>
                     <p className={`text-lg font-semibold ${
-                      (redisAnalysis.info.hit_rate || 0) >= 80 ? 'text-green-600' : 'text-yellow-600'
+                      (redisAnalysis.info?.hit_rate ?? 0) >= 80 ? 'text-green-600' : 'text-yellow-600'
                     }`}>
-                      {redisAnalysis.info.hit_rate?.toFixed(1) || 'N/A'}%
+                      {redisAnalysis.info?.hit_rate?.toFixed(1) ?? 'N/A'}%
                     </p>
                   </div>
                 </div>
                 
-                {redisAnalysis.info.hits !== undefined && redisAnalysis.info.misses !== undefined && (
+                {redisAnalysis.info?.hits !== undefined && redisAnalysis.info?.misses !== undefined && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-sm text-gray-600">Cache Stats</p>
                     <p className="text-sm">
-                      Hits: {redisAnalysis.info.hits.toLocaleString()} | 
-                      Misses: {redisAnalysis.info.misses.toLocaleString()}
+                      Hits: {(redisAnalysis.info?.hits ?? 0).toLocaleString()} | 
+                      Misses: {(redisAnalysis.info?.misses ?? 0).toLocaleString()}
                     </p>
                   </div>
                 )}
               </div>
 
-              {redisAnalysis.keys.patterns && Object.keys(redisAnalysis.keys.patterns).length > 0 && (
+              {redisAnalysis.keys?.patterns && Object.keys(redisAnalysis.keys.patterns).length > 0 && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <h2 className="text-xl font-bold mb-4">Key Patterns (sampled)</h2>
                   <div className="space-y-2">
-                    {Object.entries(redisAnalysis.keys.patterns).map(([pattern, count]) => (
+                    {Object.entries(redisAnalysis.keys.patterns || {}).map(([pattern, count]) => (
                       <div key={pattern} className="flex justify-between items-center py-2 border-b">
                         <span className="font-mono text-sm">{pattern}</span>
                         <span className="text-gray-600 font-semibold">{count as number} keys</span>
@@ -409,13 +486,13 @@ const OptimizationDashboard: React.FC = () => {
                 </div>
               )}
 
-              {redisAnalysis.recommendations && redisAnalysis.recommendations.length > 0 && (
+              {(redisAnalysis.recommendations?.length || 0) > 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                   <h2 className="text-xl font-bold mb-4 text-yellow-800">Recommendations</h2>
                   <ul className="space-y-2">
-                    {redisAnalysis.recommendations.map((rec, i) => (
+                    {(redisAnalysis.recommendations || []).map((rec, i) => (
                       <li key={i} className="text-yellow-700">
-                        • {rec.message}
+                        • {rec?.message || 'No message available'}
                       </li>
                     ))}
                   </ul>
@@ -439,19 +516,19 @@ const OptimizationDashboard: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Pool Size</p>
-                <p className="text-lg font-semibold">{connAnalysis.pool.size}</p>
+                <p className="text-lg font-semibold">{connAnalysis.pool?.size ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Checked Out</p>
-                <p className="text-lg font-semibold">{connAnalysis.pool.checked_out}</p>
+                <p className="text-lg font-semibold">{connAnalysis.pool?.checked_out ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Max Overflow</p>
-                <p className="text-lg font-semibold">{connAnalysis.pool.max_overflow}</p>
+                <p className="text-lg font-semibold">{connAnalysis.pool?.max_overflow ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Current Overflow</p>
-                <p className="text-lg font-semibold">{connAnalysis.pool.overflow}</p>
+                <p className="text-lg font-semibold">{connAnalysis.pool?.overflow ?? 0}</p>
               </div>
             </div>
           </div>
@@ -461,34 +538,34 @@ const OptimizationDashboard: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Total</p>
-                <p className="text-lg font-semibold">{connAnalysis.active_connections.total || 0}</p>
+                <p className="text-lg font-semibold">{connAnalysis.active_connections?.total ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Active</p>
-                <p className="text-lg font-semibold text-green-600">{connAnalysis.active_connections.active || 0}</p>
+                <p className="text-lg font-semibold text-green-600">{connAnalysis.active_connections?.active ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Idle</p>
-                <p className="text-lg font-semibold">{connAnalysis.active_connections.idle || 0}</p>
+                <p className="text-lg font-semibold">{connAnalysis.active_connections?.idle ?? 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Idle in Transaction</p>
                 <p className={`text-lg font-semibold ${
-                  (connAnalysis.active_connections.idle_in_transaction || 0) > 5 ? 'text-red-600' : 'text-green-600'
+                  (connAnalysis.active_connections?.idle_in_transaction ?? 0) > 5 ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  {connAnalysis.active_connections.idle_in_transaction || 0}
+                  {connAnalysis.active_connections?.idle_in_transaction ?? 0}
                 </p>
               </div>
             </div>
           </div>
 
-          {connAnalysis.recommendations && connAnalysis.recommendations.length > 0 && (
+          {(connAnalysis.recommendations?.length || 0) > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-4 text-yellow-800">Recommendations</h2>
               <ul className="space-y-2">
-                {connAnalysis.recommendations.map((rec, i) => (
+                {(connAnalysis.recommendations || []).map((rec, i) => (
                   <li key={i} className="text-yellow-700">
-                    • {rec.message}
+                    • {rec?.message || 'No message available'}
                   </li>
                 ))}
               </ul>

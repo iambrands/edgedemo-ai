@@ -62,12 +62,45 @@ const PerformanceDashboard: React.FC = () => {
       if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
         try {
           const data = await healthRes.value.json();
-          setHealth(data);
+          // Ensure data has proper structure with defaults
+          const validatedData = {
+            status: data?.status || 'unknown',
+            timestamp: data?.timestamp || new Date().toISOString(),
+            components: {
+              database: data?.components?.database || { status: 'unknown' },
+              tradier_api: data?.components?.tradier_api || { status: 'unknown', config: {} },
+              cache: data?.components?.cache || { status: 'unknown', stats: {} }
+            },
+            environment: data?.environment || {}
+          };
+          setHealth(validatedData);
         } catch (e) {
           console.error('Failed to parse health data:', e);
+          // Set default health data on parse error
+          setHealth({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            components: {
+              database: { status: 'unknown' },
+              tradier_api: { status: 'unknown', config: {} },
+              cache: { status: 'unknown', stats: {} }
+            },
+            environment: {}
+          });
         }
       } else {
         console.warn('Health endpoint failed:', healthRes);
+        // Set default health data on endpoint failure
+        setHealth({
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          components: {
+            database: { status: 'unavailable' },
+            tradier_api: { status: 'unavailable', config: {} },
+            cache: { status: 'unavailable', stats: {} }
+          },
+          environment: {}
+        });
       }
 
       // Load cache stats (optional - may not exist)
@@ -86,14 +119,14 @@ const PerformanceDashboard: React.FC = () => {
         } catch (e) {
           console.warn('Failed to parse cache stats:', e);
           // Fallback
-          if (health?.components.cache) {
-            setCacheStats(health.components.cache.stats || { enabled: false });
+          if (health?.components?.cache) {
+            setCacheStats(health?.components?.cache?.stats || { enabled: false });
           }
         }
       } else {
         // Cache endpoint not available - use fallback from health data
-        if (health?.components.cache) {
-          setCacheStats(health.components.cache.stats || { enabled: false });
+        if (health?.components?.cache) {
+          setCacheStats(health?.components?.cache?.stats || { enabled: false });
         } else {
           // Try to get from admin cache stats endpoint
           try {
@@ -124,11 +157,11 @@ const PerformanceDashboard: React.FC = () => {
         }
       } else {
         // Positions endpoint not available - use fallback from health data
-        if (health?.components.database) {
+        if (health?.components?.database) {
           setPositionsHealth({
-            status: health.components.database.status,
+            status: health?.components?.database?.status,
             positions: {
-              open: health.components.database.open_positions || 0,
+              open: health?.components?.database?.open_positions || 0,
               closed: 0,
               stale: 0,
               expired_open: 0
@@ -141,6 +174,23 @@ const PerformanceDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to load performance data:', error);
       toast.error('Failed to load performance data');
+      
+      // Set safe defaults on any unexpected error to prevent crashes
+      if (!health) {
+        setHealth({
+          status: 'error',
+          timestamp: new Date().toISOString(),
+          components: {
+            database: { status: 'error' },
+            tradier_api: { status: 'error', config: {} },
+            cache: { status: 'error', stats: {} }
+          },
+          environment: {}
+        });
+      }
+      if (!cacheStats) {
+        setCacheStats({ enabled: false, status: 'ERROR' });
+      }
     } finally {
       setLoading(false);
     }
@@ -229,23 +279,23 @@ const PerformanceDashboard: React.FC = () => {
       {/* Components Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* Database */}
-        {health?.components.database && (
+        {health?.components?.database && (
           <div className="bg-white shadow rounded-lg p-6 border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Database</h3>
-              {getStatusBadge(health.components.database.status)}
+              {getStatusBadge(health?.components?.database?.status)}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Positions:</span>
                 <span className="font-semibold">
-                  {health.components.database.total_positions ?? 'N/A'}
+                  {health?.components?.database?.total_positions ?? 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Open Positions:</span>
                 <span className="font-semibold">
-                  {health.components.database.open_positions ?? 'N/A'}
+                  {health?.components?.database?.open_positions ?? 'N/A'}
                 </span>
               </div>
             </div>
@@ -253,23 +303,23 @@ const PerformanceDashboard: React.FC = () => {
         )}
 
         {/* Tradier API */}
-        {health?.components.tradier_api && (
+        {health?.components?.tradier_api && (
           <div className="bg-white shadow rounded-lg p-6 border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Tradier API</h3>
-              {getStatusBadge(health.components.tradier_api.status)}
+              {getStatusBadge(health?.components?.tradier_api?.status)}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Mode:</span>
                 <span className="font-semibold">
-                  {health.components.tradier_api.config?.sandbox ? 'Sandbox' : 'Live'}
+                  {health?.components?.tradier_api?.config?.sandbox ? 'Sandbox' : 'Live'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">API Key:</span>
                 <span className="font-semibold">
-                  {health.components.tradier_api.config?.api_key_present ? '✅ Present' : '❌ Missing'}
+                  {health?.components?.tradier_api?.config?.api_key_present ? '✅ Present' : '❌ Missing'}
                 </span>
               </div>
             </div>
@@ -374,19 +424,19 @@ const PerformanceDashboard: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Mode:</span>
                 <span className="font-semibold">
-                  {health.environment.environment || 'production'}
+                  {health?.environment?.environment || 'production'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Debug:</span>
                 <span className="font-semibold">
-                  {health.environment.debug_mode ? 'Yes' : 'No'}
+                  {health?.environment?.debug_mode ? 'Yes' : 'No'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Cache:</span>
                 <span className="font-semibold">
-                  {health.environment.cache_enabled ? '✅ Enabled' : '❌ Disabled'}
+                  {health?.environment?.cache_enabled ? '✅ Enabled' : '❌ Disabled'}
                 </span>
               </div>
             </div>
