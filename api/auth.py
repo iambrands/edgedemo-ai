@@ -3,6 +3,7 @@ from models.user import User
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 from utils.decorators import token_required
 from utils.db_helpers import with_db_retry, get_db_with_retry
+from services.cache_manager import get_cache, set_cache, delete_cache
 from sqlalchemy.exc import OperationalError, DisconnectionError
 from datetime import datetime
 import time
@@ -173,7 +174,18 @@ def login():
 @token_required
 def get_current_user(current_user):
     """Get current user information"""
-    return jsonify({'user': current_user.to_dict()}), 200
+    # CACHE CHECK - 60 second TTL
+    cache_key = f'user:{current_user.id}'
+    cached_data = get_cache(cache_key)
+    if cached_data:
+        return jsonify(cached_data), 200
+    
+    result = {'user': current_user.to_dict()}
+    
+    # CACHE SET - 60 seconds
+    set_cache(cache_key, result, timeout=60)
+    
+    return jsonify(result), 200
 
 @auth_bp.route('/user', methods=['PUT'])
 @token_required

@@ -408,3 +408,184 @@ class CacheManager:
         except Exception as e:
             return {'enabled': True, 'connected': False, 'error': str(e)}
 
+
+# =============================================================================
+# SIMPLE HELPER FUNCTIONS
+# =============================================================================
+# These provide a simple interface for caching that doesn't require
+# instantiating the CacheManager class directly.
+
+# Global cache manager instance (lazy initialization)
+_cache_manager: Optional[CacheManager] = None
+
+
+def _get_cache_manager() -> CacheManager:
+    """Get or create global cache manager instance"""
+    global _cache_manager
+    if _cache_manager is None:
+        _cache_manager = CacheManager()
+    return _cache_manager
+
+
+def set_cache(key: str, value: Any, timeout: int = 300) -> bool:
+    """
+    Simple cache set function.
+    
+    Args:
+        key: Cache key (e.g., 'watchlist:123', 'quotes:AAPL')
+        value: Any JSON-serializable value
+        timeout: TTL in seconds (default 5 minutes)
+    
+    Returns:
+        True if successful, False otherwise
+    
+    Example:
+        set_cache('user:123', {'name': 'John', 'email': 'john@example.com'}, timeout=60)
+    """
+    try:
+        cm = _get_cache_manager()
+        if not cm.enabled or not cm.redis:
+            logger.debug(f"[CACHE SKIP] Redis not available for '{key}'")
+            return False
+        
+        # Wrap data with metadata
+        cache_wrapper = {
+            '_cache_time': time.time(),
+            '_cache_key': key,
+            'data': value
+        }
+        
+        # Use safe serialization
+        serialized_data = safe_json_dumps(cache_wrapper)
+        cm.redis.setex(key, timeout, serialized_data)
+        
+        size_bytes = len(serialized_data)
+        logger.info(f"💾 [CACHE SET] '{key}' (TTL: {timeout}s, size: {size_bytes} bytes)")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ [CACHE SET ERROR] '{key}': {type(e).__name__}: {e}")
+        return False
+
+
+def get_cache(key: str) -> Optional[Any]:
+    """
+    Simple cache get function.
+    
+    Args:
+        key: Cache key
+    
+    Returns:
+        Cached value or None if not found/error
+    
+    Example:
+        user = get_cache('user:123')
+        if user:
+            return jsonify(user)
+    """
+    try:
+        cm = _get_cache_manager()
+        if not cm.enabled or not cm.redis:
+            return None
+        
+        cached = cm.redis.get(key)
+        if cached is None:
+            logger.debug(f"❌ [CACHE MISS] '{key}'")
+            return None
+        
+        # Parse JSON
+        parsed = json.loads(cached)
+        
+        # Handle wrapped format (with 'data' key)
+        if isinstance(parsed, dict) and 'data' in parsed:
+            logger.info(f"💾 [CACHE HIT] '{key}'")
+            return parsed['data']
+        
+        # Handle legacy format (raw data)
+        logger.info(f"💾 [CACHE HIT] '{key}' (legacy format)")
+        return parsed
+        
+    except json.JSONDecodeError as e:
+        logger.warning(f"[CACHE ERROR] Invalid JSON for '{key}': {e}")
+        # Delete corrupted entry
+        try:
+            cm = _get_cache_manager()
+            if cm.redis:
+                cm.redis.delete(key)
+        except:
+            pass
+        return None
+    except Exception as e:
+        logger.error(f"❌ [CACHE GET ERROR] '{key}': {type(e).__name__}: {e}")
+        return None
+
+
+def delete_cache(key: str) -> bool:
+    """Delete a cache entry"""
+    try:
+        cm = _get_cache_manager()
+        if not cm.enabled or not cm.redis:
+            return False
+        
+        cm.redis.delete(key)
+        logger.debug(f"🗑️ [CACHE DELETE] '{key}'")
+        return True
+    except Exception as e:
+        logger.error(f"❌ [CACHE DELETE ERROR] '{key}': {e}")
+        return False
+
+
+def clear_cache_pattern(pattern: str) -> int:
+    """
+    Clear all cache keys matching pattern.
+    
+    Args:
+        pattern: Redis pattern (e.g., 'watchlist:*', 'user:*')
+    
+    Returns:
+        Number of keys deleted
+    """
+    try:
+        cm = _get_cache_manager()
+        if not cm.enabled or not cm.redis:
+            return 0
+        
+        keys = list(cm.redis.scan_iter(match=pattern, count=100))
+        if keys:
+            count = cm.redis.delete(*keys)
+            logger.info(f"🧹 [CACHE CLEAR] Deleted {count} keys matching '{pattern}'")
+            return count
+        return 0
+    except Exception as e:
+        logger.error(f"❌ [CACHE CLEAR ERROR] pattern '{pattern}': {e}")
+        return 0
+
+
+def invalidate_user_cache(user_id: int) -> int:
+    """
+    Invalidate all cache entries for a user.
+    Call this after user data changes (trades, watchlist updates, etc.)
+    
+    Args:
+        user_id: User ID
+    
+    Returns:
+        Number of keys deleted
+    """
+    patterns = [
+        f'watchlist:{user_id}',
+        f'positions:{user_id}',
+        f'trade_history:{user_id}:*',
+        f'user:{user_id}',
+        f'portfolio:{user_id}',
+    ]
+    
+    total_deleted = 0
+    for pattern in patterns:
+        total_deleted += clear_cache_pattern(pattern)
+    
+    if total_deleted > 0:
+        logger.info(f"🧹 Invalidated {total_deleted} cache entries for user {user_id}")
+    
+    return total_deleted
+

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from services.trade_executor import TradeExecutor
+from services.cache_manager import get_cache, set_cache, delete_cache
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
 from utils.performance import log_performance
@@ -99,6 +100,10 @@ def execute_trade(current_user):
             automation_id=automation_id,
             notes=notes
         )
+        
+        # Invalidate positions cache after trade execution
+        delete_cache(f'positions:{current_user.id}')
+        
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
     except ValueError as e:
@@ -163,6 +168,15 @@ def get_positions(current_user):
         current_app.logger.info(
             f"📊 GET /api/trades/positions - user_id={current_user.id}, update_prices={update_prices}"
         )
+        
+        # CACHE CHECK - only for fast path (no price updates)
+        # 30 second TTL for positions
+        if not update_prices:
+            cache_key = f'positions:{current_user.id}'
+            cached_data = get_cache(cache_key)
+            if cached_data:
+                current_app.logger.info(f"💾 Positions cache hit for user {current_user.id}")
+                return jsonify(cached_data), 200
         
         # Use eager loading to avoid N+1 queries
         if update_prices:
@@ -277,10 +291,17 @@ def get_positions(current_user):
             f"✅ GET /api/trades/positions - returning {len(positions)} positions and {len(spread_positions)} spreads for user {current_user.id}"
         )
         
-        return jsonify({
+        result = {
             'positions': all_positions,
             'count': len(all_positions)
-        }), 200
+        }
+        
+        # CACHE SET - only for fast path (no price updates), 30 second TTL
+        if not update_prices:
+            cache_key = f'positions:{current_user.id}'
+            set_cache(cache_key, result, timeout=30)
+        
+        return jsonify(result), 200
     except Exception as e:
         import traceback
         current_app.logger.error(
@@ -564,6 +585,10 @@ def close_position(current_user, position_id):
             position_id=position_id,
             exit_price=exit_price
         )
+        
+        # Invalidate positions cache after closing
+        delete_cache(f'positions:{current_user.id}')
+        
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

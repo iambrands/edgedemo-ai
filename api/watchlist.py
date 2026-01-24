@@ -3,6 +3,7 @@ from services.stock_manager import StockManager
 from services.iv_analyzer import IVAnalyzer
 from services.earnings_calendar import EarningsCalendarService
 from services.tradier_connector import TradierConnector
+from services.cache_manager import get_cache, set_cache, delete_cache
 from utils.decorators import token_required
 from utils.helpers import validate_symbol, sanitize_input, sanitize_symbol
 from datetime import date, datetime, timedelta
@@ -174,6 +175,16 @@ def calculate_iv_rank_data(iv_rank: float = None, current_iv: float = None):
 def get_watchlist(current_user):
     """Get user's watchlist with IV Rank and Earnings data"""
     try:
+        # CACHE CHECK - 60 second TTL (reduced from full calculation)
+        cache_key = f'watchlist:{current_user.id}'
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            current_app.logger.info(f"💾 Watchlist cache hit for user {current_user.id}")
+            return jsonify(cached_data), 200
+        
+        import time
+        start_time = time.time()
+        
         stock_manager = get_stock_manager()
         stocks = stock_manager.get_watchlist(current_user.id)
         
@@ -225,17 +236,8 @@ def get_watchlist(current_user):
                     current_iv=stock.implied_volatility
                 )
             
-            # 3. Fetch IV directly from Tradier options chain
-            if not iv_rank_data:
-                try:
-                    current_iv = fetch_iv_from_tradier(stock.symbol)
-                    if current_iv:
-                        iv_rank_data = calculate_iv_rank_data(
-                            iv_rank=None,
-                            current_iv=current_iv
-                        )
-                except Exception as e:
-                    current_app.logger.debug(f"Tradier IV fetch for {stock.symbol}: {e}")
+            # 3. Fetch IV directly from Tradier options chain (SKIP for speed - too slow)
+            # IV data will be filled on next refresh cycle
             
             stock_dict['iv_rank_data'] = iv_rank_data
             
@@ -244,10 +246,18 @@ def get_watchlist(current_user):
             
             watchlist_data.append(stock_dict)
         
-        return jsonify({
+        result = {
             'watchlist': watchlist_data,
             'count': len(watchlist_data)
-        }), 200
+        }
+        
+        duration_ms = (time.time() - start_time) * 1000
+        current_app.logger.info(f"📊 Watchlist built in {duration_ms:.0f}ms for user {current_user.id}")
+        
+        # CACHE SET - 60 seconds
+        set_cache(cache_key, result, timeout=60)
+        
+        return jsonify(result), 200
     except Exception as e:
         current_app.logger.error(f"Watchlist error: {e}")
         return jsonify({'error': str(e)}), 500
@@ -284,6 +294,10 @@ def add_to_watchlist(current_user):
             tags=tags,
             notes=notes
         )
+        
+        # Invalidate watchlist cache
+        delete_cache(f'watchlist:{current_user.id}')
+        
         return jsonify({
             'message': 'Stock added to watchlist',
             'stock': stock.to_dict()
@@ -318,6 +332,8 @@ def remove_from_watchlist(current_user, symbol):
         stock_manager = get_stock_manager()
         success = stock_manager.remove_from_watchlist(current_user.id, symbol)
         if success:
+            # Invalidate watchlist cache
+            delete_cache(f'watchlist:{current_user.id}')
             return jsonify({'message': 'Stock removed from watchlist'}), 200
         else:
             return jsonify({'error': 'Stock not found in watchlist'}), 404

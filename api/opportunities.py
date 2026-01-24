@@ -404,10 +404,15 @@ def get_market_movers(current_user=None):
 
 @opportunities_bp.route('/ai-suggestions', methods=['GET'])
 @token_required
+@log_performance(threshold=2.0)
+@cached(timeout=600, key_prefix='ai_suggestions')  # Cache for 10 minutes (AI is expensive)
 def get_ai_suggestions(current_user):
     """Get AI-powered personalized symbol recommendations"""
     try:
         limit = request.args.get('limit', 8, type=int)
+        
+        current_app.logger.info(f"Generating AI suggestions for user {current_user.id}")
+        
         recommender = AISymbolRecommender()
         recommendations = recommender.get_personalized_recommendations(
             current_user.id, 
