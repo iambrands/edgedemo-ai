@@ -4,11 +4,13 @@ This improves cache hit rates by proactively populating the cache.
 """
 
 import logging
+import hashlib
+import json
 from datetime import datetime, timedelta
 from utils.redis_cache import get_redis_cache
 from utils.cache_keys import quote_key, options_chain_key, expirations_key
 from services.tradier_connector import TradierConnector
-from services.cache_manager import CacheManager
+from services.cache_manager import CacheManager, set_cache, get_cache
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +146,95 @@ class CacheWarmer:
             logger.warning(f"⚠️ Failed symbols: {', '.join(failed[:5])}")
         return warmed
     
+    def _make_decorator_cache_key(self, key_prefix: str, path: str, args: dict = None) -> str:
+        """Generate the same cache key as the @cached decorator uses"""
+        cache_key_parts = [path]
+        if args:
+            cache_key_parts.append(json.dumps(args, sort_keys=True))
+        cache_key_str = ':'.join(cache_key_parts)
+        cache_key_hash = hashlib.md5(cache_key_str.encode()).hexdigest()
+        return f"{key_prefix}:{cache_key_hash}"
+    
+    def warm_market_movers(self) -> bool:
+        """Warm market movers endpoint cache"""
+        try:
+            logger.info("📈 Warming market movers cache...")
+            
+            from services.market_movers import MarketMoversService
+            
+            movers_service = MarketMoversService()
+            
+            # Warm for common limit values
+            for limit in [8, 10]:
+                try:
+                    movers = movers_service.get_market_movers(limit=limit)
+                    
+                    if movers:
+                        # Use the same cache key format as the @cached decorator
+                        cache_key = self._make_decorator_cache_key(
+                            'market_movers',
+                            '/api/opportunities/market-movers',
+                            {'limit': str(limit)}
+                        )
+                        
+                        # Also cache without args for default calls
+                        if limit == 10:
+                            cache_key_default = self._make_decorator_cache_key(
+                                'market_movers',
+                                '/api/opportunities/market-movers'
+                            )
+                            result = {'movers': movers, 'count': len(movers)}
+                            self.cache.set(cache_key_default, result, timeout=60)
+                        
+                        result = {'movers': movers, 'count': len(movers)}
+                        self.cache.set(cache_key, result, timeout=60)
+                        logger.info(f"✅ Warmed market movers (limit={limit}): {len(movers)} items")
+                except Exception as e:
+                    logger.error(f"❌ Error warming market movers limit={limit}: {e}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error warming market movers: {e}")
+            return False
+    
+    def warm_options_flow(self) -> int:
+        """Warm options flow analysis for popular symbols"""
+        try:
+            logger.info("📊 Warming options flow cache...")
+            
+            from services.options_flow import OptionsFlowAnalyzer
+            
+            warmed = 0
+            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'NVDA', 'SPY', 'QQQ']
+            
+            for symbol in symbols_to_warm:
+                try:
+                    # Check if already cached
+                    cache_key = f'options_flow_analyze:{symbol}'
+                    if get_cache(cache_key):
+                        logger.debug(f"⏭️ Options flow for {symbol} already cached")
+                        continue
+                    
+                    analyzer = OptionsFlowAnalyzer()
+                    analysis = analyzer.analyze_flow(symbol)
+                    
+                    if analysis:
+                        # Cache using the same key format as the endpoint
+                        self.cache.set(cache_key, analysis, timeout=300)  # 5 minutes
+                        warmed += 1
+                        logger.debug(f"✅ Warmed options flow for {symbol}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Error warming options flow for {symbol}: {e}")
+            
+            logger.info(f"✅ Warmed options flow for {warmed}/{len(symbols_to_warm)} symbols")
+            return warmed
+            
+        except Exception as e:
+            logger.error(f"❌ Error in options flow warming: {e}")
+            return 0
+    
     def warm_all(self) -> dict:
         """Warm all caches with comprehensive logging."""
         import time
@@ -158,20 +249,30 @@ class CacheWarmer:
             'quotes': 0,
             'chains': 0,
             'expirations': 0,
+            'market_movers': False,
+            'options_flow': 0,
             'duration_seconds': 0
         }
         
-        # Phase 1: Warm quotes
+        # Phase 1: Warm quotes (fastest, used by most endpoints)
         logger.info("📊 Phase 1: Warming quotes...")
         results['quotes'] = self.warm_quotes()
         
-        # Phase 2: Warm chains
-        logger.info("🔗 Phase 2: Warming options chains...")
+        # Phase 2: Warm market movers (used by opportunities endpoints)
+        logger.info("📈 Phase 2: Warming market movers...")
+        results['market_movers'] = self.warm_market_movers()
+        
+        # Phase 3: Warm options chains
+        logger.info("🔗 Phase 3: Warming options chains...")
         results['chains'] = self.warm_options_chains()
         
-        # Phase 3: Warm expirations
-        logger.info("📅 Phase 3: Warming expirations...")
+        # Phase 4: Warm expirations
+        logger.info("📅 Phase 4: Warming expirations...")
         results['expirations'] = self.warm_expirations()
+        
+        # Phase 5: Warm options flow for popular symbols
+        logger.info("📊 Phase 5: Warming options flow...")
+        results['options_flow'] = self.warm_options_flow()
         
         # Summary
         results['duration_seconds'] = round(time.time() - start_time, 2)
@@ -179,9 +280,21 @@ class CacheWarmer:
         logger.info("=" * 60)
         logger.info(f"✅ CACHE WARMING COMPLETE in {results['duration_seconds']}s")
         logger.info(f"   Quotes: {results['quotes']}")
+        logger.info(f"   Market Movers: {results['market_movers']}")
         logger.info(f"   Chains: {results['chains']}")
         logger.info(f"   Expirations: {results['expirations']}")
+        logger.info(f"   Options Flow: {results['options_flow']}")
         logger.info("=" * 60)
         
         return results
+
+
+def warm_all_caches():
+    """Convenience function to warm all caches - called by scheduler"""
+    try:
+        warmer = CacheWarmer()
+        return warmer.warm_all()
+    except Exception as e:
+        logger.error(f"❌ Cache warming failed: {e}")
+        return None
 

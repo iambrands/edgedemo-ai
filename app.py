@@ -551,7 +551,9 @@ def create_app(config_name=None):
                 app.logger.info(
                     f"✅ Cache warming complete: "
                     f"{results['quotes']} quotes, {results['chains']} chains, "
-                    f"{results['expirations']} expirations in {results['duration_seconds']}s"
+                    f"{results['expirations']} expirations, "
+                    f"market_movers={results.get('market_movers', False)}, "
+                    f"options_flow={results.get('options_flow', 0)} in {results['duration_seconds']}s"
                 )
         except Exception as e:
             app.logger.error(f"❌ Cache warming failed: {e}", exc_info=True)
@@ -580,7 +582,9 @@ def create_app(config_name=None):
                 app.logger.info(
                     f"✅ Scheduled cache warming complete: "
                     f"{results['quotes']} quotes, {results['chains']} chains, "
-                    f"{results['expirations']} expirations in {results['duration_seconds']}s"
+                    f"{results['expirations']} expirations, "
+                    f"market_movers={results.get('market_movers', False)}, "
+                    f"options_flow={results.get('options_flow', 0)} in {results['duration_seconds']}s"
                 )
         except Exception as e:
             app.logger.error(f"❌ Periodic cache warming failed: {e}", exc_info=True)
