@@ -409,29 +409,106 @@ class TradierConnector:
         # Return empty quote structure
         logger.error(f"❌ TRADIER: API failed for {symbol} and mock data is disabled. No data available.")
         return {'quotes': {'quote': {}}}
+    
+    def get_quotes(self, symbols: List[str], use_cache: bool = True) -> Dict[str, Dict]:
+        """
+        Get quotes for multiple symbols in ONE API call (batch)
         
-        # Always return the full structure to match mock data format
-        if 'quotes' in response and 'quote' in response['quotes']:
-            quote = response['quotes']['quote']
-            if isinstance(quote, list):
-                quote = quote[0]
+        This is 10x faster than calling get_quote() for each symbol individually.
+        Tradier API accepts comma-separated symbols.
+        
+        Args:
+            symbols: List of symbols ['AAPL', 'MSFT', 'TSLA']
+            use_cache: Whether to check Redis cache first
+        
+        Returns:
+            Dict of {symbol: quote_data} where quote_data has keys like 'last', 'change', 'volume'
+        """
+        if not symbols:
+            return {}
+        
+        # Remove duplicates and uppercase all symbols
+        symbols = list(set(s.upper() for s in symbols))
+        
+        # Check cache for each symbol first
+        results = {}
+        symbols_to_fetch = []
+        
+        if use_cache:
+            try:
+                cache = get_redis_cache()
+                for symbol in symbols:
+                    cache_key = f"quote:{symbol}"
+                    cached_quote = cache.get(cache_key)
+                    if cached_quote is not None and 'quotes' in cached_quote:
+                        quote_data = cached_quote.get('quotes', {}).get('quote', {})
+                        if quote_data:
+                            results[symbol] = quote_data
+                            logger.debug(f"✅ Cache HIT: quote for {symbol}")
+                        else:
+                            symbols_to_fetch.append(symbol)
+                    else:
+                        symbols_to_fetch.append(symbol)
+            except Exception as e:
+                logger.debug(f"Cache lookup failed, fetching all from API: {e}")
+                symbols_to_fetch = symbols
+        else:
+            symbols_to_fetch = symbols
+        
+        # If all symbols were in cache, return immediately
+        if not symbols_to_fetch:
+            logger.info(f"✅ All {len(symbols)} quotes served from cache")
+            return results
+        
+        # Fetch remaining symbols from Tradier API in ONE call
+        if not self.use_mock:
+            symbols_str = ','.join(symbols_to_fetch)
+            endpoint = 'markets/quotes'
+            params = {'symbols': symbols_str}
             
-            # CRITICAL VALIDATION: Check if this looks like stock price for an option
-            if is_option_symbol and quote.get('last'):
-                last_price = float(quote.get('last', 0))
-                if last_price > 50:
-                    logger.error(
-                        f"🚨 CRITICAL: Tradier get_quote returned STOCK PRICE ${last_price:.2f} "
-                        f"for option symbol {symbol}! This is WRONG for options!"
-                    )
-            
-            # Return in the same format as mock data
-            return {
-                'quotes': {
-                    'quote': quote
-                }
-            }
-        return {'quotes': {'quote': {}}}
+            try:
+                start_time = time.time()
+                response = self._make_request(endpoint, params)
+                duration_ms = (time.time() - start_time) * 1000
+                
+                logger.info(f"📊 Batch quotes for {len(symbols_to_fetch)} symbols took {duration_ms:.0f}ms")
+                
+                if 'quotes' in response and 'quote' in response['quotes']:
+                    quotes = response['quotes']['quote']
+                    
+                    # Handle single quote (not in array)
+                    if isinstance(quotes, dict):
+                        quotes = [quotes]
+                    
+                    # Parse each quote and cache it
+                    for quote in quotes:
+                        symbol = quote.get('symbol', '').upper()
+                        if symbol:
+                            results[symbol] = quote
+                            
+                            # Cache each quote individually (5 second TTL)
+                            if use_cache:
+                                try:
+                                    cache = get_redis_cache()
+                                    cache_key = f"quote:{symbol}"
+                                    cache.set(cache_key, {'quotes': {'quote': quote}}, timeout=5)
+                                except Exception as e:
+                                    logger.debug(f"Cache write failed for {symbol}: {e}")
+                    
+                    logger.info(f"✅ Fetched {len(quotes)} quotes from Tradier API")
+                    
+            except Exception as e:
+                logger.warning(f"Batch quotes API call failed: {e}")
+        
+        # Fall back to mock for any remaining symbols if mock is enabled
+        if self.use_mock:
+            for symbol in symbols_to_fetch:
+                if symbol not in results:
+                    mock_result = self._mock_quote(symbol)
+                    if 'quotes' in mock_result and 'quote' in mock_result['quotes']:
+                        results[symbol] = mock_result['quotes']['quote']
+        
+        return results
     
     def _mock_quote(self, symbol: str) -> Dict:
         """Mock stock quote - returns option premiums for option symbols, stock prices for stocks"""
