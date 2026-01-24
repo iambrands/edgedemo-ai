@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from services.earnings_calendar import EarningsCalendarService
 from services.finnhub_client import get_finnhub_client
+from services.cache_manager import get_cache, set_cache
 from utils.decorators import token_required
 from datetime import datetime, date
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -15,34 +17,66 @@ def get_earnings_service():
 @earnings_bp.route('', methods=['GET'])
 @token_required
 def get_upcoming_earnings(current_user):
-    """Get upcoming earnings dates"""
+    """Get upcoming earnings dates - CACHED for 1 hour"""
     try:
-        service = get_earnings_service()
         days_ahead = request.args.get('days_ahead', 30, type=int)
         
-        earnings = service.get_upcoming_earnings(days_ahead, current_user.id)
+        # CACHE CHECK - 1 hour TTL (earnings calendar changes infrequently)
+        cache_key = f'earnings:{current_user.id}:{days_ahead}'
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            current_app.logger.info(f"💾 Earnings cache hit for user {current_user.id}")
+            return jsonify(cached_data), 200
         
-        return jsonify({
+        start_time = time.time()
+        service = get_earnings_service()
+        earnings = service.get_upcoming_earnings(days_ahead, current_user.id)
+        duration_ms = (time.time() - start_time) * 1000
+        
+        current_app.logger.info(f"📊 Earnings fetch took {duration_ms:.0f}ms for user {current_user.id}")
+        
+        result = {
             'earnings': earnings,
             'count': len(earnings)
-        }), 200
+        }
+        
+        # CACHE SET - 1 hour
+        set_cache(cache_key, result, timeout=3600)
+        
+        return jsonify(result), 200
     except Exception as e:
+        current_app.logger.error(f"Earnings error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @earnings_bp.route('/symbol/<symbol>', methods=['GET'])
 @token_required
 def get_symbol_earnings(current_user, symbol):
-    """Get earnings dates for a specific symbol"""
+    """Get earnings dates for a specific symbol - CACHED for 24 hours"""
     try:
-        service = get_earnings_service()
-        earnings = service.get_earnings_for_symbol(symbol.upper(), current_user.id)
+        symbol = symbol.upper()
         
-        return jsonify({
-            'symbol': symbol.upper(),
+        # CACHE CHECK - 24 hour TTL (symbol-specific earnings change rarely)
+        cache_key = f'earnings_symbol:{symbol}'
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            current_app.logger.info(f"💾 Symbol earnings cache hit for {symbol}")
+            return jsonify(cached_data), 200
+        
+        service = get_earnings_service()
+        earnings = service.get_earnings_for_symbol(symbol, current_user.id)
+        
+        result = {
+            'symbol': symbol,
             'earnings': earnings,
             'count': len(earnings)
-        }), 200
+        }
+        
+        # CACHE SET - 24 hours
+        set_cache(cache_key, result, timeout=86400)
+        
+        return jsonify(result), 200
     except Exception as e:
+        current_app.logger.error(f"Symbol earnings error for {symbol}: {e}")
         return jsonify({'error': str(e)}), 500
 
 @earnings_bp.route('', methods=['POST'])
