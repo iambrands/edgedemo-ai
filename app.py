@@ -696,7 +696,7 @@ def create_app(config_name=None):
         from flask import current_app
         status = {
             'status': 'healthy',
-            'service': 'IAB OptionsBot',
+            'service': 'OptionsEdge',
             'database': 'unknown',
             'database_url_set': bool(current_app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('postgresql://'))
         }

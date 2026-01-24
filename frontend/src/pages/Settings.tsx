@@ -333,7 +333,7 @@ const Settings: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-secondary mb-4">Feedback & Support</h2>
         <p className="text-gray-600 mb-4">
-          Help us improve IAB OptionsBot! Share your feedback, report bugs, or suggest new features.
+          Help us improve OptionsEdge! Share your feedback, report bugs, or suggest new features.
         </p>
         <button
           onClick={() => setShowFeedbackModal(true)}

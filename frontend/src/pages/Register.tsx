@@ -72,7 +72,7 @@ const Register: React.FC = () => {
         'moderate' // Default risk tolerance
       );
       
-      toast.success('Account created successfully! Welcome to IAB OptionsBot!');
+      toast.success('Account created successfully! Welcome to OptionsEdge!');
       
       // Verify token was saved
       const token = localStorage.getItem('access_token');

@@ -1,6 +1,8 @@
-# IAB OptionsBot
+# OptionsEdge
 
-An intelligent options trading platform with AI-powered recommendations and automated trading capabilities.
+An AI-powered options trading platform with intelligent analysis and automated trading capabilities.
+
+Built by IAB Advisors, Inc.
 
 ## Features
 

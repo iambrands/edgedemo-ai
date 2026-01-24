@@ -1,6 +1,7 @@
 {
-  "name": "iab-optionsbot-frontend",
-  "version": "1.0.0",
+  "name": "optionsedge-frontend",
+  "version": "1.2.0",
+  "description": "OptionsEdge - AI-Powered Options Trading Platform",
   "private": true,
   "dependencies": {
     "@types/node": "^20.10.0",

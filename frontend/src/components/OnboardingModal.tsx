@@ -10,7 +10,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete, onSkip })
 
   const steps = [
     {
-      title: 'Welcome to IAB OptionsBot! 🎉',
+      title: 'Welcome to OptionsEdge! 🎉',
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">

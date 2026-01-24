@@ -9,10 +9,10 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center mr-3 shadow-md">
-                <span className="text-white text-lg font-bold">IAB</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-lg flex items-center justify-center mr-3 shadow-md">
+                <span className="text-white text-lg font-bold">OE</span>
               </div>
-              <span className="text-gray-900 text-xl font-bold">OptionsBot</span>
+              <span className="text-gray-900 text-xl font-bold">OptionsEdge</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -240,13 +240,13 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center mr-2 shadow-md">
-                <span className="text-white text-sm font-bold">IAB</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-lg flex items-center justify-center mr-2 shadow-md">
+                <span className="text-white text-sm font-bold">OE</span>
               </div>
-              <span className="text-white font-semibold">IAB OptionsBot</span>
+              <span className="text-white font-semibold">OptionsEdge</span>
             </div>
             <div className="text-gray-400 text-sm">
-              <p>© 2025 IAB OptionsBot. Beta Version.</p>
+              <p>© 2026 OptionsEdge by IAB Advisors, Inc.</p>
             </div>
           </div>
         </div>

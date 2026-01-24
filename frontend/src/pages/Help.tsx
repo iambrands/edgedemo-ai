@@ -930,7 +930,7 @@ const Help: React.FC = () => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
             <h4 className="font-semibold text-green-800">Need Help?</h4>
             <ul className="text-green-700 text-sm mt-2 space-y-1">
-              <li>📧 Email: support@[your-domain]</li>
+              <li>📧 Email: support@optionsedge.ai</li>
               <li>💬 Use the "Send Feedback" button above</li>
               <li>🐛 Report bugs via GitHub or email</li>
             </ul>

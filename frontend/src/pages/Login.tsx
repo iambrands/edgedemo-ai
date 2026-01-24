@@ -53,7 +53,7 @@ const Login: React.FC = () => {
             <span className="text-white text-2xl font-bold">IAB</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to your IAB OptionsBot account</p>
+          <p className="text-gray-600">Sign in to your OptionsEdge account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -147,7 +147,7 @@ const Login: React.FC = () => {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">New to IAB OptionsBot?</span>
+              <span className="px-2 bg-white text-gray-500">New to OptionsEdge?</span>
             </div>
           </div>
           <p className="mt-4 text-center text-sm text-gray-600">

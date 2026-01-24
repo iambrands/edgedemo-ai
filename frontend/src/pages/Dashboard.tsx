@@ -692,7 +692,7 @@ const Dashboard: React.FC = () => {
   const handleOnboardingComplete = () => {
     localStorage.setItem('has_seen_onboarding', 'true');
     setShowOnboarding(false);
-    toast.success('Welcome to IAB OptionsBot! 🎉');
+    toast.success('Welcome to OptionsEdge! 🎉');
   };
 
   const handleOnboardingSkip = () => {

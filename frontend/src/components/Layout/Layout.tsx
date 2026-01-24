@@ -89,8 +89,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-700">
-            <h1 className="text-2xl font-bold text-white">IAB OptionsBot</h1>
-            <p className="text-sm text-gray-400 mt-1">Intelligent Trading</p>
+            <h1 className="text-2xl font-bold text-white">OptionsEdge</h1>
+            <p className="text-sm text-gray-400 mt-1">AI-Powered Trading</p>
           </div>
 
           {/* Navigation - Scrollable */}
