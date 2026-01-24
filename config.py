@@ -8,6 +8,10 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Performance profiling settings
+    SQLALCHEMY_RECORD_QUERIES = os.environ.get('FLASK_ENV') == 'development'  # Track slow queries
+    DATABASE_QUERY_TIMEOUT = 0.5  # Log queries taking >500ms
     # Heroku provides DATABASE_URL in postgres:// format, convert to postgresql://
     database_url = os.environ.get('DATABASE_URL') or 'sqlite:///iab_optionsbot.db'
     if database_url.startswith('postgres://'):

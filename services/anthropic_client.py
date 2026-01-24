@@ -6,8 +6,16 @@ Using Haiku for cost efficiency: $0.25/$1.25 per 1M tokens (14x cheaper than GPT
 import os
 import json
 import logging
+import time
 from anthropic import Anthropic
 from typing import List, Dict, Any, Optional
+
+# Import profiling if available
+try:
+    from middleware.profiling import PerformanceMonitor, track_api_call
+    PROFILING_ENABLED = True
+except ImportError:
+    PROFILING_ENABLED = False
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +57,8 @@ class AnthropicClient:
         if not self.is_available():
             return self._default_response("Anthropic API not configured")
         
+        start_time = time.time()
+        
         try:
             prompt = self._build_option_prompt(option_data)
             
@@ -61,6 +71,30 @@ class AnthropicClient:
                     "content": prompt
                 }]
             )
+            
+            # Calculate duration and cost
+            duration_ms = (time.time() - start_time) * 1000
+            prompt_tokens = response.usage.input_tokens
+            completion_tokens = response.usage.output_tokens
+            
+            # Haiku pricing: $0.25 per 1M input, $1.25 per 1M output
+            cost = (prompt_tokens * 0.25 + completion_tokens * 1.25) / 1_000_000
+            
+            # Track API call for profiling
+            if PROFILING_ENABLED:
+                track_api_call(
+                    service='claude',
+                    duration_ms=duration_ms,
+                    cost=cost,
+                    metadata={
+                        'model': self.model,
+                        'method': 'analyze_option',
+                        'prompt_tokens': prompt_tokens,
+                        'completion_tokens': completion_tokens
+                    }
+                )
+            
+            logger.info(f"Claude analyze_option: {duration_ms:.0f}ms, ${cost:.6f}, tokens={prompt_tokens}+{completion_tokens}")
             
             # Parse response
             result = self._parse_response(response.content[0].text)
@@ -93,6 +127,7 @@ class AnthropicClient:
         
         # Limit batch size
         options = options[:limit]
+        start_time = time.time()
         
         try:
             prompt = self._build_batch_prompt(options)
@@ -106,6 +141,31 @@ class AnthropicClient:
                     "content": prompt
                 }]
             )
+            
+            # Calculate duration and cost
+            duration_ms = (time.time() - start_time) * 1000
+            prompt_tokens = response.usage.input_tokens
+            completion_tokens = response.usage.output_tokens
+            
+            # Haiku pricing: $0.25 per 1M input, $1.25 per 1M output
+            cost = (prompt_tokens * 0.25 + completion_tokens * 1.25) / 1_000_000
+            
+            # Track API call for profiling
+            if PROFILING_ENABLED:
+                track_api_call(
+                    service='claude',
+                    duration_ms=duration_ms,
+                    cost=cost,
+                    metadata={
+                        'model': self.model,
+                        'method': 'analyze_options_batch',
+                        'batch_size': len(options),
+                        'prompt_tokens': prompt_tokens,
+                        'completion_tokens': completion_tokens
+                    }
+                )
+            
+            logger.info(f"Claude batch analyze: {duration_ms:.0f}ms, ${cost:.6f}, batch={len(options)}, tokens={prompt_tokens}+{completion_tokens}")
             
             # Parse batch response
             results = self._parse_batch_response(response.content[0].text, len(options))
@@ -137,6 +197,8 @@ class AnthropicClient:
         if not self.is_available():
             return None
         
+        start_time = time.time()
+        
         try:
             prompt = self._build_detailed_analysis_prompt(
                 option, stock_price, greeks, days_to_expiration, user_risk_tolerance
@@ -151,6 +213,30 @@ class AnthropicClient:
                     "content": prompt
                 }]
             )
+            
+            # Calculate duration and cost
+            duration_ms = (time.time() - start_time) * 1000
+            prompt_tokens = response.usage.input_tokens
+            completion_tokens = response.usage.output_tokens
+            
+            # Haiku pricing
+            cost = (prompt_tokens * 0.25 + completion_tokens * 1.25) / 1_000_000
+            
+            # Track API call for profiling
+            if PROFILING_ENABLED:
+                track_api_call(
+                    service='claude',
+                    duration_ms=duration_ms,
+                    cost=cost,
+                    metadata={
+                        'model': self.model,
+                        'method': 'generate_analysis_text',
+                        'prompt_tokens': prompt_tokens,
+                        'completion_tokens': completion_tokens
+                    }
+                )
+            
+            logger.info(f"Claude generate_analysis_text: {duration_ms:.0f}ms, ${cost:.6f}")
             
             return response.content[0].text.strip()
             

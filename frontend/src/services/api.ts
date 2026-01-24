@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { PerformanceTracker } from '../utils/performance';
 
 // Determine API base URL - use environment variable, or current origin in production, or localhost for development
 const getApiBaseUrl = () => {
@@ -30,6 +31,9 @@ const api = axios.create({
 // Add token to requests (but NOT for auth endpoints)
 api.interceptors.request.use(
   (config) => {
+    // Start timing for performance tracking
+    (config as any).metadata = { startTime: performance.now() };
+    
     // Ensure Content-Type is set for POST/PUT/PATCH requests
     if (config.method && ['post', 'put', 'patch'].includes(config.method.toLowerCase())) {
       if (!config.headers['Content-Type'] && !config.headers['content-type']) {
@@ -94,8 +98,24 @@ api.interceptors.request.use(
 
 // Handle token refresh on 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Track performance for successful requests
+    const startTime = (response.config as any).metadata?.startTime;
+    if (startTime) {
+      const duration = performance.now() - startTime;
+      const endpoint = `API ${response.config.method?.toUpperCase()} ${response.config.url}`;
+      PerformanceTracker.trackOperation(endpoint, duration, response.status);
+    }
+    return response;
+  },
   async (error) => {
+    // Track performance for failed requests
+    const startTime = (error.config as any)?.metadata?.startTime;
+    if (startTime) {
+      const duration = performance.now() - startTime;
+      const endpoint = `API ${error.config?.method?.toUpperCase()} ${error.config?.url}`;
+      PerformanceTracker.trackOperation(endpoint, duration, error.response?.status || 0);
+    }
     const originalRequest = error.config;
     
     // Don't retry auth endpoints (login, register, refresh, logout)

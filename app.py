@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, jsonify, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -12,6 +12,16 @@ import os
 import sys
 import atexit
 import logging
+import time
+
+# Import profiling middleware
+from middleware.profiling import (
+    before_request_profiling,
+    after_request_profiling,
+    get_performance_report,
+    get_api_call_report,
+    get_slow_requests
+)
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -87,10 +97,16 @@ def create_app(config_name=None):
              "origins": cors_origins,
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
              "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-             "expose_headers": ["Content-Type", "Authorization"],
+             "expose_headers": ["Content-Type", "Authorization", "X-Response-Time"],
              "supports_credentials": True
          }},
          supports_credentials=True)
+    
+    # Performance profiling - start timer before each request
+    @app.before_request
+    def profile_before():
+        """Start request timer for profiling"""
+        before_request_profiling()
     
     # Only add CORS headers manually if Flask-CORS didn't already set them
     @app.after_request
@@ -114,7 +130,34 @@ def create_app(config_name=None):
         if 'Access-Control-Allow-Credentials' not in response.headers:
             response.headers['Access-Control-Allow-Credentials'] = 'true'
         
+        # Performance profiling - log request timing
+        response = after_request_profiling(response)
+        
         return response
+    
+    # Database query profiling - log slow queries
+    if app.config.get('SQLALCHEMY_RECORD_QUERIES'):
+        try:
+            from flask_sqlalchemy.record_queries import get_recorded_queries
+            
+            @app.after_request
+            def log_slow_queries(response):
+                """Log slow database queries"""
+                try:
+                    for query in get_recorded_queries():
+                        if query.duration >= app.config.get('DATABASE_QUERY_TIMEOUT', 0.5):
+                            logger.warning(
+                                f"SLOW QUERY ({query.duration:.2f}s): "
+                                f"{query.statement[:200]}... | "
+                                f"Endpoint: {request.path}"
+                            )
+                except Exception as e:
+                    # Query recording might not be available in all contexts
+                    pass
+                return response
+        except ImportError:
+            # flask_sqlalchemy.record_queries not available in older versions
+            logger.info("Slow query logging not available (requires Flask-SQLAlchemy 3.0+)")
     
     # Register blueprints
     from api.auth import auth_bp
@@ -695,6 +738,60 @@ def create_app(config_name=None):
                 'rule': str(rule)
             })
         return {'routes': routes}, 200
+    
+    # Performance monitoring endpoints
+    @app.route('/api/admin/performance/report', methods=['GET'])
+    def get_performance_report_endpoint():
+        """
+        Get comprehensive performance report
+        Query params: hours (default: 24)
+        """
+        from utils.decorators import token_required
+        from functools import wraps
+        
+        # Simple auth check - requires valid JWT
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        try:
+            verify_jwt_in_request()
+        except Exception as e:
+            return jsonify({'error': 'Authentication required', 'message': str(e)}), 401
+        
+        hours = int(request.args.get('hours', 24))
+        
+        return jsonify({
+            'performance': get_performance_report(hours=hours),
+            'api_calls': get_api_call_report(hours=hours),
+            'slow_requests': get_slow_requests(limit=50),
+            'generated_at': datetime.utcnow().isoformat(),
+            'time_range_hours': hours
+        })
+    
+    @app.route('/api/admin/performance/summary', methods=['GET'])
+    def get_performance_summary():
+        """Quick performance summary (last 1 hour)"""
+        from flask_jwt_extended import verify_jwt_in_request
+        try:
+            verify_jwt_in_request()
+        except Exception as e:
+            return jsonify({'error': 'Authentication required', 'message': str(e)}), 401
+        
+        report = get_performance_report(hours=1)
+        
+        # Calculate summary stats
+        total_requests = sum(r['count'] for r in report.values()) if report else 0
+        avg_response_time = sum(r['avg'] * r['count'] for r in report.values()) / total_requests if total_requests > 0 else 0
+        slow_count = len([r for r in report.values() if r['avg'] > 1000])
+        
+        api_report = get_api_call_report(hours=1)
+        total_api_cost = sum(r['total_cost'] for r in api_report.values()) if api_report else 0
+        
+        return jsonify({
+            'total_requests_last_hour': total_requests,
+            'avg_response_time_ms': round(avg_response_time, 2),
+            'slow_endpoints_count': slow_count,
+            'api_cost_last_hour': round(total_api_cost, 4),
+            'timestamp': datetime.utcnow().isoformat()
+        })
     
     # Define static folder path
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'build')

@@ -11,6 +11,13 @@ from utils.rate_limiter import tradier_rate_limiter
 from utils.redis_cache import get_redis_cache
 from functools import lru_cache
 
+# Import profiling if available
+try:
+    from middleware.profiling import PerformanceMonitor, track_api_call
+    PROFILING_ENABLED = True
+except ImportError:
+    PROFILING_ENABLED = False
+
 # Set up logging module (works both inside and outside Flask context)
 logger = logging.getLogger(__name__)
 
@@ -161,6 +168,9 @@ class TradierConnector:
         # Use session with retry logic for better timeout handling
         session = self._get_session()
         
+        # Start timing for profiling
+        start_time = time.time()
+        
         try:
             # Improved timeout: (connect timeout, read timeout)
             response = session.get(
@@ -183,6 +193,28 @@ class TradierConnector:
                 )
             
             response.raise_for_status()
+            
+            # Calculate duration and track for profiling
+            duration_ms = (time.time() - start_time) * 1000
+            
+            # Track API call for profiling (Tradier is free, cost=0)
+            if PROFILING_ENABLED:
+                track_api_call(
+                    service='tradier',
+                    duration_ms=duration_ms,
+                    cost=0,
+                    metadata={
+                        'endpoint': endpoint,
+                        'params': str(params)[:100] if params else None
+                    }
+                )
+            
+            # Log slow API calls
+            if duration_ms > 3000:
+                logger.warning(f"SLOW TRADIER API: {endpoint} took {duration_ms:.0f}ms")
+            elif duration_ms > 1000:
+                logger.info(f"Tradier API: {endpoint} took {duration_ms:.0f}ms")
+            
             return response.json()
             
         except requests.exceptions.Timeout as e:
