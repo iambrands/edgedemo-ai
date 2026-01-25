@@ -239,56 +239,7 @@ def admin_debug():
         }), 500
 
 
-# Cache status endpoint - NO AUTH REQUIRED for debugging
-@admin_bp.route('/admin/cache-status', methods=['GET'])
-def cache_status():
-    """
-    PUBLIC ENDPOINT - Show cache status for debugging
-    NO AUTHENTICATION REQUIRED
-    
-    Access at: /api/admin/cache-status
-    """
-    from services.cache_manager import get_cache
-    
-    # Check what's cached
-    cache_keys = [
-        'options_flow_analyze:AAPL',
-        'options_flow_analyze:SPY', 
-        'options_flow_analyze:TSLA',
-        'options_flow_analyze:AMD',
-        'options_flow_analyze:NVDA',
-        'quote:AAPL',
-        'quote:SPY',
-        'quote:QQQ',
-        'market_movers:limit_8',
-        'cache_warmer_test'
-    ]
-    
-    status = {}
-    for key in cache_keys:
-        try:
-            cached = get_cache(key)
-            status[key] = {
-                'cached': cached is not None,
-                'size_bytes': len(str(cached)) if cached else 0,
-                'has_data': bool(cached)
-            }
-        except Exception as e:
-            status[key] = {
-                'cached': False,
-                'error': str(e)
-            }
-    
-    hits = sum(1 for v in status.values() if v.get('cached', False))
-    
-    return jsonify({
-        'timestamp': datetime.utcnow().isoformat(),
-        'cache_hit_rate': f"{hits}/{len(cache_keys)} ({hits/len(cache_keys)*100:.0f}%)",
-        'cache_details': status,
-        'cache_warmer_status': 'Running every 4 minutes' if hits > 0 else 'Not working or not yet run',
-        'recommendation': 'Cache is working!' if hits >= 6 else 'Cache warmer may not be running - check logs'
-    }), 200
-
+# REMOVED: Duplicate cache-status endpoint (moved to line ~155 with better implementation)
 
 # Performance test endpoint - NO AUTH REQUIRED for debugging  
 @admin_bp.route('/admin/performance-test', methods=['GET'])
