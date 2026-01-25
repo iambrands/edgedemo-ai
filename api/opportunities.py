@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
 from utils.performance import log_performance
-from utils.redis_cache import get_redis_cache
+from services.cache_manager import get_cache, set_cache  # CRITICAL: Use same cache as warmer
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
@@ -23,17 +23,16 @@ def get_db():
 def get_today_opportunities(current_user=None):
     """Get today's top trading opportunities - optimized for speed"""
     try:
-        # EXPLICIT CACHE CHECK - easier to warm than @cached decorator
+        # CRITICAL: Check cache FIRST using same functions as cache warmer
         cache_key = 'opportunities:today'
-        cache = get_redis_cache()
         
-        cached_data = cache.get(cache_key)
+        cached_data = get_cache(cache_key)
         if cached_data:
-            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            current_app.logger.info(f"✅ [OPPORTUNITIES] Cache HIT: {cache_key}")
             return jsonify(cached_data), 200
         
         start_time = time.time()
-        current_app.logger.info("=== Today's opportunities endpoint called (CACHE MISS) ===")
+        current_app.logger.warning(f"⚠️ [OPPORTUNITIES] Cache MISS: {cache_key}")
         
         # If no user, return empty array immediately
         if current_user is None:
@@ -180,13 +179,10 @@ def get_today_opportunities(current_user=None):
             'source': source
         }
         
-        # Cache the result for 60 seconds
-        try:
-            cache.set(cache_key, result, timeout=60)
-            duration_ms = (time.time() - start_time) * 1000
-            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
-        except Exception as cache_err:
-            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        # Cache the result for 60 seconds using SAME function as warmer
+        duration_ms = (time.time() - start_time) * 1000
+        set_cache(cache_key, result, timeout=60)
+        current_app.logger.info(f"💾 [OPPORTUNITIES] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(result), 200
         
@@ -324,18 +320,17 @@ def get_market_movers(current_user=None):
         limit = request.args.get('limit', 10, type=int)
         include_insights = request.args.get('include_insights', 'false').lower() == 'true'
         
-        # EXPLICIT CACHE CHECK - use simple key format for easy warming
+        # CRITICAL: Check cache FIRST using same functions as cache warmer
         cache_key = f'market_movers:limit_{limit}'
-        cache = get_redis_cache()
         
-        cached_data = cache.get(cache_key)
+        cached_data = get_cache(cache_key)
         if cached_data:
-            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            current_app.logger.info(f"✅ [MARKET_MOVERS] Cache HIT: {cache_key}")
             return jsonify(cached_data), 200
         
         start_time = time.time()
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else 'anonymous'
-        current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {user_id} (CACHE MISS)")
+        current_app.logger.warning(f"⚠️ [MARKET_MOVERS] Cache MISS: {cache_key} (user={user_id})")
         
         # Add timeout protection - limit processing time
         import threading
@@ -418,13 +413,10 @@ def get_market_movers(current_user=None):
             'count': len(movers)
         }
         
-        # Cache the result for 60 seconds
-        try:
-            cache.set(cache_key, result, timeout=60)
-            duration_ms = (time.time() - start_time) * 1000
-            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
-        except Exception as cache_err:
-            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        # Cache the result for 60 seconds using SAME function as warmer
+        duration_ms = (time.time() - start_time) * 1000
+        set_cache(cache_key, result, timeout=60)
+        current_app.logger.info(f"💾 [MARKET_MOVERS] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(result), 200
         
@@ -450,17 +442,16 @@ def get_ai_suggestions(current_user):
     try:
         limit = request.args.get('limit', 8, type=int)
         
-        # EXPLICIT CACHE CHECK - 10 minute TTL (AI is expensive)
+        # CRITICAL: Check cache FIRST using same functions as cache warmer
         cache_key = f'ai_suggestions:user_{current_user.id}:limit_{limit}'
-        cache = get_redis_cache()
         
-        cached_data = cache.get(cache_key)
+        cached_data = get_cache(cache_key)
         if cached_data:
-            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            current_app.logger.info(f"✅ [AI_SUGGESTIONS] Cache HIT: {cache_key}")
             return jsonify(cached_data), 200
         
         start_time = time.time()
-        current_app.logger.info(f"Generating AI suggestions for user {current_user.id} (CACHE MISS)")
+        current_app.logger.warning(f"⚠️ [AI_SUGGESTIONS] Cache MISS: {cache_key}")
         
         recommender = AISymbolRecommender()
         recommendations = recommender.get_personalized_recommendations(
@@ -473,13 +464,10 @@ def get_ai_suggestions(current_user):
             'count': len(recommendations)
         }
         
-        # Cache the result for 10 minutes (AI is expensive)
-        try:
-            cache.set(cache_key, result, timeout=600)
-            duration_ms = (time.time() - start_time) * 1000
-            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
-        except Exception as cache_err:
-            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        # Cache the result for 10 minutes using SAME function as warmer
+        duration_ms = (time.time() - start_time) * 1000
+        set_cache(cache_key, result, timeout=600)
+        current_app.logger.info(f"💾 [AI_SUGGESTIONS] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(result), 200
         

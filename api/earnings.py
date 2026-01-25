@@ -234,10 +234,21 @@ def get_finnhub_earnings_calendar(current_user):
     
     Query params:
         days: Number of days to look ahead (default: 7)
+    
+    CACHED for 1 hour (earnings calendar doesn't change frequently)
     """
     try:
         days = request.args.get('days', 7, type=int)
         days = min(days, 30)
+        
+        # CRITICAL: Check cache FIRST - earnings don't change frequently
+        cache_key = f'finnhub_earnings:days_{days}'
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            logger.info(f"✅ [EARNINGS] Cache HIT: {cache_key}")
+            return jsonify(cached_data), 200
+        
+        logger.warning(f"⚠️ [EARNINGS] Cache MISS: {cache_key}")
         
         finnhub = get_finnhub_client()
         
@@ -247,7 +258,13 @@ def get_finnhub_earnings_calendar(current_user):
                 'error': 'Finnhub API not configured'
             }), 200
         
+        start_time = time.time()
         result = finnhub.get_earnings_calendar(days_ahead=days)
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Cache for 1 hour (earnings calendar doesn't change often)
+        set_cache(cache_key, result, timeout=3600)
+        logger.info(f"💾 [EARNINGS] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(result), 200
         
