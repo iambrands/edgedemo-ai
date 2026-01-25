@@ -3,6 +3,10 @@ from services.options_flow import OptionsFlowAnalyzer
 from utils.decorators import token_required
 from services.cache_manager import get_cache, set_cache  # CRITICAL: Use same cache as warmer
 import time
+import logging
+import sys
+
+logger = logging.getLogger(__name__)
 
 options_flow_bp = Blueprint('options_flow', __name__)
 
@@ -23,18 +27,32 @@ def analyze_flow(current_user, symbol):
     
     Cached for 5 minutes to improve performance (expensive operation)
     """
+    # DIAGNOSTIC: Log at very start
+    print(f"🔍 [OPTIONS_FLOW] Endpoint called for {symbol}", file=sys.stderr, flush=True)
+    logger.info(f"🔍 [OPTIONS_FLOW] Endpoint called for {symbol}")
+    
     try:
         symbol = symbol.upper()
         cache_key = cache_key_for_symbol('options_flow_analyze', symbol)
         
+        print(f"🔍 [OPTIONS_FLOW] Checking cache: {cache_key}", file=sys.stderr, flush=True)
+        logger.info(f"🔍 [OPTIONS_FLOW] Checking cache: {cache_key}")
+        
         # CRITICAL: Check cache FIRST using same functions as cache warmer
         cached_result = get_cache(cache_key)
+        
+        print(f"🔍 [OPTIONS_FLOW] Cache result: {cached_result is not None}", file=sys.stderr, flush=True)
+        
         if cached_result:
+            print(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}", file=sys.stderr, flush=True)
+            logger.info(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}")
             current_app.logger.info(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}")
             return jsonify(cached_result), 200
         
         # Cache miss - fetch from API
         start_time = time.time()
+        print(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}", file=sys.stderr, flush=True)
+        logger.warning(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}")
         current_app.logger.warning(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}")
         
         analyzer = get_flow_analyzer()

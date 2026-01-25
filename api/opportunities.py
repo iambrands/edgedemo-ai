@@ -10,6 +10,9 @@ from services.opportunity_insights import OpportunityInsights
 from models.stock import Stock
 from datetime import datetime
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 opportunities_bp = Blueprint('opportunities', __name__)
 
@@ -17,21 +20,98 @@ def get_db():
     """Get db instance from current app context"""
     return current_app.extensions['sqlalchemy']
 
+@opportunities_bp.route('/test-cache', methods=['GET'])
+def test_cache():
+    """
+    Test endpoint to verify cache is working - NO AUTH REQUIRED
+    
+    This checks if the cache warmer's data is accessible from endpoints.
+    """
+    import sys
+    
+    # Force output to logs
+    print("=" * 60, file=sys.stderr, flush=True)
+    print("🧪 [TEST-CACHE] Endpoint called", file=sys.stderr, flush=True)
+    
+    try:
+        # Test write
+        test_result = set_cache('test_endpoint_key', {'hello': 'world', 'time': datetime.utcnow().isoformat()}, timeout=60)
+        print(f"🧪 [TEST-CACHE] set_cache result: {test_result}", file=sys.stderr, flush=True)
+        
+        # Test read
+        read_result = get_cache('test_endpoint_key')
+        print(f"🧪 [TEST-CACHE] get_cache result: {read_result}", file=sys.stderr, flush=True)
+        
+        # Check warmed caches
+        warmed_caches = {
+            'opportunities:today': get_cache('opportunities:today'),
+            'market_movers:limit_8': get_cache('market_movers:limit_8'),
+            'market_movers:limit_10': get_cache('market_movers:limit_10'),
+            'options_flow_analyze:AAPL': get_cache('options_flow_analyze:AAPL'),
+            'options_flow_analyze:SPY': get_cache('options_flow_analyze:SPY'),
+        }
+        
+        cache_status = {}
+        for key, value in warmed_caches.items():
+            is_cached = value is not None
+            cache_status[key] = {
+                'cached': is_cached,
+                'data_preview': str(value)[:100] if value else None
+            }
+            print(f"🧪 [TEST-CACHE] {key}: {'✅ FOUND' if is_cached else '❌ NOT FOUND'}", file=sys.stderr, flush=True)
+        
+        print("=" * 60, file=sys.stderr, flush=True)
+        
+        return jsonify({
+            'status': 'ok',
+            'cache_read_write_works': read_result is not None,
+            'test_value': read_result,
+            'warmed_caches': cache_status,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f"🧪 [TEST-CACHE] ERROR: {e}", file=sys.stderr, flush=True)
+        print(traceback.format_exc(), file=sys.stderr, flush=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+
 @opportunities_bp.route('/today', methods=['GET'])
 # @token_required  # Temporarily disabled for testing
 @log_performance(threshold=2.0)
 def get_today_opportunities(current_user=None):
     """Get today's top trading opportunities - optimized for speed"""
+    import sys
+    
+    # DIAGNOSTIC: Log at very start
+    print("🔍 [OPPORTUNITIES/TODAY] Endpoint called", file=sys.stderr, flush=True)
+    logger.info("🔍 [OPPORTUNITIES/TODAY] Endpoint called")
+    
     try:
         # CRITICAL: Check cache FIRST using same functions as cache warmer
         cache_key = 'opportunities:today'
         
+        print(f"🔍 [OPPORTUNITIES/TODAY] Checking cache: {cache_key}", file=sys.stderr, flush=True)
+        logger.info(f"🔍 [OPPORTUNITIES/TODAY] Checking cache: {cache_key}")
+        
         cached_data = get_cache(cache_key)
+        
+        print(f"🔍 [OPPORTUNITIES/TODAY] Cache result: {cached_data is not None}", file=sys.stderr, flush=True)
+        
         if cached_data:
+            print(f"✅ [OPPORTUNITIES/TODAY] Cache HIT: {cache_key}", file=sys.stderr, flush=True)
+            logger.info(f"✅ [OPPORTUNITIES/TODAY] Cache HIT: {cache_key}")
             current_app.logger.info(f"✅ [OPPORTUNITIES] Cache HIT: {cache_key}")
             return jsonify(cached_data), 200
         
         start_time = time.time()
+        print(f"⚠️ [OPPORTUNITIES/TODAY] Cache MISS: {cache_key}", file=sys.stderr, flush=True)
+        logger.warning(f"⚠️ [OPPORTUNITIES/TODAY] Cache MISS: {cache_key}")
         current_app.logger.warning(f"⚠️ [OPPORTUNITIES] Cache MISS: {cache_key}")
         
         # If no user, return empty array immediately
@@ -316,6 +396,12 @@ def quick_scan(current_user):
 @log_performance(threshold=2.0)
 def get_market_movers(current_user=None):
     """Get market movers - high volume/volatility stocks"""
+    import sys
+    
+    # DIAGNOSTIC: Log at very start
+    print("🔍 [MARKET_MOVERS] Endpoint called", file=sys.stderr, flush=True)
+    logger.info("🔍 [MARKET_MOVERS] Endpoint called")
+    
     try:
         limit = request.args.get('limit', 10, type=int)
         include_insights = request.args.get('include_insights', 'false').lower() == 'true'
@@ -323,13 +409,23 @@ def get_market_movers(current_user=None):
         # CRITICAL: Check cache FIRST using same functions as cache warmer
         cache_key = f'market_movers:limit_{limit}'
         
+        print(f"🔍 [MARKET_MOVERS] Checking cache: {cache_key}", file=sys.stderr, flush=True)
+        logger.info(f"🔍 [MARKET_MOVERS] Checking cache: {cache_key}")
+        
         cached_data = get_cache(cache_key)
+        
+        print(f"🔍 [MARKET_MOVERS] Cache result: {cached_data is not None}", file=sys.stderr, flush=True)
+        
         if cached_data:
+            print(f"✅ [MARKET_MOVERS] Cache HIT: {cache_key}", file=sys.stderr, flush=True)
+            logger.info(f"✅ [MARKET_MOVERS] Cache HIT: {cache_key}")
             current_app.logger.info(f"✅ [MARKET_MOVERS] Cache HIT: {cache_key}")
             return jsonify(cached_data), 200
         
         start_time = time.time()
         user_id = current_user.id if current_user and hasattr(current_user, 'id') else 'anonymous'
+        print(f"⚠️ [MARKET_MOVERS] Cache MISS: {cache_key}", file=sys.stderr, flush=True)
+        logger.warning(f"⚠️ [MARKET_MOVERS] Cache MISS: {cache_key}")
         current_app.logger.warning(f"⚠️ [MARKET_MOVERS] Cache MISS: {cache_key} (user={user_id})")
         
         # Add timeout protection - limit processing time
