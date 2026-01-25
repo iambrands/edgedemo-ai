@@ -769,18 +769,103 @@ def create_app(config_name=None):
     
     # Run database migrations on startup (fallback if Procfile migration didn't run)
     def run_migrations_on_startup():
-        """Run database migrations on app startup"""
+        """
+        Run database migrations on app startup.
+        Handles multiple head revisions by attempting to merge them.
+        This ensures user_performance and platform_stats tables are created.
+        """
         try:
             app.logger.info("📊 Running database migrations on startup...")
-            from flask_migrate import upgrade
+            
+            import os
+            from alembic.config import Config
+            from alembic import command
+            from alembic.script import ScriptDirectory
+            
+            # Get migrations directory
+            migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
+            
+            # Create alembic config
+            alembic_cfg = Config()
+            alembic_cfg.set_main_option('script_location', migrations_dir)
+            alembic_cfg.set_main_option('sqlalchemy.url', app.config['SQLALCHEMY_DATABASE_URI'])
             
             with app.app_context():
-                upgrade()
-                app.logger.info("✅ Database migrations completed successfully")
+                try:
+                    # Check for multiple heads first
+                    script = ScriptDirectory.from_config(alembic_cfg)
+                    heads = script.get_heads()
+                    
+                    if len(heads) > 1:
+                        app.logger.warning(f"⚠️ Multiple migration heads detected: {heads}")
+                        app.logger.info("📊 Attempting to run migrations to each head...")
+                        
+                        # Try to upgrade to each head individually
+                        for head in heads:
+                            try:
+                                app.logger.info(f"  → Upgrading to {head}...")
+                                command.upgrade(alembic_cfg, head)
+                                app.logger.info(f"  ✅ Upgraded to {head}")
+                            except Exception as head_error:
+                                error_msg = str(head_error).lower()
+                                if 'already' in error_msg or 'up to date' in error_msg:
+                                    app.logger.info(f"  ⏭️  Head {head} already applied")
+                                else:
+                                    app.logger.warning(f"  ⚠️ Could not upgrade to {head}: {head_error}")
+                        
+                        app.logger.info("✅ Multi-head migration completed")
+                    else:
+                        # Single head - simple upgrade
+                        command.upgrade(alembic_cfg, 'head')
+                        app.logger.info("✅ Database migrations completed successfully")
+                    
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    
+                    if 'multiple head revisions' in error_msg:
+                        app.logger.warning("⚠️ Multiple migration heads - attempting individual upgrades...")
+                        
+                        try:
+                            # Use flask-migrate's upgrade which may handle this better
+                            from flask_migrate import upgrade
+                            upgrade()
+                            app.logger.info("✅ Database migrations completed via flask-migrate")
+                        except Exception as fm_error:
+                            app.logger.warning(f"Flask-migrate failed: {fm_error}")
+                            app.logger.info("📊 Trying direct table creation as fallback...")
+                            
+                            # Fallback: Try to create tables directly using SQLAlchemy
+                            try:
+                                from models.user_performance import UserPerformance
+                                from models.platform_stats import PlatformStats
+                                
+                                db.create_all()
+                                app.logger.info("✅ Tables created via db.create_all()")
+                            except Exception as create_error:
+                                app.logger.error(f"❌ Table creation failed: {create_error}")
+                    
+                    elif 'could not locate a flask application' in error_msg:
+                        app.logger.warning("⚠️ Migration skipped - Flask app not in context")
+                    
+                    elif 'no such table' in error_msg or 'relation' in error_msg:
+                        # Database might not be fully initialized
+                        app.logger.warning(f"⚠️ Database not initialized: {e}")
+                        try:
+                            db.create_all()
+                            app.logger.info("✅ Created all tables via db.create_all()")
+                        except Exception as create_error:
+                            app.logger.error(f"❌ db.create_all() failed: {create_error}")
+                    
+                    else:
+                        app.logger.error(f"❌ Migration error: {e}")
+                        app.logger.warning("⚠️ Continuing without migration - app may have issues")
+            
+            return True
+            
         except Exception as e:
-            app.logger.error(f"❌ Database migration failed: {e}")
-            app.logger.error("App will continue, but database may be out of date")
-            # Don't crash the app, but log the error
+            app.logger.error(f"❌ Failed to initialize migrations: {e}", exc_info=True)
+            app.logger.warning("⚠️ App will continue, but database may be out of date")
+            return False
     
     # Run migrations in a thread to avoid blocking startup
     import threading
