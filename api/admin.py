@@ -66,6 +66,147 @@ def ping():
             'timestamp': datetime.utcnow().isoformat()
         }), 500
 
+# Manual cache warming endpoint
+@admin_bp.route('/admin/warm-cache', methods=['POST'])
+def warm_cache_now():
+    """
+    Manually trigger cache warming.
+    
+    POST /api/admin/warm-cache
+    
+    Query params:
+    - symbols: comma-separated list of symbols to warm (optional)
+               If not provided, warms all default symbols
+    
+    Examples:
+    - curl -X POST https://your-app/api/admin/warm-cache
+    - curl -X POST "https://your-app/api/admin/warm-cache?symbols=AAPL,AMD,TSLA"
+    """
+    import time
+    start_time = time.time()
+    
+    try:
+        # Get optional symbols filter
+        symbols_param = request.args.get('symbols', '')
+        
+        results = {
+            'status': 'warming',
+            'started_at': datetime.utcnow().isoformat(),
+            'symbols_warmed': [],
+            'symbols_failed': [],
+            'errors': []
+        }
+        
+        # Import the warming function
+        from services.cache_warmer import warm_all_caches
+        from services.options_flow import OptionsFlowAnalyzer
+        
+        if symbols_param:
+            # Warm specific symbols only
+            symbols = [s.strip().upper() for s in symbols_param.split(',') if s.strip()]
+            logger.info(f"🔥 Manual cache warming for symbols: {symbols}")
+            
+            for symbol in symbols:
+                try:
+                    cache_key = f'options_flow_analyze:{symbol}'
+                    analyzer = OptionsFlowAnalyzer()
+                    analysis = analyzer.analyze_flow(symbol)
+                    
+                    if analysis:
+                        set_cache(cache_key, analysis, timeout=300)
+                        results['symbols_warmed'].append(symbol)
+                        logger.info(f"✅ Warmed {symbol}")
+                    else:
+                        # Cache empty result
+                        empty_result = {
+                            'symbol': symbol,
+                            'unusual_volume': [],
+                            'summary': {'total_signals': 0, 'bullish': 0, 'bearish': 0},
+                            'message': 'No unusual activity detected'
+                        }
+                        set_cache(cache_key, empty_result, timeout=300)
+                        results['symbols_warmed'].append(f"{symbol} (empty)")
+                        
+                except Exception as e:
+                    results['symbols_failed'].append(symbol)
+                    results['errors'].append(f"{symbol}: {str(e)}")
+                    logger.error(f"❌ Failed to warm {symbol}: {e}")
+        else:
+            # Full warming
+            logger.info("🔥 Manual FULL cache warming triggered")
+            warming_result = warm_all_caches()
+            results['full_warming_result'] = warming_result
+        
+        results['status'] = 'complete'
+        results['duration_seconds'] = round(time.time() - start_time, 2)
+        results['completed_at'] = datetime.utcnow().isoformat()
+        
+        return jsonify(results), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Manual cache warming failed: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'duration_seconds': round(time.time() - start_time, 2)
+        }), 500
+
+
+@admin_bp.route('/admin/cache-status', methods=['GET'])
+def cache_status():
+    """
+    Check cache status for options flow symbols.
+    
+    GET /api/admin/cache-status
+    GET /api/admin/cache-status?symbols=AAPL,AMD,SPY
+    
+    Returns which symbols are cached and which are not.
+    """
+    try:
+        # Default symbols to check
+        default_symbols = [
+            'SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'AMD', 'TSLA',
+            'META', 'AMZN', 'GOOGL', 'BA', 'COIN', 'DIA', 'IWM'
+        ]
+        
+        # Get optional symbols filter
+        symbols_param = request.args.get('symbols', '')
+        if symbols_param:
+            symbols = [s.strip().upper() for s in symbols_param.split(',') if s.strip()]
+        else:
+            symbols = default_symbols
+        
+        cache_status = {}
+        cached_count = 0
+        
+        for symbol in symbols:
+            cache_key = f'options_flow_analyze:{symbol}'
+            cached = get_cache(cache_key)
+            is_cached = cached is not None
+            cache_status[symbol] = {
+                'cached': is_cached,
+                'cache_key': cache_key
+            }
+            if is_cached:
+                cached_count += 1
+        
+        return jsonify({
+            'status': 'ok',
+            'total_symbols': len(symbols),
+            'cached_count': cached_count,
+            'uncached_count': len(symbols) - cached_count,
+            'symbols': cache_status,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Cache status check failed: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 # TODO: Add authentication middleware for production
 # For now, these are unprotected - add auth before production launch
 
