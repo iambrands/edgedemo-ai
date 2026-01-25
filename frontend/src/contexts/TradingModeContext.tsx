@@ -41,12 +41,23 @@ export const TradingModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const checkCredentials = async () => {
+    // Skip if not logged in (no auth token)
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setHasLiveCredentials(false);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       const response = await api.get('/user/has-tradier-credentials');
       setHasLiveCredentials(response.data.has_credentials || false);
     } catch (err) {
-      console.error('Failed to check credentials:', err);
+      // Don't log 401 errors - expected when logged out
+      if ((err as any)?.response?.status !== 401) {
+        console.error('Failed to check credentials:', err);
+      }
       setHasLiveCredentials(false);
     } finally {
       setLoading(false);
