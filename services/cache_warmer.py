@@ -533,8 +533,10 @@ def warm_all_caches():
         try:
             from services.options_flow import OptionsFlowAnalyzer
             
-            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'SPY', 'NVDA']
+            # Most common watchlist symbols - warm these for fast dashboard loads
+            symbols_to_warm = ['SPY', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'QQQ', 'AMD', 'META', 'AMZN', 'GOOGL']
             warmed = 0
+            failed_symbols = []
             
             for symbol in symbols_to_warm:
                 try:
@@ -547,6 +549,7 @@ def warm_all_caches():
                         warmed += 1
                         continue
                     
+                    print(f"   🔄 Warming {symbol}...", flush=True)
                     analyzer = OptionsFlowAnalyzer()
                     analysis = analyzer.analyze_flow(symbol)
                     
@@ -555,11 +558,35 @@ def warm_all_caches():
                         print(f"   ✅ {symbol} cached", flush=True)
                         warmed += 1
                     else:
-                        print(f"   ⚠️ {symbol} returned no analysis", flush=True)
+                        # Cache empty result to prevent repeated slow lookups
+                        empty_result = {
+                            'symbol': symbol,
+                            'unusual_volume': [],
+                            'summary': {'total_signals': 0, 'bullish': 0, 'bearish': 0},
+                            'message': 'No unusual activity detected'
+                        }
+                        set_cache(cache_key, empty_result, timeout=300)
+                        print(f"   ⚠️ {symbol} no data - cached empty result", flush=True)
+                        warmed += 1
                         
                 except Exception as e:
-                    print(f"   ❌ {symbol} error: {e}", flush=True)
+                    print(f"   ❌ {symbol} error: {type(e).__name__}: {e}", flush=True)
+                    failed_symbols.append(symbol)
                     continue
+            
+            # Retry failed symbols once
+            for symbol in failed_symbols:
+                try:
+                    cache_key = f'options_flow_analyze:{symbol}'
+                    print(f"   🔄 Retrying {symbol}...", flush=True)
+                    analyzer = OptionsFlowAnalyzer()
+                    analysis = analyzer.analyze_flow(symbol)
+                    if analysis:
+                        set_cache(cache_key, analysis, timeout=300)
+                        print(f"   ✅ {symbol} cached on retry", flush=True)
+                        warmed += 1
+                except Exception as e:
+                    print(f"   ❌ {symbol} retry failed: {e}", flush=True)
             
             results['options_flow'] = warmed
             print(f"   Warmed {warmed}/{len(symbols_to_warm)} symbols", flush=True)

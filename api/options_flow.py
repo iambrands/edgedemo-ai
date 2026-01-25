@@ -20,12 +20,14 @@ def cache_key_for_symbol(prefix: str, symbol: str) -> str:
 
 
 @options_flow_bp.route('/analyze/<symbol>', methods=['GET'])
-@token_required
-def analyze_flow(current_user, symbol):
+def analyze_flow(symbol):
     """
     Analyze options flow for a symbol
     
     Cached for 5 minutes to improve performance (expensive operation)
+    
+    NOTE: Cache check happens BEFORE auth to allow instant cache hits.
+    Auth is only required for cache misses (expensive API calls).
     """
     # DIAGNOSTIC: Log at very start
     print(f"🔍 [OPTIONS_FLOW] Endpoint called for {symbol}", file=sys.stderr, flush=True)
@@ -36,36 +38,43 @@ def analyze_flow(current_user, symbol):
         cache_key = cache_key_for_symbol('options_flow_analyze', symbol)
         
         print(f"🔍 [OPTIONS_FLOW] Checking cache: {cache_key}", file=sys.stderr, flush=True)
-        logger.info(f"🔍 [OPTIONS_FLOW] Checking cache: {cache_key}")
         
-        # CRITICAL: Check cache FIRST using same functions as cache warmer
+        # CRITICAL: Check cache FIRST - no auth needed for cached data
         cached_result = get_cache(cache_key)
-        
-        print(f"🔍 [OPTIONS_FLOW] Cache result: {cached_result is not None}", file=sys.stderr, flush=True)
         
         if cached_result:
             print(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}", file=sys.stderr, flush=True)
             logger.info(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}")
-            current_app.logger.info(f"✅ [OPTIONS_FLOW] Cache HIT: {cache_key}")
             return jsonify(cached_result), 200
         
-        # Cache miss - fetch from API
+        # Cache miss - NOW require auth for expensive API call
+        print(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key} - requiring auth", file=sys.stderr, flush=True)
+        
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        from models.user import User
+        
+        try:
+            verify_jwt_in_request(locations=['headers'])
+            current_user_id = get_jwt_identity()
+        except Exception as auth_error:
+            logger.warning(f"Auth failed for cache miss: {auth_error}")
+            return jsonify({'error': 'Authentication required for uncached data'}), 401
+        
+        # Fetch from API (expensive)
         start_time = time.time()
-        print(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}", file=sys.stderr, flush=True)
         logger.warning(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}")
-        current_app.logger.warning(f"⚠️ [OPTIONS_FLOW] Cache MISS: {cache_key}")
         
         analyzer = get_flow_analyzer()
         analysis = analyzer.analyze_flow(symbol)
         duration_ms = (time.time() - start_time) * 1000
         
-        # Cache the result for 5 minutes using SAME function as warmer
+        # Cache the result for 5 minutes
         set_cache(cache_key, analysis, timeout=300)
-        current_app.logger.info(f"💾 [OPTIONS_FLOW] Cached {cache_key} ({duration_ms:.0f}ms)")
+        logger.info(f"💾 [OPTIONS_FLOW] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(analysis), 200
     except Exception as e:
-        current_app.logger.error(f"Error analyzing options flow for {symbol}: {e}")
+        logger.error(f"Error analyzing options flow for {symbol}: {e}")
         return jsonify({'error': str(e)}), 500
 
 
