@@ -2,10 +2,10 @@ from flask import Blueprint, request, jsonify, current_app
 from services.options_analyzer import OptionsAnalyzer
 from services.tradier_connector import TradierConnector
 from services.ai_signals import AISignals
+from services.cache_manager import get_cache, set_cache  # CRITICAL: Use same cache as warmer
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
 from utils.performance import log_performance
-from utils.redis_cache import cached
 import logging
 import requests
 import traceback
@@ -26,7 +26,6 @@ def get_ai_signals():
 @options_bp.route('/quote', methods=['GET', 'OPTIONS'])
 @options_bp.route('/quote/<symbol>', methods=['GET', 'OPTIONS'])
 @log_performance(threshold=1.0)
-@cached(timeout=5, key_prefix='quote')  # Cache quotes for 5 seconds
 def get_quote(symbol=None):
     """Get current quote for a symbol - uses Tradier (PUBLIC ENDPOINT)"""
     # Handle query parameter or path parameter
@@ -36,13 +35,14 @@ def get_quote(symbol=None):
     if not symbol:
         return jsonify({'error': 'Symbol required'}), 400
     
-    # Log request (no auth required)
-    try:
-        current_app.logger.debug(f'Quote request for {symbol}')
-    except:
-        pass
-    
     symbol = symbol.upper()
+    
+    # CRITICAL: Check cache FIRST using same functions as cache warmer
+    cache_key = f'quote:{symbol}'
+    cached_data = get_cache(cache_key)
+    if cached_data:
+        logger.debug(f"✅ [QUOTE] Cache HIT: {cache_key}")
+        return jsonify(cached_data), 200
     if not validate_symbol(symbol):
         try:
             current_app.logger.warning(f'Invalid symbol: {symbol}')
@@ -117,7 +117,7 @@ def get_quote(symbol=None):
                     pass
                 current_price = quote_data.get('last')
                 if current_price and current_price > 0:
-                    return jsonify({
+                    result = {
                         'symbol': symbol,
                         'current_price': float(current_price),
                         'change': quote_data.get('change', 0),
@@ -126,7 +126,10 @@ def get_quote(symbol=None):
                         'high': quote_data.get('high'),
                         'low': quote_data.get('low'),
                         'open': quote_data.get('open')
-                    }), 200
+                    }
+                    # Cache for 5 seconds
+                    set_cache(cache_key, result, timeout=5)
+                    return jsonify(result), 200
         except KeyError as e:
             logger.error(f"Unexpected Tradier response format: {str(e)}")
             return jsonify({

@@ -7,7 +7,7 @@ from services.cleanup_service import (
     get_stale_positions,
     cleanup_old_closed_positions
 )
-from utils.redis_cache import get_redis_cache
+from services.cache_manager import get_cache, set_cache, clear_cache_pattern, CacheManager
 from utils.decorators import token_required
 from flask import current_app, jsonify
 from functools import wraps
@@ -272,13 +272,21 @@ def manual_cleanup_expired():
 def manual_cleanup_cache():
     """Manually clear cache"""
     try:
-        cache = get_redis_cache()
-        cache.clear_cache()
-        return jsonify({
-            'status': 'success',
-            'message': 'All cache cleared',
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
+        # Use cache_manager for consistency
+        cm = CacheManager()
+        if cm.enabled and cm.redis:
+            cm.redis.flushdb()
+            return jsonify({
+                'status': 'success',
+                'message': 'All cache cleared',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        else:
+            return jsonify({
+                'status': 'warning',
+                'message': 'Redis not configured, no cache to clear',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
     except Exception as e:
         logger.error(f"Cache cleanup failed: {e}", exc_info=True)
         return jsonify({
@@ -352,8 +360,9 @@ def check_stale_positions():
 def cache_stats():
     """Get detailed cache statistics"""
     try:
-        cache = get_redis_cache()
-        stats = cache.get_stats()
+        # Use CacheManager for consistency
+        cm = CacheManager()
+        stats = cm.get_stats()
         
         # Add cache metrics
         from utils.cache_metrics import CacheMetrics
@@ -541,12 +550,13 @@ def analyze_redis(current_user):
             return jsonify(results), 200
         
         try:
-            cache = get_redis_cache()
-            if not cache.redis_client:
+            # Use CacheManager for consistency
+            cm = CacheManager()
+            if not cm.enabled or not cm.redis:
                 results['error'] = 'Redis not configured'
                 return jsonify(results), 200
             
-            redis_client = cache.redis_client
+            redis_client = cm.redis
             redis_client.ping()
             results['connected'] = True
             
