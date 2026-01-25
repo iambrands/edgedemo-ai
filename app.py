@@ -184,6 +184,7 @@ def create_app(config_name=None):
     from api.spreads import spreads_bp
     from api.user import user_bp
     from api.tradier import tradier_bp
+    from api.user_performance import user_performance_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(options_bp, url_prefix='/api/options')
@@ -209,6 +210,7 @@ def create_app(config_name=None):
     app.register_blueprint(admin_status_bp, url_prefix='/api')  # /api/admin/status endpoint
     app.register_blueprint(user_bp)  # /api/user/* endpoints
     app.register_blueprint(tradier_bp)  # /api/tradier/* endpoints
+    app.register_blueprint(user_performance_bp)  # /api/stats/* endpoints (user performance tracking)
     
     # Log blueprint registration for debugging
     try:
@@ -639,6 +641,67 @@ def create_app(config_name=None):
     except Exception as sync_e:
         app.logger.error(f"❌ Synchronous cache warming FAILED: {sync_e}", exc_info=True)
         print(f"❌ Synchronous cache warming FAILED: {sync_e}", flush=True)
+    
+    # PHASE 6: User Performance Statistics Jobs
+    def update_platform_stats_job():
+        """Update platform-wide aggregate statistics"""
+        try:
+            with app.app_context():
+                from services.user_performance_tracker import user_performance_tracker
+                user_performance_tracker.calculate_platform_stats()
+                app.logger.info("✅ Platform stats updated successfully")
+        except Exception as e:
+            app.logger.error(f"Error updating platform stats: {e}", exc_info=True)
+    
+    def reset_monthly_stats_job():
+        """Reset monthly performance stats on 1st of month"""
+        try:
+            with app.app_context():
+                from services.user_performance_tracker import user_performance_tracker
+                user_performance_tracker.reset_monthly_stats()
+                app.logger.info("✅ Monthly stats reset successfully")
+        except Exception as e:
+            app.logger.error(f"Error resetting monthly stats: {e}", exc_info=True)
+    
+    def reset_yearly_stats_job():
+        """Reset yearly performance stats on Jan 1st"""
+        try:
+            with app.app_context():
+                from services.user_performance_tracker import user_performance_tracker
+                user_performance_tracker.reset_yearly_stats()
+                app.logger.info("✅ Yearly stats reset successfully")
+        except Exception as e:
+            app.logger.error(f"Error resetting yearly stats: {e}", exc_info=True)
+    
+    # Update platform stats every 5 minutes
+    scheduler.add_job(
+        func=update_platform_stats_job,
+        trigger=IntervalTrigger(minutes=5),
+        id='update_platform_stats',
+        name='Update platform aggregate statistics',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled platform stats update (every 5 minutes)")
+    
+    # Reset monthly stats on 1st of each month at midnight ET
+    scheduler.add_job(
+        func=reset_monthly_stats_job,
+        trigger=CronTrigger(day=1, hour=0, minute=0, timezone='America/New_York'),
+        id='reset_monthly_stats',
+        name='Reset monthly performance stats',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled monthly stats reset (1st of month)")
+    
+    # Reset yearly stats on January 1st at midnight ET
+    scheduler.add_job(
+        func=reset_yearly_stats_job,
+        trigger=CronTrigger(month=1, day=1, hour=0, minute=0, timezone='America/New_York'),
+        id='reset_yearly_stats',
+        name='Reset yearly performance stats',
+        replace_existing=True
+    )
+    app.logger.info("✅ Scheduled yearly stats reset (Jan 1st)")
     
     # Shut down scheduler when app exits
     atexit.register(lambda: scheduler.shutdown())
