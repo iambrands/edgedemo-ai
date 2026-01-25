@@ -164,31 +164,18 @@ class CacheWarmer:
             
             movers_service = MarketMoversService()
             
-            # Warm for common limit values
+            # Warm for common limit values using EXPLICIT cache keys
+            # These match the keys used in api/opportunities.py
             for limit in [8, 10]:
                 try:
                     movers = movers_service.get_market_movers(limit=limit)
                     
                     if movers:
-                        # Use the same cache key format as the @cached decorator
-                        cache_key = self._make_decorator_cache_key(
-                            'market_movers',
-                            '/api/opportunities/market-movers',
-                            {'limit': str(limit)}
-                        )
-                        
-                        # Also cache without args for default calls
-                        if limit == 10:
-                            cache_key_default = self._make_decorator_cache_key(
-                                'market_movers',
-                                '/api/opportunities/market-movers'
-                            )
-                            result = {'movers': movers, 'count': len(movers)}
-                            self.cache.set(cache_key_default, result, timeout=60)
-                        
+                        # Use EXACT same cache key as the endpoint uses
+                        cache_key = f'market_movers:limit_{limit}'
                         result = {'movers': movers, 'count': len(movers)}
                         self.cache.set(cache_key, result, timeout=60)
-                        logger.info(f"✅ Warmed market movers (limit={limit}): {len(movers)} items")
+                        logger.info(f"✅ Warmed {cache_key}: {len(movers)} movers")
                 except Exception as e:
                     logger.error(f"❌ Error warming market movers limit={limit}: {e}")
             
@@ -244,6 +231,82 @@ class CacheWarmer:
             logger.error(f"❌ Error in options flow warming: {e}", exc_info=True)
             return 0
     
+    def warm_opportunities(self) -> bool:
+        """Warm opportunities:today endpoint cache"""
+        try:
+            logger.info("🎯 Warming opportunities:today cache...")
+            
+            # Get quotes for popular symbols
+            popular_symbols = ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL']
+            quotes_dict = self.tradier.get_quotes(popular_symbols)
+            
+            if not quotes_dict:
+                logger.warning("❌ No quotes returned for opportunities warming")
+                return False
+            
+            # Build opportunities similar to the endpoint
+            opportunities = []
+            for symbol in popular_symbols:
+                quote_data = quotes_dict.get(symbol)
+                if not quote_data:
+                    continue
+                
+                current_price = quote_data.get('last', 0)
+                change_percent = quote_data.get('change_percentage', 0)
+                volume = quote_data.get('volume', 0)
+                
+                if not current_price or current_price <= 0:
+                    continue
+                
+                confidence = 0.60
+                signal_direction = 'neutral'
+                reason = 'Active trading opportunity'
+                
+                if abs(change_percent) > 2:
+                    confidence = 0.70
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Strong price movement ({change_percent:.2f}%)'
+                elif abs(change_percent) > 1:
+                    confidence = 0.65
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Moderate price movement ({change_percent:.2f}%)'
+                
+                if volume and volume > 10000000:
+                    confidence = min(0.75, confidence + 0.05)
+                    reason += ' with high volume'
+                
+                opportunities.append({
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'signal_direction': signal_direction,
+                    'confidence': confidence,
+                    'action': 'buy' if signal_direction == 'bullish' else 'sell' if signal_direction == 'bearish' else 'hold',
+                    'reason': reason,
+                    'iv_rank': 0,
+                    'technical_indicators': {'rsi': None, 'trend': signal_direction},
+                    'insights': None,
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+            opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+            
+            result = {
+                'opportunities': opportunities[:5],
+                'count': min(5, len(opportunities)),
+                'source': 'popular_symbols'
+            }
+            
+            # Cache with EXACT same key as the endpoint
+            cache_key = 'opportunities:today'
+            self.cache.set(cache_key, result, timeout=60)
+            logger.info(f"✅ Warmed {cache_key}: {len(opportunities[:5])} opportunities")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error warming opportunities: {e}")
+            return False
+
     def warm_all(self) -> dict:
         """Warm all caches with comprehensive logging."""
         import time
@@ -258,6 +321,7 @@ class CacheWarmer:
             'quotes': 0,
             'chains': 0,
             'expirations': 0,
+            'opportunities': False,
             'market_movers': False,
             'options_flow': 0,
             'duration_seconds': 0
@@ -267,20 +331,24 @@ class CacheWarmer:
         logger.info("📊 Phase 1: Warming quotes...")
         results['quotes'] = self.warm_quotes()
         
-        # Phase 2: Warm market movers (used by opportunities endpoints)
-        logger.info("📈 Phase 2: Warming market movers...")
+        # Phase 2: Warm opportunities:today (most visited endpoint)
+        logger.info("🎯 Phase 2: Warming opportunities:today...")
+        results['opportunities'] = self.warm_opportunities()
+        
+        # Phase 3: Warm market movers (used by opportunities endpoints)
+        logger.info("📈 Phase 3: Warming market movers...")
         results['market_movers'] = self.warm_market_movers()
         
-        # Phase 3: Warm options chains
-        logger.info("🔗 Phase 3: Warming options chains...")
+        # Phase 4: Warm options chains
+        logger.info("🔗 Phase 4: Warming options chains...")
         results['chains'] = self.warm_options_chains()
         
-        # Phase 4: Warm expirations
-        logger.info("📅 Phase 4: Warming expirations...")
+        # Phase 5: Warm expirations
+        logger.info("📅 Phase 5: Warming expirations...")
         results['expirations'] = self.warm_expirations()
         
-        # Phase 5: Warm options flow for popular symbols
-        logger.info("📊 Phase 5: Warming options flow...")
+        # Phase 6: Warm options flow for popular symbols
+        logger.info("📊 Phase 6: Warming options flow...")
         results['options_flow'] = self.warm_options_flow()
         
         # Summary
@@ -289,6 +357,7 @@ class CacheWarmer:
         logger.info("=" * 60)
         logger.info(f"✅ CACHE WARMING COMPLETE in {results['duration_seconds']}s")
         logger.info(f"   Quotes: {results['quotes']}")
+        logger.info(f"   Opportunities: {results['opportunities']}")
         logger.info(f"   Market Movers: {results['market_movers']}")
         logger.info(f"   Chains: {results['chains']}")
         logger.info(f"   Expirations: {results['expirations']}")
@@ -302,8 +371,10 @@ def warm_all_caches():
     """
     SIMPLIFIED cache warming function with MAXIMUM logging
     
-    This function bypasses the complex CacheWarmer class to debug issues.
-    It uses direct print() statements that CANNOT be suppressed.
+    Warms the following caches with EXPLICIT keys that match the endpoints:
+    - opportunities:today (60s TTL)
+    - market_movers:limit_8, market_movers:limit_10 (60s TTL)
+    - options_flow_analyze:SYMBOL (300s TTL)
     """
     import sys
     
@@ -320,6 +391,8 @@ def warm_all_caches():
     results = {
         'cache_test': False,
         'quotes': 0,
+        'opportunities': False,
+        'market_movers': False,
         'options_flow': 0,
         'errors': []
     }
@@ -333,13 +406,8 @@ def warm_all_caches():
             test_key = 'cache_warmer_test'
             test_value = {'test': True, 'time': datetime.now().isoformat()}
             
-            print(f"   Setting test key: {test_key}", flush=True)
             set_result = set_cache(test_key, test_value, timeout=60)
-            print(f"   Set result: {set_result}", flush=True)
-            
-            print(f"   Getting test key: {test_key}", flush=True)
             get_result = get_cache(test_key)
-            print(f"   Get result: {get_result}", flush=True)
             
             if get_result:
                 print("   ✅ Cache operations WORKING", flush=True)
@@ -354,40 +422,112 @@ def warm_all_caches():
             logger.error(f"❌ Cache test FAILED: {e}", exc_info=True)
             results['errors'].append(f"Cache test: {e}")
         
-        # PHASE 2: Warm quotes for popular symbols
-        print("📊 PHASE 2: Warming quotes...", flush=True)
-        logger.info("📊 PHASE 2: Warming quotes...")
+        # PHASE 2: Warm quotes and build opportunities
+        print("📊 PHASE 2: Warming quotes and opportunities:today...", flush=True)
+        logger.info("📊 PHASE 2: Warming quotes and opportunities:today...")
         
         try:
-            print("   Importing TradierConnector...", flush=True)
             from services.tradier_connector import TradierConnector
-            
-            print("   Creating TradierConnector instance...", flush=True)
             tradier = TradierConnector()
             
-            symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']
-            print(f"   Getting batch quotes for: {symbols}", flush=True)
-            
-            quotes = tradier.get_quotes(symbols)
-            print(f"   Got {len(quotes)} quotes", flush=True)
-            logger.info(f"Got {len(quotes)} quotes")
-            
+            popular_symbols = ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL']
+            quotes = tradier.get_quotes(popular_symbols)
             results['quotes'] = len(quotes)
+            print(f"   Got {len(quotes)} quotes", flush=True)
+            
+            # Build opportunities (same logic as the endpoint)
+            opportunities = []
+            for symbol in popular_symbols:
+                quote_data = quotes.get(symbol)
+                if not quote_data:
+                    continue
+                
+                current_price = quote_data.get('last', 0)
+                change_percent = quote_data.get('change_percentage', 0)
+                volume = quote_data.get('volume', 0)
+                
+                if not current_price or current_price <= 0:
+                    continue
+                
+                confidence = 0.60
+                signal_direction = 'neutral'
+                reason = 'Active trading opportunity'
+                
+                if abs(change_percent) > 2:
+                    confidence = 0.70
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Strong price movement ({change_percent:.2f}%)'
+                elif abs(change_percent) > 1:
+                    confidence = 0.65
+                    signal_direction = 'bullish' if change_percent > 0 else 'bearish'
+                    reason = f'Moderate price movement ({change_percent:.2f}%)'
+                
+                if volume and volume > 10000000:
+                    confidence = min(0.75, confidence + 0.05)
+                    reason += ' with high volume'
+                
+                opportunities.append({
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'signal_direction': signal_direction,
+                    'confidence': confidence,
+                    'action': 'buy' if signal_direction == 'bullish' else 'sell' if signal_direction == 'bearish' else 'hold',
+                    'reason': reason,
+                    'iv_rank': 0,
+                    'technical_indicators': {'rsi': None, 'trend': signal_direction},
+                    'insights': None,
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+            opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+            
+            # Cache with EXACT same key as endpoint uses
+            opp_result = {
+                'opportunities': opportunities[:5],
+                'count': min(5, len(opportunities)),
+                'source': 'popular_symbols'
+            }
+            set_cache('opportunities:today', opp_result, timeout=60)
+            results['opportunities'] = True
+            print(f"   ✅ Cached opportunities:today ({len(opportunities[:5])} items)", flush=True)
             
         except Exception as e:
-            print(f"   ❌ Quote warming FAILED: {e}", flush=True)
-            logger.error(f"❌ Quote warming FAILED: {e}", exc_info=True)
-            results['errors'].append(f"Quotes: {e}")
+            print(f"   ❌ Opportunities warming FAILED: {e}", flush=True)
+            logger.error(f"❌ Opportunities warming FAILED: {e}", exc_info=True)
+            results['errors'].append(f"Opportunities: {e}")
         
-        # PHASE 3: Warm options flow for popular symbols
-        print("🔗 PHASE 3: Warming options flow...", flush=True)
-        logger.info("🔗 PHASE 3: Warming options flow...")
+        # PHASE 3: Warm market movers
+        print("📈 PHASE 3: Warming market_movers...", flush=True)
+        logger.info("📈 PHASE 3: Warming market_movers...")
         
         try:
-            print("   Importing OptionsFlowAnalyzer...", flush=True)
+            from services.market_movers import MarketMoversService
+            movers_service = MarketMoversService()
+            
+            for limit in [8, 10]:
+                try:
+                    movers = movers_service.get_market_movers(limit=limit)
+                    if movers:
+                        cache_key = f'market_movers:limit_{limit}'
+                        set_cache(cache_key, {'movers': movers, 'count': len(movers)}, timeout=60)
+                        print(f"   ✅ Cached {cache_key} ({len(movers)} items)", flush=True)
+                        results['market_movers'] = True
+                except Exception as e:
+                    print(f"   ❌ market_movers limit={limit} error: {e}", flush=True)
+            
+        except Exception as e:
+            print(f"   ❌ Market movers warming FAILED: {e}", flush=True)
+            logger.error(f"❌ Market movers warming FAILED: {e}", exc_info=True)
+            results['errors'].append(f"Market movers: {e}")
+        
+        # PHASE 4: Warm options flow for popular symbols
+        print("🔗 PHASE 4: Warming options flow...", flush=True)
+        logger.info("🔗 PHASE 4: Warming options flow...")
+        
+        try:
             from services.options_flow import OptionsFlowAnalyzer
             
-            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'SPY']
+            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'SPY', 'NVDA']
             warmed = 0
             
             for symbol in symbols_to_warm:
@@ -400,8 +540,6 @@ def warm_all_caches():
                         print(f"   ⏭️ {symbol} already cached", flush=True)
                         warmed += 1
                         continue
-                    
-                    print(f"   Warming {symbol}...", flush=True)
                     
                     analyzer = OptionsFlowAnalyzer()
                     analysis = analyzer.analyze_flow(symbol)

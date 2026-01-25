@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from utils.decorators import token_required
 from utils.performance import log_performance
-from utils.redis_cache import cached
+from utils.redis_cache import get_redis_cache
 from services.opportunity_scanner import OpportunityScanner
 from services.signal_generator import SignalGenerator
 from services.market_movers import MarketMoversService
@@ -9,6 +9,7 @@ from services.ai_symbol_recommender import AISymbolRecommender
 from services.opportunity_insights import OpportunityInsights
 from models.stock import Stock
 from datetime import datetime
+import time
 
 opportunities_bp = Blueprint('opportunities', __name__)
 
@@ -19,11 +20,20 @@ def get_db():
 @opportunities_bp.route('/today', methods=['GET'])
 # @token_required  # Temporarily disabled for testing
 @log_performance(threshold=2.0)
-@cached(timeout=60, key_prefix='opportunities')  # Cache for 60 seconds
 def get_today_opportunities(current_user=None):
     """Get today's top trading opportunities - optimized for speed"""
     try:
-        current_app.logger.info("=== Today's opportunities endpoint called ===")
+        # EXPLICIT CACHE CHECK - easier to warm than @cached decorator
+        cache_key = 'opportunities:today'
+        cache = get_redis_cache()
+        
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            return jsonify(cached_data), 200
+        
+        start_time = time.time()
+        current_app.logger.info("=== Today's opportunities endpoint called (CACHE MISS) ===")
         
         # If no user, return empty array immediately
         if current_user is None:
@@ -164,11 +174,21 @@ def get_today_opportunities(current_user=None):
         
         # Return top 5
         max_opportunities = 5
-        return jsonify({
+        result = {
             'opportunities': opportunities[:max_opportunities],
             'count': len(opportunities[:max_opportunities]),
             'source': source
-        }), 200
+        }
+        
+        # Cache the result for 60 seconds
+        try:
+            cache.set(cache_key, result, timeout=60)
+            duration_ms = (time.time() - start_time) * 1000
+            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
+        except Exception as cache_err:
+            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        
+        return jsonify(result), 200
         
     except Exception as e:
         try:
@@ -298,14 +318,24 @@ def quick_scan(current_user):
 @opportunities_bp.route('/market-movers', methods=['GET'])
 # @token_required  # Temporarily disabled for testing
 @log_performance(threshold=2.0)
-@cached(timeout=60, key_prefix='market_movers')  # Cache for 60 seconds
 def get_market_movers(current_user=None):
     """Get market movers - high volume/volatility stocks"""
     try:
         limit = request.args.get('limit', 10, type=int)
         include_insights = request.args.get('include_insights', 'false').lower() == 'true'
         
-        current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {current_user.id}")
+        # EXPLICIT CACHE CHECK - use simple key format for easy warming
+        cache_key = f'market_movers:limit_{limit}'
+        cache = get_redis_cache()
+        
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            return jsonify(cached_data), 200
+        
+        start_time = time.time()
+        user_id = current_user.id if current_user and hasattr(current_user, 'id') else 'anonymous'
+        current_app.logger.info(f"📈 Getting market movers (limit={limit}) for user {user_id} (CACHE MISS)")
         
         # Add timeout protection - limit processing time
         import threading
@@ -383,10 +413,20 @@ def get_market_movers(current_user=None):
         else:
             current_app.logger.warning("⚠️ No market movers found - all symbols may have failed or none met criteria")
         
-        return jsonify({
+        result = {
             'movers': movers,
             'count': len(movers)
-        }), 200
+        }
+        
+        # Cache the result for 60 seconds
+        try:
+            cache.set(cache_key, result, timeout=60)
+            duration_ms = (time.time() - start_time) * 1000
+            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
+        except Exception as cache_err:
+            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        
+        return jsonify(result), 200
         
     except Exception as e:
         import traceback
@@ -405,13 +445,22 @@ def get_market_movers(current_user=None):
 @opportunities_bp.route('/ai-suggestions', methods=['GET'])
 @token_required
 @log_performance(threshold=2.0)
-@cached(timeout=600, key_prefix='ai_suggestions')  # Cache for 10 minutes (AI is expensive)
 def get_ai_suggestions(current_user):
     """Get AI-powered personalized symbol recommendations"""
     try:
         limit = request.args.get('limit', 8, type=int)
         
-        current_app.logger.info(f"Generating AI suggestions for user {current_user.id}")
+        # EXPLICIT CACHE CHECK - 10 minute TTL (AI is expensive)
+        cache_key = f'ai_suggestions:user_{current_user.id}:limit_{limit}'
+        cache = get_redis_cache()
+        
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            current_app.logger.info(f"✅ Cache HIT: {cache_key}")
+            return jsonify(cached_data), 200
+        
+        start_time = time.time()
+        current_app.logger.info(f"Generating AI suggestions for user {current_user.id} (CACHE MISS)")
         
         recommender = AISymbolRecommender()
         recommendations = recommender.get_personalized_recommendations(
@@ -419,10 +468,20 @@ def get_ai_suggestions(current_user):
             limit=limit
         )
         
-        return jsonify({
+        result = {
             'recommendations': recommendations,
             'count': len(recommendations)
-        }), 200
+        }
+        
+        # Cache the result for 10 minutes (AI is expensive)
+        try:
+            cache.set(cache_key, result, timeout=600)
+            duration_ms = (time.time() - start_time) * 1000
+            current_app.logger.info(f"✅ Cached {cache_key} ({duration_ms:.0f}ms)")
+        except Exception as cache_err:
+            current_app.logger.warning(f"Cache set failed: {cache_err}")
+        
+        return jsonify(result), 200
         
     except Exception as e:
         try:
