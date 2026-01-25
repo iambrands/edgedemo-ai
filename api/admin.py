@@ -878,6 +878,209 @@ def force_cache_warming(current_user):
         }), 500
 
 
+@admin_bp.route('/admin/test-earnings', methods=['GET'])
+def test_earnings():
+    """
+    PUBLIC ENDPOINT - Test Finnhub earnings calendar integration
+    NO AUTHENTICATION REQUIRED - for debugging only
+    
+    Access at: /api/admin/test-earnings
+    
+    This endpoint tests:
+    1. Whether FINNHUB_API_KEY is configured
+    2. Whether the Finnhub API is reachable
+    3. Whether earnings data is being returned
+    """
+    import requests
+    from datetime import timedelta
+    
+    results = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'finnhub_config': {},
+        'api_test': {},
+        'earnings_data': None
+    }
+    
+    # Check if API key is configured
+    finnhub_key = os.getenv('FINNHUB_API_KEY')
+    results['finnhub_config'] = {
+        'api_key_set': bool(finnhub_key),
+        'api_key_length': len(finnhub_key) if finnhub_key else 0,
+        'api_key_prefix': finnhub_key[:8] + '...' if finnhub_key and len(finnhub_key) > 8 else 'NOT SET'
+    }
+    
+    if not finnhub_key:
+        results['api_test']['error'] = 'FINNHUB_API_KEY not set in environment variables'
+        results['api_test']['fix'] = 'Add FINNHUB_API_KEY to Railway environment variables. Get free key at: https://finnhub.io/register'
+        return jsonify(results), 200  # Return 200 so we can see the diagnostic info
+    
+    # Test API call directly
+    try:
+        # Get earnings for next 14 days (wider range to ensure we get some data)
+        today = datetime.now()
+        end_date = today + timedelta(days=14)
+        
+        url = 'https://finnhub.io/api/v1/calendar/earnings'
+        params = {
+            'from': today.strftime('%Y-%m-%d'),
+            'to': end_date.strftime('%Y-%m-%d'),
+            'token': finnhub_key
+        }
+        
+        logger.info(f"[EARNINGS TEST] Calling Finnhub: {url}")
+        logger.info(f"[EARNINGS TEST] Date range: {params['from']} to {params['to']}")
+        
+        response = requests.get(url, params=params, timeout=10)
+        
+        results['api_test'] = {
+            'status_code': response.status_code,
+            'url': url,
+            'date_range': f"{params['from']} to {params['to']}",
+            'response_time_ms': round(response.elapsed.total_seconds() * 1000, 2)
+        }
+        
+        if response.status_code == 200:
+            data = response.json()
+            earnings_list = data.get('earningsCalendar', [])
+            
+            results['earnings_data'] = {
+                'total_earnings': len(earnings_list),
+                'sample_earnings': earnings_list[:5],  # First 5 for preview
+                'raw_response_keys': list(data.keys())
+            }
+            results['api_test']['success'] = True
+            results['api_test']['message'] = f"Found {len(earnings_list)} earnings announcements"
+            
+            # Also test the FinnhubClient class
+            try:
+                from services.finnhub_client import get_finnhub_client
+                client = get_finnhub_client()
+                results['finnhub_client'] = {
+                    'available': client.is_available(),
+                    'api_key_set': bool(client.api_key),
+                    'base_url': client.base_url
+                }
+            except Exception as client_error:
+                results['finnhub_client'] = {
+                    'error': str(client_error)
+                }
+        
+        elif response.status_code == 401:
+            results['api_test']['success'] = False
+            results['api_test']['error'] = 'Invalid API key (401 Unauthorized)'
+            results['api_test']['fix'] = 'Get a new API key from https://finnhub.io/register'
+        
+        elif response.status_code == 403:
+            results['api_test']['success'] = False
+            results['api_test']['error'] = 'Access forbidden (403) - API key may be revoked or invalid'
+            results['api_test']['fix'] = 'Get a new API key from https://finnhub.io/register'
+        
+        elif response.status_code == 429:
+            results['api_test']['success'] = False
+            results['api_test']['error'] = 'Rate limit exceeded (429)'
+            results['api_test']['fix'] = 'Wait a minute and try again. Free tier allows 60 calls/minute.'
+        
+        else:
+            results['api_test']['success'] = False
+            results['api_test']['error'] = f"Unexpected status code: {response.status_code}"
+            results['api_test']['response_text'] = response.text[:500]
+            
+    except requests.exceptions.Timeout:
+        results['api_test']['success'] = False
+        results['api_test']['error'] = 'Request timed out (10s)'
+        
+    except requests.exceptions.ConnectionError as e:
+        results['api_test']['success'] = False
+        results['api_test']['error'] = f'Connection error: {str(e)}'
+        
+    except Exception as e:
+        results['api_test']['success'] = False
+        results['api_test']['error'] = str(e)
+        logger.error(f"[EARNINGS TEST] Error: {e}", exc_info=True)
+    
+    return jsonify(results), 200
+
+
+@admin_bp.route('/admin/test-finnhub-full', methods=['GET'])
+def test_finnhub_full():
+    """
+    PUBLIC ENDPOINT - Test all Finnhub endpoints
+    NO AUTHENTICATION REQUIRED - for debugging only
+    
+    Access at: /api/admin/test-finnhub-full
+    """
+    results = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'tests': {}
+    }
+    
+    try:
+        from services.finnhub_client import get_finnhub_client
+        client = get_finnhub_client()
+        
+        results['client_status'] = {
+            'available': client.is_available(),
+            'api_key_present': bool(client.api_key),
+            'api_key_preview': client.api_key[:8] + '...' if client.api_key and len(client.api_key) > 8 else None
+        }
+        
+        if not client.is_available():
+            results['error'] = 'Finnhub API key not configured'
+            results['fix'] = 'Set FINNHUB_API_KEY environment variable in Railway'
+            return jsonify(results), 200
+        
+        # Test 1: Earnings Calendar
+        try:
+            earnings = client.get_earnings_calendar(days_ahead=14, use_cache=False)
+            results['tests']['earnings_calendar'] = {
+                'success': True,
+                'total': earnings.get('total', 0),
+                'sample': earnings.get('earnings', [])[:3],
+                'date_range': f"{earnings.get('from_date')} to {earnings.get('to_date')}"
+            }
+        except Exception as e:
+            results['tests']['earnings_calendar'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Test 2: Economic Calendar
+        try:
+            economic = client.get_economic_calendar(days_ahead=7, use_cache=False)
+            results['tests']['economic_calendar'] = {
+                'success': True,
+                'total': economic.get('total', 0),
+                'high_impact': economic.get('high_impact', 0),
+                'sample': economic.get('events', [])[:3]
+            }
+        except Exception as e:
+            results['tests']['economic_calendar'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Test 3: Symbol-specific earnings (AAPL as test)
+        try:
+            aapl_earnings = client.get_symbol_earnings('AAPL', use_cache=False)
+            results['tests']['symbol_earnings'] = {
+                'success': True,
+                'symbol': 'AAPL',
+                'upcoming': aapl_earnings.get('upcoming'),
+                'total_historical': aapl_earnings.get('total_earnings', 0)
+            }
+        except Exception as e:
+            results['tests']['symbol_earnings'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+    except Exception as e:
+        results['error'] = str(e)
+        logger.error(f"[FINNHUB FULL TEST] Error: {e}", exc_info=True)
+    
+    return jsonify(results), 200
+
+
 @admin_bp.route('/admin/debug/positions', methods=['GET'])
 @token_required
 def debug_positions(current_user):
