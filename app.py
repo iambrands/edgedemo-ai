@@ -771,94 +771,145 @@ def create_app(config_name=None):
     def run_migrations_on_startup():
         """
         Run database migrations on app startup.
-        Handles multiple head revisions by attempting to merge them.
+        Handles multiple head revisions and falls back to direct table creation.
         This ensures user_performance and platform_stats tables are created.
         """
         try:
             app.logger.info("📊 Running database migrations on startup...")
             
             import os
-            from alembic.config import Config
-            from alembic import command
-            from alembic.script import ScriptDirectory
-            
-            # Get migrations directory
-            migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
-            
-            # Create alembic config
-            alembic_cfg = Config()
-            alembic_cfg.set_main_option('script_location', migrations_dir)
-            alembic_cfg.set_main_option('sqlalchemy.url', app.config['SQLALCHEMY_DATABASE_URI'])
+            from sqlalchemy import inspect as sa_inspect
             
             with app.app_context():
+                migration_success = False
+                
+                # Step 1: Try running Alembic migrations
                 try:
-                    # Check for multiple heads first
+                    from alembic.config import Config
+                    from alembic import command
+                    from alembic.script import ScriptDirectory
+                    
+                    migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
+                    alembic_cfg = Config()
+                    alembic_cfg.set_main_option('script_location', migrations_dir)
+                    alembic_cfg.set_main_option('sqlalchemy.url', app.config['SQLALCHEMY_DATABASE_URI'])
+                    
+                    # Check for multiple heads
                     script = ScriptDirectory.from_config(alembic_cfg)
                     heads = script.get_heads()
                     
                     if len(heads) > 1:
                         app.logger.warning(f"⚠️ Multiple migration heads detected: {heads}")
-                        app.logger.info("📊 Attempting to run migrations to each head...")
-                        
-                        # Try to upgrade to each head individually
                         for head in heads:
                             try:
-                                app.logger.info(f"  → Upgrading to {head}...")
                                 command.upgrade(alembic_cfg, head)
                                 app.logger.info(f"  ✅ Upgraded to {head}")
                             except Exception as head_error:
-                                error_msg = str(head_error).lower()
-                                if 'already' in error_msg or 'up to date' in error_msg:
+                                if 'already' in str(head_error).lower():
                                     app.logger.info(f"  ⏭️  Head {head} already applied")
                                 else:
-                                    app.logger.warning(f"  ⚠️ Could not upgrade to {head}: {head_error}")
-                        
-                        app.logger.info("✅ Multi-head migration completed")
+                                    app.logger.warning(f"  ⚠️ Head {head} failed: {head_error}")
+                        migration_success = True
                     else:
-                        # Single head - simple upgrade
                         command.upgrade(alembic_cfg, 'head')
                         app.logger.info("✅ Database migrations completed successfully")
-                    
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    
-                    if 'multiple head revisions' in error_msg:
-                        app.logger.warning("⚠️ Multiple migration heads - attempting individual upgrades...")
+                        migration_success = True
                         
+                except Exception as migration_error:
+                    app.logger.warning(f"⚠️ Migration failed: {migration_error}")
+                    migration_success = False
+                
+                # Step 2: ALWAYS check and create user_performance tables
+                # This is the critical fix - don't rely on migrations alone
+                app.logger.info("🔍 Checking for user_performance and platform_stats tables...")
+                
+                try:
+                    inspector = sa_inspect(db.engine)
+                    existing_tables = inspector.get_table_names()
+                    app.logger.info(f"📋 Existing tables ({len(existing_tables)}): {sorted(existing_tables)[:20]}...")
+                    
+                    # Import the models to ensure they're registered
+                    from models.user_performance import UserPerformance
+                    from models.platform_stats import PlatformStats
+                    
+                    # Create user_performance table if missing
+                    if 'user_performance' not in existing_tables:
+                        app.logger.info("🔨 Creating user_performance table...")
                         try:
-                            # Use flask-migrate's upgrade which may handle this better
-                            from flask_migrate import upgrade
-                            upgrade()
-                            app.logger.info("✅ Database migrations completed via flask-migrate")
-                        except Exception as fm_error:
-                            app.logger.warning(f"Flask-migrate failed: {fm_error}")
-                            app.logger.info("📊 Trying direct table creation as fallback...")
-                            
-                            # Fallback: Try to create tables directly using SQLAlchemy
-                            try:
-                                from models.user_performance import UserPerformance
-                                from models.platform_stats import PlatformStats
-                                
-                                db.create_all()
-                                app.logger.info("✅ Tables created via db.create_all()")
-                            except Exception as create_error:
-                                app.logger.error(f"❌ Table creation failed: {create_error}")
-                    
-                    elif 'could not locate a flask application' in error_msg:
-                        app.logger.warning("⚠️ Migration skipped - Flask app not in context")
-                    
-                    elif 'no such table' in error_msg or 'relation' in error_msg:
-                        # Database might not be fully initialized
-                        app.logger.warning(f"⚠️ Database not initialized: {e}")
-                        try:
-                            db.create_all()
-                            app.logger.info("✅ Created all tables via db.create_all()")
-                        except Exception as create_error:
-                            app.logger.error(f"❌ db.create_all() failed: {create_error}")
-                    
+                            UserPerformance.__table__.create(db.engine, checkfirst=True)
+                            app.logger.info("✅ user_performance table created successfully")
+                        except Exception as create_err:
+                            app.logger.error(f"❌ Failed to create user_performance: {create_err}")
                     else:
-                        app.logger.error(f"❌ Migration error: {e}")
-                        app.logger.warning("⚠️ Continuing without migration - app may have issues")
+                        app.logger.info("✅ user_performance table already exists")
+                    
+                    # Create platform_stats table if missing
+                    if 'platform_stats' not in existing_tables:
+                        app.logger.info("🔨 Creating platform_stats table...")
+                        try:
+                            PlatformStats.__table__.create(db.engine, checkfirst=True)
+                            app.logger.info("✅ platform_stats table created successfully")
+                            
+                            # Insert initial record
+                            try:
+                                initial_stats = PlatformStats(
+                                    total_users=0,
+                                    active_users_30d=0,
+                                    verified_users=0,
+                                    total_trades=0,
+                                    total_profit_loss=0,
+                                    total_capital_deployed=0,
+                                    platform_win_rate=0,
+                                    platform_avg_return=0,
+                                    top_10pct_avg_return=0,
+                                    mtd_aggregate_pnl=0,
+                                    ytd_aggregate_pnl=0,
+                                    total_signals_generated=0,
+                                    signals_followed=0,
+                                    signal_success_rate=0
+                                )
+                                db.session.add(initial_stats)
+                                db.session.commit()
+                                app.logger.info("✅ Initial platform_stats record created")
+                            except Exception as insert_error:
+                                app.logger.warning(f"⚠️ Could not insert initial stats: {insert_error}")
+                                db.session.rollback()
+                                
+                        except Exception as create_err:
+                            app.logger.error(f"❌ Failed to create platform_stats: {create_err}")
+                    else:
+                        app.logger.info("✅ platform_stats table already exists")
+                        
+                        # Ensure at least one record exists
+                        try:
+                            stats_count = db.session.query(PlatformStats).count()
+                            if stats_count == 0:
+                                app.logger.info("🔨 Inserting initial platform_stats record...")
+                                initial_stats = PlatformStats(
+                                    total_users=0,
+                                    total_trades=0,
+                                    total_profit_loss=0,
+                                    total_capital_deployed=0
+                                )
+                                db.session.add(initial_stats)
+                                db.session.commit()
+                                app.logger.info("✅ Initial platform_stats record created")
+                        except Exception as count_error:
+                            app.logger.warning(f"⚠️ Could not check/insert initial stats: {count_error}")
+                            db.session.rollback()
+                    
+                    app.logger.info("✅ User performance table check completed")
+                    
+                except Exception as table_check_error:
+                    app.logger.error(f"❌ Table check/creation failed: {table_check_error}", exc_info=True)
+                    
+                    # Last resort: try db.create_all()
+                    try:
+                        app.logger.info("🔧 Attempting db.create_all() as last resort...")
+                        db.create_all()
+                        app.logger.info("✅ db.create_all() completed")
+                    except Exception as create_all_error:
+                        app.logger.error(f"❌ db.create_all() failed: {create_all_error}")
             
             return True
             
