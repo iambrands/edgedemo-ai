@@ -195,8 +195,12 @@ class CacheWarmer:
             from services.options_flow import OptionsFlowAnalyzer
             
             warmed = 0
-            # Expanded list - include all symbols users commonly look at
-            symbols_to_warm = ['AAPL', 'AMD', 'TSLA', 'NVDA', 'SPY', 'QQQ', 'BA', 'COIN', 'DIA', 'META', 'MSFT']
+            # COMPREHENSIVE list - include ALL symbols commonly in user watchlists
+            # This must match warm_all_caches() for consistency
+            symbols_to_warm = [
+                'SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'AMD', 'TSLA',  # Most common
+                'META', 'AMZN', 'GOOGL', 'BA', 'COIN', 'DIA', 'IWM'   # Also common
+            ]
             
             for symbol in symbols_to_warm:
                 try:
@@ -533,8 +537,12 @@ def warm_all_caches():
         try:
             from services.options_flow import OptionsFlowAnalyzer
             
-            # Most common watchlist symbols - warm these for fast dashboard loads
-            symbols_to_warm = ['SPY', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'QQQ', 'AMD', 'META', 'AMZN', 'GOOGL']
+            # COMPREHENSIVE list - include ALL symbols commonly in user watchlists
+            # This must match CacheWarmer.warm_options_flow() for consistency
+            symbols_to_warm = [
+                'SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'AMD', 'TSLA',  # Most common
+                'META', 'AMZN', 'GOOGL', 'BA', 'COIN', 'DIA', 'IWM'   # Also common
+            ]
             warmed = 0
             failed_symbols = []
             
