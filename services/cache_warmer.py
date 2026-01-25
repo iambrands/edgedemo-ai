@@ -171,11 +171,13 @@ class CacheWarmer:
                     movers = movers_service.get_market_movers(limit=limit)
                     
                     if movers:
-                        # Use EXACT same cache key as the endpoint uses
+                        # Use EXACT same cache key and function as the endpoint uses
                         cache_key = f'market_movers:limit_{limit}'
                         result = {'movers': movers, 'count': len(movers)}
-                        self.cache.set(cache_key, result, timeout=60)
-                        logger.info(f"✅ Warmed {cache_key}: {len(movers)} movers")
+                        # Use set_cache() from cache_manager (not self.cache) for consistency!
+                        # TTL = 300s (5 min) - MUST be longer than warming interval (4 min)
+                        set_cache(cache_key, result, timeout=300)
+                        logger.info(f"✅ Warmed {cache_key}: {len(movers)} movers [TTL=300s]")
                 except Exception as e:
                     logger.error(f"❌ Error warming market movers limit={limit}: {e}")
             
@@ -201,8 +203,8 @@ class CacheWarmer:
                     # Use EXACT same cache key format as the endpoint
                     cache_key = f'options_flow_analyze:{symbol.upper()}'
                     
-                    # Check if already cached using the same cache method as endpoint
-                    existing = self.cache.get(cache_key)
+                    # Check if already cached using get_cache() from cache_manager
+                    existing = get_cache(cache_key)
                     if existing:
                         logger.debug(f"⏭️ Options flow for {symbol} already cached")
                         warmed += 1  # Count as warmed since it's cached
@@ -214,10 +216,10 @@ class CacheWarmer:
                     analysis = analyzer.analyze_flow(symbol)
                     
                     if analysis:
-                        # Cache using the SAME cache instance as the endpoint
-                        self.cache.set(cache_key, analysis, timeout=300)  # 5 minutes
+                        # Use set_cache() from cache_manager (not self.cache) for consistency!
+                        set_cache(cache_key, analysis, timeout=300)  # 5 minutes
                         warmed += 1
-                        logger.info(f"  ✅ Warmed options flow for {symbol}")
+                        logger.info(f"  ✅ Warmed options flow for {symbol} [TTL=300s]")
                     else:
                         logger.warning(f"  ⚠️ No analysis returned for {symbol}")
                     
@@ -296,9 +298,11 @@ class CacheWarmer:
                 'source': 'popular_symbols'
             }
             
-            # Cache with EXACT same key as the endpoint
+            # Cache with EXACT same key and function as the endpoint
+            # Use set_cache() from cache_manager (not self.cache) for consistency!
+            # TTL = 300s (5 min) - MUST be longer than warming interval (4 min)
             cache_key = 'opportunities:today'
-            self.cache.set(cache_key, result, timeout=60)
+            set_cache(cache_key, result, timeout=300)
             logger.info(f"✅ Warmed {cache_key}: {len(opportunities[:5])} opportunities")
             
             return True
@@ -482,14 +486,15 @@ def warm_all_caches():
             opportunities.sort(key=lambda x: x.get('confidence', 0), reverse=True)
             
             # Cache with EXACT same key as endpoint uses
+            # TTL = 300 seconds (5 minutes) - MUST be longer than warming interval (4 min)
             opp_result = {
                 'opportunities': opportunities[:5],
                 'count': min(5, len(opportunities)),
                 'source': 'popular_symbols'
             }
-            set_cache('opportunities:today', opp_result, timeout=60)
+            set_cache('opportunities:today', opp_result, timeout=300)  # 5 minutes, not 60 seconds!
             results['opportunities'] = True
-            print(f"   ✅ Cached opportunities:today ({len(opportunities[:5])} items)", flush=True)
+            print(f"   ✅ Cached opportunities:today ({len(opportunities[:5])} items) [TTL=300s]", flush=True)
             
         except Exception as e:
             print(f"   ❌ Opportunities warming FAILED: {e}", flush=True)
@@ -509,8 +514,9 @@ def warm_all_caches():
                     movers = movers_service.get_market_movers(limit=limit)
                     if movers:
                         cache_key = f'market_movers:limit_{limit}'
-                        set_cache(cache_key, {'movers': movers, 'count': len(movers)}, timeout=60)
-                        print(f"   ✅ Cached {cache_key} ({len(movers)} items)", flush=True)
+                        # TTL = 300 seconds (5 minutes) - MUST be longer than warming interval (4 min)
+                        set_cache(cache_key, {'movers': movers, 'count': len(movers)}, timeout=300)
+                        print(f"   ✅ Cached {cache_key} ({len(movers)} items) [TTL=300s]", flush=True)
                         results['market_movers'] = True
                 except Exception as e:
                     print(f"   ❌ market_movers limit={limit} error: {e}", flush=True)
