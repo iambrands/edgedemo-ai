@@ -241,6 +241,79 @@ def admin_debug():
 
 # REMOVED: Duplicate cache-status endpoint (moved to line ~155 with better implementation)
 
+@admin_bp.route('/admin/pnl-diagnostic', methods=['GET'])
+def pnl_diagnostic():
+    """
+    Diagnostic endpoint to see trades contributing to realized P&L.
+    
+    GET /api/admin/pnl-diagnostic
+    GET /api/admin/pnl-diagnostic?user_id=3
+    
+    Shows breakdown of realized P&L by trade.
+    """
+    try:
+        from models.trade import Trade
+        from models.user import User
+        db = current_app.extensions['sqlalchemy']
+        
+        user_id = request.args.get('user_id', type=int)
+        
+        # Get trades with realized P&L
+        query = db.session.query(Trade).filter(Trade.realized_pnl.isnot(None))
+        
+        if user_id:
+            query = query.filter(Trade.user_id == user_id)
+        
+        trades = query.order_by(Trade.trade_date.desc()).all()
+        
+        total_realized = sum(t.realized_pnl or 0 for t in trades)
+        winning = [t for t in trades if (t.realized_pnl or 0) > 0]
+        losing = [t for t in trades if (t.realized_pnl or 0) < 0]
+        
+        # Group by user
+        by_user = {}
+        for t in trades:
+            uid = t.user_id
+            if uid not in by_user:
+                by_user[uid] = {'total': 0, 'trades': 0}
+            by_user[uid]['total'] += t.realized_pnl or 0
+            by_user[uid]['trades'] += 1
+        
+        trade_details = []
+        for t in trades[:50]:  # Show top 50 trades
+            trade_details.append({
+                'id': t.id,
+                'user_id': t.user_id,
+                'symbol': t.symbol,
+                'action': t.action,
+                'quantity': t.quantity,
+                'price': float(t.price) if t.price else None,
+                'realized_pnl': float(t.realized_pnl) if t.realized_pnl else None,
+                'trade_date': t.trade_date.isoformat() if t.trade_date else None,
+                'option_symbol': t.option_symbol
+            })
+        
+        return jsonify({
+            'status': 'ok',
+            'total_realized_pnl': float(total_realized),
+            'total_trades_with_pnl': len(trades),
+            'winning_trades': len(winning),
+            'losing_trades': len(losing),
+            'win_amount': sum(t.realized_pnl or 0 for t in winning),
+            'loss_amount': sum(t.realized_pnl or 0 for t in losing),
+            'by_user': by_user,
+            'recent_trades': trade_details,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"P&L diagnostic failed: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
 # Performance test endpoint - NO AUTH REQUIRED for debugging  
 @admin_bp.route('/admin/performance-test', methods=['GET'])
 def performance_test():
