@@ -612,19 +612,24 @@ class TradeExecutor:
                 try:
                     # Set current price to $0 for expired options
                     position.current_price = 0.0
+                    position.exit_price = 0.0
+                    position.exit_date = datetime.utcnow()
                     position.status = 'closed'
                     
-                    # Calculate final P/L (100% loss for expired options)
+                    # Calculate final P/L (100% loss for expired options) – realized only
                     is_option = (
                         (position.contract_type and position.contract_type.lower() in ['call', 'put', 'option']) or
                         bool(position.option_symbol) or
                         (position.expiration_date and position.strike_price is not None)
                     )
                     contract_multiplier = 100 if is_option else 1
-                    position.unrealized_pnl = -position.entry_price * position.quantity * contract_multiplier
-                    position.unrealized_pnl_percent = -100.0
+                    exp_pnl = -position.entry_price * position.quantity * contract_multiplier
+                    position.realized_pnl = exp_pnl
+                    position.realized_pnl_percent = -100.0
+                    position.unrealized_pnl = 0.0
+                    position.unrealized_pnl_percent = 0.0
                     
-                    # Create a trade record for the expiration
+                    # Create a trade record for the expiration (with realized P/L)
                     expiration_trade = Trade(
                         user_id=position.user_id,
                         symbol=position.symbol,
@@ -637,7 +642,9 @@ class TradeExecutor:
                         contract_type=position.contract_type,
                         strategy_source='expiration',
                         notes=f'Auto-closed: Option expired on {position.expiration_date}',
-                        trade_date=datetime.utcnow()
+                        trade_date=datetime.utcnow(),
+                        realized_pnl=exp_pnl,
+                        realized_pnl_percent=-100.0
                     )
                     db.session.add(expiration_trade)
                     
@@ -1376,11 +1383,11 @@ class TradeExecutor:
             final_pnl = (exit_price - position.entry_price) * position.quantity * contract_multiplier
             final_pnl_percent = ((exit_price - position.entry_price) / position.entry_price * 100) if position.entry_price > 0 else 0
             
-            # Store final P/L in both unrealized (for backward compatibility) and realized fields
-            position.unrealized_pnl = final_pnl
-            position.unrealized_pnl_percent = final_pnl_percent
-            position.realized_pnl = final_pnl  # Store as realized P/L
+            # CRITICAL: Realized P/L only. Closed positions have NO unrealized P/L.
+            position.realized_pnl = final_pnl
             position.realized_pnl_percent = final_pnl_percent
+            position.unrealized_pnl = 0.0
+            position.unrealized_pnl_percent = 0.0
             
             # Update trade with realized P/L
             if 'trade' in result:
@@ -1392,12 +1399,19 @@ class TradeExecutor:
             # CRITICAL: Commit all changes to database
             db.session.commit()
             
+            # Invalidate caches so dashboard shows updated positions and P/L
+            try:
+                from services.cache_manager import invalidate_user_cache
+                invalidate_user_cache(position.user_id)
+            except Exception as inv:
+                pass  # Don't fail close on cache invalidation
+            
             try:
                 from flask import current_app
                 current_app.logger.info(
                     f"✅ Position {position.id} ({position.symbol}) CLOSED successfully. "
-                    f"Exit price: ${exit_price:.2f}, P/L: {position.unrealized_pnl_percent:.2f}% "
-                    f"(${position.unrealized_pnl:.2f})"
+                    f"Exit price: ${exit_price:.2f}, Realized P/L: {position.realized_pnl_percent:.2f}% "
+                    f"(${position.realized_pnl:.2f})"
                 )
             except:
                 pass

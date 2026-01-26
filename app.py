@@ -359,8 +359,11 @@ def create_app(config_name=None):
                                     position.status = 'closed'
                                     position.exit_price = 0.0
                                     position.exit_date = datetime.utcnow()
-                                    position.unrealized_pnl = -position.entry_price * position.quantity * 100
-                                    position.unrealized_pnl_percent = -100.0
+                                    exp_pnl = -position.entry_price * position.quantity * 100
+                                    position.realized_pnl = exp_pnl
+                                    position.realized_pnl_percent = -100.0
+                                    position.unrealized_pnl = 0.0
+                                    position.unrealized_pnl_percent = 0.0
                                     expired_count += 1
                                     continue
                                 except Exception as e:

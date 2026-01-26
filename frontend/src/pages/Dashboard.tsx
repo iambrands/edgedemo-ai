@@ -42,11 +42,20 @@ ChartJS.register(
 const DASHBOARD_CACHE_KEY = 'dashboard_data_cache';
 const CACHE_DURATION = 30000; // 30 seconds - data is fresh for 30s
 
+interface PlSummary {
+  realized_pnl: number;
+  total_trades_with_pnl: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+}
+
 interface CachedData {
   positions: Position[];
   trades: Trade[];
   watchlist: Stock[];
   balance: number;
+  plSummary?: PlSummary | null;
   timestamp: number;
 }
 
@@ -103,6 +112,7 @@ const Dashboard: React.FC = () => {
   const [lastLoadTime, setLastLoadTime] = useState<number>(0);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [refreshingPrices, setRefreshingPrices] = useState(false);
+  const [plSummary, setPlSummary] = useState<PlSummary | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,6 +124,7 @@ const Dashboard: React.FC = () => {
       setRecentTrades((cached.trades || []).slice(0, 10));
       setWatchlist(cached.watchlist || []);
       setAccountBalance(cached.balance); // Don't default to 100000 - keep actual cached value
+      setPlSummary(cached.plSummary ?? null);
       setLastLoadTime(cached.timestamp);
       setLastUpdated(new Date(cached.timestamp));
       setInitialLoading(false); // We have cached data, no need for loading spinner
@@ -228,7 +239,7 @@ const Dashboard: React.FC = () => {
       // Only use longer timeouts when explicitly updating prices
       const initialLoadTimeout = updatePrices ? 90000 : 10000; // 10s for initial load, 90s for price updates
       
-      const [positionsData, tradesData, watchlistData, userDataResponse] = await Promise.all([
+      const [positionsData, tradesData, watchlistData, userDataResponse, plSummaryData] = await Promise.all([
         fetchWithTimeout(
           api.get(positionsUrl).then(res => res.data),
           { positions: [], count: 0 },
@@ -251,6 +262,12 @@ const Dashboard: React.FC = () => {
           api.get('/auth/user').catch(() => ({ data: { user: { paper_balance: 100000 } } } as any)),
           { data: { user: { paper_balance: 100000 } } } as any,
           'user data',
+          initialLoadTimeout
+        ),
+        fetchWithTimeout(
+          tradesService.getPlSummary(),
+          { realized_pnl: 0, total_trades_with_pnl: 0, winning_trades: 0, losing_trades: 0, win_rate: 0 },
+          'P/L summary',
           initialLoadTimeout
         ),
       ]);
@@ -291,7 +308,11 @@ const Dashboard: React.FC = () => {
         setAccountBalance(balance);
       }
       // If user data failed, keep existing balance
-      
+
+      if (plSummaryData !== null) {
+        setPlSummary(plSummaryData);
+      }
+
       // Update cache with whatever data we successfully fetched
       // Preserve existing data for any that failed
       setCachedData({
@@ -299,6 +320,7 @@ const Dashboard: React.FC = () => {
         trades: tradesData !== null ? (tradesData.trades || []) : (cached?.trades || []),
         watchlist: watchlistData !== null ? (watchlistData.watchlist || []) : (cached?.watchlist || []),
         balance: userDataResponse !== null ? (userDataResponse.data?.user?.paper_balance || 100000) : (cached?.balance || 100000),
+        plSummary: plSummaryData !== null ? plSummaryData : (cached?.plSummary ?? null),
         timestamp: Date.now()
       });
       
@@ -458,17 +480,14 @@ const Dashboard: React.FC = () => {
   };
 
   const totalUnrealizedPnl = positions.reduce((sum, pos) => sum + (pos.unrealized_pnl || 0), 0);
-  
-  // Calculate realized P/L from ALL trades (not just recent 10) - only SELL trades have realized_pnl
-  const tradesWithPnl = allTrades.filter(t => t.realized_pnl !== null && t.realized_pnl !== undefined);
-  const totalRealizedPnl = tradesWithPnl.reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
-  
-  // Win rate based on trades with P/L (closed positions)
-  const winningTrades = tradesWithPnl.filter(t => (t.realized_pnl || 0) > 0).length;
-  const losingTrades = tradesWithPnl.filter(t => (t.realized_pnl || 0) < 0).length;
-  const winRate = tradesWithPnl.length > 0
-    ? (winningTrades / tradesWithPnl.length) * 100
-    : 0;
+
+  // Realized P/L and win rate: use all-time pl-summary (closed positions only). Never use 30-day trades.
+  const tradesWithPnl = allTrades.filter(t => t.realized_pnl != null);
+  const totalRealizedPnl = plSummary != null ? plSummary.realized_pnl : tradesWithPnl.reduce((sum, t) => sum + (t.realized_pnl ?? 0), 0);
+  const winningTrades = plSummary != null ? plSummary.winning_trades : tradesWithPnl.filter(t => (t.realized_pnl ?? 0) > 0).length;
+  const losingTrades = plSummary != null ? plSummary.losing_trades : tradesWithPnl.filter(t => (t.realized_pnl ?? 0) < 0).length;
+  const winRate = plSummary != null ? plSummary.win_rate : (tradesWithPnl.length > 0 ? (winningTrades / tradesWithPnl.length) * 100 : 0);
+  const totalClosedTrades = plSummary?.total_trades_with_pnl ?? tradesWithPnl.length;
 
   const calculateDTE = (expirationDate: string | undefined): number | null => {
     if (!expirationDate) return null;
@@ -1192,7 +1211,7 @@ const Dashboard: React.FC = () => {
           <div>
             <h2 className={`${isMobile ? 'text-base' : 'text-lg md:text-xl'} font-bold text-secondary`}>Recent Trades</h2>
             <p className="text-xs text-gray-500 mt-1">
-              {allTrades.length} trades in last 30 days • {tradesWithPnl.length} closed ({winningTrades}W / {losingTrades}L)
+              {allTrades.length} trades in last 30 days • {totalClosedTrades} closed all-time ({winningTrades}W / {losingTrades}L)
             </p>
           </div>
           <a href="/history" className="text-sm text-primary hover:text-indigo-700 font-medium">

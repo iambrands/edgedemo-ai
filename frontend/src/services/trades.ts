@@ -29,6 +29,18 @@ export const tradesService = {
     return response.data;
   },
 
+  /** All-time realized P/L and win rate (closed positions only). Use for dashboard summary. */
+  getPlSummary: async (): Promise<{
+    realized_pnl: number;
+    total_trades_with_pnl: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate: number;
+  }> => {
+    const response = await api.get('/trades/pl-summary');
+    return response.data;
+  },
+
   getPositions: async (): Promise<{ positions: Position[]; count: number }> => {
     const response = await api.get('/trades/positions');
     return response.data;

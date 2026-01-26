@@ -148,6 +148,54 @@ def get_trade_history(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@trades_bp.route('/pl-summary', methods=['GET'])
+@token_required
+@log_performance(threshold=1.0)
+def get_pl_summary(current_user):
+    """
+    All-time realized P/L and win-rate from closed positions only.
+    
+    Realized P/L changes ONLY when positions are closed. This endpoint returns
+    the sum over ALL trades with realized_pnl (no date filter).
+    Use for dashboard summary cards; do not use 30-day trade history for realized P/L.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from models.trade import Trade
+        db = current_app.extensions['sqlalchemy']
+        
+        # All trades with realized P/L (closed positions) – no date filter
+        trades = db.session.query(Trade).filter(
+            Trade.user_id == current_user.id,
+            Trade.realized_pnl.isnot(None)
+        ).all()
+        
+        total_realized = sum(t.realized_pnl or 0 for t in trades)
+        winning = [t for t in trades if (t.realized_pnl or 0) > 0]
+        losing = [t for t in trades if (t.realized_pnl or 0) < 0]
+        n = len(trades)
+        win_rate = (len(winning) / n * 100.0) if n else 0.0
+        
+        logger.info(
+            f"P/L summary user {current_user.id}: realized=${total_realized:.2f} "
+            f"({len(winning)}W/{len(losing)}L) win_rate={win_rate:.1f}%"
+        )
+        
+        return jsonify({
+            'realized_pnl': round(total_realized, 2),
+            'total_trades_with_pnl': n,
+            'winning_trades': len(winning),
+            'losing_trades': len(losing),
+            'win_rate': round(win_rate, 2),
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"P/L summary error: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @trades_bp.route('/positions', methods=['GET'])
 @token_required
 @log_performance(threshold=1.0)
