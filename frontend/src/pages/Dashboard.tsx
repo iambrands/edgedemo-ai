@@ -489,6 +489,16 @@ const Dashboard: React.FC = () => {
   const winRate = plSummary != null ? plSummary.win_rate : (tradesWithPnl.length > 0 ? (winningTrades / tradesWithPnl.length) * 100 : 0);
   const totalClosedTrades = plSummary?.total_trades_with_pnl ?? tradesWithPnl.length;
 
+  // Daily P/L: realized from trades closed today (local date)
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const tradesToday = allTrades.filter(t => {
+    if (t.realized_pnl == null) return false;
+    const d = new Date(t.trade_date);
+    const tradeDay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return tradeDay === todayStr;
+  });
+  const dailyRealizedPnl = tradesToday.reduce((sum, t) => sum + (t.realized_pnl ?? 0), 0);
+
   const calculateDTE = (expirationDate: string | undefined): number | null => {
     if (!expirationDate) return null;
     const exp = new Date(expirationDate);
@@ -910,7 +920,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-4'} gap-4 md:gap-6`}>
+      <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5'} gap-4 md:gap-6`}>
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
           <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Total Positions</h3>
           <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-secondary`}>{positions.length}</p>
@@ -922,10 +932,18 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Realized P/L (30d)</h3>
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Today&apos;s P/L</h3>
+          <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${dailyRealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
+            ${dailyRealizedPnl.toFixed(2)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Realized from closes today</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Realized P/L</h3>
           <p className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold ${totalRealizedPnl >= 0 ? 'text-success' : 'text-error'}`}>
             ${totalRealizedPnl.toFixed(2)}
           </p>
+          <p className="text-xs text-gray-400 mt-1">All-time</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
           <h3 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 mb-2`}>Win Rate</h3>
