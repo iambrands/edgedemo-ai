@@ -20,8 +20,12 @@ logger = logging.getLogger(__name__)
 class AutomationMasterController:
     """
     Main automation loop that orchestrates all bot activities
-    Runs continuously during market hours
+    Now designed to work with APScheduler instead of running its own loop
     """
+    
+    # Redis keys for persisting state
+    CYCLE_COUNT_KEY = 'automation_engine:cycle_count'
+    LAST_CYCLE_KEY = 'automation_engine:last_cycle_time'
     
     def __init__(self):
         self.opportunity_scanner = OpportunityScanner()
@@ -29,50 +33,79 @@ class AutomationMasterController:
         self.risk_manager = RiskManager()
         self.trade_executor = TradeExecutor()
         self.alert_generator = AlertGenerator()
-        self.is_running = False
-        self.cycle_count = 0
-        self.last_cycle_time = None
+        self.is_running = False  # Deprecated - use is_engine_enabled() from api.automation_engine
+        self._load_state_from_redis()
+    
+    def _get_redis(self):
+        """Get Redis client for state persistence"""
+        try:
+            from utils.redis_cache import get_redis_cache
+            cache = get_redis_cache()
+            if cache.use_redis and cache.redis_client:
+                return cache.redis_client
+        except Exception as e:
+            logger.debug(f"Redis not available: {e}")
+        return None
+    
+    def _load_state_from_redis(self):
+        """Load cycle count and last cycle time from Redis"""
+        redis = self._get_redis()
+        if redis:
+            try:
+                count = redis.get(self.CYCLE_COUNT_KEY)
+                self.cycle_count = int(count.decode('utf-8')) if count else 0
+                
+                last_time = redis.get(self.LAST_CYCLE_KEY)
+                if last_time:
+                    self.last_cycle_time = datetime.fromisoformat(last_time.decode('utf-8'))
+                else:
+                    self.last_cycle_time = None
+            except Exception as e:
+                logger.debug(f"Error loading state from Redis: {e}")
+                self.cycle_count = 0
+                self.last_cycle_time = None
+        else:
+            self.cycle_count = 0
+            self.last_cycle_time = None
+    
+    def _save_state_to_redis(self):
+        """Save cycle count and last cycle time to Redis"""
+        redis = self._get_redis()
+        if redis:
+            try:
+                redis.set(self.CYCLE_COUNT_KEY, str(self.cycle_count))
+                if self.last_cycle_time:
+                    redis.set(self.LAST_CYCLE_KEY, self.last_cycle_time.isoformat())
+            except Exception as e:
+                logger.debug(f"Error saving state to Redis: {e}")
     
     def _get_db(self):
         """Get db instance from current app context"""
         return current_app.extensions['sqlalchemy']
     
     def start(self):
-        """Start the automation engine"""
-        logger.info("Starting Automation Master Controller...")
-        self.is_running = True
+        """
+        DEPRECATED: The automation engine now runs via APScheduler.
+        Use the /api/automation_engine/start endpoint instead.
+        This method is kept for backwards compatibility.
+        """
+        logger.warning("AutomationMasterController.start() is deprecated. Use APScheduler-based approach.")
+        logger.info("To start the automation engine, call POST /api/automation_engine/start")
         
-        while self.is_running:
-            try:
-                if MarketHours.is_market_open():
-                    # Run every 5 minutes during market hours for faster position monitoring
-                    logger.info("Market is open - running automation cycle")
-                    self.run_automation_cycle()
-                    time.sleep(300)  # 5 minutes (reduced from 15 for faster exit checks)
-                elif MarketHours.is_trading_hours():
-                    # Pre-market or after-hours - check every 10 minutes
-                    logger.info("Extended hours - running light cycle")
-                    self.run_light_cycle()
-                    time.sleep(600)  # 10 minutes (reduced from 30)
-                else:
-                    # Outside trading hours - check every 15 minutes (still monitor positions)
-                    logger.info("Market closed - running light cycle to monitor positions")
-                    self.run_light_cycle()
-                    time.sleep(900)  # 15 minutes (reduced from 60 minutes)
-            except KeyboardInterrupt:
-                logger.info("Received stop signal - shutting down")
-                self.stop()
-                break
-            except Exception as e:
-                logger.error(f"Error in automation loop: {e}", exc_info=True)
-                log_error('AutomationLoopError', str(e), context={'cycle_count': self.cycle_count})
-                # Wait before retrying
-                time.sleep(300)  # 5 minutes
+        # For backwards compatibility, run a single cycle
+        try:
+            self.run_automation_cycle()
+        except Exception as e:
+            logger.error(f"Error running cycle: {e}")
     
     def stop(self):
-        """Stop the automation engine"""
-        logger.info("Stopping Automation Master Controller...")
-        self.is_running = False
+        """
+        DEPRECATED: The automation engine now runs via APScheduler.
+        Use the /api/automation_engine/stop endpoint instead.
+        This method is kept for backwards compatibility.
+        """
+        logger.warning("AutomationMasterController.stop() is deprecated. Use APScheduler-based approach.")
+        logger.info("To stop the automation engine, call POST /api/automation_engine/stop")
     
     def run_automation_cycle(self):
         """
@@ -157,6 +190,9 @@ class AutomationMasterController:
             
             cycle_duration = (datetime.utcnow() - cycle_start).total_seconds()
             self.last_cycle_time = datetime.utcnow()
+            
+            # Persist state to Redis so it survives restarts
+            self._save_state_to_redis()
             
             logger.info(f"Automation cycle #{self.cycle_count} completed in {cycle_duration:.2f} seconds")
             

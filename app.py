@@ -719,24 +719,86 @@ def create_app(config_name=None):
     
     threading.Thread(target=delayed_start, daemon=True).start()
     
-    # Also start the full automation engine if enabled
-    # This handles both position monitoring AND new opportunity scanning
-    auto_start_engine = os.environ.get('AUTO_START_ENGINE', 'true').lower() == 'true'
-    if auto_start_engine:
-        def start_full_engine():
-            import time
-            from services.master_controller import AutomationMasterController
-            time.sleep(15)  # Wait longer for full engine (after position monitoring starts)
-            try:
-                with app.app_context():
-                    controller = AutomationMasterController()
-                    if not controller.is_running:
-                        app.logger.info("🚀 Starting full automation engine...")
-                        controller.start()
-            except Exception as e:
-                app.logger.error(f"Failed to start automation engine: {e}", exc_info=True)
-        
-        threading.Thread(target=start_full_engine, daemon=True).start()
+    # ========== AUTOMATION ENGINE (APScheduler-based) ==========
+    # This replaces the old daemon thread approach with a proper scheduled job
+    # that persists across restarts and respects the enabled/disabled state
+    
+    def run_automation_engine_cycle():
+        """
+        Scheduled job that runs the automation engine cycle.
+        Checks if engine is enabled before running.
+        """
+        try:
+            with app.app_context():
+                from api.automation_engine import is_engine_enabled
+                from services.master_controller import AutomationMasterController
+                from services.market_hours import MarketHours
+                
+                # Check if engine is enabled (state persisted in Redis)
+                if not is_engine_enabled():
+                    app.logger.debug("Automation engine is disabled, skipping cycle")
+                    return
+                
+                # Check market status
+                market_status = MarketHours.get_market_status()
+                
+                controller = AutomationMasterController()
+                
+                if market_status.get('is_market_open'):
+                    # Full cycle during market hours
+                    app.logger.info("🤖 Running automation cycle (market open)...")
+                    controller.run_automation_cycle()
+                elif market_status.get('is_trading_hours'):
+                    # Light cycle during extended hours
+                    app.logger.info("🤖 Running light automation cycle (extended hours)...")
+                    controller.run_light_cycle()
+                else:
+                    # Light cycle outside trading hours (still monitors positions)
+                    app.logger.debug("🤖 Running light cycle (market closed)...")
+                    controller.run_light_cycle()
+                    
+        except Exception as e:
+            app.logger.error(f"Error in automation engine cycle: {e}", exc_info=True)
+    
+    # Schedule automation engine to run every 5 minutes
+    # This is much more reliable than a daemon thread
+    scheduler.add_job(
+        func=run_automation_engine_cycle,
+        trigger=IntervalTrigger(minutes=5),
+        id='automation_engine_cycle',
+        name='Automation Engine Cycle',
+        replace_existing=True,
+        max_instances=1,  # Prevent overlapping executions
+        coalesce=True,    # If missed, run once not multiple times
+        misfire_grace_time=300  # 5 min grace for missed jobs
+    )
+    app.logger.info("✅ Scheduled automation engine (runs every 5 minutes when enabled)")
+    
+    # Run an initial cycle 30 seconds after startup if engine is enabled
+    def run_initial_automation_cycle():
+        """Run initial automation cycle after startup"""
+        try:
+            with app.app_context():
+                from api.automation_engine import is_engine_enabled
+                
+                if is_engine_enabled():
+                    app.logger.info("🚀 Running initial automation cycle (30s after startup)...")
+                    run_automation_engine_cycle()
+                else:
+                    app.logger.info("⏸️ Automation engine is disabled, skipping initial cycle")
+        except Exception as e:
+            app.logger.error(f"Error in initial automation cycle: {e}", exc_info=True)
+    
+    scheduler.add_job(
+        func=run_initial_automation_cycle,
+        trigger='date',
+        run_date=datetime.now() + td(seconds=30),
+        id='automation_initial_cycle',
+        name='Initial Automation Cycle',
+        replace_existing=True,
+        misfire_grace_time=120
+    )
+    app.logger.info("✅ Scheduled initial automation cycle (in 30 seconds if enabled)")
     
     # Import all models to ensure they're registered with SQLAlchemy
     # This must happen before any database operations

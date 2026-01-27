@@ -3,31 +3,76 @@ from services.master_controller import AutomationMasterController
 from services.market_hours import MarketHours
 from utils.decorators import token_required
 from datetime import datetime
-import threading
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 automation_engine_bp = Blueprint('automation_engine', __name__)
 
-# Global controller instance (would use Celery in production)
-_controller = None
-_controller_thread = None
+# Redis key for storing engine state
+ENGINE_STATE_KEY = 'automation_engine:enabled'
+
+def get_redis_client():
+    """Get Redis client for state persistence"""
+    try:
+        from utils.redis_cache import get_redis_cache
+        cache = get_redis_cache()
+        if cache.use_redis and cache.redis_client:
+            return cache.redis_client
+    except Exception as e:
+        logger.warning(f"Redis not available for engine state: {e}")
+    return None
+
+def is_engine_enabled():
+    """Check if automation engine is enabled (persisted in Redis)"""
+    redis = get_redis_client()
+    if redis:
+        try:
+            state = redis.get(ENGINE_STATE_KEY)
+            if state is not None:
+                return state.decode('utf-8') == 'true'
+        except Exception as e:
+            logger.warning(f"Error reading engine state from Redis: {e}")
+    
+    # Default: check AUTO_START_ENGINE env var
+    return os.environ.get('AUTO_START_ENGINE', 'true').lower() == 'true'
+
+def set_engine_enabled(enabled: bool):
+    """Set automation engine enabled state (persisted in Redis)"""
+    redis = get_redis_client()
+    if redis:
+        try:
+            redis.set(ENGINE_STATE_KEY, 'true' if enabled else 'false')
+            logger.info(f"Engine state saved to Redis: {'enabled' if enabled else 'disabled'}")
+            return True
+        except Exception as e:
+            logger.warning(f"Error saving engine state to Redis: {e}")
+    return False
 
 def get_controller():
     """Get or create master controller instance"""
-    global _controller
-    if _controller is None:
-        _controller = AutomationMasterController()
-    return _controller
+    return AutomationMasterController()
+
+def get_engine_status():
+    """Get current engine status with persisted state"""
+    controller = get_controller()
+    enabled = is_engine_enabled()
+    
+    return {
+        'is_enabled': enabled,
+        'is_running': enabled,  # For backwards compatibility
+        'cycle_count': controller.cycle_count,
+        'last_cycle_time': controller.last_cycle_time.isoformat() if controller.last_cycle_time else None,
+        'market_status': MarketHours.get_market_status()
+    }
 
 @automation_engine_bp.route('/status', methods=['GET'])
 @token_required
 def get_automation_status(current_user):
     """Get automation engine status"""
     try:
-        controller = get_controller()
-        status = controller.get_status()
+        status = get_engine_status()
         return jsonify(status), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -35,22 +80,21 @@ def get_automation_status(current_user):
 @automation_engine_bp.route('/start', methods=['POST'])
 @token_required
 def start_automation(current_user):
-    """Start the automation engine"""
-    global _controller_thread
-    
+    """Start the automation engine (enables scheduled execution)"""
     try:
+        # Enable the engine (persisted to Redis)
+        set_engine_enabled(True)
+        
+        # Run one cycle immediately
         controller = get_controller()
-        
-        if controller.is_running:
-            return jsonify({'message': 'Automation engine is already running'}), 200
-        
-        # Start in background thread (would use Celery in production)
-        _controller_thread = threading.Thread(target=controller.start, daemon=True)
-        _controller_thread.start()
+        try:
+            controller.run_automation_cycle()
+        except Exception as cycle_error:
+            logger.warning(f"Initial cycle had an error (engine still enabled): {cycle_error}")
         
         return jsonify({
-            'message': 'Automation engine started',
-            'status': controller.get_status()
+            'message': 'Automation engine started. It will run automatically every 5 minutes during market hours.',
+            'status': get_engine_status()
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -58,14 +102,14 @@ def start_automation(current_user):
 @automation_engine_bp.route('/stop', methods=['POST'])
 @token_required
 def stop_automation(current_user):
-    """Stop the automation engine"""
+    """Stop the automation engine (disables scheduled execution)"""
     try:
-        controller = get_controller()
-        controller.stop()
+        # Disable the engine (persisted to Redis)
+        set_engine_enabled(False)
         
         return jsonify({
-            'message': 'Automation engine stopped',
-            'status': controller.get_status()
+            'message': 'Automation engine stopped. Scheduled execution disabled.',
+            'status': get_engine_status()
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
