@@ -9,6 +9,7 @@ from services.risk_manager import RiskManager
 from services.trade_executor import TradeExecutor
 from services.market_hours import MarketHours
 from services.alert_generator import AlertGenerator
+from services.spread_monitor import get_spread_monitor
 from utils.error_logger import log_error
 from utils.audit_logger import log_audit
 from utils.notifications import get_notification_system
@@ -119,6 +120,9 @@ class AutomationMasterController:
         
         logger.info(f"Starting automation cycle #{self.cycle_count}")
         
+        # Initialize results tracking
+        spread_results = {'spreads_monitored': 0, 'spreads_updated': 0, 'alerts_generated': 0, 'errors': []}
+        
         try:
             # Step 1: Check exits first (existing positions)
             logger.info("Step 1: Monitoring existing positions...")
@@ -171,8 +175,22 @@ class AutomationMasterController:
             # This would check all users' portfolios
             # For now, just log that we're checking
             
-            # Step 4: Generate alerts for all users
-            logger.info("Step 4: Generating alerts...")
+            # Step 4: Monitor spread positions for stop-loss alerts
+            logger.info("Step 4: Monitoring spread positions...")
+            try:
+                spread_monitor = get_spread_monitor()
+                spread_results = spread_monitor.monitor_all_spreads()
+                logger.info(
+                    f"Spread monitoring: {spread_results['spreads_updated']}/{spread_results['spreads_monitored']} "
+                    f"updated, {spread_results['alerts_generated']} alerts"
+                )
+                if spread_results['errors']:
+                    logger.warning(f"Spread monitoring errors: {spread_results['errors'][:3]}")  # Log first 3 errors
+            except Exception as e:
+                logger.error(f"Error in spread monitoring: {e}")
+            
+            # Step 5: Generate alerts for all users
+            logger.info("Step 5: Generating alerts...")
             # Get all active users and generate alerts
             db = self._get_db()
             from models.user import User
@@ -207,7 +225,9 @@ class AutomationMasterController:
                     'positions_monitored': position_results['monitored'],
                     'exits_triggered': position_results['exits_triggered'],
                     'opportunities_found': len(opportunities),
-                    'opportunities_executed': executed_count
+                    'opportunities_executed': executed_count,
+                    'spreads_monitored': spread_results.get('spreads_monitored', 0),
+                    'spread_alerts': spread_results.get('alerts_generated', 0)
                 },
                 success=True
             )

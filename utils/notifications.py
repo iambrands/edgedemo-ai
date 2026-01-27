@@ -120,6 +120,63 @@ The automation will continue running, but please review this error.
             
         except Exception as e:
             logger.error(f"Error sending error notification: {e}")
+    
+    def send_spread_alert(self, user_id: int, spread: Dict, reason: str):
+        """Send alert notification when spread hits stop loss threshold"""
+        try:
+            db = current_app.extensions['sqlalchemy']
+            from models.user import User
+            user = db.session.query(User).get(user_id)
+            
+            if not user or not user.notification_enabled:
+                return
+            
+            symbol = spread.get('symbol', 'Unknown')
+            spread_type = spread.get('spread_type', 'spread').upper().replace('_', ' ')
+            long_strike = spread.get('long_strike', 0)
+            short_strike = spread.get('short_strike', 0)
+            quantity = spread.get('quantity', 0)
+            entry_cost = abs(spread.get('net_debit', 0))
+            current_value = spread.get('current_value', 0)
+            unrealized_pnl = spread.get('unrealized_pnl', 0)
+            unrealized_pnl_percent = spread.get('unrealized_pnl_percent', 0)
+            expiration = spread.get('expiration', 'Unknown')
+            
+            message = f"""
+⚠️ SPREAD STOP LOSS ALERT ⚠️
+
+Your {symbol} {spread_type} has exceeded your stop loss threshold!
+
+Position Details:
+• Symbol: {symbol}
+• Type: {spread_type}
+• Strikes: ${long_strike} / ${short_strike}
+• Quantity: {quantity} spreads
+• Expiration: {expiration}
+
+P/L Status:
+• Entry Cost: ${entry_cost:.2f}
+• Current Value: ${current_value:.2f}
+• Unrealized P/L: ${unrealized_pnl:.2f} ({unrealized_pnl_percent:+.1f}%)
+
+REASON: {reason}
+
+ACTION REQUIRED:
+Review this position and consider closing it manually to limit further losses.
+The system cannot auto-close spread positions - manual intervention is required.
+
+Go to Portfolio > Spreads to manage this position.
+            """.strip()
+            
+            logger.warning(f"Spread stop loss alert for user {user_id}: {symbol} {spread_type}")
+            logger.info(f"Spread alert details: {message}")
+            
+            # In production:
+            # send_email(user.email, f"⚠️ Spread Stop Loss Alert: {symbol}", message)
+            # send_push_notification(user, "Spread Stop Loss Alert", f"{symbol} down {unrealized_pnl_percent:.1f}%")
+            
+        except Exception as e:
+            logger.error(f"Error sending spread alert notification: {e}")
 
 # Global instance
 _notification_system = None
