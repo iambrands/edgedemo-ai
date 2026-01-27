@@ -136,3 +136,30 @@ code {
     monospace;
 }
 
+/* Real-Time Price Display Animations */
+@keyframes priceFlash {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-price-flash {
+  animation: priceFlash 0.5s ease-in-out;
+}
+
+/* Price Display Container Styles */
+.price-display-container {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* Responsive adjustments for price display */
+@media (max-width: 640px) {
+  .price-display-container {
+    padding: 1rem;
+  }
+  
+  .price-display-container .text-4xl {
+    font-size: 2rem;
+  }
+}
+

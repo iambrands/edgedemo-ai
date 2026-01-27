@@ -7,6 +7,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
 import { useDevice } from '../hooks/useDevice';
+import RealTimePriceDisplay from '../components/RealTimePriceDisplay';
 
 type AnalyzerTab = 'single' | 'debit-spread' | 'credit-spread';
 
@@ -717,23 +718,23 @@ const OptionsAnalyzer: React.FC = () => {
       {/* Single Options Tab */}
       {activeTab === 'single' && (
       <>
+      {/* Real-Time Price Display */}
+      {symbol && symbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(symbol.trim().toUpperCase()) && (
+        <RealTimePriceDisplay 
+          symbol={symbol} 
+          onPriceUpdate={(price) => setStockPrice(price)}
+        />
+      )}
+
       <div className="bg-white rounded-lg shadow p-4 md:p-6">
         <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
           <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Options Chain Analyzer</h2>
-          {stockPrice !== null && (
-            <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-4`}>
-              <div className={`text-${isMobile ? 'left' : 'right'}`}>
-                <p className="text-sm text-gray-500">Stock Price</p>
-                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${stockPrice.toFixed(2)}</p>
-              </div>
-              <button
-                onClick={handleAddToWatchlist}
-                className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium text-sm min-h-[44px]`}
-              >
-                Add to Watchlist
-              </button>
-            </div>
-          )}
+          <button
+            onClick={handleAddToWatchlist}
+            className={`${isMobile ? 'w-full' : ''} px-4 py-2 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium text-sm min-h-[44px]`}
+          >
+            Add to Watchlist
+          </button>
         </div>
 
         <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'} gap-4 mb-4 md:mb-6`}>
@@ -1188,18 +1189,21 @@ const OptionsAnalyzer: React.FC = () => {
 
       {/* Debit Spread Tab */}
       {activeTab === 'debit-spread' && (
+        <>
+        {/* Real-Time Price Display for Debit Spread */}
+        {spreadSymbol && spreadSymbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(spreadSymbol.trim().toUpperCase()) && (
+          <RealTimePriceDisplay 
+            symbol={spreadSymbol} 
+            onPriceUpdate={(price) => setSpreadStockPrice(price)}
+          />
+        )}
+
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
           <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
             <div>
               <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Debit Spread Analyzer</h2>
               <p className="text-sm text-gray-500 mt-1">Analyze bull call or bear put spreads with defined risk/reward</p>
             </div>
-            {spreadStockPrice !== null && (
-              <div className={`text-${isMobile ? 'left' : 'right'}`}>
-                <p className="text-sm text-gray-500">Stock Price</p>
-                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${spreadStockPrice.toFixed(2)}</p>
-              </div>
-            )}
           </div>
 
           {/* Spread Form */}
@@ -1501,22 +1505,26 @@ const OptionsAnalyzer: React.FC = () => {
             </div>
           )}
         </div>
+        </>
       )}
 
       {/* Credit Spread Tab */}
       {activeTab === 'credit-spread' && (
+        <>
+        {/* Real-Time Price Display for Credit Spread */}
+        {creditSymbol && creditSymbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(creditSymbol.trim().toUpperCase()) && (
+          <RealTimePriceDisplay 
+            symbol={creditSymbol} 
+            onPriceUpdate={(price) => setCreditStockPrice(price)}
+          />
+        )}
+
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
           <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} mb-4 md:mb-6 gap-4`}>
             <div>
               <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>Credit Spread Analyzer</h2>
               <p className="text-sm text-gray-500 mt-1">Analyze bull put or bear call spreads - collect premium upfront</p>
             </div>
-            {creditStockPrice !== null && (
-              <div className={`text-${isMobile ? 'left' : 'right'}`}>
-                <p className="text-sm text-gray-500">Stock Price</p>
-                <p className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-secondary`}>${creditStockPrice.toFixed(2)}</p>
-              </div>
-            )}
           </div>
 
           {/* Credit Spread Form */}
@@ -1825,6 +1833,7 @@ const OptionsAnalyzer: React.FC = () => {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   );
