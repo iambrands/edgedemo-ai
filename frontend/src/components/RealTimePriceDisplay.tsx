@@ -187,13 +187,15 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   // Loading state
   if (loading && !quote) {
     return (
-      <div className="price-display-container bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-xl mb-6 shadow-lg animate-pulse">
-        <div className="flex items-baseline gap-2 mb-2">
-          <div className="h-12 w-32 bg-slate-700 rounded"></div>
-          <div className="h-6 w-12 bg-slate-700 rounded"></div>
+      <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-4 md:mb-6 animate-pulse">
+        <div className="flex items-center justify-between mb-3">
+          <div className="h-6 w-16 bg-gray-200 rounded-full"></div>
+          <div className="h-4 w-24 bg-gray-200 rounded"></div>
         </div>
-        <div className="h-5 w-24 bg-slate-700 rounded mb-2"></div>
-        <div className="h-4 w-40 bg-slate-700 rounded"></div>
+        <div className="flex items-baseline gap-2 mb-2">
+          <div className="h-10 w-36 bg-gray-200 rounded"></div>
+        </div>
+        <div className="h-5 w-32 bg-gray-200 rounded"></div>
       </div>
     );
   }
@@ -201,9 +203,9 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   // Error state
   if (error && !quote) {
     return (
-      <div className="price-display-container bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-xl mb-6 shadow-lg">
-        <div className="text-slate-400 text-center">
-          <span className="text-xl">--</span>
+      <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-4 md:mb-6">
+        <div className="text-gray-500 text-center">
+          <span className="text-xl font-semibold">--</span>
           <p className="text-sm mt-2">{error}</p>
         </div>
       </div>
@@ -213,107 +215,100 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   if (!quote) return null;
 
   return (
-    <div 
-      className={`
-        price-display-container 
-        bg-gradient-to-r from-slate-800 to-slate-900 
-        p-6 rounded-xl mb-6 shadow-lg
-        border border-slate-700
-        transition-all duration-300
-      `}
-    >
-      {/* Symbol Badge */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="px-3 py-1 bg-slate-700 rounded-full text-slate-300 text-sm font-medium">
+    <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-4 md:mb-6">
+      {/* Header Row - Symbol & Market Status */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-semibold">
           {quote.symbol}
         </span>
         {isMarketHours() ? (
-          <span className="flex items-center gap-2 text-xs text-green-400">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+          <span className="flex items-center gap-2 text-xs font-medium text-green-600">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             Market Open
           </span>
         ) : (
-          <span className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="w-2 h-2 bg-slate-500 rounded-full"></span>
+          <span className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
             Market Closed
           </span>
         )}
       </div>
 
-      {/* Main Price Display */}
-      <div className="flex items-baseline gap-3 mb-2">
+      {/* Price Row */}
+      <div className="flex flex-wrap items-baseline gap-2 md:gap-4 mb-1">
         <span 
           className={`
-            text-4xl md:text-5xl font-bold text-white tracking-tight
+            text-3xl md:text-4xl font-bold text-gray-900 tracking-tight
             ${priceUpdated ? 'animate-price-flash' : ''}
           `}
         >
-          {quote.current_price.toFixed(2)}
+          ${quote.current_price.toFixed(2)}
         </span>
-        <span className="text-xl text-slate-400 font-medium">USD</span>
-      </div>
-
-      {/* Change Display */}
-      <div className="flex items-center gap-3 mb-3">
-        <span 
-          className={`
-            text-lg font-semibold
-            ${direction === 'positive' ? 'text-green-400' : ''}
-            ${direction === 'negative' ? 'text-red-400' : ''}
-            ${direction === 'neutral' ? 'text-slate-400' : ''}
-          `}
-        >
-          {formatChange(quote.change)}
-        </span>
-        <span 
-          className={`
-            text-lg font-semibold
-            ${direction === 'positive' ? 'text-green-400' : ''}
-            ${direction === 'negative' ? 'text-red-400' : ''}
-            ${direction === 'neutral' ? 'text-slate-400' : ''}
-          `}
-        >
-          {formatChangePercent(quote.change_percent)}
-        </span>
-        {/* Direction Arrow */}
-        {direction !== 'neutral' && (
+        
+        {/* Change - inline on mobile */}
+        <div className="flex items-center gap-2">
           <span 
             className={`
-              text-lg
-              ${direction === 'positive' ? 'text-green-400' : 'text-red-400'}
+              text-base md:text-lg font-semibold
+              ${direction === 'positive' ? 'text-green-600' : ''}
+              ${direction === 'negative' ? 'text-red-600' : ''}
+              ${direction === 'neutral' ? 'text-gray-500' : ''}
             `}
           >
-            {direction === 'positive' ? '▲' : '▼'}
+            {formatChange(quote.change)}
           </span>
-        )}
+          <span 
+            className={`
+              text-base md:text-lg font-semibold
+              ${direction === 'positive' ? 'text-green-600' : ''}
+              ${direction === 'negative' ? 'text-red-600' : ''}
+              ${direction === 'neutral' ? 'text-gray-500' : ''}
+            `}
+          >
+            ({formatChangePercent(quote.change_percent)})
+          </span>
+          {direction !== 'neutral' && (
+            <span 
+              className={`
+                text-sm
+                ${direction === 'positive' ? 'text-green-600' : 'text-red-600'}
+              `}
+            >
+              {direction === 'positive' ? '▲' : '▼'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Timestamp */}
-      <div className="text-sm text-slate-500">
+      <div className="text-xs md:text-sm text-gray-500 mb-3">
         As of {timestamp}
       </div>
 
-      {/* Optional: Day Range */}
+      {/* Day Range - Horizontal on all screens */}
       {quote.high && quote.low && (
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="flex justify-between text-sm">
-            <div>
-              <span className="text-slate-500">Day Low</span>
-              <span className="ml-2 text-slate-300 font-medium">${quote.low.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">Day High</span>
-              <span className="ml-2 text-slate-300 font-medium">${quote.high.toFixed(2)}</span>
-            </div>
-            {quote.volume && (
-              <div>
-                <span className="text-slate-500">Volume</span>
-                <span className="ml-2 text-slate-300 font-medium">
-                  {(quote.volume / 1000000).toFixed(2)}M
-                </span>
-              </div>
-            )}
+        <div className="flex flex-wrap gap-x-6 gap-y-1 pt-3 border-t border-gray-100 text-sm">
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">Low:</span>
+            <span className="font-medium text-gray-700">${quote.low.toFixed(2)}</span>
           </div>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">High:</span>
+            <span className="font-medium text-gray-700">${quote.high.toFixed(2)}</span>
+          </div>
+          {quote.volume && (
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">Vol:</span>
+              <span className="font-medium text-gray-700">
+                {quote.volume >= 1000000 
+                  ? `${(quote.volume / 1000000).toFixed(2)}M`
+                  : quote.volume >= 1000 
+                    ? `${(quote.volume / 1000).toFixed(1)}K`
+                    : quote.volume.toLocaleString()
+                }
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
