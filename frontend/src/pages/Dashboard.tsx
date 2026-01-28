@@ -237,7 +237,7 @@ const Dashboard: React.FC = () => {
       
       // Use shorter timeouts for initial load (new accounts have no data, should be fast)
       // Only use longer timeouts when explicitly updating prices
-      const initialLoadTimeout = updatePrices ? 90000 : 10000; // 10s for initial load, 90s for price updates
+      const initialLoadTimeout = updatePrices ? 90000 : 20000; // 20s for initial load, 90s for price updates
       
       const [positionsData, tradesData, watchlistData, userDataResponse, plSummaryData] = await Promise.all([
         fetchWithTimeout(
