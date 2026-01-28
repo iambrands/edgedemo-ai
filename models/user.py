@@ -31,6 +31,9 @@ class User(db.Model):
     daily_ai_analyses = db.Column(db.Integer, default=0)  # Counter for daily AI analyses
     last_analysis_reset = db.Column(db.Date, default=datetime.utcnow)  # Date of last counter reset
     
+    # User Preferences
+    timezone = db.Column(db.String(50), default='America/New_York')  # IANA timezone name (e.g., America/Chicago)
+    
     # Relationships
     stocks = db.relationship('Stock', backref='user', lazy=True, cascade='all, delete-orphan')
     positions = db.relationship('Position', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -105,6 +108,7 @@ class User(db.Model):
             'notification_enabled': self.notification_enabled,
             'trading_mode': self.trading_mode,
             'paper_balance': self.paper_balance,
+            'timezone': self.timezone or 'America/New_York',
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

@@ -3,22 +3,27 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import FeedbackModal from '../components/FeedbackModal';
+import { COMMON_TIMEZONES, ALL_TIMEZONES, getBrowserTimezone, getTimezoneAbbreviation } from '../utils/dateTime';
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [riskTolerance, setRiskTolerance] = useState<'low' | 'moderate' | 'high'>('moderate');
   const [defaultStrategy, setDefaultStrategy] = useState<'income' | 'growth' | 'balanced'>('balanced');
+  const [timezone, setTimezone] = useState<string>('America/New_York');
   const [loading, setLoading] = useState(false);
   const [riskLimits, setRiskLimits] = useState<any>(null);
   const [loadingLimits, setLoadingLimits] = useState(false);
   const [showRiskCustomization, setShowRiskCustomization] = useState(false);
   const [resettingBalance, setResettingBalance] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showAllTimezones, setShowAllTimezones] = useState(false);
+  const [savingTimezone, setSavingTimezone] = useState(false);
 
   useEffect(() => {
     if (user) {
       setRiskTolerance(user.risk_tolerance || 'moderate');
       setDefaultStrategy(user.default_strategy || 'balanced');
+      setTimezone(user.timezone || 'America/New_York');
       loadRiskLimits();
     }
   }, [user]);
@@ -62,6 +67,30 @@ const Settings: React.FC = () => {
       toast.error(error.response?.data?.error || 'Failed to reset balance');
     } finally {
       setResettingBalance(false);
+    }
+  };
+
+  const handleTimezoneChange = async (newTimezone: string) => {
+    setTimezone(newTimezone);
+    setSavingTimezone(true);
+    try {
+      await updateUser({ timezone: newTimezone } as any);
+      toast.success(`Timezone updated to ${getTimezoneAbbreviation(newTimezone)}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to update timezone');
+      // Revert on error
+      setTimezone(user?.timezone || 'America/New_York');
+    } finally {
+      setSavingTimezone(false);
+    }
+  };
+
+  const detectAndSetBrowserTimezone = async () => {
+    const browserTz = getBrowserTimezone();
+    if (browserTz && browserTz !== timezone) {
+      await handleTimezoneChange(browserTz);
+    } else {
+      toast.success('Timezone already matches your browser settings');
     }
   };
 
@@ -194,6 +223,70 @@ const Settings: React.FC = () => {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timezone Settings */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-secondary mb-4">Regional Settings</h2>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2">
+              Timezone
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              All times in the app will be displayed in your selected timezone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                id="timezone"
+                value={timezone}
+                onChange={(e) => handleTimezoneChange(e.target.value)}
+                disabled={savingTimezone}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+              >
+                <optgroup label="US Timezones">
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </optgroup>
+                {showAllTimezones && (
+                  <optgroup label="International">
+                    {ALL_TIMEZONES.filter(tz => !COMMON_TIMEZONES.some(ct => ct.value === tz.value)).map((tz) => (
+                      <option key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              <button
+                onClick={detectAndSetBrowserTimezone}
+                disabled={savingTimezone}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm whitespace-nowrap disabled:opacity-50"
+              >
+                {savingTimezone ? 'Saving...' : 'Detect My Timezone'}
+              </button>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => setShowAllTimezones(!showAllTimezones)}
+                className="text-xs text-primary hover:underline"
+              >
+                {showAllTimezones ? 'Show fewer timezones' : 'Show international timezones'}
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+              Current timezone: <span className="font-medium">{getTimezoneAbbreviation(timezone)}</span>
+              {' '}({timezone})
+              <br />
+              <span className="text-gray-400">
+                Market hours are always shown in Eastern Time (ET) since US markets operate on ET.
+              </span>
+            </p>
           </div>
         </div>
       </div>

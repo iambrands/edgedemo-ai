@@ -7,6 +7,7 @@ export interface User {
   notification_enabled: boolean;
   trading_mode?: 'paper' | 'live';
   paper_balance?: number;
+  timezone?: string;  // IANA timezone name (e.g., 'America/Chicago')
   created_at: string;
 }
 

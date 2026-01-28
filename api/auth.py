@@ -232,6 +232,17 @@ def update_user(current_user):
             if data['trading_mode'] in ['paper', 'live']:
                 current_user.trading_mode = data['trading_mode']
         
+        # Handle timezone update - validate it's a valid IANA timezone
+        if 'timezone' in data:
+            import pytz
+            timezone_value = data['timezone']
+            # Validate timezone is a valid IANA timezone
+            if timezone_value in pytz.all_timezones:
+                current_user.timezone = timezone_value
+            else:
+                # If invalid, default to America/New_York
+                current_user.timezone = 'America/New_York'
+        
         db.session.commit()
         
         return jsonify({

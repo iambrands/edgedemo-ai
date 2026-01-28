@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import { formatTimestamp as formatTsUtil } from '../utils/dateTime';
 
 interface QuoteData {
   symbol: string;
@@ -15,6 +17,7 @@ interface QuoteData {
 interface RealTimePriceDisplayProps {
   symbol: string;
   onPriceUpdate?: (price: number) => void;
+  timezone?: string;  // Optional timezone override
 }
 
 /**
@@ -42,23 +45,15 @@ const isMarketHours = (): boolean => {
   return timeInMinutes >= marketOpen && timeInMinutes < marketClose;
 };
 
-/**
- * Format timestamp for display
- */
-const formatTimestamp = (): string => {
-  const now = new Date();
-  const options: Intl.DateTimeFormatOptions = {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZoneName: 'short'
-  };
-  return `today at ${now.toLocaleString('en-US', options)}`;
-};
-
 const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({ 
   symbol, 
-  onPriceUpdate 
+  onPriceUpdate,
+  timezone: timezoneProp
 }) => {
+  const { user } = useAuth();
+  
+  // Use prop timezone, then user's timezone, then fallback to America/New_York
+  const userTimezone = timezoneProp || user?.timezone || 'America/New_York';
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +92,7 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
         previousPriceRef.current = newQuote.current_price;
         
         setQuote(newQuote);
-        setTimestamp(formatTimestamp());
+        setTimestamp(formatTsUtil(new Date(), userTimezone));
         setError(null);
         
         // Notify parent of price update
@@ -118,7 +113,7 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [symbol, onPriceUpdate]);
+  }, [symbol, onPriceUpdate, userTimezone]);
 
   // Set up polling
   useEffect(() => {
