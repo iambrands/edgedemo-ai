@@ -1652,3 +1652,147 @@ def backfill_positions_from_trades(current_user):
         db.session.rollback()
         return jsonify({'error': error_msg}), 500
 
+
+@trades_bp.route('/recalculate-trade-pnl', methods=['POST'])
+@token_required
+def recalculate_trade_pnl(current_user):
+    """
+    Recalculate P/L for SELL trades that are missing realized_pnl.
+    Matches SELL trades with their corresponding BUY trades and calculates P/L.
+    """
+    db = current_app.extensions['sqlalchemy']
+    
+    try:
+        from models.trade import Trade
+        from models.position import Position
+        from datetime import datetime
+        
+        data = request.get_json() or {}
+        dry_run = data.get('dry_run', False)
+        
+        # Find SELL trades without realized_pnl
+        sell_trades_without_pnl = db.session.query(Trade).filter(
+            Trade.user_id == current_user.id,
+            Trade.action.ilike('sell'),
+            Trade.realized_pnl == None
+        ).order_by(Trade.trade_date.desc()).all()
+        
+        current_app.logger.info(
+            f"Found {len(sell_trades_without_pnl)} SELL trades without P/L for user {current_user.id}"
+        )
+        
+        updated_trades = []
+        skipped_trades = []
+        errors = []
+        
+        for sell_trade in sell_trades_without_pnl:
+            try:
+                # Find matching BUY trade(s)
+                buy_query = db.session.query(Trade).filter(
+                    Trade.user_id == current_user.id,
+                    Trade.symbol == sell_trade.symbol,
+                    Trade.action.ilike('buy'),
+                    Trade.trade_date < sell_trade.trade_date
+                )
+                
+                # Match by option symbol if available
+                if sell_trade.option_symbol:
+                    buy_query = buy_query.filter(Trade.option_symbol == sell_trade.option_symbol)
+                elif sell_trade.strike_price and sell_trade.expiration_date:
+                    buy_query = buy_query.filter(
+                        Trade.strike_price == sell_trade.strike_price,
+                        Trade.expiration_date == sell_trade.expiration_date
+                    )
+                
+                buy_trades = buy_query.order_by(Trade.trade_date.desc()).all()
+                
+                if not buy_trades:
+                    skipped_trades.append({
+                        'id': sell_trade.id,
+                        'symbol': sell_trade.symbol,
+                        'date': sell_trade.trade_date.isoformat() if sell_trade.trade_date else None,
+                        'reason': 'No matching BUY trade found'
+                    })
+                    continue
+                
+                # Calculate average entry price from all BUY trades
+                total_bought = sum(t.quantity for t in buy_trades)
+                total_cost = sum(t.price * t.quantity for t in buy_trades)
+                avg_entry_price = total_cost / total_bought if total_bought > 0 else 0
+                
+                if avg_entry_price <= 0:
+                    skipped_trades.append({
+                        'id': sell_trade.id,
+                        'symbol': sell_trade.symbol,
+                        'date': sell_trade.trade_date.isoformat() if sell_trade.trade_date else None,
+                        'reason': f'Invalid entry price: ${avg_entry_price}'
+                    })
+                    continue
+                
+                # Calculate P/L
+                is_option = (
+                    sell_trade.contract_type and 
+                    sell_trade.contract_type.lower() in ['call', 'put', 'option']
+                ) or bool(sell_trade.option_symbol)
+                
+                contract_multiplier = 100 if is_option else 1
+                
+                # P/L = (sell_price - entry_price) * quantity * multiplier
+                sell_price = sell_trade.price or 0
+                pnl = (sell_price - avg_entry_price) * sell_trade.quantity * contract_multiplier
+                pnl_percent = ((sell_price - avg_entry_price) / avg_entry_price * 100) if avg_entry_price > 0 else 0
+                
+                trade_info = {
+                    'id': sell_trade.id,
+                    'symbol': sell_trade.symbol,
+                    'strike': sell_trade.strike_price,
+                    'quantity': sell_trade.quantity,
+                    'entry_price': avg_entry_price,
+                    'exit_price': sell_price,
+                    'realized_pnl': round(pnl, 2),
+                    'realized_pnl_percent': round(pnl_percent, 2),
+                    'date': sell_trade.trade_date.isoformat() if sell_trade.trade_date else None,
+                    'buy_trades_matched': len(buy_trades)
+                }
+                
+                if not dry_run:
+                    sell_trade.realized_pnl = round(pnl, 2)
+                    sell_trade.realized_pnl_percent = round(pnl_percent, 2)
+                
+                updated_trades.append(trade_info)
+                
+                current_app.logger.info(
+                    f"{'[DRY RUN] ' if dry_run else ''}Updated trade {sell_trade.id}: "
+                    f"{sell_trade.symbol} P/L=${pnl:.2f} ({pnl_percent:.1f}%)"
+                )
+                
+            except Exception as e:
+                errors.append({
+                    'id': sell_trade.id,
+                    'symbol': sell_trade.symbol,
+                    'error': str(e)
+                })
+                current_app.logger.error(f"Error calculating P/L for trade {sell_trade.id}: {e}")
+        
+        if not dry_run:
+            db.session.commit()
+        
+        return jsonify({
+            'message': 'P/L recalculation completed' if not dry_run else 'Dry run completed (no changes made)',
+            'dry_run': dry_run,
+            'total_sell_trades_without_pnl': len(sell_trades_without_pnl),
+            'trades_updated': len(updated_trades),
+            'trades_skipped': len(skipped_trades),
+            'errors': len(errors),
+            'updated_trades': updated_trades,
+            'skipped_trades': skipped_trades[:10],  # Limit output
+            'error_details': errors
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"Failed to recalculate trade P/L: {str(e)}"
+        current_app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+        db.session.rollback()
+        return jsonify({'error': error_msg}), 500
+
