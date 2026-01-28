@@ -138,6 +138,28 @@ const UnusualOptionsWidget: React.FC = () => {
     return `$${total.toFixed(0)}`;
   };
 
+  // Compute DTE from expiration string (YYYY-MM-DD, MM/DD/YYYY, or similar)
+  const getDTE = (expiration: string | undefined): number | null => {
+    if (!expiration || typeof expiration !== 'string') return null;
+    const expDate = new Date(expiration.trim());
+    if (isNaN(expDate.getTime())) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expDate.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? diff : null;
+  };
+
+  const formatExpiration = (expiration: string | undefined) => {
+    const dte = getDTE(expiration);
+    if (dte !== null && expiration) {
+      const expDate = new Date(expiration);
+      const short = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+      return `${short} (${dte} DTE)`;
+    }
+    return expiration || '—';
+  };
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'volume': return '📊';
@@ -300,14 +322,19 @@ const UnusualOptionsWidget: React.FC = () => {
                       }`}>
                         ${item.strike} {isCall ? 'CALL' : isPut ? 'PUT' : 'OPTION'}
                       </span>
-                      {isCall && <span className="text-xs text-green-600">↗ Bullish</span>}
-                      {isPut && <span className="text-xs text-red-600">↘ Bearish</span>}
+                      {isCall && <span className="text-xs text-green-600">Call</span>}
+                      {isPut && <span className="text-xs text-red-600">Put</span>}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
                       {sortMode === 'contracts' 
                         ? `${formatDollarVolume(item.volume, item.last_price)} premium${item.volume_ratio ? ` • ${item.volume_ratio}x avg` : ''}`
                         : `${item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • ${formatDollarVolume(item.volume, item.last_price)}`
                       }
+                      {item.expiration && (
+                        <span className="block mt-0.5 text-gray-400">
+                          {formatExpiration(item.expiration)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   
@@ -326,18 +353,23 @@ const UnusualOptionsWidget: React.FC = () => {
         </>
       )}
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-        <span className="text-xs text-gray-400">
-          {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Checking watchlist stocks'}
-        </span>
-        {allUnusual.length > 5 && (
-          <button
-            onClick={() => setShowAllModal(true)}
-            className="text-xs text-primary hover:text-indigo-700 font-medium hover:underline"
-          >
-            +{allUnusual.length - 5} more signals →
-          </button>
-        )}
+      <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+        <p className="text-xs text-gray-500">
+          <strong>“AAPL 275 Put”</strong> = unusual volume on that put. We don’t know if they’re <strong>buying</strong> or <strong>selling</strong> (buying puts = bearish; selling puts = often bullish).
+        </p>
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-400">
+            {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Checking watchlist stocks'}
+          </span>
+          {allUnusual.length > 5 && (
+            <button
+              onClick={() => setShowAllModal(true)}
+              className="text-xs text-primary hover:text-indigo-700 font-medium hover:underline"
+            >
+              +{allUnusual.length - 5} more signals →
+            </button>
+          )}
+        </div>
       </div>
 
       {/* All Signals Modal */}
@@ -432,12 +464,12 @@ const UnusualOptionsWidget: React.FC = () => {
                           ${item.strike} {isCall ? 'CALL' : isPut ? 'PUT' : 'OPTION'}
                         </span>
                         <span className={`text-xs font-medium ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-500'}`}>
-                          {isCall ? '↗ Bullish Bet' : isPut ? '↘ Bearish Bet' : ''}
+                          {isCall ? 'Call activity' : isPut ? 'Put activity' : ''}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
                         {item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • {formatDollarVolume(item.volume, item.last_price)}
-                        {item.expiration && ` • Exp: ${item.expiration}`}
+                        {item.expiration && ` • ${formatExpiration(item.expiration)}`}
                       </div>
                     </div>
                     
@@ -454,9 +486,19 @@ const UnusualOptionsWidget: React.FC = () => {
               })}
             </div>
 
-            <div className="p-4 border-t bg-gray-50 text-center">
-              <p className="text-xs text-gray-500">
-                💡 <strong>Calls</strong> = Bullish (whales betting price goes UP) | <strong>Puts</strong> = Bearish (whales betting price goes DOWN)
+            <div className="p-4 border-t bg-gray-50 space-y-2">
+              <p className="text-xs font-semibold text-gray-700">How to read “AAPL 275 Put” (or any strike)</p>
+              <p className="text-xs text-gray-600">
+                We show <strong>unusual volume</strong> on that contract. We <strong>don’t know</strong> from our data whether the whale is <strong>buying</strong> or <strong>selling</strong>.
+              </p>
+              <ul className="text-xs text-gray-600 text-left list-disc list-inside space-y-0.5">
+                <li><strong>Buying puts</strong> → Bearish (betting stock goes down)</li>
+                <li><strong>Selling puts</strong> → Often bullish or income (okay buying stock at strike)</li>
+                <li><strong>Buying calls</strong> → Bullish (betting stock goes up)</li>
+                <li><strong>Selling calls</strong> → Bearish or income (capping upside)</li>
+              </ul>
+              <p className="text-xs text-gray-500 pt-1">
+                So “AAPL 275 Put” = heavy activity on that put; direction (buy vs sell) would need tape/time &amp; sales.
               </p>
             </div>
           </div>
