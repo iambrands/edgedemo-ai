@@ -67,12 +67,15 @@ const getContractType = (optionSymbol: string, contractType?: string): 'call' | 
   return 'unknown';
 };
 
+type SortMode = 'contracts' | 'ratio';
+
 const UnusualOptionsWidget: React.FC = () => {
   const [activities, setActivities] = useState<UnusualActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showAllModal, setShowAllModal] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('contracts'); // Default to biggest trades
 
   useEffect(() => {
     fetchUnusualActivity();
@@ -165,8 +168,14 @@ const UnusualOptionsWidget: React.FC = () => {
     });
   });
 
-  // Sort by volume ratio (highest first)
-  allUnusual.sort((a, b) => (b.volume_ratio || 0) - (a.volume_ratio || 0));
+  // Sort based on selected mode
+  if (sortMode === 'contracts') {
+    // Sort by number of contracts (biggest whale trades first)
+    allUnusual.sort((a, b) => (b.volume || 0) - (a.volume || 0));
+  } else {
+    // Sort by volume ratio (most unusual activity first)
+    allUnusual.sort((a, b) => (b.volume_ratio || 0) - (a.volume_ratio || 0));
+  }
 
   // Calculate sentiment summary
   const callCount = allUnusual.filter(x => x.derivedContractType === 'call').length;
@@ -209,6 +218,30 @@ const UnusualOptionsWidget: React.FC = () => {
         </div>
       ) : (
         <>
+          {/* Sort Toggle */}
+          <div className="flex items-center justify-center gap-1 mb-3">
+            <button
+              onClick={() => setSortMode('contracts')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-l-lg border transition-colors ${
+                sortMode === 'contracts'
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              🐋 Top by Contracts
+            </button>
+            <button
+              onClick={() => setSortMode('ratio')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-r-lg border-t border-b border-r transition-colors ${
+                sortMode === 'ratio'
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              📊 Most Unusual
+            </button>
+          </div>
+
           {/* Sentiment Summary */}
           <div className="flex items-center justify-between mb-3 px-2">
             <div className="flex items-center gap-3 text-xs">
@@ -240,9 +273,22 @@ const UnusualOptionsWidget: React.FC = () => {
                     isCall ? 'border-green-500' : isPut ? 'border-red-500' : 'border-gray-400'
                   }`}
                 >
-                  <div className="text-2xl">
-                    {isCall ? '🟢' : isPut ? '🔴' : getActivityIcon(item.type)}
-                  </div>
+                  {/* Rank badge for top contracts view */}
+                  {sortMode === 'contracts' && (
+                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                      index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                      index === 1 ? 'bg-gray-300 text-gray-700' :
+                      index === 2 ? 'bg-amber-600 text-white' :
+                      'bg-gray-200 text-gray-600'
+                    }`}>
+                      #{index + 1}
+                    </div>
+                  )}
+                  {sortMode !== 'contracts' && (
+                    <div className="text-2xl">
+                      {isCall ? '🟢' : isPut ? '🔴' : getActivityIcon(item.type)}
+                    </div>
+                  )}
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -258,12 +304,15 @@ const UnusualOptionsWidget: React.FC = () => {
                       {isPut && <span className="text-xs text-red-600">↘ Bearish</span>}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      {item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • {formatDollarVolume(item.volume, item.last_price)}
+                      {sortMode === 'contracts' 
+                        ? `${formatDollarVolume(item.volume, item.last_price)} premium${item.volume_ratio ? ` • ${item.volume_ratio}x avg` : ''}`
+                        : `${item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • ${formatDollarVolume(item.volume, item.last_price)}`
+                      }
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className={`text-sm font-bold ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-700'}`}>
+                    <div className={`text-lg font-bold ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-700'}`}>
                       {formatVolume(item.volume)}
                     </div>
                     <div className="text-xs text-gray-400">
@@ -308,26 +357,51 @@ const UnusualOptionsWidget: React.FC = () => {
               </button>
             </div>
             
-            {/* Sentiment Summary */}
-            <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-                  sentiment === 'bullish' ? 'bg-green-100 text-green-700' : 
-                  sentiment === 'bearish' ? 'bg-red-100 text-red-700' : 
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {sentiment === 'bullish' ? '📈 Bullish' : sentiment === 'bearish' ? '📉 Bearish' : '➖ Neutral'} Overall
-                </span>
+            {/* Sort Toggle & Sentiment Summary */}
+            <div className="px-4 py-3 bg-gray-50 border-b">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-4">
+                  <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                    sentiment === 'bullish' ? 'bg-green-100 text-green-700' : 
+                    sentiment === 'bearish' ? 'bg-red-100 text-red-700' : 
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {sentiment === 'bullish' ? '📈 Bullish' : sentiment === 'bearish' ? '📉 Bearish' : '➖ Neutral'} Overall
+                  </span>
+                </div>
+                <div className="flex gap-4 text-sm">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span className="font-medium text-green-700">{callCount} Calls</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                    <span className="font-medium text-red-700">{putCount} Puts</span>
+                  </span>
+                </div>
               </div>
-              <div className="flex gap-4 text-sm">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                  <span className="font-medium text-green-700">{callCount} Calls</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                  <span className="font-medium text-red-700">{putCount} Puts</span>
-                </span>
+              {/* Sort Toggle in Modal */}
+              <div className="flex items-center justify-center gap-1">
+                <button
+                  onClick={() => setSortMode('contracts')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-l-lg border transition-colors ${
+                    sortMode === 'contracts'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  🐋 Top by Contracts
+                </button>
+                <button
+                  onClick={() => setSortMode('ratio')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-r-lg border-t border-b border-r transition-colors ${
+                    sortMode === 'ratio'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  📊 Most Unusual
+                </button>
               </div>
             </div>
 
