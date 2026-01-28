@@ -22,6 +22,7 @@ const EarningsWidget: React.FC = () => {
   const [earnings, setEarnings] = useState<ProcessedEarning[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllModal, setShowAllModal] = useState(false);
 
   useEffect(() => {
     fetchEarnings();
@@ -210,11 +211,14 @@ const EarningsWidget: React.FC = () => {
             </div>
           ))}
           
-          {displayEarnings.length > 8 && (
+          {earnings.length > 8 && (
             <div className="text-center pt-2">
-              <span className="text-xs text-gray-400">
-                +{displayEarnings.length - 8} more upcoming
-              </span>
+              <button
+                onClick={() => setShowAllModal(true)}
+                className="text-xs text-primary hover:text-indigo-700 font-medium hover:underline"
+              >
+                +{earnings.length - 8} more upcoming →
+              </button>
             </div>
           )}
         </div>
@@ -228,6 +232,96 @@ const EarningsWidget: React.FC = () => {
           }
         </span>
       </div>
+
+      {/* All Earnings Modal */}
+      {showAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">📅 All Upcoming Earnings</h3>
+                <p className="text-xs text-gray-500">{earnings.length} companies in next 14 days</p>
+              </div>
+              <button
+                onClick={() => setShowAllModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Filter tabs */}
+            <div className="px-4 py-2 bg-gray-50 border-b flex gap-2 text-xs overflow-x-auto">
+              <span className="px-2 py-1 bg-red-500 text-white rounded-full font-medium whitespace-nowrap">
+                Today: {earnings.filter(e => e.days_until === 0).length}
+              </span>
+              <span className="px-2 py-1 bg-orange-500 text-white rounded-full font-medium whitespace-nowrap">
+                Tomorrow: {earnings.filter(e => e.days_until === 1).length}
+              </span>
+              <span className="px-2 py-1 bg-amber-500 text-white rounded-full font-medium whitespace-nowrap">
+                This Week: {thisWeekEarnings.length}
+              </span>
+              <span className="px-2 py-1 bg-blue-500 text-white rounded-full font-medium whitespace-nowrap">
+                Next Week: {earnings.filter(e => e.days_until > 7 && e.days_until <= 14).length}
+              </span>
+            </div>
+
+            <div className="overflow-y-auto max-h-[55vh] p-4">
+              {/* Group by date */}
+              {Object.entries(
+                earnings.reduce((acc, earning) => {
+                  const dateKey = earning.date;
+                  if (!acc[dateKey]) acc[dateKey] = [];
+                  acc[dateKey].push(earning);
+                  return acc;
+                }, {} as Record<string, ProcessedEarning[]>)
+              ).map(([date, dateEarnings]) => (
+                <div key={date} className="mb-4">
+                  <div className={`sticky top-0 px-3 py-2 rounded-t-lg font-semibold text-sm ${
+                    dateEarnings[0].days_until === 0 ? 'bg-red-100 text-red-800' :
+                    dateEarnings[0].days_until === 1 ? 'bg-orange-100 text-orange-800' :
+                    dateEarnings[0].days_until <= 7 ? 'bg-amber-100 text-amber-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {formatDate(date)} - {dateEarnings.length} companies
+                    {dateEarnings[0].days_until === 0 && ' (TODAY)'}
+                    {dateEarnings[0].days_until === 1 && ' (TOMORROW)'}
+                  </div>
+                  <div className="space-y-1">
+                    {dateEarnings.map((earning, index) => (
+                      <div
+                        key={`${earning.symbol}-${index}`}
+                        className="flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 border-l-4 border-gray-200"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900">{earning.symbol}</span>
+                            {earning.eps_estimate && (
+                              <span className="text-xs text-gray-500">
+                                Est: {formatEPS(earning.eps_estimate)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatTiming(earning.hour)}
+                          </div>
+                        </div>
+                        <div>
+                          {getCountdownBadge(earning.days_until)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 border-t bg-gray-50 text-center text-xs text-gray-500">
+              💡 <strong>BMO</strong> = Before Market Open | <strong>AMC</strong> = After Market Close
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

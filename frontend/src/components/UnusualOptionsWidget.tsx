@@ -23,11 +23,38 @@ interface UnusualActivity {
   };
 }
 
+// Helper to determine if contract is a call or put from option symbol
+const getContractType = (optionSymbol: string, contractType?: string): 'call' | 'put' | 'unknown' => {
+  // If contract_type is provided and valid, use it
+  if (contractType && ['call', 'put'].includes(contractType.toLowerCase())) {
+    return contractType.toLowerCase() as 'call' | 'put';
+  }
+  
+  // Try to parse from option symbol (e.g., AAPL240315C00175000)
+  // OCC format: Symbol + YY + MM + DD + C/P + Strike
+  if (optionSymbol) {
+    const match = optionSymbol.match(/([CP])(\d{8})$/);
+    if (match) {
+      return match[1] === 'C' ? 'call' : 'put';
+    }
+    // Alternative: look for C or P anywhere after the date portion
+    if (optionSymbol.includes('C') && optionSymbol.length > 10) {
+      const lastC = optionSymbol.lastIndexOf('C');
+      const lastP = optionSymbol.lastIndexOf('P');
+      if (lastC > lastP && lastC > 5) return 'call';
+      if (lastP > lastC && lastP > 5) return 'put';
+    }
+  }
+  
+  return 'unknown';
+};
+
 const UnusualOptionsWidget: React.FC = () => {
   const [activities, setActivities] = useState<UnusualActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showAllModal, setShowAllModal] = useState(false);
 
   useEffect(() => {
     fetchUnusualActivity();
@@ -100,18 +127,33 @@ const UnusualOptionsWidget: React.FC = () => {
   };
 
   // Flatten all unusual options from all symbols
-  const allUnusual: Array<UnusualOption & { symbol: string; type: string }> = [];
+  const allUnusual: Array<UnusualOption & { symbol: string; type: string; derivedContractType: 'call' | 'put' | 'unknown' }> = [];
   activities.forEach(activity => {
     activity.unusual_volume.forEach(opt => {
-      allUnusual.push({ ...opt, symbol: activity.symbol, type: 'volume' });
+      allUnusual.push({ 
+        ...opt, 
+        symbol: activity.symbol, 
+        type: 'volume',
+        derivedContractType: getContractType(opt.option_symbol, opt.contract_type)
+      });
     });
     activity.large_blocks.slice(0, 3).forEach(opt => {
-      allUnusual.push({ ...opt, symbol: activity.symbol, type: 'block' });
+      allUnusual.push({ 
+        ...opt, 
+        symbol: activity.symbol, 
+        type: 'block',
+        derivedContractType: getContractType(opt.option_symbol, opt.contract_type)
+      });
     });
   });
 
   // Sort by volume ratio (highest first)
   allUnusual.sort((a, b) => (b.volume_ratio || 0) - (a.volume_ratio || 0));
+
+  // Calculate sentiment summary
+  const callCount = allUnusual.filter(x => x.derivedContractType === 'call').length;
+  const putCount = allUnusual.filter(x => x.derivedContractType === 'put').length;
+  const sentiment = callCount > putCount ? 'bullish' : putCount > callCount ? 'bearish' : 'neutral';
 
   if (loading && activities.length === 0) {
     return (
@@ -148,43 +190,73 @@ const UnusualOptionsWidget: React.FC = () => {
           <p className="text-xs text-gray-300 mt-1">Checking volume spikes and large blocks</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {allUnusual.slice(0, 5).map((item, index) => (
-            <div
-              key={`${item.symbol}-${item.strike}-${item.contract_type}-${index}`}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-l-4 border-red-500"
-            >
-              <div className="text-2xl">
-                {getActivityIcon(item.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-900">{item.symbol}</span>
-                  <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${
-                    item.contract_type?.toLowerCase() === 'call' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    ${item.strike} {item.contract_type?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • {formatDollarVolume(item.volume, item.last_price)}
-                </div>
-              </div>
-              
-              <div className="text-right">
-                <div className="text-sm font-bold text-red-600">
-                  {formatVolume(item.volume)}
-                </div>
-                <div className="text-xs text-gray-400">
-                  contracts
-                </div>
-              </div>
+        <>
+          {/* Sentiment Summary */}
+          <div className="flex items-center justify-between mb-3 px-2">
+            <div className="flex items-center gap-3 text-xs">
+              <span className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                sentiment === 'bullish' ? 'bg-green-100 text-green-700' : 
+                sentiment === 'bearish' ? 'bg-red-100 text-red-700' : 
+                'bg-gray-100 text-gray-600'
+              }`}>
+                {sentiment === 'bullish' ? '📈' : sentiment === 'bearish' ? '📉' : '➖'}
+                {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} Flow
+              </span>
             </div>
-          ))}
-        </div>
+            <div className="flex gap-2 text-xs">
+              <span className="text-green-600 font-medium">{callCount} Calls</span>
+              <span className="text-gray-400">|</span>
+              <span className="text-red-600 font-medium">{putCount} Puts</span>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            {allUnusual.slice(0, 5).map((item, index) => {
+              const isCall = item.derivedContractType === 'call';
+              const isPut = item.derivedContractType === 'put';
+              
+              return (
+                <div
+                  key={`${item.symbol}-${item.strike}-${item.derivedContractType}-${index}`}
+                  className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-l-4 ${
+                    isCall ? 'border-green-500' : isPut ? 'border-red-500' : 'border-gray-400'
+                  }`}
+                >
+                  <div className="text-2xl">
+                    {isCall ? '🟢' : isPut ? '🔴' : getActivityIcon(item.type)}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-gray-900">{item.symbol}</span>
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded ${
+                        isCall ? 'bg-green-100 text-green-800' : 
+                        isPut ? 'bg-red-100 text-red-800' : 
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        ${item.strike} {isCall ? 'CALL' : isPut ? 'PUT' : 'OPTION'}
+                      </span>
+                      {isCall && <span className="text-xs text-green-600">↗ Bullish</span>}
+                      {isPut && <span className="text-xs text-red-600">↘ Bearish</span>}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • {formatDollarVolume(item.volume, item.last_price)}
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className={`text-sm font-bold ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-700'}`}>
+                      {formatVolume(item.volume)}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      contracts
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
@@ -192,11 +264,112 @@ const UnusualOptionsWidget: React.FC = () => {
           {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Checking watchlist stocks'}
         </span>
         {allUnusual.length > 5 && (
-          <span className="text-xs text-gray-400">
-            +{allUnusual.length - 5} more signals
-          </span>
+          <button
+            onClick={() => setShowAllModal(true)}
+            className="text-xs text-primary hover:text-indigo-700 font-medium hover:underline"
+          >
+            +{allUnusual.length - 5} more signals →
+          </button>
         )}
       </div>
+
+      {/* All Signals Modal */}
+      {showAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">🔥 All Unusual Options Activity</h3>
+                <p className="text-xs text-gray-500">{allUnusual.length} signals detected from watchlist</p>
+              </div>
+              <button
+                onClick={() => setShowAllModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Sentiment Summary */}
+            <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                  sentiment === 'bullish' ? 'bg-green-100 text-green-700' : 
+                  sentiment === 'bearish' ? 'bg-red-100 text-red-700' : 
+                  'bg-gray-100 text-gray-600'
+                }`}>
+                  {sentiment === 'bullish' ? '📈 Bullish' : sentiment === 'bearish' ? '📉 Bearish' : '➖ Neutral'} Overall
+                </span>
+              </div>
+              <div className="flex gap-4 text-sm">
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  <span className="font-medium text-green-700">{callCount} Calls</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                  <span className="font-medium text-red-700">{putCount} Puts</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto max-h-[50vh] p-4 space-y-2">
+              {allUnusual.map((item, index) => {
+                const isCall = item.derivedContractType === 'call';
+                const isPut = item.derivedContractType === 'put';
+                
+                return (
+                  <div
+                    key={`modal-${item.symbol}-${item.strike}-${item.derivedContractType}-${index}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-l-4 ${
+                      isCall ? 'bg-green-50 border-green-500' : isPut ? 'bg-red-50 border-red-500' : 'bg-gray-50 border-gray-400'
+                    }`}
+                  >
+                    <div className="text-xl">
+                      {isCall ? '🟢' : isPut ? '🔴' : '⚪'}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-gray-900">{item.symbol}</span>
+                        <span className={`px-2 py-0.5 text-xs font-bold rounded ${
+                          isCall ? 'bg-green-200 text-green-800' : 
+                          isPut ? 'bg-red-200 text-red-800' : 
+                          'bg-gray-200 text-gray-700'
+                        }`}>
+                          ${item.strike} {isCall ? 'CALL' : isPut ? 'PUT' : 'OPTION'}
+                        </span>
+                        <span className={`text-xs font-medium ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-500'}`}>
+                          {isCall ? '↗ Bullish Bet' : isPut ? '↘ Bearish Bet' : ''}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {item.volume_ratio ? `${item.volume_ratio}x avg volume` : 'Large block'} • {formatDollarVolume(item.volume, item.last_price)}
+                        {item.expiration && ` • Exp: ${item.expiration}`}
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${isCall ? 'text-green-600' : isPut ? 'text-red-600' : 'text-gray-700'}`}>
+                        {formatVolume(item.volume)}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        contracts
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 text-center">
+              <p className="text-xs text-gray-500">
+                💡 <strong>Calls</strong> = Bullish (whales betting price goes UP) | <strong>Puts</strong> = Bearish (whales betting price goes DOWN)
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
