@@ -42,15 +42,31 @@ class OptionsFlowAnalyzer:
         for option in options:
             volume = option.get('volume', 0)
             if volume > threshold and volume > 50:  # Minimum volume threshold
+                # Get contract type from various possible field names
+                contract_type = (
+                    option.get('type') or 
+                    option.get('option_type') or 
+                    option.get('contract_type') or
+                    option.get('putCall') or  # Some APIs use this
+                    ''
+                )
+                # Normalize to 'call' or 'put'
+                if contract_type:
+                    ct_lower = contract_type.lower().strip()
+                    if ct_lower in ['call', 'c']:
+                        contract_type = 'call'
+                    elif ct_lower in ['put', 'p']:
+                        contract_type = 'put'
+                
                 unusual.append({
-                    'option_symbol': option.get('option_symbol'),
-                    'contract_type': option.get('type'),
-                    'strike': option.get('strike'),
-                    'expiration': option.get('expiration_date'),
+                    'option_symbol': option.get('option_symbol') or option.get('symbol') or '',
+                    'contract_type': contract_type,
+                    'strike': option.get('strike') or option.get('strike_price', 0),
+                    'expiration': option.get('expiration_date') or option.get('expiration', ''),
                     'volume': volume,
                     'open_interest': option.get('open_interest', 0),
                     'volume_ratio': round(volume / avg_volume, 2) if avg_volume > 0 else 0,
-                    'last_price': option.get('last', 0),
+                    'last_price': option.get('last') or option.get('lastPrice', 0),
                     'bid': option.get('bid', 0),
                     'ask': option.get('ask', 0),
                     'detected_at': datetime.utcnow().isoformat()
@@ -81,14 +97,31 @@ class OptionsFlowAnalyzer:
                 
                 # Large open interest suggests large positions
                 if open_interest >= min_contracts:
+                    # Get contract type from various possible field names
+                    contract_type = (
+                        option.get('type') or 
+                        option.get('option_type') or 
+                        option.get('contract_type') or
+                        option.get('putCall') or
+                        ''
+                    )
+                    # Normalize to 'call' or 'put'
+                    if contract_type:
+                        ct_lower = contract_type.lower().strip()
+                        if ct_lower in ['call', 'c']:
+                            contract_type = 'call'
+                        elif ct_lower in ['put', 'p']:
+                            contract_type = 'put'
+                    
                     large_blocks.append({
-                        'option_symbol': option.get('option_symbol'),
-                        'contract_type': option.get('type'),
-                        'strike': option.get('strike'),
-                        'expiration': option.get('expiration_date'),
+                        'option_symbol': option.get('option_symbol') or option.get('symbol') or '',
+                        'contract_type': contract_type,
+                        'strike': option.get('strike') or option.get('strike_price', 0),
+                        'expiration': option.get('expiration_date') or option.get('expiration', ''),
                         'open_interest': open_interest,
                         'volume': volume,
-                        'premium': option.get('last', 0) * open_interest * 100,  # Estimated premium
+                        'last_price': option.get('last') or option.get('lastPrice', 0),
+                        'premium': (option.get('last') or 0) * open_interest * 100,  # Estimated premium
                         'detected_at': datetime.utcnow().isoformat()
                     })
         

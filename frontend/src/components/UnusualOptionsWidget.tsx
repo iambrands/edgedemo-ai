@@ -26,23 +26,41 @@ interface UnusualActivity {
 // Helper to determine if contract is a call or put from option symbol
 const getContractType = (optionSymbol: string, contractType?: string): 'call' | 'put' | 'unknown' => {
   // If contract_type is provided and valid, use it
-  if (contractType && ['call', 'put'].includes(contractType.toLowerCase())) {
-    return contractType.toLowerCase() as 'call' | 'put';
+  if (contractType) {
+    const ct = contractType.toLowerCase().trim();
+    if (ct === 'call' || ct === 'c') return 'call';
+    if (ct === 'put' || ct === 'p') return 'put';
   }
   
-  // Try to parse from option symbol (e.g., AAPL240315C00175000)
-  // OCC format: Symbol + YY + MM + DD + C/P + Strike
-  if (optionSymbol) {
+  // Try to parse from option symbol (e.g., COIN240131C00230000)
+  // OCC format: Symbol (1-6 chars) + YYMMDD (6 digits) + C/P + Strike (8 digits)
+  if (optionSymbol && optionSymbol.length > 10) {
+    // Look for C or P followed by 8 digits at the end (the strike price portion)
     const match = optionSymbol.match(/([CP])(\d{8})$/);
     if (match) {
       return match[1] === 'C' ? 'call' : 'put';
     }
-    // Alternative: look for C or P anywhere after the date portion
-    if (optionSymbol.includes('C') && optionSymbol.length > 10) {
-      const lastC = optionSymbol.lastIndexOf('C');
-      const lastP = optionSymbol.lastIndexOf('P');
-      if (lastC > lastP && lastC > 5) return 'call';
-      if (lastP > lastC && lastP > 5) return 'put';
+    
+    // Alternative: Look for the pattern where C/P is between date (6 digits) and strike (8 digits)
+    // The C or P should be at position after the symbol and 6-digit date
+    // Find where the 6-digit date ends and C/P begins
+    const dateAndTypeMatch = optionSymbol.match(/\d{6}([CP])\d{8}$/);
+    if (dateAndTypeMatch) {
+      return dateAndTypeMatch[1] === 'C' ? 'call' : 'put';
+    }
+    
+    // Last resort: find C or P that's not part of the symbol name
+    // Look for C or P that appears after at least 6 digits (the date portion)
+    for (let i = optionSymbol.length - 9; i >= 0; i--) {
+      const char = optionSymbol[i];
+      if (char === 'C' || char === 'P') {
+        // Check if preceded by digits (the date) and followed by digits (strike)
+        const before = optionSymbol.substring(Math.max(0, i - 6), i);
+        const after = optionSymbol.substring(i + 1, i + 9);
+        if (/\d{6}$/.test(before) && /^\d{8}/.test(after)) {
+          return char === 'C' ? 'call' : 'put';
+        }
+      }
     }
   }
   
