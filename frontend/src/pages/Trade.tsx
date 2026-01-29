@@ -139,8 +139,12 @@ const Trade: React.FC = () => {
 
   useEffect(() => {
     // Auto-fetch option price when symbol, expiration, strike, and contract type are all set (single option mode only)
+    // Debounce to avoid multiple requests when several fields change in quick succession
     if (!isSpread && symbol && expiration && strike && contractType) {
-      fetchOptionPrice();
+      const timer = setTimeout(() => {
+        fetchOptionPrice();
+      }, 400);
+      return () => clearTimeout(timer);
     }
   }, [symbol, expiration, strike, contractType, isSpread]);
   
@@ -272,11 +276,12 @@ const Trade: React.FC = () => {
           toast.error('Unable to fetch valid option price');
         }
       } else {
-        toast.error(response.data.error || 'Failed to fetch option price');
+        toast.error(response.data.message || response.data.error || 'Failed to fetch option price');
       }
     } catch (error: any) {
       console.error('Failed to fetch option price:', error);
-      const errorMsg = error.response?.data?.error || 'Failed to fetch option price. Please try again or enter manually.';
+      const data = error.response?.data;
+      const errorMsg = (data && (typeof data.message === 'string' ? data.message : data.error)) || 'Failed to fetch option price. Please check symbol, strike, and expiration (use a future date in YYYY-MM-DD).';
       toast.error(errorMsg);
     } finally {
       setLoadingPrice(false);

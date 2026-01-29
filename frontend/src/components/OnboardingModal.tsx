@@ -14,123 +14,118 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onComplete, onSkip })
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            You're all set! You've been given <strong className="text-primary">$100,000 in paper trading funds</strong> to get started.
+            You're all set! You start with <strong className="text-primary">$100,000 in paper trading funds</strong> so you can learn and test strategies with no real money at risk.
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>💡 Paper Trading:</strong> This is virtual money for learning. No real money at risk!
+              <strong>💡 Paper trading</strong> uses virtual money only. Switch to live trading in Settings when you're ready (and when your account is approved).
             </p>
           </div>
           <p className="text-gray-700">
-            Let's take a quick tour of the platform to get you started.
+            This short tour will show you where everything lives so you can get started quickly.
           </p>
         </div>
       ),
       icon: '👋',
     },
     {
-      title: 'Dashboard - Your Command Center 📊',
+      title: 'Dashboard – Your Home Base 📊',
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            Your <strong>Dashboard</strong> shows everything you need:
+            Your <strong>Dashboard</strong> is where you see the big picture:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-            <li><strong>Today's Opportunities:</strong> High-confidence trading signals (70%+) from your watchlist</li>
-            <li><strong>Market Movers:</strong> Stocks with high volume and volatility</li>
-            <li><strong>AI-Powered Suggestions:</strong> Personalized recommendations based on your trading patterns</li>
-            <li><strong>Active Positions:</strong> See all your open trades</li>
-            <li><strong>P/L Tracking:</strong> Monitor your profits and losses</li>
-            <li><strong>Performance Charts:</strong> Track your trading progress</li>
-            <li><strong>Recent Trades:</strong> Review your trade history</li>
+            <li><strong>Today's Opportunities:</strong> High-confidence signals from your watchlist and popular symbols</li>
+            <li><strong>Market Movers:</strong> High-volume, high-volatility stocks</li>
+            <li><strong>AI Suggestions:</strong> Personalized ideas based on your preferences</li>
+            <li><strong>Unusual Options Activity:</strong> Whale flow (top trades by contracts or most unusual)</li>
+            <li><strong>Upcoming Earnings:</strong> Dates for your watchlist symbols</li>
+            <li><strong>Active Positions:</strong> Open trades with live P/L</li>
+            <li><strong>Recent Trades:</strong> Your latest history</li>
           </ul>
           <p className="text-sm text-gray-600 mt-4">
-            💡 <strong>Tip:</strong> Use "Quick Scan" to find opportunities instantly, or click any opportunity card to analyze options!
+            💡 Use <strong>Quick Scan</strong> for instant opportunities, or click any card to open the Options Analyzer for that symbol.
           </p>
         </div>
       ),
       icon: '📊',
     },
     {
-      title: 'Options Analyzer - Find Great Trades 🔍',
+      title: 'Options Analyzer – Find Trades 🔍',
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            The <strong>Options Analyzer</strong> helps you find the best options trades:
+            The <strong>Options Analyzer</strong> helps you pick and evaluate options:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-            <li>Enter any stock symbol (e.g., AAPL, TSLA, MSFT)</li>
-            <li>Select an expiration date</li>
-            <li>Get AI-powered scoring and recommendations</li>
-            <li>See detailed Greeks and risk metrics</li>
+            <li>Enter any symbol (e.g., AAPL, TSLA, AMD)</li>
+            <li>Pick an expiration and strategy style (Income, Balanced, Growth)</li>
+            <li>Get AI scoring and plain-English explanations</li>
+            <li>See Greeks, liquidity, and bid/ask spread</li>
           </ul>
           <p className="text-sm text-gray-600 mt-4">
-            💡 <strong>Tip:</strong> Look for options with high scores and good liquidity (volume & open interest)!
+            💡 Prefer high scores (80+), solid volume/open interest, and tighter spreads.
           </p>
         </div>
       ),
       icon: '🔍',
     },
     {
-      title: 'Automations - Set It & Forget It 🤖',
+      title: 'Automations – Hands-Free Trading 🤖',
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            <strong>Automations</strong> let you trade automatically:
+            <strong>Automations</strong> run strategies for you:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-            <li>Set entry conditions (e.g., "Buy when RSI &lt; 30")</li>
-            <li>Set exit conditions (profit target, stop loss)</li>
-            <li>Let the system trade for you automatically</li>
-            <li>Monitor positions and execute exits</li>
+            <li>Set entry rules (symbol, strategy type, min confidence, quantity)</li>
+            <li>Set exit rules (profit target %, stop loss %, max days)</li>
+            <li>Start the Engine so it scans and trades during market hours</li>
+            <li>Use Diagnostics to see why an automation did or didn't fire</li>
           </ul>
           <p className="text-sm text-gray-600 mt-4">
-            💡 <strong>Tip:</strong> Start with one automation to test it out. The system checks every 15 minutes!
+            💡 Start with one automation and use <strong>Test Trade</strong> to confirm settings. The engine runs about every 15 minutes.
           </p>
         </div>
       ),
       icon: '🤖',
     },
     {
-      title: 'Watchlist - Track Your Stocks 📈',
+      title: 'Watchlist & Trade 📈',
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            Your <strong>Watchlist</strong> helps you track stocks:
+            <strong>Watchlist</strong> – Add symbols you follow; prices and earnings show on the Dashboard. Use &quot;Analyze Options&quot; to jump into the Analyzer.
           </p>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-            <li>Add stocks you're interested in</li>
-            <li>See real-time prices</li>
-            <li>Add notes and tags</li>
-            <li>Quick access to analyze options</li>
-          </ul>
+          <p className="text-gray-700">
+            <strong>Trade</strong> – Place single-option or spread trades. Choose symbol, expiration, strike, and quantity. Use &quot;Fetch price&quot; for current bid/ask or enter a limit price.
+          </p>
           <p className="text-sm text-gray-600 mt-4">
-            💡 <strong>Tip:</strong> Add stocks you're watching, then use the Options Analyzer to find trades!
+            💡 Set your <strong>timezone</strong> in Settings so all times (earnings, alerts, history) match your location.
           </p>
         </div>
       ),
       icon: '📈',
     },
     {
-      title: 'You\'re Ready to Start! 🚀',
+      title: "You're Ready 🚀",
       content: (
         <div className="space-y-4">
           <p className="text-gray-700">
-            Here's what to do next:
+            Recommended next steps:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-2">
-            <li><strong>Check Today's Opportunities</strong> on your Dashboard for high-confidence signals</li>
-            <li><strong>Use Quick Scan</strong> to instantly find trading opportunities</li>
-            <li><strong>Review AI Suggestions</strong> for personalized recommendations</li>
-            <li><strong>Add stocks to your Watchlist</strong> (stocks you want to track)</li>
-            <li><strong>Use Options Analyzer</strong> to analyze and find good trades</li>
-            <li><strong>Execute trades</strong> from the Trade page</li>
-            <li><strong>Monitor positions</strong> on your Dashboard</li>
-            <li><strong>Create automations</strong> for hands-free trading</li>
+            <li>Add a few symbols to your <strong>Watchlist</strong></li>
+            <li>Open <strong>Opportunities</strong> and try <strong>Quick Scan</strong> or click a signal</li>
+            <li>Use the <strong>Options Analyzer</strong> to review a trade idea</li>
+            <li>Place a <strong>paper trade</strong> from the Trade page</li>
+            <li>Set <strong>Risk Management</strong> (stop loss / profit target) in Settings</li>
+            <li>When comfortable, create an <strong>Automation</strong> and start the Engine</li>
           </ol>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-green-800">
-              <strong>✅ Remember:</strong> You're in paper trading mode. Experiment and learn risk-free!
+              <strong>Need help?</strong> Go to <strong>Help</strong> in the menu for guides and FAQ.
             </p>
           </div>
         </div>

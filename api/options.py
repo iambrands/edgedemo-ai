@@ -9,8 +9,33 @@ from utils.performance import log_performance
 import logging
 import requests
 import traceback
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_expiration(expiration_str):
+    """Normalize expiration to YYYY-MM-DD; return (normalized_str, error_message)."""
+    if not expiration_str or not isinstance(expiration_str, str):
+        return None, 'Expiration date is required'
+    raw = expiration_str.strip()
+    if not raw:
+        return None, 'Expiration date is required'
+    # Already YYYY-MM-DD
+    if len(raw) >= 10 and raw[4] == '-' and raw[7] == '-':
+        try:
+            d = datetime.strptime(raw[:10], '%Y-%m-%d')
+            return raw[:10], None
+        except ValueError:
+            pass
+    # Try MM/DD/YYYY or M/D/YYYY
+    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%m-%d-%Y', '%B %d %Y', '%b %d %Y', '%B %d, %Y', '%b %d, %Y'):
+        try:
+            d = datetime.strptime(raw, fmt)
+            return d.strftime('%Y-%m-%d'), None
+        except (ValueError, TypeError):
+            continue
+    return None, 'Expiration date must be YYYY-MM-DD or a recognizable date (e.g. Feb 6 2026)'
 
 options_bp = Blueprint('options', __name__)
 
@@ -494,6 +519,28 @@ def get_option_quote():
             return jsonify({
                 'error': 'Missing parameter',
                 'message': 'Expiration date is required'
+            }), 400
+        
+        # Normalize expiration to YYYY-MM-DD and reject past dates
+        expiration_normalized, exp_err = _normalize_expiration(expiration)
+        if exp_err:
+            return jsonify({
+                'error': 'Invalid expiration',
+                'message': exp_err
+            }), 400
+        expiration = expiration_normalized
+        try:
+            exp_date = datetime.strptime(expiration, '%Y-%m-%d').date()
+            today = datetime.utcnow().date()
+            if exp_date < today:
+                return jsonify({
+                    'error': 'Expiration in the past',
+                    'message': f'Expiration {expiration} has already passed. Please select a future expiration date.'
+                }), 400
+        except ValueError:
+            return jsonify({
+                'error': 'Invalid expiration',
+                'message': 'Expiration date must be YYYY-MM-DD'
             }), 400
         
         try:

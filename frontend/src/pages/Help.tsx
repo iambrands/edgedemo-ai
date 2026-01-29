@@ -15,59 +15,50 @@ const Help: React.FC = () => {
   const sections: HelpSection[] = [
     {
       id: 'whats-new',
-      title: "What's New (January 2026)",
+      title: "What's New",
       content: (
         <div className="space-y-6">
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">🎯 Recent Updates & New Features</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">🎯 Recent Features</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h4 className="font-semibold text-indigo-700 mb-2">📊 Performance Monitoring (NEW)</h4>
+                <h4 className="font-semibold text-indigo-700 mb-2">🔥 Unusual Options Activity</h4>
                 <ul className="text-gray-700 text-sm space-y-1">
-                  <li>• Real-time performance tracking</li>
-                  <li>• API cost analysis (Claude, Tradier)</li>
-                  <li>• Slow request detection</li>
-                  <li>• Database query optimization</li>
+                  <li>• Top whale activity by contract size or by unusual volume</li>
+                  <li>• Call vs put labels and sentiment</li>
+                  <li>• Expiration and DTE on each signal</li>
+                  <li>• View-all modal for full list</li>
                 </ul>
               </div>
               
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h4 className="font-semibold text-indigo-700 mb-2">📅 Economic Calendar (NEW)</h4>
+                <h4 className="font-semibold text-indigo-700 mb-2">📅 Economic Calendar</h4>
                 <ul className="text-gray-700 text-sm space-y-1">
-                  <li>• Powered by Finnhub</li>
-                  <li>• High-impact economic events</li>
-                  <li>• 7-day forward looking</li>
-                  <li>• GDP, unemployment, Fed decisions</li>
+                  <li>• High-impact economic events (GDP, Fed, jobs)</li>
+                  <li>• Plan trades around announcements</li>
+                  <li>• Available in Settings</li>
                 </ul>
               </div>
               
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h4 className="font-semibold text-indigo-700 mb-2">🏥 System Health Dashboard (IMPROVED)</h4>
+                <h4 className="font-semibold text-indigo-700 mb-2">🕐 Your Timezone</h4>
                 <ul className="text-gray-700 text-sm space-y-1">
-                  <li>• Database connection monitoring</li>
-                  <li>• Redis cache statistics</li>
-                  <li>• Tradier API status</li>
-                  <li>• Environment configuration display</li>
+                  <li>• Set timezone in Settings → Regional Settings</li>
+                  <li>• All times (earnings, alerts, history) in your local time</li>
+                  <li>• &quot;Detect My Timezone&quot; for one-tap setup</li>
                 </ul>
               </div>
               
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h4 className="font-semibold text-indigo-700 mb-2">⚡ Optimization Achievements</h4>
+                <h4 className="font-semibold text-indigo-700 mb-2">📈 Trade & Option Quote</h4>
                 <ul className="text-gray-700 text-sm space-y-1">
-                  <li>• Database: 10x faster with indexes</li>
-                  <li>• Claude costs: 100x cheaper with Haiku</li>
-                  <li>• Option chains: 75% faster filtering</li>
-                  <li>• API calls: 90% reduction with caching</li>
+                  <li>• Expiration validated (past dates rejected with clear message)</li>
+                  <li>• Better error messages when option quote fails</li>
+                  <li>• Single-option and spread trading</li>
                 </ul>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm text-green-800">
-              <strong>✅ Performance Targets Achieved:</strong> Dashboard loads in &lt;500ms, analysis costs ~$0.0005 per request, cache hit rate &gt;90%
-            </p>
           </div>
         </div>
       ),
@@ -94,35 +85,35 @@ const Help: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Unified Opportunities Page - Signals, Market Movers, and AI recommendations in one place</span>
+              <span className="text-gray-700">Unified Opportunities – Signals, Market Movers, and AI recommendations in one place</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Options Chain Analysis - AI-powered scoring and recommendations</span>
+              <span className="text-gray-700">Options Analyzer – AI-powered scoring and plain-English recommendations</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Automated Trading - Set it and forget it strategies with quantity control</span>
+              <span className="text-gray-700">Automations – Set entry/exit rules and let the engine trade for you</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Automation Diagnostics - See exactly why automations are or aren't executing</span>
+              <span className="text-gray-700">Automation Diagnostics – See why an automation did or didn’t fire</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Real-Time Alerts - Never miss an opportunity</span>
+              <span className="text-gray-700">Unusual Options Activity – Whale flow by contracts and sentiment</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Performance Dashboard - Track response times and API costs</span>
+              <span className="text-gray-700">Alerts – Trade executed, sell signals, and risk alerts</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Economic Calendar - Plan trades around GDP, Fed, unemployment events</span>
+              <span className="text-gray-700">Economic Calendar – Plan around GDP, Fed, jobs data</span>
             </div>
             <div className="flex items-start space-x-2">
               <span className="text-green-500">✅</span>
-              <span className="text-gray-700">Paper Trading - Learn risk-free with $100,000 virtual balance</span>
+              <span className="text-gray-700">Paper Trading – Start with $100,000 virtual balance; switch to live when ready</span>
             </div>
           </div>
         </div>
@@ -337,19 +328,10 @@ const Help: React.FC = () => {
             </div>
           </div>
 
-          <h4 className="text-xl font-semibold text-gray-900 mt-6">Cost Optimization</h4>
+          <h4 className="text-xl font-semibold text-gray-900 mt-6">How We Use AI</h4>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-gray-700 mb-3">
-              <strong>We use Claude Haiku for most analysis:</strong>
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-              <li>Cost: ~$0.0005 per analysis (half a penny!)</li>
-              <li>Speed: 1-2 seconds</li>
-              <li>Quality: Excellent for routine analysis</li>
-              <li>Result: 100x cheaper than Claude Sonnet</li>
-            </ul>
-            <p className="text-sm text-blue-800 mt-3">
-              <strong>💡 Sonnet used for:</strong> Multi-leg strategies (iron condors, butterflies), high volatility stocks (TSLA, NVDA), earnings week analysis
+              We use fast AI models so analysis is quick (usually a few seconds). For complex strategies (e.g. multi-leg spreads) or high-volatility symbols, we may use a more detailed model so you get accurate recommendations.
             </p>
           </div>
         </div>
@@ -360,7 +342,7 @@ const Help: React.FC = () => {
       title: 'Economic Calendar',
       content: (
         <div className="space-y-4">
-          <h3 className="text-2xl font-bold text-gray-900">📅 Economic Calendar (NEW)</h3>
+          <h3 className="text-2xl font-bold text-gray-900">📅 Economic Calendar</h3>
           <p className="text-gray-700">
             Plan your trades around major economic events using our Finnhub-powered economic calendar.
           </p>
@@ -406,7 +388,7 @@ const Help: React.FC = () => {
 
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-purple-800">
-              <strong>📊 Access via:</strong> Settings → Economic Calendar, or API endpoint <code className="bg-purple-100 px-1 rounded">/api/earnings/economic</code>
+              <strong>📊 Access:</strong> Settings → Economic Calendar
             </p>
           </div>
         </div>
@@ -414,59 +396,22 @@ const Help: React.FC = () => {
     },
     {
       id: 'performance',
-      title: 'Performance & System Health',
+      title: 'Performance & Reliability',
       content: (
         <div className="space-y-4">
-          <h3 className="text-2xl font-bold text-gray-900">📊 Performance Dashboard (NEW)</h3>
-          
-          <h4 className="text-xl font-semibold text-gray-900 mt-4">What It Shows</h4>
+          <h3 className="text-2xl font-bold text-gray-900">What to Expect</h3>
+          <p className="text-gray-700">
+            OptionsEdge is built for fast loading and reliable analysis. Here’s what you’ll typically see:
+          </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            <li><strong>Request Timing:</strong> How fast pages load (target: &lt;500ms)</li>
-            <li><strong>API Call Costs:</strong> Claude and Tradier spending</li>
-            <li><strong>Slow Operations:</strong> Identify bottlenecks</li>
-            <li><strong>Database Performance:</strong> Query times and connection stats</li>
-            <li><strong>Cache Hit Rate:</strong> % of requests served from cache (target: &gt;90%)</li>
+            <li><strong>Dashboard:</strong> Loads quickly; use Refresh to update positions and prices</li>
+            <li><strong>Options Analyzer:</strong> Analysis usually finishes in a few seconds; complex symbols (e.g. TSLA) may take a bit longer</li>
+            <li><strong>Option quote (Trade page):</strong> Fetch price may take a moment during busy market hours</li>
           </ul>
-
-          <h4 className="text-xl font-semibold text-gray-900 mt-6">Metrics Explained</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="font-semibold text-gray-800 mb-2">P95 Duration</h5>
-              <p className="text-gray-700 text-sm">95% of requests complete faster than this time. If P95 is 400ms, only 5% take longer.</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="font-semibold text-gray-800 mb-2">Cache Hit Rate</h5>
-              <p className="text-gray-700 text-sm">Percentage of requests served from cache. Higher = faster and cheaper.</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="font-semibold text-gray-800 mb-2">API Costs</h5>
-              <p className="text-gray-700 text-sm">Total spending on Claude (~$0.0005/analysis) and Tradier API calls.</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="font-semibold text-gray-800 mb-2">Slow Requests</h5>
-              <p className="text-gray-700 text-sm">Requests taking &gt;1 second. These are flagged for optimization.</p>
-            </div>
-          </div>
-
-          <h4 className="text-xl font-semibold text-gray-900 mt-6">System Health Components</h4>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            <li><strong>🟢 Database:</strong> Connection pool and query performance</li>
-            <li><strong>🟢 Redis Cache:</strong> Memory usage and hit rate</li>
-            <li><strong>🟢 Tradier API:</strong> Connection status and mode (sandbox/live)</li>
-            <li><strong>🟢 Environment:</strong> Configuration and debug status</li>
-          </ul>
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-            <p className="text-sm text-green-800">
-              <strong>✅ Current Performance (January 2026):</strong>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-blue-800">
+              <strong>💡 If something is slow:</strong> Refresh the page. If it keeps happening, use &quot;Send Feedback&quot; on this Help page so we can look into it.
             </p>
-            <ul className="text-sm text-green-800 mt-2 space-y-1">
-              <li>• Dashboard: &lt;500ms ✅</li>
-              <li>• Analysis: 1-2 seconds (Haiku) ✅</li>
-              <li>• Option chains: 2-3 seconds (filtered) ✅</li>
-              <li>• Cache hit rate: &gt;90% ✅</li>
-              <li>• API costs: &lt;$0.001 per analysis ✅</li>
-            </ul>
           </div>
         </div>
       ),
@@ -690,9 +635,11 @@ const Help: React.FC = () => {
           <h4 className="text-xl font-semibold text-gray-900 mt-4">Available Settings</h4>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             <li><strong>Risk Tolerance:</strong> Set your risk level (low, moderate, high)</li>
-            <li><strong>Default Strategy:</strong> Choose your preferred trading strategy</li>
+            <li><strong>Risk Management:</strong> Default stop loss % and profit target % for positions</li>
+            <li><strong>Default Strategy:</strong> Preferred trading strategy for recommendations</li>
+            <li><strong>Regional Settings:</strong> Your timezone – all times (earnings, alerts, history) show in your local time. Use &quot;Detect My Timezone&quot; for one-tap setup</li>
             <li><strong>Notifications:</strong> Enable or disable email notifications</li>
-            <li><strong>Trading Mode:</strong> Switch between paper and live trading (when available)</li>
+            <li><strong>Trading Mode:</strong> Paper (virtual money) or Live (real money when your account is approved)</li>
           </ul>
         </div>
       ),
@@ -779,41 +726,41 @@ const Help: React.FC = () => {
           </div>
 
           <div className="border-t border-gray-200 pt-6 mt-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Performance & Technical</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Using the App</h3>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: Why is my dashboard slow?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why are times wrong? I'm in Central / Pacific / etc.</h4>
             <p className="text-gray-700 mt-2">
-              A: We recently added database indexes for 10x speedup. If still slow, check the Performance Dashboard for bottlenecks. Common causes: too many open positions, cache not working, or browser cache needs clearing.
+              A: Set your timezone in <strong>Settings → Regional Settings</strong>. Use &quot;Detect My Timezone&quot; to set it automatically. After that, earnings dates, alerts, and trade history will show in your local time.
             </p>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: What's a cache hit rate?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why does &quot;Fetch price&quot; fail when I sell an option?</h4>
             <p className="text-gray-700 mt-2">
-              A: The percentage of requests served from cache vs. fetching new data. Target: &gt;90%. Higher cache hit rate = faster responses and lower API costs.
+              A: Make sure the expiration date is in the <strong>future</strong> (e.g. 2026, not 2006). The app will show a clear message if the expiration has passed. Use the expiration dropdown from the Trade page so the format is correct.
             </p>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: How do I see my API costs?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: What does &quot;AAPL 275 Put&quot; mean in Unusual Options Activity?</h4>
             <p className="text-gray-700 mt-2">
-              A: Go to Performance Dashboard → API Call Costs section. This shows Claude (AI analysis) and Tradier (market data) costs broken down by operation.
+              A: It means there’s unusual volume on the AAPL $275 strike put. We show <strong>volume</strong> only – we don’t know if whales are buying or selling (that would need trade-by-trade data). Buying puts is bearish; selling puts is often bullish. Each row shows expiration and DTE (days to expiration).
             </p>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: Why does TSLA take longer to analyze?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why is my dashboard or a page slow?</h4>
             <p className="text-gray-700 mt-2">
-              A: TSLA has 1,200+ options. We filter to strikes within ±20% of the current price, which makes it 75% faster. Still, high-volume symbols take longer due to more data.
+              A: Try refreshing the page. During market open, quote and analysis requests can be slower. If it’s often slow, use &quot;Send Feedback&quot; on the Help page so we can look into it.
             </p>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: How much does AI analysis cost?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why does TSLA (or another symbol) take longer to analyze?</h4>
             <p className="text-gray-700 mt-2">
-              A: ~$0.0005 per analysis (half a penny). At 10 analyses/day = $0.15/month. We use Claude Haiku for most analysis (100x cheaper than Sonnet) with comparable quality for routine trades.
+              A: Symbols with many options (e.g. TSLA, NVDA) take a few extra seconds because we score more contracts. This is normal.
             </p>
           </div>
 
@@ -822,21 +769,16 @@ const Help: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold text-gray-900">Q: Economic calendar not showing data?</h4>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Economic calendar is empty?</h4>
             <p className="text-gray-700 mt-2">
-              A: Check if FINNHUB_API_KEY is set in the environment variables. Common issues:
-              <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
-                <li>API key not configured in Railway → Add it in Variables tab</li>
-                <li>Rate limit exceeded (60 calls/min) → Wait a minute</li>
-                <li>Calendar endpoint not deployed → Redeploy app</li>
-              </ul>
+              A: It may be temporarily unavailable. Try again later. You can still plan using external economic calendars.
             </p>
           </div>
 
           <div>
             <h4 className="text-lg font-semibold text-gray-900">Q: Should I close positions before FOMC?</h4>
             <p className="text-gray-700 mt-2">
-              A: If you're uncertain about direction, yes. FOMC (Federal Reserve) announcements often cause large moves. IV crush after events can hurt your position even if direction is correct. The economic calendar helps you plan around these events.
+              A: If you're uncertain about direction, yes. FOMC (Federal Reserve) announcements often cause large moves. IV crush after events can hurt your position even if direction is correct. The economic calendar in Settings helps you plan around these events.
             </p>
           </div>
 
@@ -869,35 +811,17 @@ const Help: React.FC = () => {
 
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-800">Dashboard Loading Slowly</h4>
+              <h4 className="font-semibold text-red-800">Dashboard or Page Loading Slowly</h4>
               <p className="text-red-700 mt-2 text-sm">
-                <strong>Causes:</strong> Database needs optimization, cache not working, too many open positions
+                <strong>Try:</strong> Refresh the page. Clear your browser cache and reload. If it keeps happening, use &quot;Send Feedback&quot; on the Help page so we can investigate.
               </p>
-              <p className="text-red-700 mt-2 text-sm">
-                <strong>Solutions:</strong>
-              </p>
-              <ul className="list-disc list-inside ml-4 text-red-700 text-sm space-y-1">
-                <li>Check Performance Dashboard for bottlenecks</li>
-                <li>Clear browser cache</li>
-                <li>Reload page</li>
-                <li>Contact support if persistent</li>
-              </ul>
             </div>
 
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <h4 className="font-semibold text-orange-800">Analysis Taking Too Long</h4>
+              <h4 className="font-semibold text-orange-800">Analysis Taking a While</h4>
               <p className="text-orange-700 mt-2 text-sm">
-                <strong>Normal timing:</strong> Simple analysis 1-2s (Haiku), Complex 3-5s (Sonnet), Option chains 2-8s
+                Analysis usually finishes in a few seconds. Symbols with many options (e.g. TSLA, NVDA) can take longer. If it’s much slower than that, refresh and try again or try a different symbol.
               </p>
-              <p className="text-orange-700 mt-2 text-sm">
-                <strong>If slower:</strong>
-              </p>
-              <ul className="list-disc list-inside ml-4 text-orange-700 text-sm space-y-1">
-                <li>Check Performance Dashboard for slow operations</li>
-                <li>TSLA/NVDA take longer (more options)</li>
-                <li>Clear cache and retry</li>
-                <li>Try a simpler symbol first</li>
-              </ul>
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -970,7 +894,7 @@ const Help: React.FC = () => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Help & Documentation</h1>
-              <p className="text-gray-600">OptionsEdge v1.2.0 • Updated January 2026</p>
+              <p className="text-gray-600">OptionsEdge • Help & FAQ</p>
             </div>
             <button
               onClick={() => setShowFeedbackModal(true)}
