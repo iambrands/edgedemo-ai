@@ -2,12 +2,17 @@ import api from './api';
 import { OptionsAnalysis, Expiration } from '../types/options';
 
 export const optionsService = {
-  analyze: async (symbol: string, expiration: string, preference: 'income' | 'growth' | 'balanced'): Promise<OptionsAnalysis> => {
-    const response = await api.post('/options/analyze', {
-      symbol,
-      expiration,
-      preference,
-    });
+  analyze: async (
+    symbol: string,
+    expiration: string,
+    preference: 'income' | 'growth' | 'balanced',
+    currentPrice?: number | null
+  ): Promise<OptionsAnalysis> => {
+    const body: Record<string, unknown> = { symbol, expiration, preference };
+    if (currentPrice != null && currentPrice > 0 && currentPrice < 100000) {
+      body.current_price = currentPrice;
+    }
+    const response = await api.post('/options/analyze', body);
     return response.data;
   },
 

@@ -152,8 +152,8 @@ const OptionsAnalyzer: React.FC = () => {
     setLoading(true);
     setOptions([]); // Clear previous results
     try {
-      console.log('Starting analysis for:', { symbol, expiration, preference });
-      const data = await optionsService.analyze(symbol, expiration, preference);
+      console.log('Starting analysis for:', { symbol, expiration, preference, stockPrice });
+      const data = await optionsService.analyze(symbol, expiration, preference, stockPrice ?? undefined);
       console.log('Analysis response:', data);
       console.log('Options array:', data.options);
       console.log('Options count:', data.count);

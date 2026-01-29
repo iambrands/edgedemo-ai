@@ -243,6 +243,16 @@ def analyze_options():
     if preference not in ['income', 'growth', 'balanced', 'aggressive', 'conservative']:
         preference = 'balanced'
     
+    # Optional: use current stock price from frontend (matches RealTimePriceDisplay)
+    stock_price_arg = None
+    if data.get('current_price') is not None:
+        try:
+            p = float(data['current_price'])
+            if p > 0 and p < 100000:
+                stock_price_arg = p
+        except (TypeError, ValueError):
+            pass
+    
     # PHASE 4: Check smart cache first
     cache_check_start = time.time()
     try:
@@ -342,7 +352,8 @@ def analyze_options():
                     symbol=symbol,
                     expiration=expiration,
                     preference=preference,
-                    user_risk_tolerance=user_risk_tolerance
+                    user_risk_tolerance=user_risk_tolerance,
+                    stock_price=stock_price_arg
                 )
                 analysis_time = time.time() - analysis_start
                 perf_log['steps']['analysis'] = round(analysis_time, 3)

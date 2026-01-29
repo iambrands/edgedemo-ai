@@ -33,13 +33,51 @@ class OptionsAnalyzer:
         except RuntimeError:
             pass
         
-        # Get stock price if not provided
-        if stock_price is None:
-            quote = self.tradier.get_quote(symbol)
-            if 'quotes' in quote and 'quote' in quote['quotes']:
-                stock_price = quote['quotes']['quote']['last']
-            else:
-                stock_price = 100.0  # Fallback
+        # Normalize and validate stock price (from caller or fetch)
+        try:
+            stock_price = float(stock_price) if stock_price is not None else None
+        except (TypeError, ValueError):
+            stock_price = None
+        # Get stock price if not provided or invalid (robust extraction; never use $100 fallback for analysis)
+        if stock_price is None or stock_price <= 0 or stock_price > 100000:
+            quote = self.tradier.get_quote(symbol, use_cache=True)
+            raw_quote = None
+            if quote and quote.get('quotes') and quote['quotes'].get('quote') is not None:
+                raw_quote = quote['quotes']['quote']
+                if isinstance(raw_quote, list) and len(raw_quote) > 0:
+                    raw_quote = raw_quote[0]
+            if isinstance(raw_quote, dict):
+                last = raw_quote.get('last')
+                try:
+                    p = float(last) if last is not None else None
+                except (TypeError, ValueError):
+                    p = None
+                if p and p > 0 and p < 100000:
+                    stock_price = p
+            if stock_price is None or (isinstance(stock_price, (int, float)) and (stock_price <= 0 or stock_price > 100000)):
+                quote = self.tradier.get_quote(symbol, use_cache=False)
+                raw_quote = None
+                if quote and quote.get('quotes') and quote['quotes'].get('quote') is not None:
+                    raw_quote = quote['quotes']['quote']
+                    if isinstance(raw_quote, list) and len(raw_quote) > 0:
+                        raw_quote = raw_quote[0]
+                if isinstance(raw_quote, dict):
+                    last = raw_quote.get('last')
+                    try:
+                        p = float(last) if last is not None else None
+                    except (TypeError, ValueError):
+                        p = None
+                    if p and p > 0 and p < 100000:
+                        stock_price = p
+            if stock_price is None or (isinstance(stock_price, (int, float)) and (stock_price <= 0 or stock_price > 100000)):
+                try:
+                    current_app.logger.warning(
+                        f'Could not get valid stock price for {symbol} (got {stock_price}). '
+                        f'Using fallback 100.0 for analysis only - AI text may show wrong price.'
+                    )
+                except RuntimeError:
+                    pass
+                stock_price = 100.0  # Last resort; log above so we know when it happens
         
         try:
             current_app.logger.info(f'Stock price: ${stock_price}, fetching options chain for {symbol} expiration {expiration}...')
