@@ -378,7 +378,7 @@ class TradierConnector:
                         }
                     }
                     
-                    # Cache the result (30s TTL - improves hit rate while keeping quotes fresh)
+                    # Cache 30s TTL - reduces Tradier API calls; options analysis doesn't need sub-second quotes
                     if use_cache:
                         try:
                             cache = get_redis_cache()

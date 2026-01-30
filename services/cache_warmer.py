@@ -6,6 +6,7 @@ This improves cache hit rates by proactively populating the cache.
 import logging
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from utils.redis_cache import get_redis_cache
 from utils.cache_keys import quote_key, options_chain_key, expirations_key
@@ -13,6 +14,16 @@ from services.tradier_connector import TradierConnector
 from services.cache_manager import CacheManager, set_cache, get_cache
 
 logger = logging.getLogger(__name__)
+
+# High-volume, options-friendly symbols for cache warming (used by warmer + warm_all_caches)
+WARM_SYMBOLS = [
+    # Index ETFs (highest options volume)
+    'SPY', 'QQQ', 'IWM', 'DIA',
+    # Mega-cap tech (heavy options activity)
+    'AAPL', 'MSFT', 'NVDA', 'META', 'GOOGL', 'AMZN', 'TSLA',
+    # Other high-volume options
+    'AMD', 'NFLX', 'COIN',
+]
 
 
 class CacheWarmer:
@@ -22,21 +33,8 @@ class CacheWarmer:
         self.tradier = TradierConnector()
         self.cache_manager = CacheManager()
         self.cache = get_redis_cache()
-        
-        # Expanded popular symbols list for better cache coverage
-        self.popular_symbols = [
-            # Major Indices
-            'SPY', 'QQQ', 'IWM', 'DIA',
-            # Mega Cap Tech
-            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA',
-            # Popular Stocks
-            'TSLA', 'AMD', 'NFLX', 'DIS', 'BA',
-            # Finance
-            'JPM', 'BAC', 'GS',
-            # Other Popular
-            'COIN', 'UBER', 'SHOP'
-        ]  # Now 20 symbols
-        
+        self.popular_symbols = list(WARM_SYMBOLS)
+        self._executor = ThreadPoolExecutor(max_workers=3)
         # Symbols for options chains (most liquid)
         self.options_symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'MSFT', 'META']
     
@@ -48,40 +46,41 @@ class CacheWarmer:
             days_ahead += 7
         return (today + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
     
+    def _warm_one_quote(self, symbol: str) -> tuple:
+        """Warm quote for one symbol. Returns (symbol, success, error_msg)."""
+        try:
+            quote = self.tradier.get_quote(symbol, use_cache=False)
+            if quote is None or not isinstance(quote, dict):
+                return (symbol, False, "None or invalid type")
+            self.cache_manager.set_quote(symbol, quote)
+            return (symbol, True, None)
+        except Exception as e:
+            return (symbol, False, str(e))
+
     def warm_quotes(self) -> int:
-        """Preload quotes for popular symbols with detailed logging."""
-        logger.info(f"📊 Starting quote warming for {len(self.popular_symbols)} symbols")
+        """Preload quotes for WARM_SYMBOLS with batched concurrency (3 at a time)."""
+        symbols = self.popular_symbols
+        logger.info(f"📊 Starting quote warming for {len(symbols)} symbols (batch size 3)")
         warmed = 0
         failed = []
-        
-        for symbol in self.popular_symbols:
-            try:
-                # Get quote from Tradier
-                quote = self.tradier.get_quote(symbol)
-                
-                if quote is None:
-                    logger.warning(f"❌ Quote returned None for {symbol}")
-                    failed.append(f"{symbol}: None")
-                    continue
-                
-                if not isinstance(quote, dict):
-                    logger.warning(f"❌ Invalid quote type for {symbol}: {type(quote)}")
-                    failed.append(f"{symbol}: Invalid type")
-                    continue
-                
-                # Use cache manager which has intelligent TTL
-                self.cache_manager.set_quote(symbol, quote)
-                warmed += 1
-                logger.debug(f"✅ Warmed quote: {symbol}")
-                
-            except Exception as e:
-                logger.error(f"❌ Exception warming {symbol}: {e}", exc_info=True)
-                failed.append(f"{symbol}: {str(e)}")
-        
-        logger.info(f"✅ Quote warming: {warmed}/{len(self.popular_symbols)} successful")
+        batch_size = 3
+        for i in range(0, len(symbols), batch_size):
+            batch = symbols[i : i + batch_size]
+            logger.info(f"   Warming batch: {batch}")
+            futures = [self._executor.submit(self._warm_one_quote, s) for s in batch]
+            for future in as_completed(futures, timeout=35):
+                try:
+                    sym, ok, err = future.result(timeout=30)
+                    if ok:
+                        warmed += 1
+                        logger.debug(f"   ✅ {sym} warmed")
+                    else:
+                        failed.append(f"{sym}: {err or 'fail'}")
+                except Exception as e:
+                    failed.append(f"batch: {e}")
+        logger.info(f"✅ Quote warming: {warmed}/{len(symbols)} successful")
         if failed:
-            logger.warning(f"⚠️ Failed symbols: {', '.join(failed[:5])}")  # Show first 5
-        
+            logger.warning(f"⚠️ Failed: {', '.join(failed[:5])}")
         return warmed
     
     def warm_options_chains(self) -> int:
@@ -437,8 +436,7 @@ def warm_all_caches():
         try:
             from services.tradier_connector import TradierConnector
             tradier = TradierConnector()
-            
-            popular_symbols = ['SPY', 'QQQ', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'GOOGL']
+            popular_symbols = list(WARM_SYMBOLS)
             quotes = tradier.get_quotes(popular_symbols)
             results['quotes'] = len(quotes)
             print(f"   Got {len(quotes)} quotes", flush=True)

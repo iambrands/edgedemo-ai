@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { optionsService } from '../services/options';
 import { OptionContract } from '../types/options';
@@ -7,6 +7,7 @@ import api, { cachedGet } from '../services/api';
 import toast from 'react-hot-toast';
 import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
 import { useDevice } from '../hooks/useDevice';
+import { useDebounce } from '../hooks/useDebounce';
 import RealTimePriceDisplay from '../components/RealTimePriceDisplay';
 
 type AnalyzerTab = 'single' | 'debit-spread' | 'credit-spread';
@@ -43,9 +44,12 @@ const OptionsAnalyzer: React.FC = () => {
   // Tab state
   const [activeTab, setActiveTab] = useState<AnalyzerTab>('single');
   
-  // Single options state
-  const [symbol, setSymbol] = useState('AAPL');
-  const [stockPrice, setStockPrice] = useState<number | null>(null);
+  // Single options state: raw input (responsive) + debounced value (for API calls)
+  const [symbolInput, setSymbolInput] = useState('AAPL');
+  const debouncedSymbol = useDebounce(symbolInput, 500);
+  const symbol = debouncedSymbol.trim().toUpperCase();
+  const symbolRef = useRef('');
+  const stockPriceRef = useRef<number | null>(null);
   const [expiration, setExpiration] = useState('');
   const [preference, setPreference] = useState<'income' | 'growth' | 'balanced'>('balanced');
   const [expirations, setExpirations] = useState<string[]>([]);
@@ -54,9 +58,16 @@ const OptionsAnalyzer: React.FC = () => {
   const [loadingExpirations, setLoadingExpirations] = useState(false);
   const [expirationsFetchedForSymbol, setExpirationsFetchedForSymbol] = useState<string | null>(null);
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
+
+  // Stable callback so RealTimePriceDisplay doesn't re-run effects on every parent render
+  const handlePriceUpdate = useCallback((price: number) => {
+    stockPriceRef.current = price;
+  }, []);
   
-  // Debit Spread analyzer state
-  const [spreadSymbol, setSpreadSymbol] = useState('');
+  // Debit Spread analyzer state (debounced symbol for API calls)
+  const [spreadSymbolInput, setSpreadSymbolInput] = useState('');
+  const debouncedSpreadSymbol = useDebounce(spreadSymbolInput, 500);
+  const spreadSymbol = debouncedSpreadSymbol.trim().toUpperCase();
   const [spreadExpiration, setSpreadExpiration] = useState('');
   const [spreadExpirations, setSpreadExpirations] = useState<string[]>([]);
   const [spreadType, setSpreadType] = useState<'bull_call' | 'bear_put'>('bull_call');
@@ -67,10 +78,16 @@ const OptionsAnalyzer: React.FC = () => {
   const [spreadLoading, setSpreadLoading] = useState(false);
   const [spreadError, setSpreadError] = useState('');
   const [loadingSpreadExpirations, setLoadingSpreadExpirations] = useState(false);
-  const [spreadStockPrice, setSpreadStockPrice] = useState<number | null>(null);
+  const spreadStockPriceRef = useRef<number | null>(null);
+
+  const handleSpreadPriceUpdate = useCallback((price: number) => {
+    spreadStockPriceRef.current = price;
+  }, []);
   
-  // Credit Spread analyzer state
-  const [creditSymbol, setCreditSymbol] = useState('');
+  // Credit Spread analyzer state (debounced symbol for API calls)
+  const [creditSymbolInput, setCreditSymbolInput] = useState('');
+  const debouncedCreditSymbol = useDebounce(creditSymbolInput, 500);
+  const creditSymbol = debouncedCreditSymbol.trim().toUpperCase();
   const [creditExpiration, setCreditExpiration] = useState('');
   const [creditExpirations, setCreditExpirations] = useState<string[]>([]);
   const [creditSpreadType, setCreditSpreadType] = useState<'bull_put' | 'bear_call'>('bull_put');
@@ -81,12 +98,15 @@ const OptionsAnalyzer: React.FC = () => {
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState('');
   const [loadingCreditExpirations, setLoadingCreditExpirations] = useState(false);
-  const [creditStockPrice, setCreditStockPrice] = useState<number | null>(null);
+  const creditStockPriceRef = useRef<number | null>(null);
 
-  const fetchExpirations = async () => {
-    if (!symbol || symbol.trim().length < 1) return;
-    
-    const trimmedSymbol = symbol.trim().toUpperCase();
+  const handleCreditPriceUpdate = useCallback((price: number) => {
+    creditStockPriceRef.current = price;
+  }, []);
+
+  const fetchExpirations = useCallback(async (requestedSymbol: string, currentSymbolRef: React.MutableRefObject<string>) => {
+    if (!requestedSymbol || requestedSymbol.length < 2) return;
+    const trimmedSymbol = requestedSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
 
     setLoadingExpirations(true);
@@ -95,6 +115,7 @@ const OptionsAnalyzer: React.FC = () => {
         `/options/expirations/${trimmedSymbol}`,
         60000
       );
+      if (currentSymbolRef.current !== requestedSymbol) return;
       if (data?.expirations) {
         const expArray = Array.isArray(data.expirations) ? data.expirations : [];
         setExpirations(expArray);
@@ -105,24 +126,31 @@ const OptionsAnalyzer: React.FC = () => {
         setExpirations([]);
       }
     } catch (error: any) {
+      if (currentSymbolRef.current !== requestedSymbol) return;
       if (error.response?.status !== 404 && error.response?.status !== 400) {
         toast.error(error.response?.data?.error || 'Failed to fetch expirations');
       }
       setExpirations([]);
     } finally {
-      setLoadingExpirations(false);
+      if (currentSymbolRef.current === requestedSymbol) {
+        setLoadingExpirations(false);
+      }
     }
-  };
+  }, []);
 
   const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSymbol(e.target.value.toUpperCase());
+    setSymbolInput(e.target.value.toUpperCase());
     setExpiration('');
     setOptions([]);
   };
 
   const handleSymbolSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchExpirations();
+    if (symbol.length >= 2 && /^[A-Z]+$/.test(symbol)) {
+      symbolRef.current = symbol;
+      fetchExpirations(symbol, symbolRef);
+      fetchStockPrice(symbol, symbolRef);
+    }
   };
 
   const analyzeOptions = async () => {
@@ -134,8 +162,8 @@ const OptionsAnalyzer: React.FC = () => {
     setLoading(true);
     setOptions([]); // Clear previous results
     try {
-      console.log('Starting analysis for:', { symbol, expiration, preference, stockPrice });
-      const data = await optionsService.analyze(symbol, expiration, preference, stockPrice ?? undefined);
+      const priceForAnalysis = stockPriceRef.current ?? undefined;
+      const data = await optionsService.analyze(symbol, expiration, preference, priceForAnalysis);
       console.log('Analysis response:', data);
       console.log('Options array:', data.options);
       console.log('Options count:', data.count);
@@ -166,14 +194,12 @@ const OptionsAnalyzer: React.FC = () => {
 
   // Handle symbol from navigation (runs once when component mounts or location.state changes)
   React.useEffect(() => {
-    // Check if symbol was passed from navigation
     if (location.state && location.state.symbol) {
       const navSymbol = location.state.symbol.trim().toUpperCase();
-      console.log('Symbol from navigation:', navSymbol);
       if (navSymbol && /^[A-Z]{1,5}$/.test(navSymbol)) {
         setSymbolFromNav(navSymbol);
-        setSymbol(navSymbol);
-        setIsInitialMount(true); // Set to true so the next useEffect will fetch immediately
+        setSymbolInput(navSymbol);
+        setIsInitialMount(true);
       }
     }
   }, [location.state]);
@@ -183,33 +209,41 @@ const OptionsAnalyzer: React.FC = () => {
     setExpirationsFetchedForSymbol(null);
   }, [symbol]);
 
-  // Fetch data when symbol changes (including from navigation)
+  // Clear expirations/options when symbol becomes invalid (e.g. user clears input)
   React.useEffect(() => {
-    if (!symbol || symbol.trim().length < 1) return;
-    const trimmedSymbol = symbol.trim().toUpperCase();
-    if (trimmedSymbol.length > 5 || !/^[A-Z]+$/.test(trimmedSymbol)) return;
+    if (!symbol || symbol.length < 2 || !/^[A-Z]+$/.test(symbol)) {
+      setExpirations([]);
+      setExpiration('');
+      setOptions([]);
+    }
+  }, [symbol]);
 
-    const shouldFetchNow = isInitialMount || symbolFromNav === trimmedSymbol;
-    const alreadyFetchedForThisSymbol = expirationsFetchedForSymbol === trimmedSymbol;
+  // Fetch data when debounced symbol is valid (min 2 chars to avoid per-keystroke calls)
+  React.useEffect(() => {
+    if (!symbol || symbol.length < 2 || symbol.length > 5 || !/^[A-Z]+$/.test(symbol)) return;
+
+    symbolRef.current = symbol;
+    const shouldFetchNow = isInitialMount || symbolFromNav === symbol;
+    const alreadyFetchedForThisSymbol = expirationsFetchedForSymbol === symbol;
 
     if (shouldFetchNow && !alreadyFetchedForThisSymbol) {
-      fetchExpirations();
-      fetchStockPrice();
+      fetchExpirations(symbol, symbolRef);
+      fetchStockPrice(symbol, symbolRef);
       setIsInitialMount(false);
       setSymbolFromNav(null);
-      setExpirationsFetchedForSymbol(trimmedSymbol);
+      setExpirationsFetchedForSymbol(symbol);
     } else if (!shouldFetchNow) {
       const timeoutId = setTimeout(() => {
-        if (expirationsFetchedForSymbol !== trimmedSymbol) {
-          fetchExpirations();
-          fetchStockPrice();
-          setExpirationsFetchedForSymbol(trimmedSymbol);
+        if (expirationsFetchedForSymbol !== symbol) {
+          fetchExpirations(symbol, symbolRef);
+          fetchStockPrice(symbol, symbolRef);
+          setExpirationsFetchedForSymbol(symbol);
         }
       }, 500);
       return () => clearTimeout(timeoutId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, isInitialMount, symbolFromNav, expirationsFetchedForSymbol]);
+  }, [symbol, isInitialMount, symbolFromNav, expirationsFetchedForSymbol, fetchExpirations, fetchStockPrice]);
   
   // Set expiration when expirations list is loaded
   React.useEffect(() => {
@@ -222,9 +256,9 @@ const OptionsAnalyzer: React.FC = () => {
     }
   }, [expirations]);
 
-  const fetchStockPrice = async () => {
-    if (!symbol || symbol.trim().length < 1) return;
-    const trimmedSymbol = symbol.trim().toUpperCase();
+  const fetchStockPrice = useCallback(async (requestedSymbol: string, currentSymbolRef: React.MutableRefObject<string>) => {
+    if (!requestedSymbol || requestedSymbol.length < 2) return;
+    const trimmedSymbol = requestedSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
 
     try {
@@ -232,8 +266,8 @@ const OptionsAnalyzer: React.FC = () => {
         `/options/quote/${trimmedSymbol}`,
         10000
       );
-      if (data?.current_price) {
-        setStockPrice(data.current_price);
+      if (currentSymbolRef.current === requestedSymbol && data?.current_price) {
+        stockPriceRef.current = data.current_price;
       }
     } catch (error: any) {
       const status = error.response?.status;
@@ -241,7 +275,7 @@ const OptionsAnalyzer: React.FC = () => {
         console.warn(`Failed to fetch stock price (${status}):`, error.response?.data?.error || error.message);
       }
     }
-  };
+  }, []);
 
   const handleAddToWatchlist = async () => {
     try {
@@ -320,23 +354,20 @@ const OptionsAnalyzer: React.FC = () => {
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
     try {
       const data = await cachedGet<{ current_price?: number }>(`/options/quote/${trimmedSymbol}`, 10000);
-      if (data?.current_price) setSpreadStockPrice(data.current_price);
+      if (data?.current_price) spreadStockPriceRef.current = data.current_price;
     } catch (error) {
       console.error('Failed to fetch spread stock price:', error);
     }
   };
 
-  // Fetch spread expirations when symbol changes
+  // Fetch spread expirations when debounced symbol is valid (min 2 chars)
   useEffect(() => {
-    if (spreadSymbol && spreadSymbol.trim().length >= 1) {
-      const trimmedSymbol = spreadSymbol.trim().toUpperCase();
-      if (/^[A-Z]+$/.test(trimmedSymbol)) {
-        const timeoutId = setTimeout(() => {
-          fetchSpreadExpirations();
-          fetchSpreadStockPrice();
-        }, 500);
-        return () => clearTimeout(timeoutId);
-      }
+    if (spreadSymbol.length >= 2 && /^[A-Z]+$/.test(spreadSymbol)) {
+      const timeoutId = setTimeout(() => {
+        fetchSpreadExpirations();
+        fetchSpreadStockPrice();
+      }, 300);
+      return () => clearTimeout(timeoutId);
     }
   }, [spreadSymbol]);
 
@@ -391,7 +422,7 @@ const OptionsAnalyzer: React.FC = () => {
             max_profit: response.data.max_profit,
             max_loss: response.data.max_loss,
             breakeven: response.data.breakeven,
-            current_price: spreadStockPrice,
+            current_price: spreadStockPriceRef.current ?? undefined,
             long_price: response.data.long_premium,
             short_price: response.data.short_premium
           });
@@ -480,23 +511,20 @@ const OptionsAnalyzer: React.FC = () => {
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
     try {
       const data = await cachedGet<{ current_price?: number }>(`/options/quote/${trimmedSymbol}`, 10000);
-      if (data?.current_price) setCreditStockPrice(data.current_price);
+      if (data?.current_price) creditStockPriceRef.current = data.current_price;
     } catch (error) {
       console.error('Failed to fetch credit stock price:', error);
     }
   };
 
-  // Fetch credit expirations when symbol changes
+  // Fetch credit expirations when debounced symbol is valid (min 2 chars)
   useEffect(() => {
-    if (creditSymbol && creditSymbol.trim().length >= 1) {
-      const trimmedSymbol = creditSymbol.trim().toUpperCase();
-      if (/^[A-Z]+$/.test(trimmedSymbol)) {
-        const timeoutId = setTimeout(() => {
-          fetchCreditExpirations();
-          fetchCreditStockPrice();
-        }, 500);
-        return () => clearTimeout(timeoutId);
-      }
+    if (creditSymbol.length >= 2 && /^[A-Z]+$/.test(creditSymbol)) {
+      const timeoutId = setTimeout(() => {
+        fetchCreditExpirations();
+        fetchCreditStockPrice();
+      }, 300);
+      return () => clearTimeout(timeoutId);
     }
   }, [creditSymbol]);
 
@@ -554,7 +582,7 @@ const OptionsAnalyzer: React.FC = () => {
             max_profit: response.data.max_profit,
             max_loss: response.data.max_loss,
             breakeven: response.data.breakeven,
-            current_price: creditStockPrice,
+            current_price: creditStockPriceRef.current ?? undefined,
             long_price: response.data.long_premium,
             short_price: response.data.short_premium,
             is_credit: true
@@ -663,10 +691,11 @@ const OptionsAnalyzer: React.FC = () => {
       {activeTab === 'single' && (
       <>
       {/* Real-Time Price Display */}
-      {symbol && symbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(symbol.trim().toUpperCase()) && (
-        <RealTimePriceDisplay 
-          symbol={symbol} 
-          onPriceUpdate={(price) => setStockPrice(price)}
+      {symbol.length >= 2 && /^[A-Z]+$/.test(symbol) && (
+        <RealTimePriceDisplay
+          symbol={symbol}
+          refreshInterval={30000}
+          onPriceUpdate={handlePriceUpdate}
         />
       )}
 
@@ -687,7 +716,7 @@ const OptionsAnalyzer: React.FC = () => {
             <form onSubmit={handleSymbolSubmit}>
               <input
                 type="text"
-                value={symbol}
+                value={symbolInput}
                 onChange={handleSymbolChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-base min-h-[48px]"
                 placeholder="Enter symbol (e.g., AAPL)"
@@ -748,7 +777,7 @@ const OptionsAnalyzer: React.FC = () => {
 
         <button
           onClick={analyzeOptions}
-          disabled={loading || !symbol || !expiration}
+          disabled={loading || !symbol || !expiration || symbol.length < 2}
           className={`${isMobile ? 'w-full' : ''} bg-primary text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base`}
         >
           {loading ? 'Analyzing...' : 'Analyze Options'}
@@ -1119,11 +1148,11 @@ const OptionsAnalyzer: React.FC = () => {
 
           {/* Full Options Chain Table */}
           <div className="bg-white rounded-lg shadow">
-            <OptionsChainTable 
-              options={options} 
-              symbol={symbol} 
+            <OptionsChainTable
+              options={options}
+              symbol={symbol}
               expiration={expiration}
-              stockPrice={stockPrice}
+              stockPrice={stockPriceRef.current}
             />
           </div>
         </>
@@ -1135,10 +1164,11 @@ const OptionsAnalyzer: React.FC = () => {
       {activeTab === 'debit-spread' && (
         <>
         {/* Real-Time Price Display for Debit Spread */}
-        {spreadSymbol && spreadSymbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(spreadSymbol.trim().toUpperCase()) && (
+        {spreadSymbol.length >= 2 && /^[A-Z]+$/.test(spreadSymbol) && (
           <RealTimePriceDisplay 
-            symbol={spreadSymbol} 
-            onPriceUpdate={(price) => setSpreadStockPrice(price)}
+            symbol={spreadSymbol}
+            refreshInterval={30000}
+            onPriceUpdate={handleSpreadPriceUpdate}
           />
         )}
 
@@ -1156,9 +1186,9 @@ const OptionsAnalyzer: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
               <input
                 type="text"
-                value={spreadSymbol}
+                value={spreadSymbolInput}
                 onChange={(e) => {
-                  setSpreadSymbol(e.target.value.toUpperCase());
+                  setSpreadSymbolInput(e.target.value.toUpperCase());
                   setSpreadExpiration('');
                   setSpreadAnalysis(null);
                 }}
@@ -1456,10 +1486,11 @@ const OptionsAnalyzer: React.FC = () => {
       {activeTab === 'credit-spread' && (
         <>
         {/* Real-Time Price Display for Credit Spread */}
-        {creditSymbol && creditSymbol.trim().length >= 1 && /^[A-Z]{1,5}$/.test(creditSymbol.trim().toUpperCase()) && (
+        {creditSymbol.length >= 2 && /^[A-Z]+$/.test(creditSymbol) && (
           <RealTimePriceDisplay 
-            symbol={creditSymbol} 
-            onPriceUpdate={(price) => setCreditStockPrice(price)}
+            symbol={creditSymbol}
+            refreshInterval={30000}
+            onPriceUpdate={handleCreditPriceUpdate}
           />
         )}
 
@@ -1477,9 +1508,9 @@ const OptionsAnalyzer: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
               <input
                 type="text"
-                value={creditSymbol}
+                value={creditSymbolInput}
                 onChange={(e) => {
-                  setCreditSymbol(e.target.value.toUpperCase());
+                  setCreditSymbolInput(e.target.value.toUpperCase());
                   setCreditExpiration('');
                   setCreditAnalysis(null);
                 }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { cachedGet } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { formatTimestamp as formatTsUtil } from '../utils/dateTime';
@@ -17,7 +17,7 @@ interface QuoteData {
 interface RealTimePriceDisplayProps {
   symbol: string;
   onPriceUpdate?: (price: number) => void;
-  timezone?: string;  // Optional timezone override
+  timezone?: string;
   refreshInterval?: number;  // ms, default 30000 (30 seconds)
 }
 
@@ -46,78 +46,76 @@ const isMarketHours = (): boolean => {
   return timeInMinutes >= marketOpen && timeInMinutes < marketClose;
 };
 
-const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({ 
-  symbol, 
+const RealTimePriceDisplayInner: React.FC<RealTimePriceDisplayProps> = ({
+  symbol,
   onPriceUpdate,
   timezone: timezoneProp,
   refreshInterval = 30000
 }) => {
   const { user } = useAuth();
-  
   const userTimezone = timezoneProp || user?.timezone || 'America/New_York';
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState<string>('');
   const [priceUpdated, setPriceUpdated] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isActiveRef = useRef(true);
   const previousPriceRef = useRef<number | null>(null);
 
   const fetchQuote = useCallback(async () => {
     if (!symbol || symbol.trim().length < 1) return;
-    
     const trimmedSymbol = symbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+
+    // Temporary: verify 30s polling (remove after verification)
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log(`[Quote Poll] ${trimmedSymbol} at ${new Date().toLocaleTimeString()}`);
+    }
 
     try {
       const data = await cachedGet<Record<string, any>>(
         `/options/quote/${trimmedSymbol}`,
         10000
       );
-      
+
       if (data && data.current_price) {
         const newQuote: QuoteData = {
           symbol: data.symbol || trimmedSymbol,
           current_price: data.current_price,
-          change: data.change || 0,
-          change_percent: data.change_percent || 0,
+          change: data.change ?? 0,
+          change_percent: data.change_percent ?? 0,
           volume: data.volume,
           high: data.high,
           low: data.low,
           open: data.open
         };
-        
-        if (previousPriceRef.current !== null && 
-            previousPriceRef.current !== newQuote.current_price) {
+
+        setQuote(prev => {
+          if (prev?.current_price === newQuote.current_price && prev?.change === newQuote.change) {
+            return prev;
+          }
+          return newQuote;
+        });
+        setTimestamp(formatTsUtil(new Date(), userTimezone));
+        setError(null);
+        if (previousPriceRef.current !== null && previousPriceRef.current !== newQuote.current_price) {
           setPriceUpdated(true);
           setTimeout(() => setPriceUpdated(false), 500);
         }
         previousPriceRef.current = newQuote.current_price;
-        
-        setQuote(newQuote);
-        setTimestamp(formatTsUtil(new Date(), userTimezone));
-        setError(null);
-        
-        if (onPriceUpdate) {
-          onPriceUpdate(newQuote.current_price);
-        }
+        if (onPriceUpdate) onPriceUpdate(newQuote.current_price);
       }
     } catch (err: any) {
       const status = err.response?.status;
-      if (status === 404) {
-        setError('Quote not available');
-      } else if (status === 503) {
-        setError('Market data service unavailable');
-      } else {
-        setError('Failed to fetch quote');
-      }
-      console.error('Failed to fetch quote:', err);
+      if (status === 404) setError('Quote not available');
+      else if (status === 503) setError('Market data service unavailable');
+      else setError('Failed to fetch quote');
     } finally {
       setLoading(false);
     }
   }, [symbol, onPriceUpdate, userTimezone]);
 
-  // Initial fetch
   useEffect(() => {
     if (symbol) {
       setLoading(true);
@@ -125,15 +123,13 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
     }
   }, [symbol, fetchQuote]);
 
-  // Visibility-aware polling: only poll when tab is visible
   useEffect(() => {
     if (!symbol || refreshInterval <= 0) return;
 
-    let intervalId: NodeJS.Timeout | undefined;
-
     const startPolling = () => {
-      intervalId = setInterval(() => {
-        if (document.visibilityState === 'visible') {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        if (isActiveRef.current && document.visibilityState === 'visible') {
           fetchQuote();
         }
       }, refreshInterval);
@@ -141,47 +137,43 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchQuote();
         startPolling();
-      } else {
-        if (intervalId) clearInterval(intervalId);
+      } else if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
 
-    if (document.visibilityState === 'visible') {
-      startPolling();
-    }
-
+    if (document.visibilityState === 'visible') startPolling();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      isActiveRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [symbol, refreshInterval, fetchQuote]);
 
-  // Determine price direction for styling
   const getPriceDirection = (): 'positive' | 'negative' | 'neutral' => {
     if (!quote) return 'neutral';
     if (quote.change > 0) return 'positive';
     if (quote.change < 0) return 'negative';
     return 'neutral';
   };
-
   const direction = getPriceDirection();
 
-  // Format change values
   const formatChange = (value: number): string => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}`;
   };
-
   const formatChangePercent = (value: number): string => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  // Loading state
   if (loading && !quote) {
     return (
       <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-4 md:mb-6 animate-pulse">
@@ -312,4 +304,6 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
   );
 };
 
+const RealTimePriceDisplay = memo(RealTimePriceDisplayInner);
+RealTimePriceDisplay.displayName = 'RealTimePriceDisplay';
 export default RealTimePriceDisplay;
