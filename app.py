@@ -135,6 +135,19 @@ def create_app(config_name=None):
         
         return response
     
+    # Ensure DB session is cleaned up after every request (prevents InFailedSqlTransaction cascade)
+    @app.teardown_request
+    def cleanup_db_session(exception=None):
+        if exception:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
+        try:
+            db.session.remove()
+        except Exception:
+            pass
+    
     # Database query profiling - log slow queries
     if app.config.get('SQLALCHEMY_RECORD_QUERIES'):
         try:
@@ -222,6 +235,29 @@ def create_app(config_name=None):
         app.logger.error(f"Error logging blueprint registration: {e}")
         print(f"⚠️ Error logging blueprint registration: {e}", file=sys.stderr, flush=True)
     
+    # Global DB error handler - rollback and return 503 to avoid poisoned connection cascade
+    from sqlalchemy.exc import SQLAlchemyError
+    @app.errorhandler(SQLAlchemyError)
+    def handle_db_error(error):
+        logger.error(f"Database error: {error}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        try:
+            from psycopg2.errors import InFailedSqlTransaction
+            if getattr(error, 'orig', None) and isinstance(error.orig, InFailedSqlTransaction):
+                return jsonify({
+                    'error': 'Database temporarily unavailable, please retry',
+                    'code': 'DB_TRANSACTION_ERROR'
+                }), 503
+        except ImportError:
+            pass
+        return jsonify({
+            'error': 'Database error occurred',
+            'code': 'DB_ERROR'
+        }), 500
+    
     # Debug route to list all registered routes
     @app.route('/debug/routes')
     def list_routes():
@@ -268,6 +304,10 @@ def create_app(config_name=None):
                 'traceback': traceback.format_exc()
             }), 500
     
+    # When running the delete-user script, skip scheduler and background jobs (DB only)
+    if os.environ.get("RUN_DELETE_SCRIPT") == "1":
+        return app
+
     # Start automatic position monitoring on app startup
     # This ensures positions are checked and closed when thresholds are hit
     def start_position_monitoring():

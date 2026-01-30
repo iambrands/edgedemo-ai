@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
+from sqlalchemy.exc import SQLAlchemyError
 from services.options_analyzer import OptionsAnalyzer
 from services.tradier_connector import TradierConnector
 from services.ai_signals import AISignals
@@ -470,7 +471,20 @@ def analyze_options():
             'performance': perf_log,
             'usage': current_user.get_analysis_usage() if current_user else None
         }), 200
+    except SQLAlchemyError as e:
+        from app import db
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        current_app.logger.error(f'Database error in analyze_options: {e}')
+        return jsonify({'error': 'Database error, please retry'}), 503
     except Exception as e:
+        from app import db
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
         current_app.logger.error(f'Error in analyze_options: {str(e)}')
         current_app.logger.error(traceback.format_exc())
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500

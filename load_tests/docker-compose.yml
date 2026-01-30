@@ -1,0 +1,26 @@
+# load_tests/docker-compose.yml
+# Distributed Locust: master + workers for higher load generation.
+# Set TARGET_HOST in the UI when starting the swarm, or override below.
+
+version: '3.8'
+
+services:
+  locust-master:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    volumes:
+      - .:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --master
+    environment:
+      - TARGET_HOST=${TARGET_HOST:-https://web-production-8b7ae.up.railway.app}
+
+  locust-worker:
+    image: locustio/locust
+    volumes:
+      - .:/mnt/locust
+    working_dir: /mnt/locust
+    command: -f locustfile.py --worker --master-host locust-master
+    deploy:
+      replicas: 4

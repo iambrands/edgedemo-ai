@@ -18,6 +18,11 @@ from utils.notifications import get_notification_system
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Track known failing accounts to avoid log spam (user_id -> (reason, last_logged_time))
+_failing_accounts = {}
+SPAM_INTERVAL = 300  # Only log same error for same user every 5 minutes
+
+
 class AutomationMasterController:
     """
     Main automation loop that orchestrates all bot activities
@@ -83,7 +88,57 @@ class AutomationMasterController:
     def _get_db(self):
         """Get db instance from current app context"""
         return current_app.extensions['sqlalchemy']
-    
+
+    MIN_BALANCE_TO_TRADE = 1000  # $1,000 minimum paper balance to run automations
+
+    def should_skip_account(self, user_id: int) -> tuple:
+        """
+        Check if an account should be skipped for auto-trading (e.g. negative balance).
+        Returns (should_skip: bool, reason: str).
+        """
+        db = self._get_db()
+        from models.user import User
+        user = db.session.query(User).get(user_id)
+        if not user:
+            return True, "User not found"
+        if user.paper_balance is None:
+            return True, "No paper balance"
+        if user.paper_balance < 0:
+            return True, f"Negative balance: ${user.paper_balance:,.2f}"
+        if user.paper_balance < self.MIN_BALANCE_TO_TRADE:
+            return True, f"Balance below minimum: ${user.paper_balance:,.2f} < ${self.MIN_BALANCE_TO_TRADE:,.0f}"
+        # Daily loss limit is checked inside trade_executor/risk_manager; we don't pre-check here
+        return False, ""
+
+    def _handle_opportunity_error(self, opportunity: Dict, e: Exception, is_value_error: bool = False):
+        """Log opportunity execution errors with spam reduction for known account issues."""
+        global _failing_accounts
+        user_id = opportunity.get('user_id')
+        symbol = opportunity.get('symbol', '')
+        error_msg = str(e)
+        now = time.time()
+
+        if is_value_error and user_id is not None:
+            if user_id in _failing_accounts:
+                last_reason, last_time = _failing_accounts[user_id]
+                if last_reason == error_msg and (now - last_time) < SPAM_INTERVAL:
+                    return  # Skip logging, already logged recently
+            _failing_accounts[user_id] = (error_msg, now)
+
+        if is_value_error and ("balance" in error_msg.lower() or "loss limit" in error_msg.lower()):
+            logger.warning(f"Account issue for user {user_id} ({symbol}): {error_msg}")
+        else:
+            logger.error(f"Error executing opportunity for {symbol}: {e}", exc_info=not is_value_error)
+            log_error(
+                'OpportunityExecutionError',
+                error_msg,
+                user_id=user_id,
+                symbol=symbol,
+                context={'opportunity': opportunity}
+            )
+            notifications = get_notification_system()
+            notifications.send_error_notification(user_id, error_msg, {'symbol': symbol})
+
     def start(self):
         """
         DEPRECATED: The automation engine now runs via APScheduler.
@@ -143,6 +198,11 @@ class AutomationMasterController:
             
             for opportunity in opportunities:
                 try:
+                    user_id = opportunity.get('user_id')
+                    should_skip, reason = self.should_skip_account(user_id)
+                    if should_skip:
+                        logger.debug(f"Skipping user {user_id}: {reason}")
+                        continue
                     if self.execute_opportunity(opportunity):
                         executed_count += 1
                         # Send notification
@@ -152,21 +212,12 @@ class AutomationMasterController:
                                 opportunity.get('trade', {}),
                                 opportunity
                             )
+                except ValueError as e:
+                    self._get_db().session.rollback()
+                    self._handle_opportunity_error(opportunity, e, is_value_error=True)
                 except Exception as e:
-                    logger.error(f"Error executing opportunity for {opportunity.get('symbol')}: {e}")
-                    log_error(
-                        'OpportunityExecutionError',
-                        str(e),
-                        user_id=opportunity.get('user_id'),
-                        symbol=opportunity.get('symbol'),
-                        context={'opportunity': opportunity}
-                    )
-                    # Send error notification
-                    notifications.send_error_notification(
-                        opportunity.get('user_id'),
-                        str(e),
-                        {'symbol': opportunity.get('symbol')}
-                    )
+                    self._get_db().session.rollback()
+                    self._handle_opportunity_error(opportunity, e, is_value_error=False)
             
             logger.info(f"Executed {executed_count} opportunities")
             
@@ -187,6 +238,10 @@ class AutomationMasterController:
                 if spread_results['errors']:
                     logger.warning(f"Spread monitoring errors: {spread_results['errors'][:3]}")  # Log first 3 errors
             except Exception as e:
+                try:
+                    self._get_db().session.rollback()
+                except Exception:
+                    pass
                 logger.error(f"Error in spread monitoring: {e}")
             
             # Step 5: Generate alerts for all users
@@ -202,6 +257,7 @@ class AutomationMasterController:
                     alert_results = self.alert_generator.scan_and_generate_alerts(user.id)
                     total_alerts += alert_results['total']
                 except Exception as e:
+                    self._get_db().session.rollback()
                     logger.error(f"Error generating alerts for user {user.id}: {e}")
             
             logger.info(f"Generated {total_alerts} alerts")
@@ -233,6 +289,10 @@ class AutomationMasterController:
             )
             
         except Exception as e:
+            try:
+                self._get_db().session.rollback()
+            except Exception:
+                pass
             logger.error(f"Automation cycle error: {e}", exc_info=True)
             log_error(
                 'AutomationCycleError',
@@ -249,6 +309,10 @@ class AutomationMasterController:
             position_results = self.position_monitor.monitor_all_positions()
             logger.info(f"Light cycle: Monitored {position_results['monitored']} positions")
         except Exception as e:
+            try:
+                self._get_db().session.rollback()
+            except Exception:
+                pass
             logger.error(f"Light cycle error: {e}", exc_info=True)
     
     def execute_opportunity(self, opportunity: Dict) -> bool:

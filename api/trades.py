@@ -71,7 +71,16 @@ def execute_trade(current_user):
         strategy_source = sanitize_input(data.get('strategy_source', 'manual'), max_length=20)
         automation_id = sanitize_int(data.get('automation_id'), min_val=1) if data.get('automation_id') else None
         notes = sanitize_input(data.get('notes', ''), max_length=500) if data.get('notes') else None
-        
+        idempotency_key = sanitize_input(data.get('idempotency_key', ''), max_length=128) if data.get('idempotency_key') else None
+
+        # Idempotency: duplicate request with same key within 60s returns cached result (no second trade)
+        if idempotency_key:
+            cache_key = f"trade_idempotency:{current_user.id}:{idempotency_key}"
+            cached_result = get_cache(cache_key)
+            if cached_result is not None:
+                current_app.logger.info(f"Trade idempotency hit for user {current_user.id}, key={idempotency_key[:16]}...")
+                return jsonify(cached_result), 200
+
         current_app.logger.info(f'Executing trade: symbol={symbol}, action={action}, quantity={quantity}, strike={strike}, expiration={expiration_date}, contract_type={contract_type}, price={price}, option_symbol={option_symbol}')
         
         # Validate that options trades have required fields
@@ -103,7 +112,11 @@ def execute_trade(current_user):
         # Invalidate positions and P/L summary cache after trade execution
         delete_cache(f'positions:{current_user.id}')
         delete_cache(f'pl_summary:{current_user.id}')
-        
+
+        # Cache result for idempotency (60s) so duplicate requests return same response
+        if idempotency_key:
+            set_cache(cache_key, result, timeout=60)
+
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
     except ValueError as e:
@@ -148,6 +161,94 @@ def get_trade_history(current_user):
         set_cache(cache_key, result, timeout=30)
         return jsonify(result), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@trades_bp.route('/remove-duplicates', methods=['POST'])
+@token_required
+def remove_duplicate_trades(current_user):
+    """
+    Remove duplicate trades: same user, symbol, strike, expiration, action, quantity,
+    occurring within a short time window (default 60s). Keeps the first of each run, deletes the rest.
+    Does not delete trades that are referenced by entry_trade_id or exit_trade_id.
+    """
+    from models.trade import Trade
+    from datetime import datetime, timedelta
+
+    db = current_app.extensions['sqlalchemy']
+    data = request.get_json() or {}
+    window_seconds = min(300, max(1, int(data.get('window_seconds', 60))))
+
+    try:
+        trades = (
+            db.session.query(Trade)
+            .filter(Trade.user_id == current_user.id)
+            .order_by(Trade.trade_date.asc(), Trade.id.asc())
+            .all()
+        )
+        if not trades:
+            return jsonify({'deleted': 0, 'deleted_ids': [], 'message': 'No trades found'}), 200
+
+        # Group by (symbol, strike_price, expiration_date, action, quantity)
+        def group_key(t):
+            return (
+                t.symbol,
+                t.strike_price,
+                t.expiration_date.isoformat() if t.expiration_date else None,
+                t.action,
+                t.quantity,
+            )
+
+        groups = {}
+        for t in trades:
+            key = group_key(t)
+            groups.setdefault(key, []).append(t)
+
+        # Within each group, find runs within window_seconds; keep first, mark rest for delete
+        to_delete = []
+        for key, group in groups.items():
+            if len(group) <= 1:
+                continue
+            group.sort(key=lambda x: (x.trade_date or datetime.min, x.id))
+            keep = group[0]
+            for t in group[1:]:
+                td = (t.trade_date or datetime.min) - (keep.trade_date or datetime.min)
+                if td.total_seconds() <= window_seconds:
+                    to_delete.append(t)
+                else:
+                    keep = t
+
+        # Do not delete trades that are referenced by another trade (entry_trade_id / exit_trade_id)
+        referenced_ids = set()
+        for t in trades:
+            if t.entry_trade_id:
+                referenced_ids.add(t.entry_trade_id)
+            if t.exit_trade_id:
+                referenced_ids.add(t.exit_trade_id)
+
+        safe_to_delete = [t for t in to_delete if t.id not in referenced_ids]
+        deleted_ids = []
+        for t in safe_to_delete:
+            deleted_ids.append(t.id)
+            db.session.delete(t)
+
+        db.session.commit()
+
+        delete_cache(f'positions:{current_user.id}')
+        delete_cache(f'pl_summary:{current_user.id}')
+        delete_cache(f"trade_history:{current_user.id}:{''}:{''}:{''}:{''}")
+
+        current_app.logger.info(
+            f"User {current_user.id} removed {len(deleted_ids)} duplicate trades: {deleted_ids}"
+        )
+        return jsonify({
+            'deleted': len(deleted_ids),
+            'deleted_ids': deleted_ids,
+            'message': f'Removed {len(deleted_ids)} duplicate trade(s).'
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"remove_duplicate_trades error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 

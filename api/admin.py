@@ -42,6 +42,72 @@ def admin_required(f):
         return f(current_user, *args, **kwargs)
     return decorated_function
 
+
+@admin_bp.route('/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def delete_user(current_user, user_id):
+    """
+    Delete a user and all associated data. Requires admin authentication.
+    POST /api/admin/users/<user_id> with DELETE method.
+    """
+    if current_user.id == user_id:
+        return jsonify({'error': 'Cannot delete your own account'}), 400
+
+    db = current_app.extensions['sqlalchemy']
+    from models.user import User
+    from models.trade import Trade
+    from models.position import Position
+    from models.stock import Stock
+    from models.automation import Automation
+    from models.alert import Alert
+    from models.user_performance import UserPerformance
+    from models.risk_limits import RiskLimits
+    from models.feedback import Feedback
+    from models.spread import Spread
+
+    target_user = db.session.query(User).get(user_id)
+    if not target_user:
+        return jsonify({'error': 'User not found'}), 404
+
+    email = target_user.email
+    try:
+        deleted = {}
+        deleted['trades'] = Trade.query.filter_by(user_id=user_id).delete()
+        deleted['positions'] = Position.query.filter_by(user_id=user_id).delete()
+        deleted['stocks'] = Stock.query.filter_by(user_id=user_id).delete()
+        deleted['automations'] = Automation.query.filter_by(user_id=user_id).delete()
+        deleted['alerts'] = Alert.query.filter_by(user_id=user_id).delete()
+        deleted['user_performance'] = UserPerformance.query.filter_by(user_id=user_id).delete()
+        deleted['risk_limits'] = RiskLimits.query.filter_by(user_id=user_id).delete()
+        deleted['feedback'] = Feedback.query.filter_by(user_id=user_id).delete()
+        deleted['spreads'] = Spread.query.filter_by(user_id=user_id).delete()
+
+        try:
+            from models.alert_filters import AlertFilters
+            deleted['alert_filters'] = AlertFilters.query.filter_by(user_id=user_id).delete()
+        except Exception:
+            pass
+        try:
+            from models.strategy import Strategy
+            deleted['strategies'] = Strategy.query.filter_by(user_id=user_id).delete()
+        except Exception:
+            pass
+
+        db.session.delete(target_user)
+        db.session.commit()
+
+        logger.info(f"Admin {current_user.email} deleted user {email}: {deleted}")
+        return jsonify({
+            'success': True,
+            'message': f'User {email} deleted',
+            'deleted': deleted
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to delete user {email}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 # Diagnostic endpoint - no auth, no database (test if blueprint is loaded)
 @admin_bp.route('/admin/ping', methods=['GET'])
 def ping():

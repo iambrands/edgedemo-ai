@@ -311,9 +311,8 @@ class TradierConnector:
                 logger.debug(f"Cache lookup failed, fetching from API: {e}")
         
         if is_index_option or is_option_symbol:
-            logger.info(
-                f"🔍 TRADIER get_quote called for: {symbol} "
-                f"(is_index_option={is_index_option}, is_option_symbol={is_option_symbol})"
+            logger.debug(
+                f"TRADIER get_quote for: {symbol} (index_option={is_index_option}, option_symbol={is_option_symbol})"
             )
         
         # DISABLED: Yahoo Finance - use Tradier directly
@@ -451,7 +450,7 @@ class TradierConnector:
         
         # If all symbols were in cache, return immediately
         if not symbols_to_fetch:
-            logger.info(f"✅ All {len(symbols)} quotes served from cache")
+            logger.debug(f"All {len(symbols)} quotes served from cache")
             return results
         
         # Fetch remaining symbols from Tradier API in ONE call
@@ -464,8 +463,7 @@ class TradierConnector:
                 start_time = time.time()
                 response = self._make_request(endpoint, params)
                 duration_ms = (time.time() - start_time) * 1000
-                
-                logger.info(f"📊 Batch quotes for {len(symbols_to_fetch)} symbols took {duration_ms:.0f}ms")
+                logger.debug(f"Batch quotes for {len(symbols_to_fetch)} symbols took {duration_ms:.0f}ms")
                 
                 if 'quotes' in response and 'quote' in response['quotes']:
                     quotes = response['quotes']['quote']
@@ -489,7 +487,7 @@ class TradierConnector:
                                 except Exception as e:
                                     logger.debug(f"Cache write failed for {symbol}: {e}")
                     
-                    logger.info(f"✅ Fetched {len(quotes)} quotes from Tradier API")
+                    logger.debug(f"Fetched {len(quotes)} quotes from Tradier API")
                     
             except Exception as e:
                 logger.warning(f"Batch quotes API call failed: {e}")
@@ -640,7 +638,7 @@ class TradierConnector:
                         pass
                     result = self._mock_expirations(symbol)['expirations']['expiration']
                 else:
-                    logger.info(f'✅ Got {len(result)} expirations for {symbol} from Tradier')
+                    logger.debug(f'Got {len(result)} expirations for {symbol} from Tradier')
                 
                 # Cache the result
                 self._expiration_cache[symbol] = (result, datetime.now())
@@ -684,8 +682,8 @@ class TradierConnector:
                 logger.debug(f"Cache lookup failed, fetching from API: {e}")
         
         if is_index:
-            logger.info(
-                f"🔍 TRADIER get_options_chain called for INDEX: {symbol} exp={expiration}"
+            logger.debug(
+                f"TRADIER get_options_chain for INDEX: {symbol} exp={expiration}"
             )
         
         # DISABLED: Yahoo Finance - use Tradier directly
@@ -708,8 +706,8 @@ class TradierConnector:
             chain = self.polygon.get_options_chain(symbol, expiration)
             if chain:
                 if is_index:
-                    logger.info(
-                        f"✅ TRADIER: Using Polygon options chain for {symbol}, found {len(chain)} options"
+                    logger.debug(
+                        f"TRADIER: Using Polygon options chain for {symbol}, found {len(chain)} options"
                     )
                 # Cache the result (30 second TTL for options chains)
                 if use_cache:
@@ -786,7 +784,7 @@ class TradierConnector:
         for attempt in range(max_retries):
             try:
                 timeout = timeouts[attempt]
-                logger.info(
+                logger.debug(
                     f"📡 Fetching options chain: {symbol} exp {expiration} "
                     f"(Attempt {attempt + 1}/{max_retries} with {timeout}s timeout)..."
                 )
@@ -802,9 +800,8 @@ class TradierConnector:
                 if response_obj.status_code == 200:
                     response = response_obj.json()
                     
-                    # Log the response structure
-                    logger.info(
-                        f"✅ Tradier API success! Response keys: {list(response.keys()) if isinstance(response, dict) else 'N/A'}"
+                    logger.debug(
+                        f"Tradier API success: response keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
                     )
                     break
                 
@@ -851,26 +848,17 @@ class TradierConnector:
             return []
         
         if is_index:
-            logger.info(
-                f"🔍 TRADIER API options chain response for {symbol}: "
-                f"has_options={('options' in response)}, "
-                f"response_keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
+            logger.debug(
+                f"TRADIER API options chain response for {symbol}: "
+                f"has_options={('options' in response)}, keys={list(response.keys()) if isinstance(response, dict) else 'N/A'}"
             )
         
         if 'options' in response and 'option' in response['options']:
             options = response['options']['option']
             options_list = options if isinstance(options, list) else [options]
             
-            # Log sample option structure for debugging
             if options_list and len(options_list) > 0:
-                logger.info(f"📊 Received {len(options_list)} options from Tradier")
-                logger.info(f"📋 First option keys: {list(options_list[0].keys())}")
-                # Log first option structure (truncated to avoid huge logs)
-                try:
-                    sample_json = json.dumps(options_list[0], indent=2, default=str)
-                    logger.info(f"📋 First option sample: {sample_json[:500]}...")
-                except:
-                    logger.info(f"📋 First option sample: {str(options_list[0])[:500]}...")
+                logger.debug(f"Received {len(options_list)} options from Tradier for {symbol}")
             
             # CRITICAL: Validate and filter out options with stock prices instead of premiums
             validated_options = []
@@ -898,21 +886,11 @@ class TradierConnector:
                 
                 validated_options.append(opt)
             
-            if is_index:
-                logger.info(
-                    f"✅ TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
+            if is_index and rejected_count > 0:
+                logger.debug(
+                    f"TRADIER: Parsed {len(options_list)} options, validated {len(validated_options)} "
                     f"(rejected {rejected_count} with stock prices)"
                 )
-                # Log first few VALIDATED option prices
-                for i, opt in enumerate(validated_options[:3]):
-                    bid = opt.get('bid', 0) or 0
-                    ask = opt.get('ask', 0) or 0
-                    last = opt.get('last', 0) or 0
-                    strike = opt.get('strike', 0) or opt.get('strike_price', 0)
-                    opt_type = opt.get('type', '')
-                    logger.info(
-                        f"   Valid Option {i+1}: {opt_type} ${strike} - bid=${bid:.2f}, ask=${ask:.2f}, last=${last:.2f}"
-                    )
             
             # Cache the result (30 second TTL for options chains)
             if use_cache:

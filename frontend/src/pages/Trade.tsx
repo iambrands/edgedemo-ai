@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -37,6 +37,9 @@ const Trade: React.FC = () => {
   const [shortStrike, setShortStrike] = useState('');
   const [spreadMetrics, setSpreadMetrics] = useState<any>(null);
   const [calculatingSpread, setCalculatingSpread] = useState(false);
+
+  // Prevent duplicate submit (e.g. double-click) - ref blocks before setLoading re-renders
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     loadAccountBalance();
@@ -324,10 +327,12 @@ const Trade: React.FC = () => {
   };
   
   const executeSpread = async () => {
+    if (submittingRef.current) return;
     if (!symbol || !expiration || !longStrike || !shortStrike || !contractType || spreadAmount === null) {
       toast.error('Please fill in all spread fields including spread amount');
       return;
     }
+    submittingRef.current = true;
 
     // Validate strikes
     const long = parseFloat(longStrike);
@@ -402,17 +407,19 @@ const Trade: React.FC = () => {
       console.error('Spread execution error:', error);
       toast.error(errorMessage, { duration: 5000 });
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const handleTrade = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (submittingRef.current) return;
+
     if (isSpread) {
       return executeSpread();
     }
-    
+
     if (!symbol || !expiration || !strike || !quantity || price === null) {
       toast.error('Please fill in all required fields including price');
       return;
@@ -424,8 +431,12 @@ const Trade: React.FC = () => {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
+      const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const response = await api.post('/trades/execute', {
         symbol: symbol.toUpperCase(),
         action: action,
@@ -434,7 +445,8 @@ const Trade: React.FC = () => {
         expiration_date: expiration,
         contract_type: contractType,
         price: price,
-        strategy_source: 'manual'
+        strategy_source: 'manual',
+        idempotency_key: idempotencyKey
       });
 
       toast.success(`${action === 'buy' ? 'Bought' : 'Sold'} ${quantity} ${contractType} contract(s)`);
@@ -460,6 +472,7 @@ const Trade: React.FC = () => {
       console.error('Error response:', error.response?.data);
       toast.error(errorMessage, { duration: 5000 });
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };

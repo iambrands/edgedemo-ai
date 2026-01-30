@@ -114,7 +114,7 @@ class PrecomputeService:
                     return 'skipped'
             
             # Perform analysis
-            logger.info(f"🔄 Pre-computing: {symbol} {expiration}")
+            logger.debug(f"Pre-computing: {symbol} {expiration}")
             
             result = self.analyzer.analyze_options_chain(
                 symbol=symbol,
@@ -126,7 +126,7 @@ class PrecomputeService:
             if self.cache.redis:
                 self.cache.set_analysis(symbol, expiration, 'balanced', result, ttl=300)
             
-            logger.info(f"✅ Cached analysis: {symbol} (valid for 5 min)")
+            logger.debug(f"Cached analysis: {symbol} (valid for 5 min)")
             return 'success'
             
         except Exception as e:
