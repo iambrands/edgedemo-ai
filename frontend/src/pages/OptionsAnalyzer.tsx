@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { optionsService } from '../services/options';
 import { OptionContract } from '../types/options';
 import { watchlistService } from '../services/watchlist';
-import api from '../services/api';
+import api, { cachedGet } from '../services/api';
 import toast from 'react-hot-toast';
 import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
 import { useDevice } from '../hooks/useDevice';
@@ -52,6 +52,7 @@ const OptionsAnalyzer: React.FC = () => {
   const [options, setOptions] = useState<OptionContract[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingExpirations, setLoadingExpirations] = useState(false);
+  const [expirationsFetchedForSymbol, setExpirationsFetchedForSymbol] = useState<string | null>(null);
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
   
   // Debit Spread analyzer state
@@ -86,43 +87,24 @@ const OptionsAnalyzer: React.FC = () => {
     if (!symbol || symbol.trim().length < 1) return;
     
     const trimmedSymbol = symbol.trim().toUpperCase();
-    // Validate symbol format (1-5 uppercase letters)
-    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) {
-      return;
-    }
-    
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+
     setLoadingExpirations(true);
     try {
-      const data = await optionsService.getExpirations(trimmedSymbol);
-      console.log('Expirations data:', data);
-      console.log('Expirations data type:', typeof data);
-      console.log('Expirations data.expirations:', data?.expirations);
-      console.log('Is array?', Array.isArray(data?.expirations));
-      
-      if (data && data.expirations) {
+      const data = await cachedGet<{ expirations?: string[] }>(
+        `/options/expirations/${trimmedSymbol}`,
+        60000
+      );
+      if (data?.expirations) {
         const expArray = Array.isArray(data.expirations) ? data.expirations : [];
-        console.log('Setting expirations:', expArray);
         setExpirations(expArray);
-        // Always set the first expiration if available and none is selected
         if (expArray.length > 0) {
-          console.log('Setting first expiration to:', expArray[0]);
-          setExpiration(prev => {
-            if (!prev) {
-              console.log('No previous expiration, setting to:', expArray[0]);
-              return expArray[0];
-            }
-            return prev;
-          });
-        } else {
-          console.warn('No expirations in array');
+          setExpiration(prev => (!prev ? expArray[0] : prev));
         }
       } else {
-        console.warn('Invalid expirations data:', data);
         setExpirations([]);
       }
     } catch (error: any) {
-      console.error('Failed to fetch expirations:', error);
-      // Only show error if it's not a 404 or validation error
       if (error.response?.status !== 404 && error.response?.status !== 400) {
         toast.error(error.response?.data?.error || 'Failed to fetch expirations');
       }
@@ -196,90 +178,68 @@ const OptionsAnalyzer: React.FC = () => {
     }
   }, [location.state]);
 
+  // Reset expirations-fetched flag when symbol changes so we refetch for new symbol
+  React.useEffect(() => {
+    setExpirationsFetchedForSymbol(null);
+  }, [symbol]);
+
   // Fetch data when symbol changes (including from navigation)
   React.useEffect(() => {
-    // Only fetch if symbol is at least 1 character and not just whitespace
-    if (symbol && symbol.trim().length >= 1) {
-      const trimmedSymbol = symbol.trim().toUpperCase();
-      if (trimmedSymbol.length >= 1 && trimmedSymbol.length <= 5 && /^[A-Z]+$/.test(trimmedSymbol)) {
-        // On initial mount or when symbol comes from navigation, fetch immediately (no debounce)
-        // For subsequent changes, debounce to avoid excessive API calls
-        if (isInitialMount || symbolFromNav === trimmedSymbol) {
-          console.log('Fetching data for symbol from navigation:', trimmedSymbol);
+    if (!symbol || symbol.trim().length < 1) return;
+    const trimmedSymbol = symbol.trim().toUpperCase();
+    if (trimmedSymbol.length > 5 || !/^[A-Z]+$/.test(trimmedSymbol)) return;
+
+    const shouldFetchNow = isInitialMount || symbolFromNav === trimmedSymbol;
+    const alreadyFetchedForThisSymbol = expirationsFetchedForSymbol === trimmedSymbol;
+
+    if (shouldFetchNow && !alreadyFetchedForThisSymbol) {
+      fetchExpirations();
+      fetchStockPrice();
+      setIsInitialMount(false);
+      setSymbolFromNav(null);
+      setExpirationsFetchedForSymbol(trimmedSymbol);
+    } else if (!shouldFetchNow) {
+      const timeoutId = setTimeout(() => {
+        if (expirationsFetchedForSymbol !== trimmedSymbol) {
           fetchExpirations();
           fetchStockPrice();
-          setIsInitialMount(false);
-          setSymbolFromNav(null); // Clear the flag after first fetch
-        } else {
-          // Debounce: wait 500ms after user stops typing
-          const timeoutId = setTimeout(() => {
-            fetchExpirations();
-            fetchStockPrice();
-          }, 500);
-          
-          return () => clearTimeout(timeoutId);
+          setExpirationsFetchedForSymbol(trimmedSymbol);
         }
-      }
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, isInitialMount, symbolFromNav]);
+  }, [symbol, isInitialMount, symbolFromNav, expirationsFetchedForSymbol]);
   
-  // Separate effect to set expiration when expirations are loaded
+  // Set expiration when expirations list is loaded
   React.useEffect(() => {
-    console.log('Expirations effect triggered:', { 
-      expirations, 
-      expiration, 
-      expirationsLength: expirations.length,
-      firstExpiration: expirations[0],
-      currentExpirationValue: expiration
-    });
     if (expirations.length > 0) {
-      // If no expiration is set, or current expiration is not in the list, set to first
       if (!expiration || !expirations.includes(expiration)) {
-        console.log('Auto-selecting first expiration:', expirations[0]);
         setExpiration(expirations[0]);
       }
     } else {
-      // Clear expiration if no expirations available
-      if (expiration) {
-        setExpiration('');
-      }
+      if (expiration) setExpiration('');
     }
-  }, [expirations]); // Remove expiration from dependencies to avoid loops
+  }, [expirations]);
 
   const fetchStockPrice = async () => {
     if (!symbol || symbol.trim().length < 1) return;
-    
     const trimmedSymbol = symbol.trim().toUpperCase();
-    // Validate symbol format (1-5 uppercase letters)
-    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) {
-      return;
-    }
-    
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+
     try {
-      const response = await api.get(`/options/quote/${trimmedSymbol}`);
-      if (response.data && response.data.current_price) {
-        setStockPrice(response.data.current_price);
+      const data = await cachedGet<{ current_price?: number }>(
+        `/options/quote/${trimmedSymbol}`,
+        10000
+      );
+      if (data?.current_price) {
+        setStockPrice(data.current_price);
       }
     } catch (error: any) {
-      // Log the error for debugging but don't show toast for 404s (expected for invalid symbols)
       const status = error.response?.status;
-      const errorMsg = error.response?.data?.error || error.message;
-      
-      if (status === 404) {
-        // 404 is expected for invalid symbols or when quote service is unavailable
-        console.debug(`Quote not available for ${trimmedSymbol}:`, errorMsg);
-      } else if (status === 401) {
-        // 401 means user needs to authenticate - this shouldn't happen on Options Analyzer
-        console.warn('Authentication required for quote:', errorMsg);
-      } else if (status === 500) {
-        // Server error - might be Tradier/Yahoo issue
-        console.warn('Quote service error:', errorMsg);
-      } else if (status) {
-        // Other HTTP errors
-        console.warn(`Failed to fetch stock price (${status}):`, errorMsg);
+      if (status !== 404 && status !== 401 && status !== 500) {
+        console.warn(`Failed to fetch stock price (${status}):`, error.response?.data?.error || error.message);
       }
-      // Don't set stockPrice to null on error - keep previous value if available
     }
   };
 
@@ -336,20 +296,16 @@ const OptionsAnalyzer: React.FC = () => {
   
   const fetchSpreadExpirations = async () => {
     if (!spreadSymbol || spreadSymbol.trim().length < 1) return;
-    
     const trimmedSymbol = spreadSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
-    
     setLoadingSpreadExpirations(true);
     try {
-      const data = await optionsService.getExpirations(trimmedSymbol);
-      if (data && data.expirations) {
+      const data = await cachedGet<{ expirations?: string[] }>(`/options/expirations/${trimmedSymbol}`, 60000);
+      if (data?.expirations) {
         const expArray = Array.isArray(data.expirations) ? data.expirations : [];
         setSpreadExpirations(expArray);
-        if (expArray.length > 0 && !spreadExpiration) {
-          setSpreadExpiration(expArray[0]);
-        }
-      }
+        if (expArray.length > 0 && !spreadExpiration) setSpreadExpiration(expArray[0]);
+      } else setSpreadExpirations([]);
     } catch (error) {
       console.error('Failed to fetch spread expirations:', error);
       setSpreadExpirations([]);
@@ -360,15 +316,11 @@ const OptionsAnalyzer: React.FC = () => {
 
   const fetchSpreadStockPrice = async () => {
     if (!spreadSymbol || spreadSymbol.trim().length < 1) return;
-    
     const trimmedSymbol = spreadSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
-    
     try {
-      const response = await api.get(`/options/quote/${trimmedSymbol}`);
-      if (response.data && response.data.current_price) {
-        setSpreadStockPrice(response.data.current_price);
-      }
+      const data = await cachedGet<{ current_price?: number }>(`/options/quote/${trimmedSymbol}`, 10000);
+      if (data?.current_price) setSpreadStockPrice(data.current_price);
     } catch (error) {
       console.error('Failed to fetch spread stock price:', error);
     }
@@ -504,20 +456,16 @@ const OptionsAnalyzer: React.FC = () => {
   
   const fetchCreditExpirations = async () => {
     if (!creditSymbol || creditSymbol.trim().length < 1) return;
-    
     const trimmedSymbol = creditSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
-    
     setLoadingCreditExpirations(true);
     try {
-      const data = await optionsService.getExpirations(trimmedSymbol);
-      if (data && data.expirations) {
+      const data = await cachedGet<{ expirations?: string[] }>(`/options/expirations/${trimmedSymbol}`, 60000);
+      if (data?.expirations) {
         const expArray = Array.isArray(data.expirations) ? data.expirations : [];
         setCreditExpirations(expArray);
-        if (expArray.length > 0 && !creditExpiration) {
-          setCreditExpiration(expArray[0]);
-        }
-      }
+        if (expArray.length > 0 && !creditExpiration) setCreditExpiration(expArray[0]);
+      } else setCreditExpirations([]);
     } catch (error) {
       console.error('Failed to fetch credit expirations:', error);
       setCreditExpirations([]);
@@ -528,15 +476,11 @@ const OptionsAnalyzer: React.FC = () => {
 
   const fetchCreditStockPrice = async () => {
     if (!creditSymbol || creditSymbol.trim().length < 1) return;
-    
     const trimmedSymbol = creditSymbol.trim().toUpperCase();
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
-    
     try {
-      const response = await api.get(`/options/quote/${trimmedSymbol}`);
-      if (response.data && response.data.current_price) {
-        setCreditStockPrice(response.data.current_price);
-      }
+      const data = await cachedGet<{ current_price?: number }>(`/options/quote/${trimmedSymbol}`, 10000);
+      if (data?.current_price) setCreditStockPrice(data.current_price);
     } catch (error) {
       console.error('Failed to fetch credit stock price:', error);
     }

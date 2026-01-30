@@ -58,12 +58,8 @@ class TradierConnector:
             self.use_yahoo = False
             self.use_polygon = current_app.config.get('USE_POLYGON_DATA', False)
             
-            # Log configuration for debugging
-            logger.info(
-                f"🔧 TRADIER CONFIG: use_mock={self.use_mock}, use_yahoo={self.use_yahoo} (FORCED OFF), "
-                f"use_polygon={self.use_polygon}, sandbox={self.sandbox}, "
-                f"api_key_present={bool(self.api_key)}, api_key_length={len(self.api_key) if self.api_key else 0}, "
-                f"base_url={self.base_url}"
+            logger.debug(
+                f"TRADIER CONFIG: sandbox={self.sandbox}, api_key_present={bool(self.api_key)}, base_url={self.base_url}"
             )
             
             # CRITICAL: Warn if API key is missing
@@ -119,10 +115,8 @@ class TradierConnector:
             self.yahoo = None
             self.polygon = None
             
-            logger.info(
-                f"🔧 TRADIER CONFIG (outside Flask context): sandbox={self.sandbox}, "
-                f"base_url={self.base_url}, api_key_present={bool(self.api_key)}, "
-                f"api_key_length={len(self.api_key) if self.api_key else 0}"
+            logger.debug(
+                f"TRADIER CONFIG (no Flask): sandbox={self.sandbox}, base_url={self.base_url}, api_key_present={bool(self.api_key)}"
             )
             
             # CRITICAL: Warn if API key is missing

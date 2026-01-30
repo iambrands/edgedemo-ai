@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api from '../services/api';
+import { cachedGet } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { formatTimestamp as formatTsUtil } from '../utils/dateTime';
 
@@ -18,6 +18,7 @@ interface RealTimePriceDisplayProps {
   symbol: string;
   onPriceUpdate?: (price: number) => void;
   timezone?: string;  // Optional timezone override
+  refreshInterval?: number;  // ms, default 30000 (30 seconds)
 }
 
 /**
@@ -48,11 +49,11 @@ const isMarketHours = (): boolean => {
 const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({ 
   symbol, 
   onPriceUpdate,
-  timezone: timezoneProp
+  timezone: timezoneProp,
+  refreshInterval = 30000
 }) => {
   const { user } = useAuth();
   
-  // Use prop timezone, then user's timezone, then fallback to America/New_York
   const userTimezone = timezoneProp || user?.timezone || 'America/New_York';
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,21 +70,23 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
     if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
 
     try {
-      const response = await api.get(`/options/quote/${trimmedSymbol}`);
+      const data = await cachedGet<Record<string, any>>(
+        `/options/quote/${trimmedSymbol}`,
+        10000
+      );
       
-      if (response.data && response.data.current_price) {
+      if (data && data.current_price) {
         const newQuote: QuoteData = {
-          symbol: response.data.symbol || trimmedSymbol,
-          current_price: response.data.current_price,
-          change: response.data.change || 0,
-          change_percent: response.data.change_percent || 0,
-          volume: response.data.volume,
-          high: response.data.high,
-          low: response.data.low,
-          open: response.data.open
+          symbol: data.symbol || trimmedSymbol,
+          current_price: data.current_price,
+          change: data.change || 0,
+          change_percent: data.change_percent || 0,
+          volume: data.volume,
+          high: data.high,
+          low: data.low,
+          open: data.open
         };
         
-        // Check if price changed for animation
         if (previousPriceRef.current !== null && 
             previousPriceRef.current !== newQuote.current_price) {
           setPriceUpdated(true);
@@ -95,7 +98,6 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
         setTimestamp(formatTsUtil(new Date(), userTimezone));
         setError(null);
         
-        // Notify parent of price update
         if (onPriceUpdate) {
           onPriceUpdate(newQuote.current_price);
         }
@@ -115,48 +117,48 @@ const RealTimePriceDisplay: React.FC<RealTimePriceDisplayProps> = ({
     }
   }, [symbol, onPriceUpdate, userTimezone]);
 
-  // Set up polling
+  // Initial fetch
   useEffect(() => {
-    if (!symbol) return;
+    if (symbol) {
+      setLoading(true);
+      fetchQuote();
+    }
+  }, [symbol, fetchQuote]);
 
-    // Initial fetch
-    setLoading(true);
-    fetchQuote();
+  // Visibility-aware polling: only poll when tab is visible
+  useEffect(() => {
+    if (!symbol || refreshInterval <= 0) return;
 
-    // Clear existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    let intervalId: NodeJS.Timeout | undefined;
+
+    const startPolling = () => {
+      intervalId = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          fetchQuote();
+        }
+      }, refreshInterval);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchQuote();
+        startPolling();
+      } else {
+        if (intervalId) clearInterval(intervalId);
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startPolling();
     }
 
-    // Update interval based on market hours
-    // 5 seconds during market hours, 60 seconds after hours
-    const updateInterval = () => {
-      const interval = isMarketHours() ? 5000 : 60000;
-      
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      
-      intervalRef.current = setInterval(() => {
-        fetchQuote();
-      }, interval);
-    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    updateInterval();
-
-    // Check market hours status every minute to adjust polling frequency
-    const marketCheckInterval = setInterval(() => {
-      updateInterval();
-    }, 60000);
-
-    // Cleanup
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      clearInterval(marketCheckInterval);
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [symbol, fetchQuote]);
+  }, [symbol, refreshInterval, fetchQuote]);
 
   // Determine price direction for styling
   const getPriceDirection = (): 'positive' | 'negative' | 'neutral' => {

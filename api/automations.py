@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
+from sqlalchemy import func, desc, nulls_last
 from models.automation import Automation
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
@@ -13,10 +14,15 @@ def get_db():
 @automations_bp.route('', methods=['GET'])
 @token_required
 def get_automations(current_user):
-    """Get all automations for user"""
+    """Get all automations for user, ranked by execution count (most executions first)."""
     try:
         db = get_db()
-        automations = db.session.query(Automation).filter_by(user_id=current_user.id).all()
+        automations = (
+            db.session.query(Automation)
+            .filter_by(user_id=current_user.id)
+            .order_by(func.coalesce(Automation.execution_count, 0).desc(), nulls_last(desc(Automation.last_executed)))
+            .all()
+        )
         return jsonify({
             'automations': [a.to_dict() for a in automations],
             'count': len(automations)
@@ -206,16 +212,23 @@ def toggle_automation(current_user, automation_id):
 @automations_bp.route('/<int:automation_id>', methods=['DELETE'])
 @token_required
 def delete_automation(current_user, automation_id):
-    """Delete an automation"""
+    """Delete an automation. Unlinks any trades that referenced it (sets automation_id to null)."""
     db = get_db()
     automation = db.session.query(Automation).filter_by(id=automation_id, user_id=current_user.id).first()
     if not automation:
         return jsonify({'error': 'Automation not found'}), 404
-    
+
     try:
+        from models.trade import Trade
+        # Unlink trades that reference this automation so the FK constraint doesn't block delete
+        updated = db.session.query(Trade).filter_by(automation_id=automation_id, user_id=current_user.id).update(
+            {Trade.automation_id: None},
+            synchronize_session=False
+        )
+        if updated:
+            current_app.logger.info(f"Unlinked {updated} trade(s) from automation id={automation_id} before delete")
         db.session.delete(automation)
         db.session.commit()
-        
         return jsonify({'message': 'Automation deleted'}), 200
     except Exception as e:
         db.session.rollback()

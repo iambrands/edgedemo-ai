@@ -29,7 +29,7 @@ class OptionsAnalyzer:
             List of analyzed options with scores and explanations
         """
         try:
-            current_app.logger.info(f'Getting stock price for {symbol}...')
+            current_app.logger.debug(f'Getting stock price for {symbol}')
         except RuntimeError:
             pass
         
@@ -80,7 +80,7 @@ class OptionsAnalyzer:
                 stock_price = 100.0  # Last resort; log above so we know when it happens
         
         try:
-            current_app.logger.info(f'Stock price: ${stock_price}, fetching options chain for {symbol} expiration {expiration}...')
+            current_app.logger.debug(f'Stock ${stock_price}, fetching chain {symbol} {expiration}')
         except RuntimeError:
             pass
         
@@ -100,14 +100,9 @@ class OptionsAnalyzer:
                 if isinstance(o, dict) and 
                 ((o.get('option_type') or o.get('type') or '').lower().strip() == 'put')
             ]
-            log_msg = (
-                f'[RECOMMENDATIONS] Raw chain from Tradier: {len(options)} total '
-                f'({len(raw_calls)} CALLs, {len(raw_puts)} PUTs)'
+            current_app.logger.debug(
+                f'[RECOMMENDATIONS] Raw chain: {len(options)} ({len(raw_calls)} CALLs, {len(raw_puts)} PUTs)'
             )
-            # Force console output
-            print(log_msg, file=sys.stderr, flush=True)
-            current_app.logger.info(log_msg)
-            current_app.logger.info(f'Received {len(options)} options from chain')
         except RuntimeError:
             pass
         
@@ -123,7 +118,7 @@ class OptionsAnalyzer:
         MAX_OPTIONS_TO_ANALYZE = 50  # Limit to top 50 options for AI analysis
         
         try:
-            current_app.logger.info(f'Received {len(options)} options, will analyze top {MAX_OPTIONS_TO_ANALYZE} candidates')
+            current_app.logger.debug(f'Analyzing top {MAX_OPTIONS_TO_ANALYZE} of {len(options)} options')
         except RuntimeError:
             pass
         
@@ -141,13 +136,9 @@ class OptionsAnalyzer:
             import sys
             pre_calls = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'call']
             pre_puts = [a for a in pre_analyzed if (a.get('contract_type') or '').lower() == 'put']
-            log_msg = (
-                f'[RECOMMENDATIONS] After basic analysis: {len(pre_analyzed)} total '
-                f'({len(pre_calls)} CALLs, {len(pre_puts)} PUTs)'
+            current_app.logger.debug(
+                f'[RECOMMENDATIONS] After basic: {len(pre_analyzed)} ({len(pre_calls)} CALLs, {len(pre_puts)} PUTs)'
             )
-            # Force console output
-            print(log_msg, file=sys.stderr, flush=True)
-            current_app.logger.info(log_msg)
         except RuntimeError:
             pass
         
@@ -160,25 +151,18 @@ class OptionsAnalyzer:
             import sys
             top_calls = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'call']
             top_puts = [a for a in top_candidates if (a.get('contract_type') or '').lower() == 'put']
-            log_msg = (
-                f'[RECOMMENDATIONS] Top {len(top_candidates)} candidates: '
-                f'{len(top_calls)} CALLs, {len(top_puts)} PUTs'
+            current_app.logger.debug(
+                f'[RECOMMENDATIONS] Top {len(top_candidates)}: {len(top_calls)} CALLs, {len(top_puts)} PUTs'
             )
-            # Force console output
-            print(log_msg, file=sys.stderr, flush=True)
-            current_app.logger.info(log_msg)
             if len(top_puts) == 0 and len(top_candidates) > 0:
-                warn_msg = (
-                    f'[RECOMMENDATIONS] ⚠️ No PUTs in top {len(top_candidates)} candidates! '
-                    f'This may indicate scoring bias.'
+                current_app.logger.warning(
+                    f'[RECOMMENDATIONS] No PUTs in top {len(top_candidates)} candidates'
                 )
-                print(warn_msg, file=sys.stderr, flush=True)
-                current_app.logger.warning(warn_msg)
         except RuntimeError:
             pass
         
         try:
-            current_app.logger.info(f'Pre-filtered to {len(top_candidates)} top candidates for AI analysis')
+            current_app.logger.debug(f'Pre-filtered to {len(top_candidates)} candidates for AI')
         except RuntimeError:
             pass
         
@@ -210,7 +194,7 @@ class OptionsAnalyzer:
                         analyzed_options.append(analyzed)
                     if (i + 1) % 10 == 0:
                         try:
-                            current_app.logger.info(f'AI analyzed {i + 1}/{len(top_candidates)} top options...')
+                            current_app.logger.debug(f'AI analyzed {i + 1}/{len(top_candidates)} options')
                         except RuntimeError:
                             pass
                 except Exception as e:
@@ -227,25 +211,16 @@ class OptionsAnalyzer:
             # Log final distribution
             final_calls = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'call']
             final_puts = [a for a in analyzed_options if (a.get('contract_type') or '').lower() == 'put']
-            log_msg = (
-                f'[RECOMMENDATIONS] Analysis complete: {len(analyzed_options)} options '
-                f'({len(final_calls)} CALLs, {len(final_puts)} PUTs)'
+            current_app.logger.debug(
+                f'[RECOMMENDATIONS] Complete: {len(analyzed_options)} ({len(final_calls)} CALLs, {len(final_puts)} PUTs)'
             )
-            # Force console output
-            print(log_msg, file=sys.stderr, flush=True)
-            current_app.logger.info(log_msg)
             if len(final_puts) == 0 and len(analyzed_options) > 0:
-                warn_msg = (
-                    f'[RECOMMENDATIONS] ⚠️ No PUTs in final recommendations! '
-                    f'This indicates a bias in the recommendation algorithm.'
-                )
-                print(warn_msg, file=sys.stderr, flush=True)
-                current_app.logger.warning(warn_msg)
+                current_app.logger.warning('[RECOMMENDATIONS] No PUTs in final recommendations')
         except RuntimeError:
             pass
         
         try:
-            current_app.logger.info(f'Analysis complete: {len(analyzed_options)} options analyzed successfully')
+            current_app.logger.debug(f'Analysis complete: {len(analyzed_options)} options')
         except RuntimeError:
             pass
         
@@ -278,8 +253,7 @@ class OptionsAnalyzer:
             return options
         
         try:
-            current_app.logger.info(f"🔍 Large chain detected: {len(options)} options")
-            current_app.logger.info(f"📊 Filtering to {max_options} most relevant strikes")
+            current_app.logger.debug(f"Large chain: {len(options)} options, filtering to {max_options}")
         except RuntimeError:
             pass
         

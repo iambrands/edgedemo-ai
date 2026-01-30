@@ -1,5 +1,51 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { PerformanceTracker } from '../utils/performance';
+
+// --- Request deduplication and short-term caching ---
+const pendingRequests = new Map<string, Promise<any>>();
+const responseCache = new Map<string, { data: any; expiry: number }>();
+
+/**
+ * Deduplicated GET: if the same URL is already in flight, returns the existing promise.
+ */
+export async function dedupedGet<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  const cacheKey = `GET:${url}`;
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey) as Promise<T>;
+  }
+  const requestPromise = api
+    .get<T>(url, config)
+    .then((response) => response.data)
+    .finally(() => {
+      pendingRequests.delete(cacheKey);
+    });
+  pendingRequests.set(cacheKey, requestPromise);
+  return requestPromise;
+}
+
+/**
+ * Cached GET: dedupes in-flight requests and caches successful responses for ttlMs.
+ */
+export async function cachedGet<T = any>(
+  url: string,
+  ttlMs: number = 5000,
+  config?: AxiosRequestConfig
+): Promise<T> {
+  const cacheKey = `GET:${url}`;
+  const now = Date.now();
+  const cached = responseCache.get(cacheKey);
+  if (cached && cached.expiry > now) {
+    return cached.data as T;
+  }
+  const data = await dedupedGet<T>(url, config);
+  responseCache.set(cacheKey, { data, expiry: now + ttlMs });
+  if (responseCache.size > 100) {
+    for (const [key, value] of responseCache.entries()) {
+      if (value.expiry < now) responseCache.delete(key);
+    }
+  }
+  return data;
+}
 
 // Determine API base URL - use environment variable, or current origin in production, or localhost for development
 const getApiBaseUrl = () => {

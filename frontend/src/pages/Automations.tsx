@@ -608,8 +608,11 @@ const Automations: React.FC = () => {
         </ul>
       </div>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-secondary">Automations</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-3xl font-bold text-secondary">Automations</h1>
+          <p className="text-sm text-gray-500 mt-1">Ranked by executions (most first)</p>
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
@@ -1026,12 +1029,17 @@ const Automations: React.FC = () => {
             No automations created yet. Create one to get started!
           </div>
         ) : (
-          automations.map((automation) => (
+          automations.map((automation, index) => (
             <div key={automation.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-secondary">{automation.name}</h3>
-                  <p className="text-sm text-gray-600">{automation.symbol}</p>
+                <div className="flex items-center gap-2">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center" title="Rank by executions (most first)">
+                    #{index + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-secondary">{automation.name}</h3>
+                    <p className="text-sm text-gray-600">{automation.symbol}</p>
+                  </div>
                 </div>
                 <div className={`px-2 py-1 rounded text-xs font-semibold ${
                   automation.is_active && !automation.is_paused
@@ -1065,7 +1073,7 @@ const Automations: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Executions:</span>
-                  <span className="font-medium">{automation.execution_count}</span>
+                  <span className="font-medium">{automation.execution_count ?? 0}</span>
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
