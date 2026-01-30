@@ -999,39 +999,9 @@ def create_app(config_name=None):
         else:
             app.logger.info("✅ Tradier client verified successfully")
     
-    # Health check endpoint
-    @app.route('/health')
-    def health():
-        """Health check endpoint - checks app and database status"""
-        from flask import current_app
-        status = {
-            'status': 'healthy',
-            'service': 'OptionsEdge',
-            'database': 'unknown',
-            'database_url_set': bool(current_app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('postgresql://'))
-        }
-        
-        # Try to check database connection
-        try:
-            db = current_app.extensions.get('sqlalchemy')
-            if db:
-                # Try a simple query
-                db.session.execute(db.text('SELECT 1'))
-                status['database'] = 'connected'
-            else:
-                status['database'] = 'not_initialized'
-        except Exception as e:
-            error_msg = str(e)
-            status['database'] = f'error: {error_msg[:200]}'
-            status['status'] = 'degraded'
-            # Log the full error for debugging
-            current_app.logger.error(f"Database health check failed: {error_msg}")
-            import traceback
-            current_app.logger.error(traceback.format_exc())
-        
-        status_code = 200 if status['database'] == 'connected' else 503
-        return status, status_code
-    
+    # /health is provided by api/health.py (lightweight, no DB) so Railway deploy succeeds.
+    # Use /health/cache or /health/positions for detailed checks.
+
     # Database diagnostic endpoint (for debugging)
     from api.debug import debug_bp
     app.register_blueprint(debug_bp, url_prefix='/api')
