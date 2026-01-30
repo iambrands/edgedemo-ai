@@ -4,7 +4,6 @@ from services.cache_manager import get_cache, set_cache, delete_cache
 from utils.decorators import token_required
 from utils.helpers import validate_symbol
 from utils.performance import log_performance
-from utils.cache import cached
 from sqlalchemy.orm import joinedload
 
 trades_bp = Blueprint('trades', __name__)
@@ -101,8 +100,9 @@ def execute_trade(current_user):
             notes=notes
         )
         
-        # Invalidate positions cache after trade execution
+        # Invalidate positions and P/L summary cache after trade execution
         delete_cache(f'positions:{current_user.id}')
+        delete_cache(f'pl_summary:{current_user.id}')
         
         current_app.logger.info(f'Trade executed successfully: {result.get("trade_id")}')
         return jsonify(result), 201
@@ -124,14 +124,17 @@ def execute_trade(current_user):
 @trades_bp.route('/history', methods=['GET'])
 @token_required
 @log_performance(threshold=1.0)
-@cached(timeout=30)  # Cache trade history for 30 seconds
 def get_trade_history(current_user):
-    """Get trade history with optional filters"""
+    """Get trade history with optional filters. Cached per user + args (30s)."""
     symbol = request.args.get('symbol')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     strategy_source = request.args.get('strategy_source')
-    
+    cache_key = f"trade_history:{current_user.id}:{symbol or ''}:{start_date or ''}:{end_date or ''}:{strategy_source or ''}"
+    cached_data = get_cache(cache_key)
+    if cached_data is not None:
+        current_app.logger.debug(f"Trade history cache hit for user {current_user.id}")
+        return jsonify(cached_data), 200
     try:
         trade_executor = get_trade_executor()
         trades = trade_executor.get_trade_history(
@@ -141,10 +144,9 @@ def get_trade_history(current_user):
             end_date=end_date,
             strategy_source=strategy_source
         )
-        return jsonify({
-            'trades': trades,
-            'count': len(trades)
-        }), 200
+        result = {'trades': trades, 'count': len(trades)}
+        set_cache(cache_key, result, timeout=30)
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -155,42 +157,34 @@ def get_trade_history(current_user):
 def get_pl_summary(current_user):
     """
     All-time realized P/L and win-rate from closed positions only.
-    
-    Realized P/L changes ONLY when positions are closed. This endpoint returns
-    the sum over ALL trades with realized_pnl (no date filter).
-    Use for dashboard summary cards; do not use 30-day trade history for realized P/L.
+    Cached 30s per user for faster dashboard loads.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-    
+    cache_key = f'pl_summary:{current_user.id}'
+    cached_data = get_cache(cache_key)
+    if cached_data is not None:
+        current_app.logger.debug(f"P/L summary cache hit for user {current_user.id}")
+        return jsonify(cached_data), 200
     try:
         from models.trade import Trade
         db = current_app.extensions['sqlalchemy']
-        
-        # All trades with realized P/L (closed positions) – no date filter
         trades = db.session.query(Trade).filter(
             Trade.user_id == current_user.id,
             Trade.realized_pnl.isnot(None)
         ).all()
-        
         total_realized = sum(t.realized_pnl or 0 for t in trades)
         winning = [t for t in trades if (t.realized_pnl or 0) > 0]
         losing = [t for t in trades if (t.realized_pnl or 0) < 0]
         n = len(trades)
         win_rate = (len(winning) / n * 100.0) if n else 0.0
-        
-        logger.info(
-            f"P/L summary user {current_user.id}: realized=${total_realized:.2f} "
-            f"({len(winning)}W/{len(losing)}L) win_rate={win_rate:.1f}%"
-        )
-        
-        return jsonify({
+        result = {
             'realized_pnl': round(total_realized, 2),
             'total_trades_with_pnl': n,
             'winning_trades': len(winning),
             'losing_trades': len(losing),
             'win_rate': round(win_rate, 2),
-        }), 200
+        }
+        set_cache(cache_key, result, timeout=30)
+        return jsonify(result), 200
     except Exception as e:
         current_app.logger.error(f"P/L summary error: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -213,8 +207,8 @@ def get_positions(current_user):
         # Only update prices if update_prices parameter is true (default: false for speed)
         update_prices = request.args.get('update_prices', 'false').lower() == 'true'
         
-        current_app.logger.info(
-            f"📊 GET /api/trades/positions - user_id={current_user.id}, update_prices={update_prices}"
+        current_app.logger.debug(
+            f"GET /trades/positions user_id={current_user.id} update_prices={update_prices}"
         )
         
         # CACHE CHECK - only for fast path (no price updates)
@@ -223,7 +217,7 @@ def get_positions(current_user):
             cache_key = f'positions:{current_user.id}'
             cached_data = get_cache(cache_key)
             if cached_data:
-                current_app.logger.info(f"💾 Positions cache hit for user {current_user.id}")
+                current_app.logger.debug(f"Positions cache hit user_id={current_user.id}")
                 return jsonify(cached_data), 200
         
         # Use eager loading to avoid N+1 queries
@@ -335,8 +329,8 @@ def get_positions(current_user):
         # Combine regular positions and spreads
         all_positions = positions + spread_positions
         
-        current_app.logger.info(
-            f"✅ GET /api/trades/positions - returning {len(positions)} positions and {len(spread_positions)} spreads for user {current_user.id}"
+        current_app.logger.debug(
+            f"GET /trades/positions returning {len(positions)} positions + {len(spread_positions)} spreads user_id={current_user.id}"
         )
         
         result = {
@@ -634,8 +628,9 @@ def close_position(current_user, position_id):
             exit_price=exit_price
         )
         
-        # Invalidate positions cache after closing
+        # Invalidate positions and P/L summary cache after closing
         delete_cache(f'positions:{current_user.id}')
+        delete_cache(f'pl_summary:{current_user.id}')
         
         return jsonify(result), 200
     except Exception as e:

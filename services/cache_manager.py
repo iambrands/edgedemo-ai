@@ -486,47 +486,29 @@ def get_cache(key: str) -> Optional[Any]:
         if user:
             return jsonify(user)
     """
-    import sys
-    
     try:
         cm = _get_cache_manager()
-        
-        # DIAGNOSTIC: Log cache manager state
         if not cm.enabled:
-            print(f"❌ [CACHE_MANAGER] Cache DISABLED for key '{key}'", file=sys.stderr, flush=True)
-            logger.warning(f"❌ [CACHE_MANAGER] Cache DISABLED for key '{key}'")
+            logger.debug(f"Cache disabled for key '{key}'")
             return None
-        
         if not cm.redis:
-            print(f"❌ [CACHE_MANAGER] Redis NOT CONNECTED for key '{key}'", file=sys.stderr, flush=True)
-            logger.warning(f"❌ [CACHE_MANAGER] Redis NOT CONNECTED for key '{key}'")
+            logger.debug(f"Redis not connected for key '{key}'")
             return None
         
-        # Try to get from Redis
         cached = cm.redis.get(key)
-        
         if cached is None:
-            print(f"❌ [CACHE_MANAGER] Key not found in Redis: '{key}'", file=sys.stderr, flush=True)
-            logger.debug(f"❌ [CACHE MISS] '{key}'")
+            logger.debug(f"Cache MISS '{key}'")
             return None
         
-        # Parse JSON
         parsed = json.loads(cached)
-        
-        # Handle wrapped format (with 'data' key)
         if isinstance(parsed, dict) and 'data' in parsed:
-            print(f"✅ [CACHE_MANAGER] HIT '{key}' (wrapped format)", file=sys.stderr, flush=True)
-            logger.info(f"💾 [CACHE HIT] '{key}'")
+            logger.debug(f"Cache HIT '{key}'")
             return parsed['data']
-        
-        # Handle legacy format (raw data)
-        print(f"✅ [CACHE_MANAGER] HIT '{key}' (legacy format)", file=sys.stderr, flush=True)
-        logger.info(f"💾 [CACHE HIT] '{key}' (legacy format)")
+        logger.debug(f"Cache HIT '{key}' (legacy)")
         return parsed
         
     except json.JSONDecodeError as e:
-        print(f"❌ [CACHE_MANAGER] JSON decode error for '{key}': {e}", file=sys.stderr, flush=True)
-        logger.warning(f"[CACHE ERROR] Invalid JSON for '{key}': {e}")
+        logger.warning(f"Invalid JSON for '{key}': {e}")
         # Delete corrupted entry
         try:
             cm = _get_cache_manager()
@@ -536,8 +518,7 @@ def get_cache(key: str) -> Optional[Any]:
             pass
         return None
     except Exception as e:
-        print(f"❌ [CACHE_MANAGER] Error for '{key}': {type(e).__name__}: {e}", file=sys.stderr, flush=True)
-        logger.error(f"❌ [CACHE GET ERROR] '{key}': {type(e).__name__}: {e}")
+        logger.error(f"Cache GET error '{key}': {type(e).__name__}: {e}")
         return None
 
 

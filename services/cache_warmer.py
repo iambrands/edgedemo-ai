@@ -176,7 +176,7 @@ class CacheWarmer:
                         result = {'movers': movers, 'count': len(movers)}
                         # Use set_cache() from cache_manager (not self.cache) for consistency!
                         # TTL = 300s (5 min) - MUST be longer than warming interval (4 min)
-                        set_cache(cache_key, result, timeout=300)
+                        set_cache(cache_key, result, timeout=360)
                         logger.info(f"✅ Warmed {cache_key}: {len(movers)} movers [TTL=300s]")
                 except Exception as e:
                     logger.error(f"❌ Error warming market movers limit={limit}: {e}")
@@ -221,7 +221,7 @@ class CacheWarmer:
                     
                     if analysis:
                         # Use set_cache() from cache_manager (not self.cache) for consistency!
-                        set_cache(cache_key, analysis, timeout=300)  # 5 minutes
+                        set_cache(cache_key, analysis, timeout=360)
                         warmed += 1
                         logger.info(f"  ✅ Warmed options flow for {symbol} [TTL=300s]")
                     else:
@@ -306,7 +306,7 @@ class CacheWarmer:
             # Use set_cache() from cache_manager (not self.cache) for consistency!
             # TTL = 300s (5 min) - MUST be longer than warming interval (4 min)
             cache_key = 'opportunities:today'
-            set_cache(cache_key, result, timeout=300)
+            set_cache(cache_key, result, timeout=360)
             logger.info(f"✅ Warmed {cache_key}: {len(opportunities[:5])} opportunities")
             
             return True
@@ -496,9 +496,9 @@ def warm_all_caches():
                 'count': min(5, len(opportunities)),
                 'source': 'popular_symbols'
             }
-            set_cache('opportunities:today', opp_result, timeout=300)  # 5 minutes, not 60 seconds!
+            set_cache('opportunities:today', opp_result, timeout=360)  # 6 min - longer than 4-min warmer
             results['opportunities'] = True
-            print(f"   ✅ Cached opportunities:today ({len(opportunities[:5])} items) [TTL=300s]", flush=True)
+            print(f"   ✅ Cached opportunities:today ({len(opportunities[:5])} items) [TTL=360s]", flush=True)
             
         except Exception as e:
             print(f"   ❌ Opportunities warming FAILED: {e}", flush=True)
@@ -518,8 +518,8 @@ def warm_all_caches():
                     movers = movers_service.get_market_movers(limit=limit)
                     if movers:
                         cache_key = f'market_movers:limit_{limit}'
-                        # TTL = 300 seconds (5 minutes) - MUST be longer than warming interval (4 min)
-                        set_cache(cache_key, {'movers': movers, 'count': len(movers)}, timeout=300)
+                        # TTL = 360s (6 min) - longer than 4-min warmer so keys never expire before next warm
+                        set_cache(cache_key, {'movers': movers, 'count': len(movers)}, timeout=360)
                         print(f"   ✅ Cached {cache_key} ({len(movers)} items) [TTL=300s]", flush=True)
                         results['market_movers'] = True
                 except Exception as e:
@@ -562,7 +562,7 @@ def warm_all_caches():
                     analysis = analyzer.analyze_flow(symbol)
                     
                     if analysis:
-                        set_cache(cache_key, analysis, timeout=300)
+                        set_cache(cache_key, analysis, timeout=360)
                         print(f"   ✅ {symbol} cached", flush=True)
                         warmed += 1
                     else:
@@ -573,7 +573,7 @@ def warm_all_caches():
                             'summary': {'total_signals': 0, 'bullish': 0, 'bearish': 0},
                             'message': 'No unusual activity detected'
                         }
-                        set_cache(cache_key, empty_result, timeout=300)
+                        set_cache(cache_key, empty_result, timeout=360)
                         print(f"   ⚠️ {symbol} no data - cached empty result", flush=True)
                         warmed += 1
                         
@@ -590,7 +590,7 @@ def warm_all_caches():
                     analyzer = OptionsFlowAnalyzer()
                     analysis = analyzer.analyze_flow(symbol)
                     if analysis:
-                        set_cache(cache_key, analysis, timeout=300)
+                        set_cache(cache_key, analysis, timeout=360)
                         print(f"   ✅ {symbol} cached on retry", flush=True)
                         warmed += 1
                 except Exception as e:

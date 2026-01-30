@@ -627,23 +627,20 @@ def create_app(config_name=None):
     )
     app.logger.info("✅ Scheduled periodic cache warming (every 4 minutes, runs 24/7)")
     
-    # NUCLEAR OPTION: Run cache warming SYNCHRONOUSLY on startup
-    # This bypasses the scheduler completely to verify the code works
-    app.logger.info("=" * 80)
-    app.logger.info("🧪 NUCLEAR OPTION: Running cache warmer SYNCHRONOUSLY on startup...")
-    app.logger.info("=" * 80)
-    print("=" * 80, flush=True)
-    print("🧪 NUCLEAR OPTION: Running cache warmer SYNCHRONOUSLY...", flush=True)
-    print("=" * 80, flush=True)
-    
-    try:
-        # Run synchronously (blocking) to verify code works
-        sync_result = run_cache_warming()
-        app.logger.info(f"✅ Synchronous cache warming result: {sync_result}")
-        print(f"✅ Synchronous cache warming result: {sync_result}", flush=True)
-    except Exception as sync_e:
-        app.logger.error(f"❌ Synchronous cache warming FAILED: {sync_e}", exc_info=True)
-        print(f"❌ Synchronous cache warming FAILED: {sync_e}", flush=True)
+    # Run initial cache warming in a BACKGROUND thread so the server can start listening
+    # immediately. Blocking here caused Railway/GCP healthchecks to fail (server not ready).
+    # Scheduler already runs warming at 30s and every 4 min.
+    def run_initial_warm_in_background():
+        import time
+        time.sleep(5)  # Let server bind and pass first healthcheck
+        try:
+            app.logger.info("🔥 Background: starting initial cache warm...")
+            run_cache_warming()
+            app.logger.info("✅ Background cache warming finished")
+        except Exception as e:
+            app.logger.warning(f"Background cache warming failed (non-fatal): {e}")
+    import threading
+    threading.Thread(target=run_initial_warm_in_background, daemon=True).start()
     
     # PHASE 6: User Performance Statistics Jobs
     def update_platform_stats_job():
@@ -1000,7 +997,7 @@ def create_app(config_name=None):
             app.logger.info("✅ Tradier client verified successfully")
     
     # /health is provided by api/health.py (lightweight, no DB) so Railway deploy succeeds.
-    # Use /health/cache or /health/positions for detailed checks.
+    # Use /health/cache or /health/positions for detailed checks. (redeploy: 2026-01-30)
 
     # Database diagnostic endpoint (for debugging)
     from api.debug import debug_bp

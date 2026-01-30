@@ -69,7 +69,7 @@ def analyze_flow(symbol):
         duration_ms = (time.time() - start_time) * 1000
         
         # Cache the result for 5 minutes
-        set_cache(cache_key, analysis, timeout=300)
+        set_cache(cache_key, analysis, timeout=360)
         logger.info(f"💾 [OPTIONS_FLOW] Cached {cache_key} ({duration_ms:.0f}ms)")
         
         return jsonify(analysis), 200

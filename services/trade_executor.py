@@ -565,8 +565,8 @@ class TradeExecutor:
         
         try:
             from flask import current_app
-            current_app.logger.info(
-                f"🔍 TradeExecutor.get_positions - user_id={user_id}, update_prices={update_prices}"
+            current_app.logger.debug(
+                f"🔍 get_positions user_id={user_id} update_prices={update_prices}"
             )
         except:
             pass
@@ -681,15 +681,10 @@ class TradeExecutor:
         
         try:
             from flask import current_app
-            current_app.logger.info(
-                f"📊 Found {len(positions)} open positions for user {user_id} "
-                f"(closed {len(expired_positions)} expired options)"
+            current_app.logger.debug(
+                f"📊 get_positions: {len(positions)} open for user {user_id} "
+                f"(closed {len(expired_positions)} expired)"
             )
-            for pos in positions:
-                current_app.logger.info(
-                    f"   Position {pos.id}: {pos.symbol} {pos.contract_type} "
-                    f"qty={pos.quantity} entry=${pos.entry_price:.2f} current=${pos.current_price or 0:.2f}"
-                )
         except:
             pass
         
@@ -729,8 +724,8 @@ class TradeExecutor:
         
         try:
             from flask import current_app
-            current_app.logger.info(
-                f"✅ TradeExecutor.get_positions - returning {len(result)} positions"
+            current_app.logger.debug(
+                f"✅ get_positions returning {len(result)} positions"
             )
         except:
             pass

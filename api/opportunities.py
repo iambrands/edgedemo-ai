@@ -261,7 +261,7 @@ def get_today_opportunities(current_user=None):
         
         # Cache the result for 300 seconds (5 min) - MUST match warmer TTL
         duration_ms = (time.time() - start_time) * 1000
-        set_cache(cache_key, result, timeout=300)
+        set_cache(cache_key, result, timeout=360)
         current_app.logger.info(f"💾 [OPPORTUNITIES] Cached {cache_key} ({duration_ms:.0f}ms) [TTL=300s]")
         
         return jsonify(result), 200
@@ -511,7 +511,7 @@ def get_market_movers(current_user=None):
         
         # Cache the result for 300 seconds (5 min) - MUST match warmer TTL
         duration_ms = (time.time() - start_time) * 1000
-        set_cache(cache_key, result, timeout=300)
+        set_cache(cache_key, result, timeout=360)
         current_app.logger.info(f"💾 [MARKET_MOVERS] Cached {cache_key} ({duration_ms:.0f}ms) [TTL=300s]")
         
         return jsonify(result), 200

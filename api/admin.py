@@ -727,13 +727,21 @@ def analyze_redis(current_user):
             
             # Get Redis info
             info = redis_client.info()
+            maxmem = info.get('maxmemory', 0)
+            maxmem_human = info.get('maxmemory_human') or ('0B' if maxmem == 0 else f'{maxmem // (1024*1024)}M')
             results['info'] = {
                 'version': info.get('redis_version', 'Unknown'),
                 'uptime_days': info.get('uptime_in_days', 0),
                 'connected_clients': info.get('connected_clients', 0),
                 'used_memory': info.get('used_memory_human', 'Unknown'),
-                'max_memory': info.get('maxmemory_human', 'Not set')
+                'max_memory': maxmem_human
             }
+            if maxmem == 0:
+                results['recommendations'].append({
+                    'type': 'maxmemory_not_set',
+                    'priority': 'low',
+                    'message': 'Max memory is not set (0B). On Railway, set a memory limit and eviction policy (e.g. maxmemory 256mb, maxmemory-policy allkeys-lru) in Redis config to avoid unbounded growth.'
+                })
             
             # Get total keys
             try:
@@ -767,7 +775,7 @@ def analyze_redis(current_user):
                     results['recommendations'].append({
                         'type': 'low_hit_rate',
                         'priority': 'medium',
-                        'message': f'Cache hit rate is {hit_rate:.1f}% - consider reviewing cache strategy'
+                        'message': f'Cache hit rate is {hit_rate:.1f}%. Ensure cache warmer runs every 4 min and hot keys use 360s TTL. Quote/options TTLs were extended to improve hits.'
                     })
             
         except Exception as e:

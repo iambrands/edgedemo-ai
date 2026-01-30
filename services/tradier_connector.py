@@ -303,7 +303,7 @@ class TradierConnector:
         is_index_option = symbol in ['SPY', 'QQQ', 'IWM', 'DIA'] or any(symbol.startswith(s) for s in ['SPY', 'QQQ', 'IWM', 'DIA'])
         is_option_symbol = len(symbol) > 15 and (symbol[-9:-1].isdigit() or 'C' in symbol[-10:] or 'P' in symbol[-10:])
         
-        # Try Redis cache first (5 second TTL for quotes)
+        # Try Redis cache first (30s TTL for quotes - balances freshness vs hit rate)
         if use_cache:
             try:
                 cache = get_redis_cache()
@@ -384,12 +384,12 @@ class TradierConnector:
                         }
                     }
                     
-                    # Cache the result (5 second TTL for quotes)
+                    # Cache the result (30s TTL - improves hit rate while keeping quotes fresh)
                     if use_cache:
                         try:
                             cache = get_redis_cache()
                             cache_key = f"quote:{symbol.upper()}"
-                            cache.set(cache_key, result, timeout=5)
+                            cache.set(cache_key, result, timeout=30)
                         except Exception as e:
                             # Cache write failed, but continue - not critical
                             logger.debug(f"Cache write failed (non-critical): {e}")
@@ -491,7 +491,7 @@ class TradierConnector:
                                 try:
                                     cache = get_redis_cache()
                                     cache_key = f"quote:{symbol}"
-                                    cache.set(cache_key, {'quotes': {'quote': quote}}, timeout=5)
+                                    cache.set(cache_key, {'quotes': {'quote': quote}}, timeout=30)
                                 except Exception as e:
                                     logger.debug(f"Cache write failed for {symbol}: {e}")
                     
