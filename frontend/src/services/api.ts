@@ -40,9 +40,11 @@ export async function cachedGet<T = any>(
   const data = await dedupedGet<T>(url, config);
   responseCache.set(cacheKey, { data, expiry: now + ttlMs });
   if (responseCache.size > 100) {
-    for (const [key, value] of responseCache.entries()) {
-      if (value.expiry < now) responseCache.delete(key);
-    }
+    const keysToDelete: string[] = [];
+    responseCache.forEach((value, key) => {
+      if (value.expiry < now) keysToDelete.push(key);
+    });
+    keysToDelete.forEach((key) => responseCache.delete(key));
   }
   return data;
 }
