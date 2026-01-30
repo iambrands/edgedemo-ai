@@ -138,6 +138,27 @@ const OptionsAnalyzer: React.FC = () => {
     }
   }, []);
 
+  const fetchStockPrice = useCallback(async (requestedSymbol: string, currentSymbolRef: React.MutableRefObject<string>) => {
+    if (!requestedSymbol || requestedSymbol.length < 2) return;
+    const trimmedSymbol = requestedSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
+
+    try {
+      const data = await cachedGet<{ current_price?: number }>(
+        `/options/quote/${trimmedSymbol}`,
+        10000
+      );
+      if (currentSymbolRef.current === requestedSymbol && data?.current_price) {
+        stockPriceRef.current = data.current_price;
+      }
+    } catch (error: any) {
+      const status = error.response?.status;
+      if (status !== 404 && status !== 401 && status !== 500) {
+        console.warn(`Failed to fetch stock price (${status}):`, error.response?.data?.error || error.message);
+      }
+    }
+  }, []);
+
   const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSymbolInput(e.target.value.toUpperCase());
     setExpiration('');
@@ -255,27 +276,6 @@ const OptionsAnalyzer: React.FC = () => {
       if (expiration) setExpiration('');
     }
   }, [expirations]);
-
-  const fetchStockPrice = useCallback(async (requestedSymbol: string, currentSymbolRef: React.MutableRefObject<string>) => {
-    if (!requestedSymbol || requestedSymbol.length < 2) return;
-    const trimmedSymbol = requestedSymbol.trim().toUpperCase();
-    if (!/^[A-Z]{1,5}$/.test(trimmedSymbol)) return;
-
-    try {
-      const data = await cachedGet<{ current_price?: number }>(
-        `/options/quote/${trimmedSymbol}`,
-        10000
-      );
-      if (currentSymbolRef.current === requestedSymbol && data?.current_price) {
-        stockPriceRef.current = data.current_price;
-      }
-    } catch (error: any) {
-      const status = error.response?.status;
-      if (status !== 404 && status !== 401 && status !== 500) {
-        console.warn(`Failed to fetch stock price (${status}):`, error.response?.data?.error || error.message);
-      }
-    }
-  }, []);
 
   const handleAddToWatchlist = async () => {
     try {
