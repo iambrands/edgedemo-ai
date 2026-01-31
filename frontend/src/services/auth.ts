@@ -2,13 +2,23 @@ import api from './api';
 import { AuthResponse, User } from '../types/user';
 
 export const authService = {
-  register: async (username: string, email: string, password: string, riskTolerance: 'low' | 'moderate' | 'high' = 'moderate'): Promise<AuthResponse> => {
-    const response = await api.post('/auth/register', {
+  register: async (
+    username: string,
+    email: string,
+    password: string,
+    riskTolerance: 'low' | 'moderate' | 'high' = 'moderate',
+    betaCode?: string
+  ): Promise<AuthResponse> => {
+    const body: Record<string, string> = {
       username,
       email,
       password,
       risk_tolerance: riskTolerance,
-    });
+    };
+    if (betaCode?.trim()) {
+      body.beta_code = betaCode.trim().toUpperCase();
+    }
+    const response = await api.post('/auth/register', body);
     return response.data;
   },
 

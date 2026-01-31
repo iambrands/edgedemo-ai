@@ -64,3 +64,6 @@ test_results_*/
 test_credentials.json
 .env.test
 scripts/.env
+railway_backup.sql
+railway_backup.sql.bak
+railway_env_reference.txt

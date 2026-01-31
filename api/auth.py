@@ -7,6 +7,7 @@ from services.cache_manager import get_cache, set_cache, delete_cache
 from sqlalchemy.exc import OperationalError, DisconnectionError
 from datetime import datetime
 import time
+import os
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -16,63 +17,82 @@ def get_db():
 
 @auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    """User registration"""
+    """User registration. Requires beta code when BETA_REGISTRATION_REQUIRED=true."""
     if request.method == 'OPTIONS':
-        # Flask-CORS will handle this, just return empty response
         response = jsonify({})
         response.status_code = 200
         return response
-    
+
     data = request.get_json()
-    
+
     if not data or not data.get('username') or not data.get('email') or not data.get('password'):
         return jsonify({'error': 'Missing required fields'}), 400
-    
+
     try:
-        # Import sanitization functions
         from utils.helpers import sanitize_input, sanitize_email
-        
-        # Sanitize all inputs
+        from models.beta_code import BetaCode, BetaCodeUsage
+
         username = sanitize_input(data.get('username'), max_length=80)
         email = sanitize_email(data.get('email'))
         password = data.get('password', '')
-        
-        # Validate inputs
+        beta_code_str = (data.get('beta_code') or '').strip().upper()
+
         if not username or len(username) < 3:
             return jsonify({'error': 'Username must be at least 3 characters'}), 400
-        
         if not email:
             return jsonify({'error': 'Invalid email address'}), 400
-        
         if not password or len(password) < 6:
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
-        
-        # Get db from current_app extensions
+
         db = get_db()
-        
-        # Use db.session.query() instead of User.query to avoid app context issues
+
+        # Beta code required when BETA_REGISTRATION_REQUIRED is true
+        beta_required = os.environ.get('BETA_REGISTRATION_REQUIRED', 'true').lower() == 'true'
+        code = None
+        if beta_required:
+            if not beta_code_str:
+                return jsonify({'error': 'Beta code required for registration'}), 400
+            code = db.session.query(BetaCode).filter_by(code=beta_code_str).first()
+            if not code:
+                return jsonify({'error': 'Invalid beta code'}), 400
+            if not code.is_valid():
+                if code.max_uses > 0 and code.current_uses >= code.max_uses:
+                    return jsonify({'error': 'Beta code has reached maximum uses'}), 400
+                if code.valid_until and datetime.utcnow() > code.valid_until:
+                    return jsonify({'error': 'Beta code has expired'}), 400
+                return jsonify({'error': 'Beta code is not active'}), 400
+        elif beta_code_str:
+            code = db.session.query(BetaCode).filter_by(code=beta_code_str).first()
+            if code and not code.is_valid():
+                return jsonify({'error': 'Beta code is invalid or expired'}), 400
+
         if db.session.query(User).filter_by(username=username).first():
             return jsonify({'error': 'Username already exists'}), 400
-        
         if db.session.query(User).filter_by(email=email).first():
             return jsonify({'error': 'Email already exists'}), 400
-        
-        # Create new user with sanitized inputs
+
         user = User(
             username=username,
             email=email,
             default_strategy=sanitize_input(data.get('default_strategy', 'balanced'), max_length=20),
-            risk_tolerance=sanitize_input(data.get('risk_tolerance', 'moderate'), max_length=20)
+            risk_tolerance=sanitize_input(data.get('risk_tolerance', 'moderate'), max_length=20),
+            beta_code_used=beta_code_str if beta_code_str else None
         )
         user.set_password(password)
-        
+
         db.session.add(user)
+        db.session.flush()  # get user.id
+
+        if code and beta_code_str:
+            code.current_uses += 1
+            usage = BetaCodeUsage(beta_code_id=code.id, user_id=user.id)
+            db.session.add(usage)
+
         db.session.commit()
-        
-        # Generate tokens - identity must be a string
+
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
-        
+
         response = jsonify({
             'message': 'User created successfully',
             'user': user.to_dict(),
@@ -85,10 +105,9 @@ def register():
         try:
             db = get_db()
             db.session.rollback()
-        except:
+        except Exception:
             pass
-        error_msg = str(e)
-        return jsonify({'error': f'Registration failed: {error_msg}'}), 500
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():

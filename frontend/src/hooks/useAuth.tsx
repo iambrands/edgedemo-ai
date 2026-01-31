@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<AuthResponse>;
-  register: (username: string, email: string, password: string, riskTolerance?: 'low' | 'moderate' | 'high') => Promise<AuthResponse>;
+  register: (username: string, email: string, password: string, riskTolerance?: 'low' | 'moderate' | 'high', betaCode?: string) => Promise<AuthResponse>;
   logout: () => void;
   loading: boolean;
   updateUser: (data: Partial<User>) => Promise<void>;
@@ -63,8 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return response;
   };
 
-  const register = async (username: string, email: string, password: string, riskTolerance: 'low' | 'moderate' | 'high' = 'moderate') => {
-    const response = await authService.register(username, email, password, riskTolerance);
+  const register = async (username: string, email: string, password: string, riskTolerance: 'low' | 'moderate' | 'high' = 'moderate', betaCode?: string) => {
+    const response = await authService.register(username, email, password, riskTolerance, betaCode);
     localStorage.setItem('access_token', response.access_token);
     localStorage.setItem('refresh_token', response.refresh_token);
     // Set user state immediately

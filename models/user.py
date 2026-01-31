@@ -33,7 +33,10 @@ class User(db.Model):
     
     # User Preferences
     timezone = db.Column(db.String(50), default='America/New_York')  # IANA timezone name (e.g., America/Chicago)
-    
+
+    # Beta registration (which code they used, if any)
+    beta_code_used = db.Column(db.String(50), nullable=True)
+
     # Relationships
     stocks = db.relationship('Stock', backref='user', lazy=True, cascade='all, delete-orphan')
     positions = db.relationship('Position', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -109,6 +112,7 @@ class User(db.Model):
             'trading_mode': self.trading_mode,
             'paper_balance': self.paper_balance,
             'timezone': self.timezone or 'America/New_York',
+            'beta_code_used': self.beta_code_used,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

@@ -108,6 +108,129 @@ def delete_user(current_user, user_id):
         return jsonify({'error': str(e)}), 500
 
 
+# --- Beta code management (controlled registration) ---
+import secrets
+import string
+
+@admin_bp.route('/admin/beta-codes', methods=['GET'])
+@admin_required
+def list_beta_codes(current_user):
+    """List all beta codes with usage stats."""
+    from models.beta_code import BetaCode
+    db = current_app.extensions['sqlalchemy']
+    codes = db.session.query(BetaCode).order_by(BetaCode.created_at.desc()).all()
+    return jsonify([{
+        'id': c.id,
+        'code': c.code,
+        'description': c.description or '',
+        'max_uses': c.max_uses,
+        'current_uses': c.current_uses,
+        'valid_from': c.valid_from.isoformat() if c.valid_from else None,
+        'valid_until': c.valid_until.isoformat() if c.valid_until else None,
+        'is_active': c.is_active,
+        'is_valid': c.is_valid(),
+        'created_at': c.created_at.isoformat() if c.created_at else None,
+    } for c in codes])
+
+
+@admin_bp.route('/admin/beta-codes', methods=['POST'])
+@admin_required
+def create_beta_code(current_user):
+    """Create a new beta code."""
+    from models.beta_code import BetaCode
+    db = current_app.extensions['sqlalchemy']
+    data = request.get_json() or {}
+
+    code_str = (data.get('code') or '').strip().upper()
+    if not code_str:
+        random_part = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+        code_str = f"BETA-{random_part}"
+
+    if db.session.query(BetaCode).filter_by(code=code_str).first():
+        return jsonify({'error': 'Code already exists'}), 400
+
+    valid_until = None
+    if data.get('valid_until'):
+        try:
+            valid_until = datetime.fromisoformat(data['valid_until'].replace('Z', '+00:00'))
+        except (ValueError, TypeError):
+            pass
+
+    code = BetaCode(
+        code=code_str,
+        description=data.get('description', ''),
+        max_uses=int(data.get('max_uses', 100)),
+        valid_until=valid_until,
+        is_active=data.get('is_active', True),
+        created_by=current_user.id
+    )
+    db.session.add(code)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Beta code created',
+        'code': code.code,
+        'id': code.id
+    }), 201
+
+
+@admin_bp.route('/admin/beta-codes/<int:code_id>', methods=['PUT'])
+@admin_required
+def update_beta_code(current_user, code_id):
+    """Update a beta code."""
+    from models.beta_code import BetaCode
+    db = current_app.extensions['sqlalchemy']
+    code = db.session.query(BetaCode).get(code_id)
+    if not code:
+        return jsonify({'error': 'Beta code not found'}), 404
+
+    data = request.get_json() or {}
+    if 'description' in data:
+        code.description = data['description']
+    if 'max_uses' in data:
+        code.max_uses = int(data['max_uses'])
+    if 'is_active' in data:
+        code.is_active = bool(data['is_active'])
+    if 'valid_until' in data:
+        code.valid_until = datetime.fromisoformat(data['valid_until'].replace('Z', '+00:00')) if data['valid_until'] else None
+
+    db.session.commit()
+    return jsonify({'message': 'Beta code updated'})
+
+
+@admin_bp.route('/admin/beta-codes/<int:code_id>', methods=['DELETE'])
+@admin_required
+def delete_beta_code(current_user, code_id):
+    """Deactivate a beta code (preserve history)."""
+    from models.beta_code import BetaCode
+    db = current_app.extensions['sqlalchemy']
+    code = db.session.query(BetaCode).get(code_id)
+    if not code:
+        return jsonify({'error': 'Beta code not found'}), 404
+    code.is_active = False
+    db.session.commit()
+    return jsonify({'message': 'Beta code deactivated'})
+
+
+@admin_bp.route('/admin/beta-codes/<int:code_id>/users', methods=['GET'])
+@admin_required
+def get_beta_code_users(current_user, code_id):
+    """Get all users who registered with a specific code."""
+    from models.beta_code import BetaCodeUsage
+    from models.user import User
+    db = current_app.extensions['sqlalchemy']
+    usages = db.session.query(BetaCodeUsage).filter_by(beta_code_id=code_id).all()
+    out = []
+    for u in usages:
+        usr = db.session.query(User).get(u.user_id)
+        out.append({
+            'user_id': u.user_id,
+            'email': usr.email if usr else None,
+            'used_at': u.used_at.isoformat() if u.used_at else None
+        })
+    return jsonify(out)
+
+
 # Diagnostic endpoint - no auth, no database (test if blueprint is loaded)
 @admin_bp.route('/admin/ping', methods=['GET'])
 def ping():

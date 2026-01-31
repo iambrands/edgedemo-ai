@@ -9,6 +9,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    betaCode: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,10 @@ const Register: React.FC = () => {
       toast.error('Passwords do not match');
       return false;
     }
+    if (!formData.betaCode.trim()) {
+      toast.error('Beta access code is required');
+      return false;
+    }
     return true;
   };
 
@@ -69,7 +74,8 @@ const Register: React.FC = () => {
         formData.username.trim(),
         formData.email.trim().toLowerCase(),
         formData.password,
-        'moderate' // Default risk tolerance
+        'moderate',
+        formData.betaCode.trim()
       );
       
       toast.success('Account created successfully! Welcome to OptionsEdge!');
@@ -188,6 +194,29 @@ const Register: React.FC = () => {
               placeholder="Confirm your password"
               disabled={loading}
             />
+          </div>
+
+          <div>
+            <label htmlFor="betaCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Beta Access Code
+            </label>
+            <input
+              id="betaCode"
+              name="betaCode"
+              type="text"
+              value={formData.betaCode}
+              onChange={(e) => setFormData({ ...formData, betaCode: e.target.value.toUpperCase() })}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all uppercase"
+              placeholder="Enter your beta code"
+              disabled={loading}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Don&apos;t have a code?{' '}
+              <a href="mailto:leslie@iabadvisors.com" className="text-indigo-600 hover:text-indigo-500">
+                Request access
+              </a>
+            </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
