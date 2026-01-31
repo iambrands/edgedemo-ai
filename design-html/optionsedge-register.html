@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OptionsEdge — Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--blue:#3B82F6;--blue2:#1D4ED8;--text:#111827;--muted:#6B7280;--line:#E5E7EB;--shadow:0 18px 60px rgba(17,24,39,.12);--r:16px;}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--text);
+      background:
+        radial-gradient(900px 420px at 18% 8%, rgba(59,130,246,.16), transparent 55%),
+        linear-gradient(180deg,#fff 0%, #F7FAFF 100%);
+    }
+    a{color:inherit;text-decoration:none}
+    .wrap{min-height:100%; display:grid; place-items:center; padding:28px;}
+    .shell{width:min(1100px,100%); display:grid; grid-template-columns: 1fr 1fr; gap:18px; align-items:stretch;}
+    .left{
+      border-radius:24px;
+      background:linear-gradient(135deg, rgba(59,130,246,.14), rgba(29,78,216,.06));
+      border:1px solid rgba(59,130,246,.18);
+      padding:28px; position:relative; overflow:hidden;
+    }
+    .left:before{
+      content:""; position:absolute; inset:-120px -120px auto auto;
+      width:340px; height:340px;
+      background:radial-gradient(circle, rgba(59,130,246,.35), transparent 60%);
+      filter:blur(2px);
+    }
+    .brand{display:flex; align-items:center; gap:12px; font-weight:900; letter-spacing:-0.02em;}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:grid;place-items:center;color:#fff}
+    .left h1{margin:20px 0 10px; font-size:38px; letter-spacing:-0.03em; line-height:1.1; position:relative;}
+    .left p{margin:0; color:var(--muted); line-height:1.6; max-width:52ch; position:relative; font-weight:600;}
+    .bullets{margin-top:18px; display:grid; gap:12px; position:relative;}
+    .b{display:flex; gap:10px; align-items:flex-start; padding:12px; border-radius:14px; background:rgba(255,255,255,.65); border:1px solid rgba(229,231,235,.85);}
+    .tick{width:20px;height:20px;border-radius:7px;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.22);display:grid;place-items:center;color:#059669;font-weight:900;font-size:12px;margin-top:1px}
+    .b b{display:block; font-weight:900}
+    .b small{display:block; margin-top:2px; color:var(--muted); font-weight:650; line-height:1.4}
+
+    .right{
+      border-radius:24px;
+      background:#fff;
+      border:1px solid rgba(229,231,235,.9);
+      box-shadow: var(--shadow);
+      padding:28px;
+    }
+    .cardHead{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+    .cardHead h2{margin:0; font-size:24px; letter-spacing:-0.02em;}
+    .cardHead p{margin:6px 0 0; color:var(--muted); line-height:1.55; font-weight:600;}
+    .link{color:var(--blue2); font-weight:800}
+    .link:hover{text-decoration:underline}
+    form{margin-top:18px; display:grid; gap:14px;}
+    label{display:block; font-weight:750; font-size:13px; margin-bottom:6px;}
+    .input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      outline:none;
+      font-size:14px;
+      background:#fff;
+      transition:border .15s ease, box-shadow .15s ease;
+    }
+    .input:focus{border-color:rgba(59,130,246,.55); box-shadow:0 0 0 4px rgba(59,130,246,.14);}
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+    .row{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+    .chk{display:flex; align-items:flex-start; gap:10px; color:var(--muted); font-weight:650; font-size:14px; line-height:1.35;}
+    .chk input{width:16px;height:16px; margin-top:2px}
+    .btn{
+      width:100%;
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 16px; border-radius:12px;
+      font-weight:850; border:1px solid transparent;
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#fff;
+      box-shadow:0 14px 34px rgba(59,130,246,.24);
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .btn:hover{transform:translateY(-1px); box-shadow:0 18px 42px rgba(59,130,246,.28)}
+    .btn:disabled{opacity:.65; cursor:not-allowed; transform:none}
+    .alert{
+      display:none;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(239,68,68,.22);
+      background:rgba(239,68,68,.08);
+      color:#991B1B;
+      font-weight:700;
+      line-height:1.45;
+      font-size:14px;
+    }
+    .note{
+      margin-top:10px;
+      color:var(--muted);
+      font-weight:650;
+      font-size:13px;
+      line-height:1.6;
+    }
+    .note b{color:var(--text)}
+    @media (max-width:980px){
+      .shell{grid-template-columns:1fr}
+      .left{order:2}
+      .right{order:1}
+    }
+    @media (max-width:560px){
+      .grid2{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <section class="left">
+        <a class="brand" href="optionsedge-landing.html">
+          <span class="logo">OE</span><span>OptionsEdge</span>
+        </a>
+        <h1>Start paper trading with AI</h1>
+        <p>Create your account to access beta features and trade with confidence using a $100,000 virtual balance.</p>
+
+        <div class="bullets">
+          <div class="b"><span class="tick">✓</span><div><b>$100,000 virtual balance</b><small>Paper trade before going live.</small></div></div>
+          <div class="b"><span class="tick">✓</span><div><b>AI trade ideas</b><small>Signals and reasoning with market context.</small></div></div>
+          <div class="b"><span class="tick">✓</span><div><b>Performance tracking</b><small>Journal trades and refine your strategy.</small></div></div>
+        </div>
+      </section>
+
+      <section class="right">
+        <div class="cardHead">
+          <div>
+            <h2>Get started</h2>
+            <p>Create your account to access beta features.</p>
+          </div>
+          <div style="text-align:right">
+            <a class="link" href="optionsedge-login.html">Sign in</a>
+          </div>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <form id="registerForm">
+          <div class="grid2">
+            <div>
+              <label for="username">Username</label>
+              <input class="input" id="username" name="username" type="text" placeholder="yourname" required />
+            </div>
+            <div>
+              <label for="beta_code">Beta code</label>
+              <input class="input" id="beta_code" name="beta_code" type="text" placeholder="BETA-XXXX" required />
+            </div>
+          </div>
+
+          <div>
+            <label for="email">Email</label>
+            <input class="input" id="email" name="email" type="email" placeholder="you@company.com" required />
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label for="password">Password</label>
+              <input class="input" id="password" name="password" type="password" placeholder="••••••••" required />
+            </div>
+            <div>
+              <label for="confirm">Confirm password</label>
+              <input class="input" id="confirm" name="confirm" type="password" placeholder="••••••••" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <label class="chk">
+              <input id="terms" type="checkbox" />
+              <span>I agree to the <a class="link" href="#" onclick="return false;">Terms</a> and <a class="link" href="#" onclick="return false;">Privacy Policy</a>.</span>
+            </label>
+          </div>
+
+          <button id="submitBtn" class="btn" type="submit">Create Account</button>
+
+          <div class="note">
+            <b>No credit card required</b> • Includes <b>$100,000 virtual paper balance</b>
+          </div>
+
+          <div class="note">
+            Already have an account? <a class="link" href="optionsedge-login.html">Sign in</a>.
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://web-production-8b7ae.up.railway.app";
+    const form = document.getElementById('registerForm');
+    const alertEl = document.getElementById('alert');
+    const btn = document.getElementById('submitBtn');
+
+    function showError(msg){ alertEl.style.display='block'; alertEl.textContent=msg; }
+    function clearError(){ alertEl.style.display='none'; alertEl.textContent=''; }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); clearError();
+
+      const username = document.getElementById('username').value.trim();
+      const beta_code = document.getElementById('beta_code').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+      const terms = document.getElementById('terms').checked;
+
+      if(password !== confirm){ showError("Passwords do not match."); return; }
+      if(!terms){ showError("Please agree to the Terms and Privacy Policy."); return; }
+
+      btn.disabled = true; btn.textContent="Creating account…";
+      try{
+        const res = await fetch(`${API_BASE}/api/auth/register`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ username, email, password, beta_code })
+        });
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok){ showError(data?.message || "Registration failed. Please try again."); return; }
+        if(data?.access_token) localStorage.setItem("access_token", data.access_token);
+        if(data?.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
+        window.location.href="/dashboard";
+      } catch(err){
+        showError("Network error. Please try again.");
+      } finally{
+        btn.disabled=false; btn.textContent="Create Account";
+      }
+    });
+  </script>
+</body>
+</html>
