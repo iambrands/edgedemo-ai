@@ -67,6 +67,17 @@ const Landing: React.FC = () => {
         </div>
       </nav>
 
+      {/* Announcement Banner */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-white font-semibold text-base md:text-lg">
+              ⚡ Set It and Forget It — Automated trading that finds opportunities 24/7
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">

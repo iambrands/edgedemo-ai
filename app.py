@@ -1229,6 +1229,13 @@ def create_app(config_name=None):
         if os.path.exists(favicon_path):
             return send_from_directory(static_folder, 'favicon.ico')
         return '', 204
+
+    # Serve standalone design HTML files (design-html/) at /design/ for staging review
+    design_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'design-html')
+    if os.path.exists(design_folder):
+        @app.route('/design/<path:filename>')
+        def serve_design(filename):
+            return send_from_directory(design_folder, filename)
     
     # Catch-all route for React Router (MUST be last - after all other routes)
     # This will NOT match /static/ because the route above is more specific
