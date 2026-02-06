@@ -101,6 +101,10 @@ else:
     anthropic_client = None
     logger.warning("ANTHROPIC_API_KEY not set - portfolio analysis will use mock responses")
 
+# Track router mount status for debugging
+_ria_routers_mounted = []
+_ria_router_errors = []
+
 # Health check for frontend connectivity and Railway
 @app.get("/api/health")
 async def api_health_check():
@@ -110,17 +114,19 @@ async def api_health_check():
         "version": "1.0.0",
         "environment": env,
         "ai_enabled": anthropic_client is not None,
+        "routers_mounted": _ria_routers_mounted,
+        "router_errors": _ria_router_errors[:5],  # Show first 5 errors
     }
 
 # Mount standalone RIA auth & demo routes (no DB required)
 # Each router imported separately to identify which one fails
-_ria_routers_mounted = []
 
 try:
     from backend.api.auth import router as auth_router
     app.include_router(auth_router)
     _ria_routers_mounted.append("auth")
 except Exception as e:
+    _ria_router_errors.append(f"auth: {type(e).__name__}: {e}")
     logger.error("Failed to mount auth router: %s", e, exc_info=True)
 
 try:
@@ -128,6 +134,7 @@ try:
     app.include_router(ria_dashboard_router)
     _ria_routers_mounted.append("dashboard")
 except Exception as e:
+    _ria_router_errors.append(f"dashboard: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_dashboard router: %s", e, exc_info=True)
 
 try:
@@ -135,6 +142,7 @@ try:
     app.include_router(ria_households_router)
     _ria_routers_mounted.append("households")
 except Exception as e:
+    _ria_router_errors.append(f"households: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_households router: %s", e, exc_info=True)
 
 try:
@@ -142,6 +150,7 @@ try:
     app.include_router(ria_accounts_router)
     _ria_routers_mounted.append("accounts")
 except Exception as e:
+    _ria_router_errors.append(f"accounts: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_accounts router: %s", e, exc_info=True)
 
 try:
@@ -149,6 +158,7 @@ try:
     app.include_router(ria_compliance_router)
     _ria_routers_mounted.append("compliance")
 except Exception as e:
+    _ria_router_errors.append(f"compliance: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_compliance router: %s", e, exc_info=True)
 
 try:
@@ -156,6 +166,7 @@ try:
     app.include_router(ria_chat_router)
     _ria_routers_mounted.append("chat")
 except Exception as e:
+    _ria_router_errors.append(f"chat: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_chat router: %s", e, exc_info=True)
 
 try:
@@ -163,6 +174,7 @@ try:
     app.include_router(ria_statements_router)
     _ria_routers_mounted.append("statements")
 except Exception as e:
+    _ria_router_errors.append(f"statements: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_statements router: %s", e, exc_info=True)
 
 try:
@@ -170,6 +182,7 @@ try:
     app.include_router(ria_analysis_router)
     _ria_routers_mounted.append("analysis")
 except Exception as e:
+    _ria_router_errors.append(f"analysis: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_analysis router: %s", e, exc_info=True)
 
 if _ria_routers_mounted:
