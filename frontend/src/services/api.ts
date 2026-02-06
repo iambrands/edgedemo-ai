@@ -6,12 +6,25 @@
 // Use environment variable for production, empty string for dev (uses Vite proxy)
 // Ensure HTTPS is used for production Railway URLs to prevent mixed content errors
 function getApiBase(): string {
-  const envUrl = import.meta.env.VITE_API_URL || '';
-  // If URL contains railway.app, ensure it uses HTTPS
-  if (envUrl.includes('railway.app') && envUrl.startsWith('http://')) {
-    return envUrl.replace('http://', 'https://');
+  let url = import.meta.env.VITE_API_URL || '';
+  
+  // Fix: Sometimes env var gets set incorrectly with "VITE_API_URL=" prefix
+  // e.g., "VITE_API_URL=https://..." instead of just "https://..."
+  if (url.includes('VITE_API_URL=')) {
+    url = url.replace(/.*VITE_API_URL=/i, '');
   }
-  return envUrl;
+  
+  // If URL contains railway.app, ensure it uses HTTPS
+  if (url.includes('railway.app') && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  // Log for debugging in non-production
+  if (import.meta.env.DEV) {
+    console.log('[API] Base URL:', url || '(using proxy)');
+  }
+  
+  return url;
 }
 
 const API_BASE = getApiBase();

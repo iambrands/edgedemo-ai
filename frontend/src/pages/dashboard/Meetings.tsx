@@ -85,11 +85,19 @@ const priorityColors: Record<string, string> = {
 
 // Ensure HTTPS for production Railway URLs to prevent mixed content errors
 const API_BASE = (() => {
-  const envUrl = import.meta.env.VITE_API_URL || '';
-  if (envUrl.includes('railway.app') && envUrl.startsWith('http://')) {
-    return envUrl.replace('http://', 'https://');
+  let url = import.meta.env.VITE_API_URL || '';
+  
+  // Fix: Sometimes env var gets set incorrectly with "VITE_API_URL=" prefix
+  if (url.includes('VITE_API_URL=')) {
+    url = url.replace(/.*VITE_API_URL=/i, '');
   }
-  return envUrl;
+  
+  // Ensure HTTPS for railway.app URLs
+  if (url.includes('railway.app') && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  return url;
 })();
 
 const MeetingsPage: React.FC = () => {
