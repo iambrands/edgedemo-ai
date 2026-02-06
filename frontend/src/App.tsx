@@ -11,6 +11,7 @@ import {
   Settings,
   Meetings,
 } from './pages/dashboard';
+import { PortalLogin, PortalDashboard, PortalGoals } from './pages/portal';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
 export default function App() {
@@ -21,7 +22,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 
-      {/* Dashboard Routes (Protected) */}
+      {/* Dashboard Routes (Protected - Advisor) */}
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<Overview />} />
         <Route path="households" element={<Households />} />
@@ -33,6 +34,12 @@ export default function App() {
         <Route path="chat" element={<Chat />} />
         <Route path="settings" element={<Settings />} />
       </Route>
+
+      {/* Client Portal Routes */}
+      <Route path="/portal/login" element={<PortalLogin />} />
+      <Route path="/portal/dashboard" element={<PortalDashboard />} />
+      <Route path="/portal/goals" element={<PortalGoals />} />
+      <Route path="/portal" element={<Navigate to="/portal/login" replace />} />
 
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
