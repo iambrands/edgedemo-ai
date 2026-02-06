@@ -171,17 +171,9 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.0.4",  # Version bump to verify deploy
+        "version": "1.1.0",  # Railway production release
         "environment": env,
         "ai_enabled": anthropic_client is not None,
-        "routers_mounted": _ria_routers_mounted,
-        "router_errors": _ria_router_errors[:5],
-        "debug": {
-            "is_nixpacks": _is_nixpacks,
-            "cwd": os.getcwd(),
-            "project_root": str(_project_root),
-            "backend_shim_active": 'backend' in sys.modules and hasattr(sys.modules['backend'], '__path__'),
-        }
     }
 
 # Mount standalone RIA auth & demo routes (no DB required)
