@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .account import Account
     from .advisor import Advisor
     from .household import Household
+    from .portal import ClientPortalUser
     from .portfolio_models import InvestmentPolicyStatement, RiskQuestionnaire
 
 logger = logging.getLogger(__name__)
@@ -71,4 +72,7 @@ class Client(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
     )
     ips_documents: Mapped[List["InvestmentPolicyStatement"]] = relationship(
         "InvestmentPolicyStatement", back_populates="client"
+    )
+    portal_user: Mapped[Optional["ClientPortalUser"]] = relationship(
+        "ClientPortalUser", back_populates="client", uselist=False
     )

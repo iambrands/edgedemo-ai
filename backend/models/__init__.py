@@ -71,20 +71,42 @@ from .statement import Statement  # noqa: E402
 from .transaction import Transaction  # noqa: E402
 from .usage_log import UsageLog  # noqa: E402
 from .user import User  # noqa: E402
+from .portal import (  # noqa: E402
+    ClientPortalUser,
+    PortalNarrative,
+    BehavioralNudge,
+    NudgeInteraction,
+    ClientGoal,
+    PortalDocument,
+    FirmWhiteLabel,
+    NudgeType,
+    NudgeStatus,
+    GoalType,
+)
 
 __all__ = [
     "Account",
     "Advisor",
     "Base",
+    "BehavioralNudge",
     "Client",
+    "ClientGoal",
+    "ClientPortalUser",
     "ComplianceLog",
     "FeeStructure",
     "Firm",
+    "FirmWhiteLabel",
+    "GoalType",
     "Household",
     "InvestmentObjective",
     "InvestmentPolicyStatement",
     "ModelPortfolio",
     "ModelPortfolioHolding",
+    "NudgeInteraction",
+    "NudgeStatus",
+    "NudgeType",
+    "PortalDocument",
+    "PortalNarrative",
     "Position",
     "RiskQuestionnaire",
     "RiskToleranceLevel",

@@ -14,6 +14,7 @@ from .mixins import AuditMixin, TimestampMixin
 if TYPE_CHECKING:
     from .advisor import Advisor
     from .household import Household
+    from .portal import FirmWhiteLabel
 
 logger = logging.getLogger(__name__)
 
@@ -44,4 +45,7 @@ class Firm(Base, TimestampMixin, AuditMixin):
     )
     households: Mapped[List["Household"]] = relationship(
         "Household", back_populates="firm"
+    )
+    white_label: Mapped[Optional["FirmWhiteLabel"]] = relationship(
+        "FirmWhiteLabel", back_populates="firm", uselist=False
     )
