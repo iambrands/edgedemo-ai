@@ -260,6 +260,15 @@ except Exception as e:
     _ria_router_errors.append(f"meetings: {type(e).__name__}: {e}")
     logger.error("Failed to mount meetings router: %s", e, exc_info=True)
 
+# Mount Compliance Documents router (ADV Part 2B, Form CRS)
+try:
+    from backend.api.compliance_docs import router as compliance_docs_router
+    app.include_router(compliance_docs_router)
+    _ria_routers_mounted.append("compliance_docs")
+except Exception as e:
+    _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
+    logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 else:
