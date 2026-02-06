@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, Users, Upload, FileText, 
-  CheckCircle, AlertTriangle, Video, ChevronRight,
-  Play, Pause, BarChart2, Mail, RefreshCw, Plus
+  CheckCircle, AlertTriangle, Video, BarChart2, Mail, Plus
 } from 'lucide-react';
 
 interface Participant {
@@ -94,7 +93,7 @@ const MeetingsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'analysis' | 'transcript' | 'actions'>('analysis');
-  const [showNewMeetingModal, setShowNewMeetingModal] = useState(false);
+  const [, setShowNewMeetingModal] = useState(false);
 
   useEffect(() => {
     loadMeetings();
