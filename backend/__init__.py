@@ -1,0 +1,1 @@
+"""EdgeAI RIA Platform backend."""
