@@ -12,6 +12,7 @@ import {
   Settings,
   Meetings,
   ComplianceDocs,
+  Liquidity,
 } from './pages/dashboard';
 import { PortalLogin, PortalDashboard, PortalGoals } from './pages/portal';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="compliance" element={<Compliance />} />
         <Route path="meetings" element={<Meetings />} />
         <Route path="compliance-docs" element={<ComplianceDocs />} />
+        <Route path="liquidity" element={<Liquidity />} />
         <Route path="chat" element={<Chat />} />
         <Route path="settings" element={<Settings />} />
       </Route>

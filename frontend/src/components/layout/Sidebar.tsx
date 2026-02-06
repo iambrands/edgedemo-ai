@@ -8,6 +8,7 @@ import {
   Shield,
   FileText,
   Video,
+  DollarSign,
   MessageSquare,
   Settings,
   LogOut,
@@ -35,6 +36,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/compliance', icon: Shield, label: 'Compliance' },
     { to: '/dashboard/compliance-docs', icon: FileText, label: 'Compliance Docs' },
     { to: '/dashboard/meetings', icon: Video, label: 'Meetings' },
+    { to: '/dashboard/liquidity', icon: DollarSign, label: 'Liquidity' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];

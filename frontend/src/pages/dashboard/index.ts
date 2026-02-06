@@ -8,3 +8,4 @@ export { Chat } from './Chat';
 export { Settings } from './Settings';
 export { default as Meetings } from './Meetings';
 export { default as ComplianceDocs } from './ComplianceDocs';
+export { default as Liquidity } from './Liquidity';
