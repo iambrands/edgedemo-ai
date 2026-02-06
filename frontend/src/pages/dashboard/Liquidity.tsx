@@ -36,15 +36,6 @@ const PRIORITY_LABELS: Record<string, string> = {
   urgent: 'Urgent',
 };
 
-const LOT_METHOD_LABELS: Record<string, string> = {
-  fifo: 'FIFO',
-  lifo: 'LIFO',
-  hifo: 'HIFO (Highest Cost)',
-  lofo: 'LOFO (Lowest Cost)',
-  spec_id: 'Specific ID',
-  tax_opt: 'AI Tax Optimized',
-};
-
 export default function Liquidity() {
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
@@ -305,7 +296,7 @@ export default function Liquidity() {
                           </span>
                         )}
                         {plan.ai_generated && (
-                          <Zap size={14} className="text-purple-500" title="AI Generated" />
+                          <Zap size={14} className="text-purple-500" />
                         )}
                       </div>
                       <ChevronRight size={16} className="text-gray-400" />
