@@ -9,6 +9,7 @@ import {
   Compliance,
   Chat,
   Settings,
+  Meetings,
 } from './pages/dashboard';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="statements" element={<Statements />} />
         <Route path="analysis" element={<Analysis />} />
         <Route path="compliance" element={<Compliance />} />
+        <Route path="meetings" element={<Meetings />} />
         <Route path="chat" element={<Chat />} />
         <Route path="settings" element={<Settings />} />
       </Route>

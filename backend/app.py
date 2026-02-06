@@ -171,7 +171,7 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.2.0",  # Dockerfile fix - proper backend/ structure
+        "version": "1.3.0",  # Meeting Intelligence feature
         "environment": env,
         "ai_enabled": anthropic_client is not None,
     }
@@ -250,6 +250,15 @@ try:
 except Exception as e:
     _ria_router_errors.append(f"analysis: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_analysis router: %s", e, exc_info=True)
+
+# Mount Meeting Intelligence router
+try:
+    from backend.api.meetings import router as meetings_router
+    app.include_router(meetings_router)
+    _ria_routers_mounted.append("meetings")
+except Exception as e:
+    _ria_router_errors.append(f"meetings: {type(e).__name__}: {e}")
+    logger.error("Failed to mount meetings router: %s", e, exc_info=True)
 
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))

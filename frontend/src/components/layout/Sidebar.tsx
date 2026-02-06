@@ -6,6 +6,7 @@ import {
   FileUp,
   BarChart3,
   Shield,
+  Video,
   MessageSquare,
   Settings,
   LogOut,
@@ -31,6 +32,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/statements', icon: FileUp, label: 'Statements' },
     { to: '/dashboard/analysis', icon: BarChart3, label: 'Analysis' },
     { to: '/dashboard/compliance', icon: Shield, label: 'Compliance' },
+    { to: '/dashboard/meetings', icon: Video, label: 'Meetings' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
