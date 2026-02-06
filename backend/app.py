@@ -7,15 +7,35 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure project root in path for backend.* imports
-# This is critical for Railway deployment where working directory may vary
-_project_root = Path(__file__).resolve().parent.parent
+# Smart project root detection for various deployment scenarios
+# Handles Railway Nixpacks, Docker, and local development
+def _find_project_root():
+    """Find the project root by locating the parent of 'backend' directory."""
+    # First check: parent of this file's parent (standard structure)
+    file_based = Path(__file__).resolve().parent.parent
+    if (file_based / "backend").is_dir():
+        return file_based
+    
+    # Second check: current working directory (Nixpacks often runs from project root)
+    cwd = Path.cwd()
+    if (cwd / "backend").is_dir():
+        return cwd
+    
+    # Third check: /app directory (Docker/Railway standard)
+    app_dir = Path("/app")
+    if app_dir.exists() and (app_dir / "backend").is_dir():
+        return app_dir
+    
+    # Fallback: use file-based detection
+    return file_based
+
+_project_root = _find_project_root()
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # Debug: Print startup info (visible in Railway logs)
 print(f"[EdgeAI] Starting from: {os.getcwd()}", flush=True)
-print(f"[EdgeAI] Project root: {_project_root}", flush=True)
+print(f"[EdgeAI] Project root detected: {_project_root}", flush=True)
 print(f"[EdgeAI] Python path: {sys.path[:3]}...", flush=True)
 
 import json
