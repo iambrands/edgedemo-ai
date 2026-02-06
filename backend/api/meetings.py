@@ -355,7 +355,7 @@ except ImportError:
 # ENDPOINTS
 # ============================================================================
 
-@router.get("/", response_model=List[MeetingResponse])
+@router.get("", response_model=List[MeetingResponse])
 async def list_meetings(
     household_id: Optional[str] = None,
     status: Optional[str] = None,
@@ -389,7 +389,7 @@ async def get_meeting(
     return meeting
 
 
-@router.post("/", response_model=MeetingResponse)
+@router.post("", response_model=MeetingResponse)
 async def create_meeting(
     meeting_data: MeetingCreate,
     current_user: dict = Depends(get_current_user)
