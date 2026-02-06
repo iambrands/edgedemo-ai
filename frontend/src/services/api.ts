@@ -20,7 +20,8 @@ export class ApiError extends Error {
 }
 
 async function fetchApi<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-  const token = localStorage.getItem('edgeai_token');
+  // Check both storage locations for token (Remember Me support)
+  const token = localStorage.getItem('edgeai_token') || sessionStorage.getItem('edgeai_token');
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -216,7 +217,8 @@ export const statementsApi = {
   list: () => fetchApi<ParsedStatement[]>('/api/v1/ria/statements'),
   
   upload: async (file: File, householdId?: string) => {
-    const token = localStorage.getItem('edgeai_token');
+    // Check both storage locations for token (Remember Me support)
+    const token = localStorage.getItem('edgeai_token') || sessionStorage.getItem('edgeai_token');
     const formData = new FormData();
     formData.append('file', file);
     if (householdId) formData.append('householdId', householdId);

@@ -13,9 +13,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing token on mount
+  // Check for existing token on mount (check both storage locations)
   useEffect(() => {
-    const storedToken = localStorage.getItem('edgeai_token');
+    const storedToken = localStorage.getItem('edgeai_token') || sessionStorage.getItem('edgeai_token');
     if (storedToken) {
       setToken(storedToken);
       // Verify token with backend
@@ -24,8 +24,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData);
         })
         .catch(() => {
-          // Token invalid or expired
+          // Token invalid or expired - clear both storage locations
           localStorage.removeItem('edgeai_token');
+          sessionStorage.removeItem('edgeai_token');
           setToken(null);
         })
         .finally(() => setIsLoading(false));
@@ -36,12 +37,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (
     email: string,
-    password: string
+    password: string,
+    rememberMe: boolean = false
   ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
       const response = await authApi.login(email, password);
-      localStorage.setItem('edgeai_token', response.access_token);
+      
+      // Store token based on Remember Me preference
+      if (rememberMe) {
+        localStorage.setItem('edgeai_token', response.access_token);
+        sessionStorage.removeItem('edgeai_token'); // Clear session storage
+      } else {
+        sessionStorage.setItem('edgeai_token', response.access_token);
+        localStorage.removeItem('edgeai_token'); // Clear local storage
+      }
+      
       setToken(response.access_token);
       setUser(response.user);
       return { success: true };
@@ -80,7 +91,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear both storage locations
     localStorage.removeItem('edgeai_token');
+    sessionStorage.removeItem('edgeai_token');
     setToken(null);
     setUser(null);
   }, []);
