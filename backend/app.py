@@ -113,26 +113,69 @@ async def api_health_check():
     }
 
 # Mount standalone RIA auth & demo routes (no DB required)
+# Each router imported separately to identify which one fails
+_ria_routers_mounted = []
+
 try:
     from backend.api.auth import router as auth_router
-    from backend.api.ria_dashboard import router as ria_dashboard_router
-    from backend.api.ria_households import router as ria_households_router
-    from backend.api.ria_accounts import router as ria_accounts_router
-    from backend.api.ria_compliance import router as ria_compliance_router
-    from backend.api.ria_chat import router as ria_chat_router
-    from backend.api.ria_statements import router as ria_statements_router
-    from backend.api.ria_analysis import router as ria_analysis_router
     app.include_router(auth_router)
-    app.include_router(ria_dashboard_router)
-    app.include_router(ria_households_router)
-    app.include_router(ria_accounts_router)
-    app.include_router(ria_compliance_router)
-    app.include_router(ria_chat_router)
-    app.include_router(ria_statements_router)
-    app.include_router(ria_analysis_router)
-    logger.info("RIA demo routes mounted (auth, dashboard, households, accounts, compliance, chat, statements, analysis)")
+    _ria_routers_mounted.append("auth")
 except Exception as e:
-    logger.warning("Could not mount RIA demo routes: %s", e)
+    logger.error("Failed to mount auth router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_dashboard import router as ria_dashboard_router
+    app.include_router(ria_dashboard_router)
+    _ria_routers_mounted.append("dashboard")
+except Exception as e:
+    logger.error("Failed to mount ria_dashboard router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_households import router as ria_households_router
+    app.include_router(ria_households_router)
+    _ria_routers_mounted.append("households")
+except Exception as e:
+    logger.error("Failed to mount ria_households router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_accounts import router as ria_accounts_router
+    app.include_router(ria_accounts_router)
+    _ria_routers_mounted.append("accounts")
+except Exception as e:
+    logger.error("Failed to mount ria_accounts router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_compliance import router as ria_compliance_router
+    app.include_router(ria_compliance_router)
+    _ria_routers_mounted.append("compliance")
+except Exception as e:
+    logger.error("Failed to mount ria_compliance router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_chat import router as ria_chat_router
+    app.include_router(ria_chat_router)
+    _ria_routers_mounted.append("chat")
+except Exception as e:
+    logger.error("Failed to mount ria_chat router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_statements import router as ria_statements_router
+    app.include_router(ria_statements_router)
+    _ria_routers_mounted.append("statements")
+except Exception as e:
+    logger.error("Failed to mount ria_statements router: %s", e, exc_info=True)
+
+try:
+    from backend.api.ria_analysis import router as ria_analysis_router
+    app.include_router(ria_analysis_router)
+    _ria_routers_mounted.append("analysis")
+except Exception as e:
+    logger.error("Failed to mount ria_analysis router: %s", e, exc_info=True)
+
+if _ria_routers_mounted:
+    logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
+else:
+    logger.warning("No RIA demo routes could be mounted!")
 
 # Mount RIA Platform API v1 routers (DB required for analysis/chat/compliance)
 try:
