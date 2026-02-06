@@ -144,7 +144,7 @@ class BehavioralNudge(Base):
     action_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     action_label: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     priority: Mapped[int] = mapped_column(Integer, default=5)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    nudge_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     viewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -172,7 +172,7 @@ class NudgeInteraction(Base):
         PG_UUID(as_uuid=True), ForeignKey("behavioral_nudges.id"), nullable=False, index=True
     )
     interaction_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    interaction_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
