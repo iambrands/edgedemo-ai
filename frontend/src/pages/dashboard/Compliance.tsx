@@ -55,7 +55,7 @@ export function Compliance() {
   const warningCount = logs.filter((log) => log.result === 'WARNING').length;
 
   const handleExportCSV = () => {
-    exportToCSV(logs, 'edgeai-compliance-audit-trail', [
+    exportToCSV(logs as unknown as Record<string, unknown>[], 'edgeai-compliance-audit-trail', [
       { key: 'date', header: 'Date' },
       { key: 'household', header: 'Household' },
       { key: 'rule', header: 'Rule' },

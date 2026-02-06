@@ -39,3 +39,4 @@ htmlcov/
 
 .git-push-token
 .env.local
+.env*

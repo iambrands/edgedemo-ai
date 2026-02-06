@@ -43,7 +43,7 @@ export function exportToJSON(data: unknown, filename: string) {
 }
 
 // PDF Export (opens printable HTML in new window)
-export function exportToPDF(title: string, content: string, filename: string) {
+export function exportToPDF(title: string, content: string, _filename: string) {
   // For a real PDF, you'd use jsPDF or similar
   // This creates a printable HTML page that can be saved as PDF
   const printWindow = window.open('', '_blank');
