@@ -6,30 +6,70 @@ Handles portfolio analysis requests using OpenAI GPT API
 import os
 import sys
 from pathlib import Path
+import types
 
-# Smart project root detection for various deployment scenarios
-# Handles Railway Nixpacks, Docker, and local development
-def _find_project_root():
-    """Find the project root by locating the parent of 'backend' directory."""
-    # First check: parent of this file's parent (standard structure)
+# Determine if we're running in Nixpacks flat structure (no backend/ dir)
+# or standard structure (with backend/ dir)
+_cwd = Path.cwd()
+_is_nixpacks = not (_cwd / "backend").is_dir() and (_cwd / "api").is_dir()
+
+if _is_nixpacks:
+    # Nixpacks puts everything flat in /app
+    # Create a fake 'backend' module that proxies to current directory modules
+    _project_root = _cwd
+    
+    # Create backend module shim
+    backend_module = types.ModuleType('backend')
+    backend_module.__path__ = [str(_cwd)]
+    sys.modules['backend'] = backend_module
+    
+    # Create backend.api shim
+    if 'backend.api' not in sys.modules:
+        api_module = types.ModuleType('backend.api')
+        api_module.__path__ = [str(_cwd / 'api')]
+        sys.modules['backend.api'] = api_module
+        backend_module.api = api_module
+    
+    # Create backend.services shim
+    if 'backend.services' not in sys.modules:
+        services_module = types.ModuleType('backend.services')
+        services_module.__path__ = [str(_cwd / 'services')]
+        sys.modules['backend.services'] = services_module
+        backend_module.services = services_module
+    
+    # Create backend.models shim
+    if 'backend.models' not in sys.modules:
+        models_module = types.ModuleType('backend.models')
+        models_module.__path__ = [str(_cwd / 'models')]
+        sys.modules['backend.models'] = models_module
+        backend_module.models = models_module
+    
+    # Create backend.parsers shim
+    if 'backend.parsers' not in sys.modules:
+        parsers_module = types.ModuleType('backend.parsers')
+        parsers_module.__path__ = [str(_cwd / 'parsers')]
+        sys.modules['backend.parsers'] = parsers_module
+        backend_module.parsers = parsers_module
+    
+    # Create backend.config shim
+    if 'backend.config' not in sys.modules:
+        config_module = types.ModuleType('backend.config')
+        config_module.__path__ = [str(_cwd / 'config')]
+        sys.modules['backend.config'] = config_module
+        backend_module.config = config_module
+else:
+    # Standard structure - find project root
     file_based = Path(__file__).resolve().parent.parent
     if (file_based / "backend").is_dir():
-        return file_based
-    
-    # Second check: current working directory (Nixpacks often runs from project root)
-    cwd = Path.cwd()
-    if (cwd / "backend").is_dir():
-        return cwd
-    
-    # Third check: /app directory (Docker/Railway standard)
-    app_dir = Path("/app")
-    if app_dir.exists() and (app_dir / "backend").is_dir():
-        return app_dir
-    
-    # Fallback: use file-based detection
-    return file_based
+        _project_root = file_based
+    elif (_cwd / "backend").is_dir():
+        _project_root = _cwd
+    elif Path("/app/backend").is_dir():
+        _project_root = Path("/app")
+    else:
+        _project_root = file_based
 
-_project_root = _find_project_root()
+# Ensure project root in path
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
@@ -131,25 +171,23 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.0.3",  # Version bump to verify deploy
+        "version": "1.0.4",  # Version bump to verify deploy
         "environment": env,
         "ai_enabled": anthropic_client is not None,
         "routers_mounted": _ria_routers_mounted,
         "router_errors": _ria_router_errors[:5],
         "debug": {
+            "is_nixpacks": _is_nixpacks,
             "cwd": os.getcwd(),
             "project_root": str(_project_root),
-            "sys_path_first3": sys.path[:3],
-            "pythonpath_env": os.getenv("PYTHONPATH", "not set"),
-            "cwd_contents": os.listdir(os.getcwd()) if os.path.isdir(os.getcwd()) else [],
-            "backend_exists": os.path.isdir(os.path.join(os.getcwd(), "backend")),
-            "__file__": str(Path(__file__).resolve()),
+            "backend_shim_active": 'backend' in sys.modules and hasattr(sys.modules['backend'], '__path__'),
         }
     }
 
 # Mount standalone RIA auth & demo routes (no DB required)
 # Each router imported separately to identify which one fails
 
+# Mount auth router
 try:
     from backend.api.auth import router as auth_router
     app.include_router(auth_router)
@@ -158,6 +196,7 @@ except Exception as e:
     _ria_router_errors.append(f"auth: {type(e).__name__}: {e}")
     logger.error("Failed to mount auth router: %s", e, exc_info=True)
 
+# Mount RIA dashboard router
 try:
     from backend.api.ria_dashboard import router as ria_dashboard_router
     app.include_router(ria_dashboard_router)
@@ -166,6 +205,7 @@ except Exception as e:
     _ria_router_errors.append(f"dashboard: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_dashboard router: %s", e, exc_info=True)
 
+# Mount RIA households router
 try:
     from backend.api.ria_households import router as ria_households_router
     app.include_router(ria_households_router)
@@ -174,6 +214,7 @@ except Exception as e:
     _ria_router_errors.append(f"households: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_households router: %s", e, exc_info=True)
 
+# Mount RIA accounts router
 try:
     from backend.api.ria_accounts import router as ria_accounts_router
     app.include_router(ria_accounts_router)
@@ -182,6 +223,7 @@ except Exception as e:
     _ria_router_errors.append(f"accounts: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_accounts router: %s", e, exc_info=True)
 
+# Mount RIA compliance router
 try:
     from backend.api.ria_compliance import router as ria_compliance_router
     app.include_router(ria_compliance_router)
@@ -190,6 +232,7 @@ except Exception as e:
     _ria_router_errors.append(f"compliance: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_compliance router: %s", e, exc_info=True)
 
+# Mount RIA chat router
 try:
     from backend.api.ria_chat import router as ria_chat_router
     app.include_router(ria_chat_router)
@@ -198,6 +241,7 @@ except Exception as e:
     _ria_router_errors.append(f"chat: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_chat router: %s", e, exc_info=True)
 
+# Mount RIA statements router
 try:
     from backend.api.ria_statements import router as ria_statements_router
     app.include_router(ria_statements_router)
@@ -206,6 +250,7 @@ except Exception as e:
     _ria_router_errors.append(f"statements: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_statements router: %s", e, exc_info=True)
 
+# Mount RIA analysis router
 try:
     from backend.api.ria_analysis import router as ria_analysis_router
     app.include_router(ria_analysis_router)
