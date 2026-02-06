@@ -626,6 +626,20 @@ Return ONLY valid JSON."""
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def list_all_requests(
+        self,
+        status: Optional[WithdrawalStatus] = None,
+        limit: int = 50
+    ) -> List[WithdrawalRequest]:
+        """List all withdrawal requests with optional status filter."""
+        query = select(WithdrawalRequest)
+        if status:
+            query = query.where(WithdrawalRequest.status == status)
+        query = query.order_by(desc(WithdrawalRequest.created_at)).limit(limit)
+
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
     async def get_plan(self, plan_id: UUID) -> Optional[WithdrawalPlan]:
         """Get withdrawal plan by ID."""
         result = await self.db.execute(

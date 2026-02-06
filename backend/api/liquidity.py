@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,7 @@ from backend.models.liquidity import (
 from backend.services.liquidity_optimizer import LiquidityOptimizer
 
 
-router = APIRouter(prefix="/api/v1/liquidity", tags=["Liquidity Optimizer"])
+router = APIRouter(prefix="/api/v1/liquidity", tags=["Liquidity Optimization"])
 
 
 # ============================================================================
@@ -32,46 +32,49 @@ router = APIRouter(prefix="/api/v1/liquidity", tags=["Liquidity Optimizer"])
 
 class ProfileUpdate(BaseModel):
     """Liquidity profile update request."""
+    default_priority: Optional[str] = None
+    default_lot_selection: Optional[str] = None
     federal_tax_bracket: Optional[float] = None
     state_tax_rate: Optional[float] = None
     capital_gains_rate_short: Optional[float] = None
     capital_gains_rate_long: Optional[float] = None
+    min_cash_reserve: Optional[float] = None
+    max_single_position_liquidation_pct: Optional[float] = None
+    avoid_wash_sales: Optional[bool] = None
     ytd_short_term_gains: Optional[float] = None
     ytd_long_term_gains: Optional[float] = None
     ytd_short_term_losses: Optional[float] = None
     ytd_long_term_losses: Optional[float] = None
     loss_carryforward: Optional[float] = None
-    min_cash_reserve: Optional[float] = None
-    max_single_position_liquidation_pct: Optional[float] = None
-    default_priority: Optional[str] = None
-    default_lot_selection: Optional[str] = None
-    avoid_wash_sales: Optional[bool] = None
 
 
 class ProfileResponse(BaseModel):
     """Liquidity profile response."""
     id: str
     client_id: str
+    default_priority: str
+    default_lot_selection: str
     federal_tax_bracket: Optional[float]
     state_tax_rate: Optional[float]
     capital_gains_rate_short: float
     capital_gains_rate_long: float
+    min_cash_reserve: float
+    max_single_position_liquidation_pct: float
+    avoid_wash_sales: bool
     ytd_short_term_gains: float
     ytd_long_term_gains: float
     ytd_short_term_losses: float
     ytd_long_term_losses: float
     loss_carryforward: float
-    min_cash_reserve: float
-    max_single_position_liquidation_pct: float
-    default_priority: str
-    default_lot_selection: str
-    avoid_wash_sales: bool
     created_at: datetime
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
 
-class TaxLotSync(BaseModel):
-    """Tax lot data for syncing."""
+
+class TaxLotItem(BaseModel):
+    """Individual tax lot data for syncing."""
     lot_id: Optional[str] = None
     symbol: str
     shares: float
@@ -79,6 +82,11 @@ class TaxLotSync(BaseModel):
     acquisition_date: Optional[datetime] = None
     acquisition_method: Optional[str] = "purchase"
     current_price: Optional[float] = None
+
+
+class TaxLotSyncRequest(BaseModel):
+    """Tax lot sync wrapper."""
+    lots: List[TaxLotItem]
 
 
 class TaxLotResponse(BaseModel):
@@ -98,6 +106,9 @@ class TaxLotResponse(BaseModel):
     days_held: Optional[int]
     is_short_term: bool
     is_active: bool
+
+    class Config:
+        from_attributes = True
 
 
 class WithdrawalRequestCreate(BaseModel):
@@ -121,6 +132,10 @@ class LineItemResponse(BaseModel):
     estimated_gain_loss: Optional[float]
     is_short_term: Optional[bool]
     sequence: int
+    executed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 
 class PlanResponse(BaseModel):
@@ -128,21 +143,24 @@ class PlanResponse(BaseModel):
     id: str
     request_id: str
     plan_name: str
-    total_amount: float
     is_recommended: bool
-    ai_generated: bool
-    ai_reasoning: Optional[str]
+    total_amount: float
     estimated_tax_cost: Optional[float]
     estimated_short_term_gains: float
     estimated_long_term_gains: float
     estimated_short_term_losses: float
     estimated_long_term_losses: float
-    line_items: List[LineItemResponse]
+    ai_generated: bool
+    ai_reasoning: Optional[str]
+    line_items: List[LineItemResponse] = []
     created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class WithdrawalRequestResponse(BaseModel):
-    """Withdrawal request response."""
+    """Withdrawal request response with embedded plans."""
     id: str
     client_id: str
     requested_amount: float
@@ -156,8 +174,12 @@ class WithdrawalRequestResponse(BaseModel):
     approved_by: Optional[str]
     approved_at: Optional[datetime]
     completed_at: Optional[datetime]
+    plans: List[PlanResponse] = []
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ApproveRequest(BaseModel):
@@ -190,6 +212,9 @@ class CashFlowResponse(BaseModel):
     is_projected: bool
     is_confirmed: bool
 
+    class Config:
+        from_attributes = True
+
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -200,20 +225,20 @@ def profile_to_response(profile) -> ProfileResponse:
     return ProfileResponse(
         id=str(profile.id),
         client_id=str(profile.client_id),
+        default_priority=profile.default_priority.value,
+        default_lot_selection=profile.default_lot_selection.value,
         federal_tax_bracket=float(profile.federal_tax_bracket) if profile.federal_tax_bracket else None,
         state_tax_rate=float(profile.state_tax_rate) if profile.state_tax_rate else None,
         capital_gains_rate_short=float(profile.capital_gains_rate_short),
         capital_gains_rate_long=float(profile.capital_gains_rate_long),
+        min_cash_reserve=float(profile.min_cash_reserve),
+        max_single_position_liquidation_pct=float(profile.max_single_position_liquidation_pct),
+        avoid_wash_sales=profile.avoid_wash_sales,
         ytd_short_term_gains=float(profile.ytd_short_term_gains),
         ytd_long_term_gains=float(profile.ytd_long_term_gains),
         ytd_short_term_losses=float(profile.ytd_short_term_losses),
         ytd_long_term_losses=float(profile.ytd_long_term_losses),
         loss_carryforward=float(profile.loss_carryforward),
-        min_cash_reserve=float(profile.min_cash_reserve),
-        max_single_position_liquidation_pct=float(profile.max_single_position_liquidation_pct),
-        default_priority=profile.default_priority.value,
-        default_lot_selection=profile.default_lot_selection.value,
-        avoid_wash_sales=profile.avoid_wash_sales,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -240,58 +265,74 @@ def lot_to_response(lot) -> TaxLotResponse:
     )
 
 
-def plan_to_response(plan) -> PlanResponse:
+def line_item_to_response(item) -> LineItemResponse:
+    """Convert line item model to response."""
+    return LineItemResponse(
+        id=str(item.id),
+        account_id=str(item.account_id) if item.account_id else None,
+        symbol=item.symbol,
+        shares_to_sell=float(item.shares_to_sell),
+        estimated_proceeds=float(item.estimated_proceeds),
+        cost_basis=float(item.cost_basis) if item.cost_basis else None,
+        estimated_gain_loss=float(item.estimated_gain_loss) if item.estimated_gain_loss else None,
+        is_short_term=item.is_short_term,
+        sequence=item.sequence,
+        executed_at=item.executed_at,
+    )
+
+
+def plan_to_response(plan, include_line_items: bool = True) -> PlanResponse:
     """Convert plan model to response."""
     line_items = []
-    for item in plan.line_items:
-        line_items.append(LineItemResponse(
-            id=str(item.id),
-            account_id=str(item.account_id) if item.account_id else None,
-            symbol=item.symbol,
-            shares_to_sell=float(item.shares_to_sell),
-            estimated_proceeds=float(item.estimated_proceeds),
-            cost_basis=float(item.cost_basis) if item.cost_basis else None,
-            estimated_gain_loss=float(item.estimated_gain_loss) if item.estimated_gain_loss else None,
-            is_short_term=item.is_short_term,
-            sequence=item.sequence,
-        ))
-    
+    if include_line_items and hasattr(plan, "line_items") and plan.line_items:
+        line_items = [line_item_to_response(item) for item in plan.line_items]
+
     return PlanResponse(
         id=str(plan.id),
         request_id=str(plan.request_id),
         plan_name=plan.plan_name,
-        total_amount=float(plan.total_amount),
         is_recommended=plan.is_recommended,
-        ai_generated=plan.ai_generated,
-        ai_reasoning=plan.ai_reasoning,
+        total_amount=float(plan.total_amount),
         estimated_tax_cost=float(plan.estimated_tax_cost) if plan.estimated_tax_cost else None,
         estimated_short_term_gains=float(plan.estimated_short_term_gains),
         estimated_long_term_gains=float(plan.estimated_long_term_gains),
         estimated_short_term_losses=float(plan.estimated_short_term_losses),
         estimated_long_term_losses=float(plan.estimated_long_term_losses),
+        ai_generated=plan.ai_generated,
+        ai_reasoning=plan.ai_reasoning,
         line_items=line_items,
         created_at=plan.created_at,
     )
 
 
-def request_to_response(request) -> WithdrawalRequestResponse:
-    """Convert request model to response."""
+def request_to_response(
+    req, plans: Optional[list] = None, include_line_items: bool = True
+) -> WithdrawalRequestResponse:
+    """Convert request model to response with embedded plans."""
+    plan_responses = []
+    if plans:
+        plan_responses = [
+            plan_to_response(p, include_line_items=include_line_items)
+            for p in plans
+        ]
+
     return WithdrawalRequestResponse(
-        id=str(request.id),
-        client_id=str(request.client_id),
-        requested_amount=float(request.requested_amount),
-        requested_date=request.requested_date,
-        purpose=request.purpose,
-        priority=request.priority.value,
-        lot_selection=request.lot_selection.value,
-        status=request.status.value,
-        optimized_plan_id=str(request.optimized_plan_id) if request.optimized_plan_id else None,
-        requested_by=str(request.requested_by),
-        approved_by=str(request.approved_by) if request.approved_by else None,
-        approved_at=request.approved_at,
-        completed_at=request.completed_at,
-        created_at=request.created_at,
-        updated_at=request.updated_at,
+        id=str(req.id),
+        client_id=str(req.client_id),
+        requested_amount=float(req.requested_amount),
+        requested_date=req.requested_date,
+        purpose=req.purpose,
+        priority=req.priority.value,
+        lot_selection=req.lot_selection.value,
+        status=req.status.value,
+        optimized_plan_id=str(req.optimized_plan_id) if req.optimized_plan_id else None,
+        requested_by=str(req.requested_by),
+        approved_by=str(req.approved_by) if req.approved_by else None,
+        approved_at=req.approved_at,
+        completed_at=req.completed_at,
+        plans=plan_responses,
+        created_at=req.created_at,
+        updated_at=req.updated_at,
     )
 
 
@@ -311,6 +352,22 @@ def cashflow_to_response(cf) -> CashFlowResponse:
     )
 
 
+def _parse_profile_updates(updates: ProfileUpdate) -> dict:
+    """Parse profile update request into a dict with proper types."""
+    update_dict = {}
+    for key, value in updates.model_dump(exclude_unset=True).items():
+        if key == "default_priority" and value:
+            update_dict[key] = WithdrawalPriority(value)
+        elif key == "default_lot_selection" and value:
+            update_dict[key] = LotSelectionMethod(value)
+        elif value is not None:
+            if isinstance(value, float):
+                update_dict[key] = Decimal(str(value))
+            else:
+                update_dict[key] = value
+    return update_dict
+
+
 # ============================================================================
 # PROFILE ENDPOINTS
 # ============================================================================
@@ -321,36 +378,36 @@ async def get_profile(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get or create liquidity profile for a client."""
+    """Get liquidity profile for a client."""
     optimizer = LiquidityOptimizer(db)
     profile = await optimizer.get_or_create_profile(UUID(client_id))
     return profile_to_response(profile)
 
 
 @router.put("/profile/{client_id}", response_model=ProfileResponse)
-async def update_profile(
+async def update_profile_put(
     client_id: str,
     updates: ProfileUpdate,
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Update liquidity profile settings."""
+    """Update liquidity profile settings (PUT)."""
     optimizer = LiquidityOptimizer(db)
-    
-    # Convert to dict, filter None values, and handle enums
-    update_dict = {}
-    for key, value in updates.model_dump(exclude_none=True).items():
-        if key == "default_priority" and value:
-            update_dict[key] = WithdrawalPriority(value)
-        elif key == "default_lot_selection" and value:
-            update_dict[key] = LotSelectionMethod(value)
-        elif value is not None:
-            # Convert floats to Decimal for numeric fields
-            if isinstance(value, float):
-                update_dict[key] = Decimal(str(value))
-            else:
-                update_dict[key] = value
-    
+    update_dict = _parse_profile_updates(updates)
+    profile = await optimizer.update_profile(UUID(client_id), update_dict)
+    return profile_to_response(profile)
+
+
+@router.patch("/profile/{client_id}", response_model=ProfileResponse)
+async def update_profile_patch(
+    client_id: str,
+    updates: ProfileUpdate,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Update liquidity profile settings (PATCH - partial update)."""
+    optimizer = LiquidityOptimizer(db)
+    update_dict = _parse_profile_updates(updates)
     profile = await optimizer.update_profile(UUID(client_id), update_dict)
     return profile_to_response(profile)
 
@@ -359,30 +416,19 @@ async def update_profile(
 # TAX LOT ENDPOINTS
 # ============================================================================
 
-@router.post("/tax-lots/{account_id}/sync", response_model=List[TaxLotResponse])
-async def sync_tax_lots(
-    account_id: str,
-    lots: List[TaxLotSync],
-    db: AsyncSession = Depends(get_db_session),
-    current_user: dict = Depends(get_current_user),
-):
-    """Sync tax lots from broker data."""
-    optimizer = LiquidityOptimizer(db)
-    
-    lots_data = [lot.model_dump() for lot in lots]
-    synced = await optimizer.sync_tax_lots(UUID(account_id), lots_data)
-    return [lot_to_response(lot) for lot in synced]
-
-
 @router.get("/tax-lots/{account_id}", response_model=List[TaxLotResponse])
-async def get_account_lots(
+async def get_tax_lots(
     account_id: str,
+    symbol: Optional[str] = None,
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get all active tax lots for an account."""
+    """Get tax lots for an account, optionally filtered by symbol."""
     optimizer = LiquidityOptimizer(db)
-    lots = await optimizer.get_account_lots(UUID(account_id))
+    if symbol:
+        lots = await optimizer.get_lots_for_symbol(UUID(account_id), symbol.upper())
+    else:
+        lots = await optimizer.get_account_lots(UUID(account_id))
     return [lot_to_response(lot) for lot in lots]
 
 
@@ -399,6 +445,28 @@ async def get_lots_for_symbol(
     return [lot_to_response(lot) for lot in lots]
 
 
+@router.post("/tax-lots/{account_id}/sync")
+async def sync_tax_lots(
+    account_id: str,
+    data: TaxLotSyncRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Sync tax lots from broker data."""
+    optimizer = LiquidityOptimizer(db)
+
+    try:
+        lots_data = [lot.model_dump() for lot in data.lots]
+        lots = await optimizer.sync_tax_lots(UUID(account_id), lots_data)
+        return {
+            "synced": len(lots),
+            "message": "Tax lots synced successfully",
+            "lots": [lot_to_response(lot) for lot in lots],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ============================================================================
 # WITHDRAWAL REQUEST ENDPOINTS
 # ============================================================================
@@ -409,22 +477,55 @@ async def create_withdrawal_request(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Create a new withdrawal request with optimized plans."""
+    """Create a new withdrawal request and generate optimized plans."""
     optimizer = LiquidityOptimizer(db)
-    
+
     priority = WithdrawalPriority(request.priority) if request.priority else None
     lot_selection = LotSelectionMethod(request.lot_selection) if request.lot_selection else None
-    
-    withdrawal = await optimizer.create_withdrawal_request(
-        client_id=UUID(request.client_id),
-        amount=request.amount,
-        requested_by=UUID(current_user["user_id"]),
-        purpose=request.purpose,
-        priority=priority,
-        lot_selection=lot_selection,
-        requested_date=request.requested_date,
-    )
-    return request_to_response(withdrawal)
+
+    try:
+        withdrawal = await optimizer.create_withdrawal_request(
+            client_id=UUID(request.client_id),
+            amount=request.amount,
+            requested_by=UUID(current_user["user_id"]),
+            purpose=request.purpose,
+            priority=priority,
+            lot_selection=lot_selection,
+            requested_date=request.requested_date,
+        )
+
+        # Load plans with line items for the response
+        plans = await optimizer.get_plans_for_request(withdrawal.id)
+        return request_to_response(withdrawal, plans=plans, include_line_items=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/withdrawals", response_model=List[WithdrawalRequestResponse])
+async def list_withdrawal_requests(
+    client_id: Optional[str] = Query(None, description="Filter by client ID"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """List withdrawal requests with optional filters."""
+    optimizer = LiquidityOptimizer(db)
+
+    status_enum = WithdrawalStatus(status) if status else None
+
+    if client_id:
+        requests = await optimizer.get_client_requests(UUID(client_id), status_enum)
+    else:
+        requests = await optimizer.list_all_requests(status=status_enum, limit=50)
+
+    results = []
+    for req in requests:
+        # Load plans without line items for list view (performance)
+        plans = await optimizer.get_plans_for_request(req.id)
+        results.append(
+            request_to_response(req, plans=plans, include_line_items=False)
+        )
+    return results
 
 
 @router.get("/withdrawals/{request_id}", response_model=WithdrawalRequestResponse)
@@ -433,12 +534,14 @@ async def get_withdrawal_request(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get withdrawal request by ID."""
+    """Get a specific withdrawal request with all plans and line items."""
     optimizer = LiquidityOptimizer(db)
-    withdrawal = await optimizer.get_request(UUID(request_id))
-    if not withdrawal:
-        raise HTTPException(status_code=404, detail="Withdrawal request not found")
-    return request_to_response(withdrawal)
+    req = await optimizer.get_request(UUID(request_id))
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    plans = await optimizer.get_plans_for_request(req.id)
+    return request_to_response(req, plans=plans, include_line_items=True)
 
 
 @router.get("/withdrawals/client/{client_id}", response_model=List[WithdrawalRequestResponse])
@@ -448,12 +551,19 @@ async def get_client_withdrawals(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get all withdrawal requests for a client."""
+    """Get all withdrawal requests for a specific client."""
     optimizer = LiquidityOptimizer(db)
-    
+
     status_enum = WithdrawalStatus(status) if status else None
-    withdrawals = await optimizer.get_client_requests(UUID(client_id), status_enum)
-    return [request_to_response(w) for w in withdrawals]
+    requests = await optimizer.get_client_requests(UUID(client_id), status_enum)
+
+    results = []
+    for req in requests:
+        plans = await optimizer.get_plans_for_request(req.id)
+        results.append(
+            request_to_response(req, plans=plans, include_line_items=False)
+        )
+    return results
 
 
 @router.get("/withdrawals/{request_id}/plans", response_model=List[PlanResponse])
@@ -474,7 +584,7 @@ async def get_plan(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get a specific withdrawal plan."""
+    """Get a specific withdrawal plan with line items."""
     optimizer = LiquidityOptimizer(db)
     plan = await optimizer.get_plan(UUID(plan_id))
     if not plan:
@@ -482,36 +592,102 @@ async def get_plan(
     return plan_to_response(plan)
 
 
-@router.post("/withdrawals/{request_id}/approve", response_model=WithdrawalRequestResponse)
+@router.post("/withdrawals/{request_id}/approve")
 async def approve_withdrawal(
     request_id: str,
     approval: ApproveRequest,
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Approve a withdrawal request."""
+    """Approve a withdrawal request with optional plan selection."""
     optimizer = LiquidityOptimizer(db)
-    
-    plan_id = UUID(approval.plan_id) if approval.plan_id else None
-    withdrawal = await optimizer.approve_request(
-        request_id=UUID(request_id),
-        approver_id=UUID(current_user["user_id"]),
-        plan_id=plan_id,
-    )
-    return request_to_response(withdrawal)
+
+    try:
+        plan_id = UUID(approval.plan_id) if approval.plan_id else None
+        req = await optimizer.approve_request(
+            request_id=UUID(request_id),
+            approver_id=UUID(current_user["user_id"]),
+            plan_id=plan_id,
+        )
+        return {"status": "approved", "request_id": str(req.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/withdrawals/{request_id}/reject", response_model=WithdrawalRequestResponse)
+@router.post("/withdrawals/{request_id}/execute")
+async def execute_withdrawal(
+    request_id: str,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Execute an approved withdrawal request's selected plan."""
+    optimizer = LiquidityOptimizer(db)
+
+    req = await optimizer.get_request(UUID(request_id))
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if req.status != WithdrawalStatus.APPROVED:
+        raise HTTPException(
+            status_code=400,
+            detail="Request must be approved before execution",
+        )
+
+    if not req.optimized_plan_id:
+        raise HTTPException(
+            status_code=400,
+            detail="No plan selected for execution",
+        )
+
+    try:
+        plan = await optimizer.execute_plan(req.optimized_plan_id)
+        return {"status": "executing", "plan_id": str(plan.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/withdrawals/{request_id}/cancel")
+async def cancel_withdrawal(
+    request_id: str,
+    reason: Optional[str] = None,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Cancel a withdrawal request."""
+    optimizer = LiquidityOptimizer(db)
+
+    req = await optimizer.get_request(UUID(request_id))
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if req.status in [WithdrawalStatus.COMPLETED, WithdrawalStatus.EXECUTING]:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot cancel completed or executing request",
+        )
+
+    try:
+        cancelled = await optimizer.reject_request(UUID(request_id), reason)
+        return {"status": "cancelled", "request_id": str(cancelled.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/withdrawals/{request_id}/reject")
 async def reject_withdrawal(
     request_id: str,
     reason: Optional[str] = None,
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Reject/cancel a withdrawal request."""
+    """Reject a withdrawal request (alias for cancel)."""
     optimizer = LiquidityOptimizer(db)
-    withdrawal = await optimizer.reject_request(UUID(request_id), reason)
-    return request_to_response(withdrawal)
+
+    try:
+        req = await optimizer.reject_request(UUID(request_id), reason)
+        return {"status": "rejected", "request_id": str(req.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/plans/{plan_id}/execute", response_model=PlanResponse)
@@ -520,13 +696,16 @@ async def execute_plan(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Mark a plan for execution."""
+    """Mark a specific plan for execution."""
     optimizer = LiquidityOptimizer(db)
-    plan = await optimizer.execute_plan(UUID(plan_id))
-    return plan_to_response(plan)
+    try:
+        plan = await optimizer.execute_plan(UUID(plan_id))
+        return plan_to_response(plan)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/withdrawals/{request_id}/complete", response_model=WithdrawalRequestResponse)
+@router.post("/withdrawals/{request_id}/complete")
 async def complete_withdrawal(
     request_id: str,
     db: AsyncSession = Depends(get_db_session),
@@ -534,8 +713,11 @@ async def complete_withdrawal(
 ):
     """Mark a withdrawal request as completed."""
     optimizer = LiquidityOptimizer(db)
-    withdrawal = await optimizer.complete_request(UUID(request_id))
-    return request_to_response(withdrawal)
+    try:
+        req = await optimizer.complete_request(UUID(request_id))
+        return {"status": "completed", "request_id": str(req.id)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============================================================================
@@ -550,7 +732,7 @@ async def create_cash_flow(
 ):
     """Add a projected cash flow."""
     optimizer = LiquidityOptimizer(db)
-    
+
     cash_flow = await optimizer.add_cash_flow(
         client_id=UUID(request.client_id),
         flow_type=request.flow_type,
@@ -572,7 +754,7 @@ async def get_cash_flows(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Get cash flows for a client."""
+    """Get cash flows for a client within an optional date range."""
     optimizer = LiquidityOptimizer(db)
     cash_flows = await optimizer.get_cash_flows(
         UUID(client_id),

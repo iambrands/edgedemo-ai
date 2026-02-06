@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="EdgeAI Portfolio Analyzer API",
     description="Backend API for EdgeAI Portfolio Analysis powered by OpenAI GPT",
-    version="1.4.0"
+    version="1.5.0"
 )
 
 # Initialize rate limiter (in-memory for simple deployment)
