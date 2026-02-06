@@ -7,3 +7,4 @@ export { Compliance } from './Compliance';
 export { Chat } from './Chat';
 export { Settings } from './Settings';
 export { default as Meetings } from './Meetings';
+export { default as ComplianceDocs } from './ComplianceDocs';
