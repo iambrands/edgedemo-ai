@@ -131,7 +131,7 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.0.2",  # Version bump to verify deploy
+        "version": "1.0.3",  # Version bump to verify deploy
         "environment": env,
         "ai_enabled": anthropic_client is not None,
         "routers_mounted": _ria_routers_mounted,
@@ -141,6 +141,9 @@ async def api_health_check():
             "project_root": str(_project_root),
             "sys_path_first3": sys.path[:3],
             "pythonpath_env": os.getenv("PYTHONPATH", "not set"),
+            "cwd_contents": os.listdir(os.getcwd()) if os.path.isdir(os.getcwd()) else [],
+            "backend_exists": os.path.isdir(os.path.join(os.getcwd(), "backend")),
+            "__file__": str(Path(__file__).resolve()),
         }
     }
 
