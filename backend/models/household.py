@@ -54,4 +54,3 @@ class Household(Base, TimestampMixin, AuditMixin):
         "Account", back_populates="household"
     )
 
-    __table_args__ = (Index("ix_households_firm_id", "firm_id"),)

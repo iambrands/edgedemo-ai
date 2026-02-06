@@ -67,3 +67,8 @@ class ComplianceSeverity(str, enum.Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
+
+class TaxType(str, enum.Enum):
+    TAXABLE = "TAXABLE"
+    TAX_DEFERRED = "TAX_DEFERRED"
+    TAX_FREE = "TAX_FREE"
