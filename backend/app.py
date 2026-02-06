@@ -5,13 +5,20 @@ Handles portfolio analysis requests using OpenAI GPT API
 
 import os
 import sys
-import json
 from pathlib import Path
 
-# Ensure project root in path for backend.* imports (works for both app and backend.app)
+# Ensure project root in path for backend.* imports
+# This is critical for Railway deployment where working directory may vary
 _project_root = Path(__file__).resolve().parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
+
+# Debug: Print startup info (visible in Railway logs)
+print(f"[EdgeAI] Starting from: {os.getcwd()}", flush=True)
+print(f"[EdgeAI] Project root: {_project_root}", flush=True)
+print(f"[EdgeAI] Python path: {sys.path[:3]}...", flush=True)
+
+import json
 
 import re
 from typing import List, Dict, Any, Optional
