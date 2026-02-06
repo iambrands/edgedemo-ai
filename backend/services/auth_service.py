@@ -8,8 +8,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,8 +20,6 @@ from backend.models.household import Household
 from backend.models.user import User, UserType
 
 logger = logging.getLogger(__name__)
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class RegisterRequest(BaseModel):
@@ -58,11 +56,19 @@ class AuthService:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        return pwd_context.hash(password)
+        """Hash a password using bcrypt (72-byte limit)."""
+        pw_bytes = password.encode("utf-8")[:72]
+        return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
 
     @staticmethod
     def verify_password(plain: str, hashed: str) -> bool:
-        return pwd_context.verify(plain, hashed)
+        """Verify a password against a bcrypt hash."""
+        try:
+            pw_bytes = plain.encode("utf-8")[:72]
+            return bcrypt.checkpw(pw_bytes, hashed.encode("utf-8"))
+        except Exception as e:
+            logger.warning("Password verification error: %s", e)
+            return False
 
     @staticmethod
     def create_token(user_id: str, user_type: str, token_type: str = "access") -> str:

@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +23,32 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "edgeai-jwt-secret-change-in-production
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# --- Password Utilities (direct bcrypt, no passlib) ---
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    # bcrypt has a 72-byte limit, truncate if necessary
+    pw_bytes = password.encode("utf-8")[:72]
+    return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against a bcrypt hash."""
+    try:
+        pw_bytes = password.encode("utf-8")[:72]
+        return bcrypt.checkpw(pw_bytes, hashed.encode("utf-8"))
+    except Exception as e:
+        logger.warning("Password verification error: %s", e)
+        return False
+
 
 # --- Pydantic Models ---
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -43,6 +61,7 @@ class SignupRequest(BaseModel):
     state: Optional[str] = None
     licenses: Optional[str] = None  # Comma-separated
 
+
 class UserResponse(BaseModel):
     id: str
     email: str
@@ -54,27 +73,38 @@ class UserResponse(BaseModel):
     crd: Optional[str] = None
     state: Optional[str] = None
 
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
 
-# --- Mock User Store (Replace with DB in production) ---
 
-USERS_DB: dict = {
-    "leslie@iabadvisors.com": {
-        "id": "ria-001",
-        "email": "leslie@iabadvisors.com",
-        "password_hash": pwd_context.hash("CreateWealth2026$"),
-        "firstName": "Leslie",
-        "lastName": "Wilson",
-        "role": "ria",
-        "firm": "IAB Advisors, Inc.",
-        "licenses": ["Series 6", "Series 7", "Series 63", "Series 65 (pending)"],
-        "crd": "7891234",
-        "state": "TX",
-    }
-}
+# --- Mock User Store (Lazy initialization to avoid import-time hashing) ---
+
+_users_db: Optional[dict] = None
+
+
+def get_users_db() -> dict:
+    """Lazily initialize the mock user database."""
+    global _users_db
+    if _users_db is None:
+        _users_db = {
+            "leslie@iabadvisors.com": {
+                "id": "ria-001",
+                "email": "leslie@iabadvisors.com",
+                "password_hash": hash_password("CreateWealth2026$"),
+                "firstName": "Leslie",
+                "lastName": "Wilson",
+                "role": "ria",
+                "firm": "IAB Advisors, Inc.",
+                "licenses": ["Series 6", "Series 7", "Series 63", "Series 65 (pending)"],
+                "crd": "7891234",
+                "state": "TX",
+            }
+        }
+    return _users_db
+
 
 # --- Helper Functions ---
 
@@ -83,6 +113,7 @@ def create_access_token(data: dict) -> str:
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "iat": datetime.utcnow()})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     if not credentials:
@@ -94,13 +125,16 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         logger.warning("JWT verification failed: %s", e)
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+
 def get_current_user(token_data: dict = Depends(verify_token)) -> dict:
     email = token_data.get("sub")
-    if not email or email not in USERS_DB:
+    users_db = get_users_db()
+    if not email or email not in users_db:
         raise HTTPException(status_code=401, detail="User not found")
-    user = USERS_DB[email].copy()
+    user = users_db[email].copy()
     user.pop("password_hash", None)
     return user
+
 
 def user_to_response(user: dict) -> UserResponse:
     """Convert user dict to UserResponse model."""
@@ -116,6 +150,7 @@ def user_to_response(user: dict) -> UserResponse:
         state=user.get("state"),
     )
 
+
 # --- Endpoints ---
 
 @router.post("/login", response_model=TokenResponse)
@@ -124,11 +159,12 @@ async def login(request: LoginRequest):
     Login with email and password.
     Returns JWT access token and user data.
     """
-    user = USERS_DB.get(request.email.lower())
+    users_db = get_users_db()
+    user = users_db.get(request.email.lower())
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    if not pwd_context.verify(request.password, user["password_hash"]):
+    if not verify_password(request.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     token = create_access_token({"sub": user["email"], "role": user["role"]})
@@ -138,21 +174,23 @@ async def login(request: LoginRequest):
         user=user_to_response(user),
     )
 
+
 @router.post("/signup", response_model=TokenResponse)
 async def signup(request: SignupRequest):
     """
     Register a new user account.
     Returns JWT access token and user data.
     """
+    users_db = get_users_db()
     email_lower = request.email.lower()
-    if email_lower in USERS_DB:
+    if email_lower in users_db:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     if len(request.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     
     user_id = f"{request.role}-{int(datetime.utcnow().timestamp())}"
-    password_hash = pwd_context.hash(request.password)
+    password_hashed = hash_password(request.password)
     
     # Parse licenses from comma-separated string
     licenses = []
@@ -162,7 +200,7 @@ async def signup(request: SignupRequest):
     new_user = {
         "id": user_id,
         "email": email_lower,
-        "password_hash": password_hash,
+        "password_hash": password_hashed,
         "firstName": request.firstName,
         "lastName": request.lastName,
         "role": request.role,
@@ -172,7 +210,7 @@ async def signup(request: SignupRequest):
         "state": request.state,
     }
     
-    USERS_DB[email_lower] = new_user
+    users_db[email_lower] = new_user
     
     token = create_access_token({"sub": new_user["email"], "role": new_user["role"]})
     
@@ -181,12 +219,14 @@ async def signup(request: SignupRequest):
         user=user_to_response(new_user),
     )
 
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     """
     Get current authenticated user's profile.
     """
     return user_to_response(current_user)
+
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(current_user: dict = Depends(get_current_user)):
