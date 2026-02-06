@@ -1,30 +1,24 @@
 FROM python:3.11-slim
-
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
+    build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements and install
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy backend code
 COPY backend/ ./backend/
 
-# Create frontend directory and copy
-RUN mkdir -p frontend
-COPY frontend/index.html ./frontend/
+# Create non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
 
-# Expose port
 EXPOSE 8000
-
-# Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Run the application
-# Use PORT environment variable (defaults to 8000)
-CMD sh -c "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-8000}"
-
+CMD ["sh", "-c", "uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
