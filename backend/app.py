@@ -171,7 +171,7 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.1.0",  # Railway production release
+        "version": "1.2.0",  # Dockerfile fix - proper backend/ structure
         "environment": env,
         "ai_enabled": anthropic_client is not None,
     }
