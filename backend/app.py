@@ -111,11 +111,17 @@ async def api_health_check():
     env = os.getenv("ENVIRONMENT", "development")
     return {
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "1.0.2",  # Version bump to verify deploy
         "environment": env,
         "ai_enabled": anthropic_client is not None,
         "routers_mounted": _ria_routers_mounted,
-        "router_errors": _ria_router_errors[:5],  # Show first 5 errors
+        "router_errors": _ria_router_errors[:5],
+        "debug": {
+            "cwd": os.getcwd(),
+            "project_root": str(_project_root),
+            "sys_path_first3": sys.path[:3],
+            "pythonpath_env": os.getenv("PYTHONPATH", "not set"),
+        }
     }
 
 # Mount standalone RIA auth & demo routes (no DB required)
