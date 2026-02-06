@@ -119,3 +119,4 @@ gcloud run services update edgeai-demo \
 
 **Ready? Just run `./deploy-now.sh` when you're ready!** 🚀
 
+

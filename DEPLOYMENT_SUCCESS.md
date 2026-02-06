@@ -86,3 +86,4 @@ gcloud run services update edgeai-demo \
 
 **Congratulations! Your demo is live! 🚀**
 
+

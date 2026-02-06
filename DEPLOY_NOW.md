@@ -122,3 +122,4 @@ export PATH=/opt/homebrew/share/google-cloud-sdk/bin:$PATH && export OPENAI_KEY=
 
 **Everything is ready - just choose a method above!** 🎉
 
+

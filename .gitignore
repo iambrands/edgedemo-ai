@@ -37,3 +37,5 @@ logs/
 .coverage
 htmlcov/
 
+.git-push-token
+.env.local

@@ -138,3 +138,4 @@ echo "To update environment variables:"
 echo "  gcloud run services update $SERVICE_NAME --update-env-vars KEY=value --region $REGION"
 echo ""
 
+
