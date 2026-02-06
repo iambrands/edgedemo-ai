@@ -4,7 +4,17 @@
  */
 
 // Use environment variable for production, empty string for dev (uses Vite proxy)
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// Ensure HTTPS is used for production Railway URLs to prevent mixed content errors
+function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL || '';
+  // If URL contains railway.app, ensure it uses HTTPS
+  if (envUrl.includes('railway.app') && envUrl.startsWith('http://')) {
+    return envUrl.replace('http://', 'https://');
+  }
+  return envUrl;
+}
+
+const API_BASE = getApiBase();
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';

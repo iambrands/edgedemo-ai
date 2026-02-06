@@ -83,7 +83,14 @@ const priorityColors: Record<string, string> = {
   low: 'text-gray-400',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// Ensure HTTPS for production Railway URLs to prevent mixed content errors
+const API_BASE = (() => {
+  const envUrl = import.meta.env.VITE_API_URL || '';
+  if (envUrl.includes('railway.app') && envUrl.startsWith('http://')) {
+    return envUrl.replace('http://', 'https://');
+  }
+  return envUrl;
+})();
 
 const MeetingsPage: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
