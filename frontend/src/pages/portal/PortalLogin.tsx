@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { portalLogin, isPortalAuthenticated, getBranding, BrandingConfig, PortalApiError } from '../../services/portalApi';
@@ -17,6 +17,10 @@ export default function PortalLogin() {
     if (isPortalAuthenticated()) {
       navigate('/portal/dashboard');
     }
+    // Load branding configuration
+    getBranding()
+      .then((data) => setBranding(data))
+      .catch(() => {}); // Ignore branding errors
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {

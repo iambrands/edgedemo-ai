@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Target, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { 
   getGoals, createGoal, deleteGoal, 
@@ -16,7 +16,6 @@ const GOAL_TYPES = [
 ];
 
 export default function PortalGoals() {
-  const navigate = useNavigate();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
