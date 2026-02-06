@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Numeric, String, Text, Enum
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -194,10 +194,10 @@ class ClientGoal(Base, TimestampMixin):
     )
     goal_type: Mapped[GoalType] = mapped_column(Enum(GoalType), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    target_amount: Mapped[float] = mapped_column(Numeric(14, 4, asdecimal=False), nullable=False)
-    current_amount: Mapped[float] = mapped_column(Numeric(14, 4, asdecimal=False), default=0)
+    target_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    current_amount: Mapped[float] = mapped_column(Float, default=0)
     target_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    monthly_contribution: Mapped[Optional[float]] = mapped_column(Numeric(14, 4, asdecimal=False), nullable=True)
+    monthly_contribution: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     linked_account_ids: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     priority: Mapped[int] = mapped_column(Integer, default=5)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
