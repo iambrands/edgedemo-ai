@@ -269,6 +269,15 @@ except Exception as e:
     _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
     logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
 
+# Mount Liquidity Optimizer router
+try:
+    from backend.api.liquidity import router as liquidity_router
+    app.include_router(liquidity_router)
+    _ria_routers_mounted.append("liquidity")
+except Exception as e:
+    _ria_router_errors.append(f"liquidity: {type(e).__name__}: {e}")
+    logger.error("Failed to mount liquidity router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 else:
