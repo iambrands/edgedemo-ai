@@ -20,7 +20,7 @@ class User(db.Model):
     
     # Trading Mode
     trading_mode = db.Column(db.String(10), default='paper')  # paper, live
-    paper_balance = db.Column(db.Float, default=100000.0)  # Starting paper trading balance
+    paper_balance = db.Column(db.Numeric(14, 4, asdecimal=False), default=100000.0)  # Starting paper trading balance
     
     # Tradier Credentials (encrypted in production)
     tradier_api_key = db.Column(db.String(255), nullable=True)

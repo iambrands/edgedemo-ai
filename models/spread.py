@@ -15,27 +15,27 @@ class Spread(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     
     # Long leg (buy)
-    long_strike = db.Column(db.Float, nullable=False)
-    long_premium = db.Column(db.Float, nullable=False)
+    long_strike = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    long_premium = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
     long_option_symbol = db.Column(db.String(50))  # Tradier option symbol
     
     # Short leg (sell)
-    short_strike = db.Column(db.Float, nullable=False)
-    short_premium = db.Column(db.Float, nullable=False)
+    short_strike = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    short_premium = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
     short_option_symbol = db.Column(db.String(50))  # Tradier option symbol
     
     # Economics
-    net_debit = db.Column(db.Float, nullable=False)  # Total cost paid (negative for credit)
-    max_profit = db.Column(db.Float, nullable=False)
-    max_loss = db.Column(db.Float, nullable=False)
-    breakeven = db.Column(db.Float, nullable=False)
-    strike_width = db.Column(db.Float, nullable=False)
+    net_debit = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)  # Total cost paid (negative for credit)
+    max_profit = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    max_loss = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    breakeven = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    strike_width = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
     
     # P&L tracking
-    current_value = db.Column(db.Float, default=0.0)
-    unrealized_pnl = db.Column(db.Float, default=0.0)
+    current_value = db.Column(db.Numeric(14, 4, asdecimal=False), default=0.0)
+    unrealized_pnl = db.Column(db.Numeric(14, 4, asdecimal=False), default=0.0)
     unrealized_pnl_percent = db.Column(db.Float, default=0.0)
-    realized_pnl = db.Column(db.Float)
+    realized_pnl = db.Column(db.Numeric(14, 4, asdecimal=False))
     
     # Status
     status = db.Column(db.String(20), default='open', index=True)  # open, closed, expired

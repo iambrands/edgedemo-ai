@@ -25,7 +25,7 @@ class Automation(db.Model):
     min_confidence = db.Column(db.Float, default=0.70)  # Minimum signal confidence (0-1)
     entry_condition = db.Column(db.String(50))  # iv_rank_above, price_above, etc.
     entry_value = db.Column(db.Float)  # Threshold value for entry condition
-    max_premium = db.Column(db.Float)  # Maximum option premium to pay
+    max_premium = db.Column(db.Numeric(14, 4, asdecimal=False))  # Maximum option premium to pay
     min_volume = db.Column(db.Integer, default=20)
     min_open_interest = db.Column(db.Integer, default=100)
     max_spread_percent = db.Column(db.Float, default=15.0)

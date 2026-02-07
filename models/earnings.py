@@ -11,10 +11,10 @@ class EarningsCalendar(db.Model):
     earnings_time = db.Column(db.String(20))  # 'before_market', 'after_market', 'during_market'
     fiscal_quarter = db.Column(db.String(10))  # 'Q1 2024', etc.
     fiscal_year = db.Column(db.Integer)
-    estimated_eps = db.Column(db.Float)
-    actual_eps = db.Column(db.Float)
-    estimated_revenue = db.Column(db.Float)
-    actual_revenue = db.Column(db.Float)
+    estimated_eps = db.Column(db.Numeric(14, 4, asdecimal=False))
+    actual_eps = db.Column(db.Numeric(14, 4, asdecimal=False))
+    estimated_revenue = db.Column(db.Numeric(14, 4, asdecimal=False))
+    actual_revenue = db.Column(db.Numeric(14, 4, asdecimal=False))
     
     # Historical impact
     historical_iv_change = db.Column(db.Float)  # IV change after earnings

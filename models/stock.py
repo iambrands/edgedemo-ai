@@ -9,7 +9,7 @@ class Stock(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     symbol = db.Column(db.String(10), nullable=False, index=True)
     company_name = db.Column(db.String(200))
-    current_price = db.Column(db.Float)
+    current_price = db.Column(db.Numeric(14, 4, asdecimal=False))
     change_percent = db.Column(db.Float)
     volume = db.Column(db.Integer)
     market_cap = db.Column(db.BigInteger)

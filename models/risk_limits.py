@@ -10,7 +10,7 @@ class RiskLimits(db.Model):
     
     # Position sizing
     max_position_size_percent = db.Column(db.Float, default=2.0)  # % of portfolio per position
-    max_position_size_dollars = db.Column(db.Float)  # Absolute dollar limit (optional)
+    max_position_size_dollars = db.Column(db.Numeric(14, 4, asdecimal=False))  # Absolute dollar limit (optional)
     
     # Portfolio limits
     max_portfolio_delta = db.Column(db.Float)  # Maximum total delta exposure
@@ -26,7 +26,7 @@ class RiskLimits(db.Model):
     max_daily_loss_percent = db.Column(db.Float, default=5.0)  # Max daily loss %
     max_weekly_loss_percent = db.Column(db.Float, default=10.0)  # Max weekly loss %
     max_monthly_loss_percent = db.Column(db.Float, default=20.0)  # Max monthly loss %
-    max_daily_loss_dollars = db.Column(db.Float)  # Absolute daily loss limit
+    max_daily_loss_dollars = db.Column(db.Numeric(14, 4, asdecimal=False))  # Absolute daily loss limit
     
     # Greeks limits
     max_delta_per_position = db.Column(db.Float)  # Max delta per position

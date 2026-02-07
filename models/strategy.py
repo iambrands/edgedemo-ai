@@ -72,7 +72,7 @@ class StrategyLeg(db.Model):
     quantity = db.Column(db.Integer, nullable=False, default=1)
     
     # Option details
-    strike_price = db.Column(db.Float, nullable=False)
+    strike_price = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
     expiration_date = db.Column(db.Date, nullable=False)
     
     # Greeks at entry
@@ -81,7 +81,7 @@ class StrategyLeg(db.Model):
     entry_theta = db.Column(db.Float)
     entry_vega = db.Column(db.Float)
     entry_iv = db.Column(db.Float)
-    entry_price = db.Column(db.Float)
+    entry_price = db.Column(db.Numeric(14, 4, asdecimal=False))
     
     # Status
     filled = db.Column(db.Boolean, default=False)

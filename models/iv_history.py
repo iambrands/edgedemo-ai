@@ -21,7 +21,7 @@ class IVHistory(db.Model):
     iv_252d = db.Column(db.Float)  # 252-day (1 year) IV
     
     # Price data
-    stock_price = db.Column(db.Float)
+    stock_price = db.Column(db.Numeric(14, 4, asdecimal=False))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

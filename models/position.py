@@ -11,9 +11,9 @@ class Position(db.Model):
     option_symbol = db.Column(db.String(50))  # For options positions
     contract_type = db.Column(db.String(10))  # call, put
     quantity = db.Column(db.Integer, nullable=False)
-    entry_price = db.Column(db.Float, nullable=False)
-    current_price = db.Column(db.Float)
-    strike_price = db.Column(db.Float)  # For options
+    entry_price = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    current_price = db.Column(db.Numeric(14, 4, asdecimal=False))
+    strike_price = db.Column(db.Numeric(14, 4, asdecimal=False))  # For options
     expiration_date = db.Column(db.Date)  # For options
     entry_date = db.Column(db.DateTime, default=datetime.utcnow)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -33,13 +33,13 @@ class Position(db.Model):
     current_iv = db.Column(db.Float)
     
     # P/L tracking
-    unrealized_pnl = db.Column(db.Float, default=0.0)
+    unrealized_pnl = db.Column(db.Numeric(14, 4, asdecimal=False), default=0.0)
     unrealized_pnl_percent = db.Column(db.Float, default=0.0)
-    realized_pnl = db.Column(db.Float)  # Final P/L when position is closed
+    realized_pnl = db.Column(db.Numeric(14, 4, asdecimal=False))  # Final P/L when position is closed
     realized_pnl_percent = db.Column(db.Float)  # Final P/L % when position is closed
     
     # Exit tracking
-    exit_price = db.Column(db.Float)  # Price when position was closed
+    exit_price = db.Column(db.Numeric(14, 4, asdecimal=False))  # Price when position was closed
     exit_date = db.Column(db.DateTime)  # When position was closed (alias: closed_at)
     
     # Automation tracking

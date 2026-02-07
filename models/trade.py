@@ -12,8 +12,8 @@ class Trade(db.Model):
     contract_type = db.Column(db.String(10))  # call, put
     action = db.Column(db.String(10), nullable=False)  # buy, sell
     quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    strike_price = db.Column(db.Float)  # For options
+    price = db.Column(db.Numeric(14, 4, asdecimal=False), nullable=False)
+    strike_price = db.Column(db.Numeric(14, 4, asdecimal=False))  # For options
     expiration_date = db.Column(db.Date)  # For options
     trade_date = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     
@@ -30,9 +30,9 @@ class Trade(db.Model):
     notes = db.Column(db.Text)
     
     # P/L (for closed positions)
-    realized_pnl = db.Column(db.Float)
+    realized_pnl = db.Column(db.Numeric(14, 4, asdecimal=False))
     realized_pnl_percent = db.Column(db.Float)
-    commission = db.Column(db.Float, default=0.0)
+    commission = db.Column(db.Numeric(14, 4, asdecimal=False), default=0.0)
     
     # Entry/Exit tracking
     entry_trade_id = db.Column(db.Integer, db.ForeignKey('trades.id'), nullable=True)  # For exit trades

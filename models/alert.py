@@ -27,7 +27,7 @@ class Alert(db.Model):
     # Context
     details = db.Column(db.JSON)  # Additional context (option details, technical indicators, etc.)
     option_symbol = db.Column(db.String(50))
-    strike_price = db.Column(db.Float)
+    strike_price = db.Column(db.Numeric(14, 4, asdecimal=False))
     expiration_date = db.Column(db.Date)
     
     # Related entities
