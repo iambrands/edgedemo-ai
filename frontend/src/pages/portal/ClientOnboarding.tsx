@@ -1,0 +1,673 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  User,
+  FileText,
+  Target,
+  Shield,
+  CheckCircle,
+  Upload,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+} from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+interface StepDef {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface StepProps {
+  formData: Record<string, any>;
+  setFormData: (data: Record<string, any>) => void;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Steps                                                              */
+/* ------------------------------------------------------------------ */
+
+const CLIENT_STEPS: StepDef[] = [
+  { id: 'welcome', title: 'Welcome', description: 'Get started with your portal', icon: Sparkles },
+  { id: 'personal', title: 'Personal Information', description: 'Your basic details', icon: User },
+  { id: 'financial', title: 'Financial Profile', description: 'Income and assets overview', icon: FileText },
+  { id: 'goals', title: 'Investment Goals', description: 'What you want to achieve', icon: Target },
+  { id: 'risk', title: 'Risk Assessment', description: 'Your risk tolerance', icon: Shield },
+  { id: 'documents', title: 'Documents', description: 'Upload required documents', icon: Upload },
+  { id: 'review', title: 'Review & Sign', description: 'Confirm your information', icon: CheckCircle },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Step Components                                                    */
+/* ------------------------------------------------------------------ */
+
+function ClientWelcomeStep() {
+  return (
+    <div className="text-center py-8">
+      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <Sparkles className="h-10 w-10 text-white" />
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome!</h3>
+      <p className="text-gray-600 max-w-md mx-auto mb-8">
+        Your advisor has invited you to set up your client portal. This quick
+        process will help us understand your financial goals and create a
+        personalized experience for you.
+      </p>
+      <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <p className="text-2xl font-bold text-blue-600">10 min</p>
+          <p className="text-xs text-gray-600">Estimated time</p>
+        </div>
+        <div className="p-4 bg-emerald-50 rounded-lg">
+          <p className="text-2xl font-bold text-emerald-600">Secure</p>
+          <p className="text-xs text-gray-600">256-bit encrypted</p>
+        </div>
+        <div className="p-4 bg-purple-50 rounded-lg">
+          <p className="text-2xl font-bold text-purple-600">7</p>
+          <p className="text-xs text-gray-600">Quick steps</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PersonalInfoStep({ formData, setFormData }: StepProps) {
+  const update = (key: string, value: any) => setFormData({ ...formData, [key]: value });
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input
+            type="text"
+            value={formData.firstName || ''}
+            onChange={(e) => update('firstName', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Jane"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input
+            type="text"
+            value={formData.lastName || ''}
+            onChange={(e) => update('lastName', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Doe"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+        <input
+          type="date"
+          value={formData.dateOfBirth || ''}
+          onChange={(e) => update('dateOfBirth', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input
+          type="email"
+          value={formData.email || ''}
+          onChange={(e) => update('email', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="jane@example.com"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+        <input
+          type="tel"
+          value={formData.phone || ''}
+          onChange={(e) => update('phone', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="(555) 123-4567"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <input
+          type="text"
+          value={formData.address || ''}
+          onChange={(e) => update('address', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="123 Main St, City, State ZIP"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Social Security Number
+        </label>
+        <input
+          type="password"
+          value={formData.ssn || ''}
+          onChange={(e) => update('ssn', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="XXX-XX-XXXX"
+        />
+        <p className="text-xs text-gray-400 mt-1">
+          Encrypted and stored securely. Required for account setup.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FinancialProfileStep({ formData, setFormData }: StepProps) {
+  const update = (key: string, value: any) => setFormData({ ...formData, [key]: value });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Annual Household Income</label>
+        <select
+          value={formData.income || ''}
+          onChange={(e) => update('income', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select range...</option>
+          <option value="under_50k">Under $50,000</option>
+          <option value="50k_100k">$50,000 - $100,000</option>
+          <option value="100k_250k">$100,000 - $250,000</option>
+          <option value="250k_500k">$250,000 - $500,000</option>
+          <option value="over_500k">Over $500,000</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Total Net Worth</label>
+        <select
+          value={formData.netWorth || ''}
+          onChange={(e) => update('netWorth', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select range...</option>
+          <option value="under_100k">Under $100,000</option>
+          <option value="100k_500k">$100,000 - $500,000</option>
+          <option value="500k_1m">$500,000 - $1,000,000</option>
+          <option value="1m_5m">$1,000,000 - $5,000,000</option>
+          <option value="over_5m">Over $5,000,000</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Liquid Assets</label>
+        <select
+          value={formData.liquidAssets || ''}
+          onChange={(e) => update('liquidAssets', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select range...</option>
+          <option value="under_50k">Under $50,000</option>
+          <option value="50k_250k">$50,000 - $250,000</option>
+          <option value="250k_1m">$250,000 - $1,000,000</option>
+          <option value="over_1m">Over $1,000,000</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status</label>
+        <select
+          value={formData.employment || ''}
+          onChange={(e) => update('employment', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select status...</option>
+          <option value="employed">Employed</option>
+          <option value="self_employed">Self-Employed</option>
+          <option value="retired">Retired</option>
+          <option value="not_employed">Not Currently Employed</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Tax Filing Status</label>
+        <select
+          value={formData.taxStatus || ''}
+          onChange={(e) => update('taxStatus', e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select status...</option>
+          <option value="single">Single</option>
+          <option value="married_joint">Married Filing Jointly</option>
+          <option value="married_separate">Married Filing Separately</option>
+          <option value="head">Head of Household</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function GoalsStep({ formData, setFormData }: StepProps) {
+  const goals = [
+    { id: 'retirement', label: 'Retirement Planning', desc: 'Build wealth for a comfortable retirement' },
+    { id: 'education', label: 'Education Funding', desc: 'Save for children\'s or grandchildren\'s education' },
+    { id: 'wealth', label: 'Wealth Building', desc: 'Grow assets and increase net worth' },
+    { id: 'income', label: 'Income Generation', desc: 'Generate regular income from investments' },
+    { id: 'preservation', label: 'Wealth Preservation', desc: 'Protect existing assets and purchasing power' },
+    { id: 'estate', label: 'Estate Planning', desc: 'Plan for efficient wealth transfer' },
+  ];
+
+  const selectedGoals: string[] = formData.goals || [];
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-gray-600">
+        Select all that apply. This helps your advisor tailor recommendations to your needs.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3">
+        {goals.map((goal) => {
+          const isSelected = selectedGoals.includes(goal.id);
+          return (
+            <button
+              key={goal.id}
+              onClick={() => {
+                const next = isSelected
+                  ? selectedGoals.filter((g) => g !== goal.id)
+                  : [...selectedGoals, goal.id];
+                setFormData({ ...formData, goals: next });
+              }}
+              className={`p-4 border rounded-xl text-left transition-all ${
+                isSelected
+                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                  : 'border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {isSelected && <CheckCircle className="h-4 w-4 text-blue-600" />}
+                <p className="font-medium text-gray-900">{goal.label}</p>
+              </div>
+              <p className="text-sm text-gray-500">{goal.desc}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RiskAssessmentStep({ formData, setFormData }: StepProps) {
+  const questions = [
+    {
+      id: 'timeHorizon',
+      question: 'What is your investment time horizon?',
+      options: [
+        { value: 1, label: 'Less than 3 years' },
+        { value: 2, label: '3-5 years' },
+        { value: 3, label: '5-10 years' },
+        { value: 4, label: '10-20 years' },
+        { value: 5, label: 'More than 20 years' },
+      ],
+    },
+    {
+      id: 'marketDrop',
+      question: 'If your portfolio dropped 20% in value, what would you do?',
+      options: [
+        { value: 1, label: 'Sell everything immediately' },
+        { value: 2, label: 'Sell some investments' },
+        { value: 3, label: 'Hold and wait for recovery' },
+        { value: 4, label: 'Buy more at lower prices' },
+      ],
+    },
+    {
+      id: 'experience',
+      question: 'How would you describe your investment experience?',
+      options: [
+        { value: 1, label: "None — I'm new to investing" },
+        { value: 2, label: 'Limited — Savings accounts and CDs' },
+        { value: 3, label: 'Moderate — Stocks and mutual funds' },
+        { value: 4, label: 'Extensive — Options, alternatives, etc.' },
+      ],
+    },
+    {
+      id: 'riskComfort',
+      question: 'Which statement best describes your comfort with risk?',
+      options: [
+        { value: 1, label: 'I want to preserve my capital above all else' },
+        { value: 2, label: "I'm willing to accept small fluctuations for moderate growth" },
+        { value: 3, label: "I'm comfortable with ups and downs for higher returns" },
+        { value: 4, label: 'I want maximum growth and can handle significant volatility' },
+      ],
+    },
+  ];
+
+  const answeredCount = questions.filter((q) => formData[q.id] != null).length;
+  const allAnswered = answeredCount === questions.length;
+  const totalScore = allAnswered
+    ? questions.reduce((sum, q) => sum + (formData[q.id] || 0), 0)
+    : 0;
+  const riskProfile =
+    totalScore <= 6 ? 'Conservative' : totalScore <= 10 ? 'Moderate' : totalScore <= 14 ? 'Moderate Growth' : 'Aggressive Growth';
+
+  return (
+    <div className="space-y-8">
+      {questions.map((q, index) => (
+        <div key={q.id}>
+          <p className="font-medium text-gray-900 mb-3">
+            {index + 1}. {q.question}
+          </p>
+          <div className="space-y-2">
+            {q.options.map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                  formData[q.id] === option.value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={q.id}
+                  value={option.value}
+                  checked={formData[q.id] === option.value}
+                  onChange={() => setFormData({ ...formData, [q.id]: option.value })}
+                  className="border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {allAnswered && (
+        <div className="p-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border border-blue-100">
+          <p className="text-sm text-gray-600 mb-2">Your Risk Profile</p>
+          <p className="text-2xl font-bold text-gray-900">{riskProfile}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Based on your responses, your advisor will recommend an appropriate
+            portfolio allocation.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocumentsStep({ formData, setFormData }: StepProps) {
+  const documents = [
+    { id: 'govId', label: 'Government-Issued ID', desc: 'Driver\'s license or passport', required: true },
+    { id: 'statements', label: 'Recent Account Statements', desc: 'Last 3 months from current accounts', required: false },
+    { id: 'taxReturn', label: 'Most Recent Tax Return', desc: 'For financial planning purposes', required: false },
+  ];
+
+  const uploaded: string[] = formData.uploadedDocs || [];
+
+  return (
+    <div className="space-y-6">
+      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <p className="text-sm text-blue-800">
+          Upload the following documents to complete your account setup.
+          All documents are encrypted and stored securely.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {documents.map((doc) => {
+          const isUploaded = uploaded.includes(doc.id);
+          return (
+            <div
+              key={doc.id}
+              className={`p-4 border rounded-xl transition-all ${
+                isUploaded ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900">{doc.label}</p>
+                    {doc.required && (
+                      <span className="text-xs text-red-500 font-medium">Required</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">{doc.desc}</p>
+                </div>
+                {isUploaded ? (
+                  <div className="flex items-center gap-2 text-emerald-700 text-sm font-medium">
+                    <CheckCircle className="h-5 w-5" />
+                    Uploaded
+                  </div>
+                ) : (
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, uploadedDocs: [...uploaded, doc.id] })
+                    }
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
+                  >
+                    <Upload className="h-4 w-4 inline mr-2" />
+                    Upload
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewStep({ formData }: { formData: Record<string, any> }) {
+  const sections = [
+    {
+      title: 'Personal Information',
+      fields: [
+        { label: 'Name', value: `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || '—' },
+        { label: 'Email', value: formData.email || '—' },
+        { label: 'Phone', value: formData.phone || '—' },
+      ],
+    },
+    {
+      title: 'Financial Profile',
+      fields: [
+        { label: 'Income Range', value: formData.income || '—' },
+        { label: 'Net Worth', value: formData.netWorth || '—' },
+        { label: 'Employment', value: formData.employment || '—' },
+      ],
+    },
+    {
+      title: 'Investment Goals',
+      fields: [
+        { label: 'Goals', value: (formData.goals || []).join(', ') || '—' },
+      ],
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {sections.map((section) => (
+        <div key={section.title} className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-3 bg-gray-50 border-b border-gray-200">
+            <h4 className="font-medium text-gray-900">{section.title}</h4>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {section.fields.map((field) => (
+              <div key={field.label} className="flex justify-between p-3">
+                <span className="text-sm text-gray-500">{field.label}</span>
+                <span className="text-sm font-medium text-gray-900">{field.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+        <input
+          type="checkbox"
+          className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <div>
+          <p className="font-medium text-gray-900">I agree to the terms and conditions</p>
+          <p className="text-sm text-gray-500">
+            By signing, I confirm the information above is accurate and I agree to
+            the advisory agreement and privacy policy.
+          </p>
+        </div>
+      </label>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                     */
+/* ------------------------------------------------------------------ */
+
+export default function ClientOnboarding() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  const step = CLIENT_STEPS[currentStep];
+  const progress = Math.round((completedSteps.size / CLIENT_STEPS.length) * 100);
+
+  const handleNext = () => {
+    setCompletedSteps((prev) => new Set([...prev, step.id]));
+    if (currentStep < CLIENT_STEPS.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+    } else {
+      navigate('/portal/dashboard');
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) setCurrentStep((prev) => prev - 1);
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0: return <ClientWelcomeStep />;
+      case 1: return <PersonalInfoStep formData={formData} setFormData={setFormData} />;
+      case 2: return <FinancialProfileStep formData={formData} setFormData={setFormData} />;
+      case 3: return <GoalsStep formData={formData} setFormData={setFormData} />;
+      case 4: return <RiskAssessmentStep formData={formData} setFormData={setFormData} />;
+      case 5: return <DocumentsStep formData={formData} setFormData={setFormData} />;
+      case 6: return <ReviewStep formData={formData} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+      {/* Header */}
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-xl font-bold text-blue-600">Edge</span>
+            <span className="text-xl font-bold text-teal-500">AI</span>
+            <span className="ml-2 text-xs text-gray-400 uppercase tracking-wider">Client Portal</span>
+          </div>
+          <span className="text-sm text-gray-400">
+            Step {currentStep + 1} of {CLIENT_STEPS.length}
+          </span>
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Onboarding Progress</span>
+            <span className="text-sm text-gray-500">{progress}% complete</span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-teal-500 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-8">
+          {/* Step Navigation */}
+          <div className="col-span-12 lg:col-span-4">
+            <nav className="space-y-1">
+              {CLIENT_STEPS.map((s, index) => {
+                const isCompleted = completedSteps.has(s.id);
+                const isCurrent = index === currentStep;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => (isCompleted || isCurrent) && setCurrentStep(index)}
+                    disabled={!isCompleted && !isCurrent}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      isCurrent
+                        ? 'bg-blue-50 border-2 border-blue-200'
+                        : isCompleted
+                        ? 'hover:bg-gray-50 cursor-pointer'
+                        : 'opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${
+                        isCompleted ? 'bg-emerald-100' : isCurrent ? 'bg-blue-100' : 'bg-gray-100'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
+                      ) : (
+                        <Icon className={`h-5 w-5 ${isCurrent ? 'text-blue-600' : 'text-gray-400'}`} />
+                      )}
+                    </div>
+                    <div>
+                      <p className={`font-medium ${isCurrent ? 'text-blue-900' : 'text-gray-900'}`}>
+                        {s.title}
+                      </p>
+                      <p className="text-xs text-gray-500">{s.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Step Content */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-6 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">{step.title}</h2>
+                <p className="text-gray-500 mt-1">{step.description}</p>
+              </div>
+              <div className="p-6">{renderStep()}</div>
+              <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                <button
+                  onClick={handleBack}
+                  disabled={currentStep === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    currentStep === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  {currentStep === CLIENT_STEPS.length - 1 ? 'Submit & Sign' : 'Continue'}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

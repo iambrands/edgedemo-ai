@@ -20,7 +20,9 @@ import {
   ModelPortfolios,
   AlternativeAssets,
 } from './pages/dashboard';
-import { PortalLogin, PortalDashboard, PortalGoals } from './pages/portal';
+import { PortalLogin, PortalDashboard, PortalGoals, ClientOnboarding } from './pages/portal';
+import { RIAOnboarding } from './pages/onboarding';
+import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
 /**
@@ -64,8 +66,14 @@ export default function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
 
+      {/* RIA Onboarding & Help (standalone, no sidebar layout) */}
+      <Route path="/onboarding" element={<RIAOnboarding />} />
+      <Route path="/help" element={<RIAHelpCenter />} />
+
       {/* Client Portal Routes */}
       <Route path="/portal/login" element={<PortalLogin />} />
+      <Route path="/portal/onboarding" element={<ClientOnboarding />} />
+      <Route path="/portal/help" element={<ClientHelpCenter />} />
       <Route
         path="/portal/dashboard"
         element={

@@ -357,6 +357,24 @@ except Exception as e:
     _ria_router_errors.append(f"alternative_assets: {type(e).__name__}: {e}")
     logger.error("Failed to mount alternative_assets router: %s", e, exc_info=True)
 
+# Mount RIA Onboarding Wizard router
+try:
+    from backend.api.ria_onboarding import router as ria_onboarding_router
+    app.include_router(ria_onboarding_router)
+    _ria_routers_mounted.append("ria_onboarding")
+except Exception as e:
+    _ria_router_errors.append(f"ria_onboarding: {type(e).__name__}: {e}")
+    logger.error("Failed to mount ria_onboarding router: %s", e, exc_info=True)
+
+# Mount Help Center router
+try:
+    from backend.api.help import router as help_router
+    app.include_router(help_router)
+    _ria_routers_mounted.append("help")
+except Exception as e:
+    _ria_router_errors.append(f"help: {type(e).__name__}: {e}")
+    logger.error("Failed to mount help router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 

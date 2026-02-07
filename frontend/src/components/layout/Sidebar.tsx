@@ -20,6 +20,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { clsx } from 'clsx';
@@ -114,6 +115,17 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
               {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
             </NavLink>
           ))}
+
+          {/* Help & Support */}
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <NavLink
+              to="/help"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 transition-all duration-150 text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <HelpCircle size={18} />
+              {!isCollapsed && <span className="text-sm font-medium">Help & Support</span>}
+            </NavLink>
+          </div>
         </nav>
 
         {/* User Section */}
