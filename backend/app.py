@@ -702,10 +702,30 @@ def parse_openai_response(response_text: str) -> Dict[str, Any]:
 # In production (Docker), the built frontend lives in frontend/dist/.
 # In development, the raw index.html lives in frontend/index.html.
 # We try the dist directory first, then fall back to the dev file.
+#
+# Path resolution handles multiple container layouts:
+#   - Docker:  __file__ = /app/backend/app.py  → root = /app
+#   - Legacy:  __file__ = /app/app.py          → root = /app
+#   - Local:   __file__ = .../backend/app.py   → root = ...
 
-_PROJECT_ROOT = Path(__file__).parent.parent
-_DIST_DIR = _PROJECT_ROOT / "frontend" / "dist"
-_DEV_INDEX = _PROJECT_ROOT / "frontend" / "index.html"
+def _find_frontend_dir() -> tuple[Path, Path]:
+    """Find frontend dist and dev index.html, trying multiple root locations."""
+    candidates = [
+        Path(__file__).parent.parent,          # /app/backend/app.py → /app
+        Path(__file__).parent,                  # /app/app.py → /app
+        Path("/app"),                           # Direct Docker path
+    ]
+    for root in candidates:
+        dist = root / "frontend" / "dist"
+        dev = root / "frontend" / "index.html"
+        if dist.is_dir():
+            logger.info("Found frontend dist at %s (root=%s)", dist, root)
+            return dist, dev
+    # Fallback to first candidate even if dist doesn't exist
+    root = candidates[0]
+    return root / "frontend" / "dist", root / "frontend" / "index.html"
+
+_DIST_DIR, _DEV_INDEX = _find_frontend_dir()
 
 # Mount built static assets (JS, CSS, images) if dist directory exists
 if _DIST_DIR.is_dir():
