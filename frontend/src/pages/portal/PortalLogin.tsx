@@ -142,10 +142,16 @@ export default function PortalLogin() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <a href="#" className="text-sm text-blue-600 hover:underline">
+          <div className="mt-6 text-center space-y-3">
+            <a href="#" className="text-sm text-blue-600 hover:underline block">
               Forgot your password?
             </a>
+            <p className="text-sm text-gray-500">
+              First time?{' '}
+              <Link to="/portal/onboarding" className="text-blue-600 font-medium hover:underline">
+                Set up your account
+              </Link>
+            </p>
           </div>
         </div>
 

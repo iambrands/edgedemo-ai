@@ -95,7 +95,13 @@ export function Signup() {
     });
 
     if (result.success) {
-      navigate('/dashboard');
+      // Route to the appropriate onboarding wizard based on account type
+      if (accountType === 'ria') {
+        navigate('/onboarding');
+      } else {
+        // Individual investor goes to client portal onboarding
+        navigate('/portal/onboarding');
+      }
     } else {
       setError(result.error || 'Signup failed');
     }
