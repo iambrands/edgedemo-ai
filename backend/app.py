@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="EdgeAI Portfolio Analyzer API",
     description="Backend API for EdgeAI Portfolio Analysis powered by OpenAI GPT",
-    version="1.5.0"
+    version="1.6.0"
 )
 
 # Initialize rate limiter (in-memory for simple deployment)
@@ -277,6 +277,15 @@ try:
 except Exception as e:
     _ria_router_errors.append(f"liquidity: {type(e).__name__}: {e}")
     logger.error("Failed to mount liquidity router: %s", e, exc_info=True)
+
+# Mount Multi-Custodian Aggregation router
+try:
+    from backend.api.custodians import router as custodians_router
+    app.include_router(custodians_router)
+    _ria_routers_mounted.append("custodians")
+except Exception as e:
+    _ria_router_errors.append(f"custodians: {type(e).__name__}: {e}")
+    logger.error("Failed to mount custodians router: %s", e, exc_info=True)
 
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
