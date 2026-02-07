@@ -698,14 +698,38 @@ def parse_openai_response(response_text: str) -> Dict[str, Any]:
         raise ValueError(f"Failed to parse AI response: {str(e)}")
 
 
-# Serve frontend HTML file
-FRONTEND_PATH = Path(__file__).parent.parent / "frontend" / "index.html"
+# ── Serve Frontend SPA ──────────────────────────────────────────────────────
+# In production (Docker), the built frontend lives in frontend/dist/.
+# In development, the raw index.html lives in frontend/index.html.
+# We try the dist directory first, then fall back to the dev file.
+
+_PROJECT_ROOT = Path(__file__).parent.parent
+_DIST_DIR = _PROJECT_ROOT / "frontend" / "dist"
+_DEV_INDEX = _PROJECT_ROOT / "frontend" / "index.html"
+
+# Mount built static assets (JS, CSS, images) if dist directory exists
+if _DIST_DIR.is_dir():
+    # Mount the assets sub-directory first (hashed bundles)
+    _assets_dir = _DIST_DIR / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="static-assets")
+        logger.info("Mounted frontend static assets from %s", _assets_dir)
+    
+    logger.info("Frontend dist directory found at %s", _DIST_DIR)
+else:
+    logger.warning("Frontend dist directory not found at %s", _DIST_DIR)
+
 
 @app.get("/")
 async def serve_frontend():
-    """Serve the frontend HTML file"""
-    if FRONTEND_PATH.exists():
-        return FileResponse(FRONTEND_PATH)
+    """Serve the frontend SPA index.html"""
+    # Prefer built dist version
+    dist_index = _DIST_DIR / "index.html"
+    if dist_index.exists():
+        return FileResponse(str(dist_index))
+    # Fall back to dev file
+    if _DEV_INDEX.exists():
+        return FileResponse(str(_DEV_INDEX))
     return {
         "status": "healthy",
         "service": "EdgeAI Portfolio Analyzer API",
@@ -716,7 +740,13 @@ async def serve_frontend():
 
 @app.get("/favicon.ico")
 async def favicon():
-    """Handle favicon requests to prevent 404 errors"""
+    """Handle favicon requests"""
+    favicon_path = _DIST_DIR / "favicon.ico"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    favicon_svg = _DIST_DIR / "favicon.svg"
+    if favicon_svg.exists():
+        return FileResponse(str(favicon_svg))
     return JSONResponse(status_code=404, content={"detail": "Not found"})
 
 @app.get("/health")
@@ -1192,6 +1222,32 @@ def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while processing your request"
         )
+
+
+# ── SPA Catch-All ───────────────────────────────────────────────────────────
+# This MUST be the very last route registered.  It catches all GET requests
+# that didn't match an API endpoint and serves index.html so that the React
+# Router can handle client-side routes like /dashboard, /login, etc.
+@app.get("/{full_path:path}")
+async def spa_catch_all(full_path: str):
+    """Catch-all route for SPA client-side routing"""
+    # Don't interfere with API or known asset routes
+    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi"):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Try to serve as a static file from dist first (e.g. /robots.txt)
+    static_file = _DIST_DIR / full_path
+    if static_file.is_file():
+        return FileResponse(str(static_file))
+    
+    # Otherwise serve index.html for SPA routing
+    dist_index = _DIST_DIR / "index.html"
+    if dist_index.exists():
+        return FileResponse(str(dist_index))
+    if _DEV_INDEX.exists():
+        return FileResponse(str(_DEV_INDEX))
+    
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 if __name__ == "__main__":
