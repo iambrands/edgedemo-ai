@@ -112,13 +112,42 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="EdgeAI Portfolio Analyzer API",
     description="Backend API for EdgeAI Portfolio Analysis powered by OpenAI GPT",
-    version="1.8.0"
+    version="1.11.0"
 )
 
 # Initialize rate limiter (in-memory for simple deployment)
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# ── Global DB error handler ──────────────────────────────────────────────────
+# Catch database connection/operational errors and return a clean 503 instead
+# of a raw 500 traceback.  The frontend already renders error states, so this
+# just ensures the JSON body is user-friendly.
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: Request, exc: Exception):
+    err_type = type(exc).__name__
+    # Identify database / connection errors by module or class name
+    db_errors = ("OperationalError", "InterfaceError", "ConnectionRefusedError",
+                 "ConnectionResetError", "ConnectionError", "CannotConnectNow",
+                 "TimeoutError")
+    if err_type in db_errors or "connect" in str(exc).lower()[:200]:
+        logger.warning("DB connection error on %s: %s", request.url.path, exc)
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Database temporarily unavailable. Please try again later."},
+        )
+    # Re-raise HTTP exceptions so FastAPI handles them normally
+    if isinstance(exc, HTTPException):
+        raise exc
+    # Anything else → generic 500
+    logger.exception("Unhandled error on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # Configure CORS (include Vite dev server for local + Railway domains)
 _origins = os.getenv("ALLOWED_ORIGINS", "").strip()
@@ -260,14 +289,10 @@ except Exception as e:
     _ria_router_errors.append(f"meetings: {type(e).__name__}: {e}")
     logger.error("Failed to mount meetings router: %s", e, exc_info=True)
 
-# Mount Compliance Documents router (ADV Part 2B, Form CRS)
-try:
-    from backend.api.compliance_docs import router as compliance_docs_router
-    app.include_router(compliance_docs_router)
-    _ria_routers_mounted.append("compliance_docs")
-except Exception as e:
-    _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
-    logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
+# NOTE: Compliance Documents router (ADV Part 2B, Form CRS) is mounted AFTER
+# the compliance router so that /api/v1/compliance/documents endpoints in
+# compliance.py (document reviews) take priority over compliance_docs.py's
+# generic list handler.  See registration below the RIA Platform API block.
 
 # Mount Liquidity Optimizer router
 try:
@@ -305,9 +330,60 @@ except Exception as e:
     _ria_router_errors.append(f"prospects: {type(e).__name__}: {e}")
     logger.error("Failed to mount prospects router: %s", e, exc_info=True)
 
+# Mount Conversation Intelligence router
+try:
+    from backend.api.conversations import router as conversations_router
+    app.include_router(conversations_router)
+    _ria_routers_mounted.append("conversations")
+except Exception as e:
+    _ria_router_errors.append(f"conversations: {type(e).__name__}: {e}")
+    logger.error("Failed to mount conversations router: %s", e, exc_info=True)
+
+# Mount Model Portfolio Marketplace router
+try:
+    from backend.api.model_portfolios import router as model_portfolios_router
+    app.include_router(model_portfolios_router)
+    _ria_routers_mounted.append("model_portfolios")
+except Exception as e:
+    _ria_router_errors.append(f"model_portfolios: {type(e).__name__}: {e}")
+    logger.error("Failed to mount model_portfolios router: %s", e, exc_info=True)
+
+# Mount Alternative Asset Tracking router
+try:
+    from backend.api.alternative_assets import router as alternative_assets_router
+    app.include_router(alternative_assets_router)
+    _ria_routers_mounted.append("alternative_assets")
+except Exception as e:
+    _ria_router_errors.append(f"alternative_assets: {type(e).__name__}: {e}")
+    logger.error("Failed to mount alternative_assets router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
-else:
+
+# ── Mount mock-data routers as fallback for any real router that failed ──
+_mock_mounted: list[str] = []
+_failed_features = {name.split(":")[0].strip() for name in _ria_router_errors}
+if _failed_features:
+    try:
+        from backend.api.mock_endpoints import ALL_MOCK_ROUTERS
+    except ImportError:
+        try:
+            from api.mock_endpoints import ALL_MOCK_ROUTERS
+        except ImportError:
+            ALL_MOCK_ROUTERS = []
+
+    for feature_name, mock_router in ALL_MOCK_ROUTERS:
+        if feature_name in _failed_features:
+            try:
+                app.include_router(mock_router)
+                _mock_mounted.append(feature_name)
+            except Exception as e:
+                logger.warning("Could not mount mock %s router: %s", feature_name, e)
+
+    if _mock_mounted:
+        logger.info("Mock-data routers mounted for: %s", ", ".join(_mock_mounted))
+
+if not _ria_routers_mounted and not _mock_mounted:
     logger.warning("No RIA demo routes could be mounted!")
 
 # Mount RIA Platform API v1 routers (DB required for analysis/chat/compliance)
@@ -353,6 +429,33 @@ try:
     logger.info("RIA Platform API v1 routes mounted")
 except Exception as e:
     logger.warning("Could not mount RIA API routes (DB/config): %s", e)
+
+# Mount Compliance Documents router (ADV Part 2B, Form CRS)
+# Registered AFTER the compliance router so /api/v1/compliance/documents
+# review endpoints take priority for the base GET path.
+try:
+    from backend.api.compliance_docs import router as compliance_docs_router
+    app.include_router(compliance_docs_router)
+    _ria_routers_mounted.append("compliance_docs")
+except Exception as e:
+    _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
+    logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
+    # Mount mock compliance docs as fallback
+    if "compliance_docs" not in _mock_mounted:
+        try:
+            from backend.api.mock_endpoints import compliance_docs_router as mock_cdocs
+        except ImportError:
+            try:
+                from api.mock_endpoints import compliance_docs_router as mock_cdocs
+            except ImportError:
+                mock_cdocs = None
+        if mock_cdocs:
+            try:
+                app.include_router(mock_cdocs)
+                _mock_mounted.append("compliance_docs")
+                logger.info("Mock compliance_docs router mounted")
+            except Exception:
+                pass
 
 # Mount B2C self-service routes
 try:

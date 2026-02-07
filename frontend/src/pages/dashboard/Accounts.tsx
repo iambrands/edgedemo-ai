@@ -95,7 +95,7 @@ export function Accounts() {
         comparison = a.balance - b.balance;
         break;
       case 'fees':
-        comparison = parseFloat(a.fees) - parseFloat(b.fees);
+        comparison = parseFloat(a.fees || '0') - parseFloat(b.fees || '0');
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -198,7 +198,7 @@ export function Accounts() {
                 </TableCell>
                 <TableCell
                   className={clsx(
-                    parseFloat(account.fees) > 1 ? 'text-red-500 font-medium' : 'text-gray-700'
+                    parseFloat(account.fees || '0') > 1 ? 'text-red-500 font-medium' : 'text-gray-700'
                   )}
                 >
                   {account.fees}

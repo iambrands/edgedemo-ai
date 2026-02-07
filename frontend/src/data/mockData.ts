@@ -2,7 +2,7 @@ import type { User, Household, Account, Alert, ComplianceLog, Activity } from '.
 
 export const USERS: (User & { password: string })[] = [
   {
-    id: 'ria-001',
+    id: 'a0000000-0000-4000-8000-000000000001',
     email: 'leslie@iabadvisors.com',
     password: 'CreateWealth2026$',
     firstName: 'Leslie',

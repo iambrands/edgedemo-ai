@@ -143,6 +143,32 @@ from .prospect import (  # noqa: E402
     ActivityType,
     ProposalStatus,
 )
+from .model_portfolio_marketplace import (  # noqa: E402
+    MarketplaceModelPortfolio,
+    MarketplaceModelHolding,
+    ModelSubscription,
+    AccountModelAssignment,
+    RebalanceSignal,
+    ModelPerformanceHistory,
+    ModelStatus,
+    ModelVisibility,
+    AssetClassType,
+    RebalanceFrequency,
+    RebalanceSignalStatus,
+)
+from .alternative_asset import (  # noqa: E402
+    AlternativeInvestment,
+    AlternativeTransaction,
+    CapitalCall,
+    AlternativeValuation,
+    AlternativeDocument,
+    AlternativeAssetSummary,
+    AlternativeAssetType,
+    InvestmentStatus,
+    TransactionType,
+    ValuationSource,
+)
+from .alternative_asset import DocumentType as AltDocumentType  # noqa: E402
 from .conversation import (  # noqa: E402
     ConversationAnalysis,
     ComplianceFlag,
@@ -245,6 +271,30 @@ __all__ = [
     "LeadSource",
     "ActivityType",
     "ProposalStatus",
+    # Model Portfolio Marketplace
+    "MarketplaceModelPortfolio",
+    "MarketplaceModelHolding",
+    "ModelSubscription",
+    "AccountModelAssignment",
+    "RebalanceSignal",
+    "ModelPerformanceHistory",
+    "ModelStatus",
+    "ModelVisibility",
+    "AssetClassType",
+    "RebalanceFrequency",
+    "RebalanceSignalStatus",
+    # Alternative Asset Tracking models
+    "AlternativeInvestment",
+    "AlternativeTransaction",
+    "CapitalCall",
+    "AlternativeValuation",
+    "AlternativeDocument",
+    "AlternativeAssetSummary",
+    "AlternativeAssetType",
+    "InvestmentStatus",
+    "TransactionType",
+    "ValuationSource",
+    "AltDocumentType",
     # Conversation Intelligence models
     "ConversationAnalysis",
     "ComplianceFlag",

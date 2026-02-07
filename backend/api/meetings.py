@@ -114,7 +114,7 @@ DEMO_MEETINGS = {
     "mtg-001": {
         "id": "mtg-001",
         "household_id": "hh-001",
-        "advisor_id": "ria-001",
+        "advisor_id": "a0000000-0000-4000-8000-000000000001",
         "title": "Q1 2026 Portfolio Review - Wilson Household",
         "meeting_type": "quarterly_review",
         "status": "completed",
@@ -134,7 +134,7 @@ DEMO_MEETINGS = {
     "mtg-002": {
         "id": "mtg-002",
         "household_id": "hh-002",
-        "advisor_id": "ria-001",
+        "advisor_id": "a0000000-0000-4000-8000-000000000001",
         "title": "Annual Review - Henderson Family",
         "meeting_type": "annual_review",
         "status": "scheduled",
@@ -155,7 +155,7 @@ DEMO_MEETINGS = {
     "mtg-003": {
         "id": "mtg-003",
         "household_id": "hh-003",
-        "advisor_id": "ria-001",
+        "advisor_id": "a0000000-0000-4000-8000-000000000001",
         "title": "Retirement Planning Session - Martinez",
         "meeting_type": "planning_session",
         "status": "processing",
@@ -403,7 +403,7 @@ async def create_meeting(
     meeting = {
         "id": meeting_id,
         "household_id": meeting_data.household_id,
-        "advisor_id": current_user.get("id", "ria-001"),
+        "advisor_id": current_user.get("id", "a0000000-0000-4000-8000-000000000001"),
         "title": meeting_data.title,
         "meeting_type": meeting_data.meeting_type,
         "status": "scheduled",

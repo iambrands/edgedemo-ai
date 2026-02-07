@@ -147,9 +147,9 @@ export default function Custodians() {
     setLoadingAccts(true);
     try {
       const data = await listAccounts();
-      setAccounts(data.accounts);
-      setTotalMV(data.total_market_value);
-      setTotalCash(data.total_cash_balance);
+      setAccounts(data?.accounts ?? []);
+      setTotalMV(data?.total_market_value ?? 0);
+      setTotalCash(data?.total_cash_balance ?? 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -169,8 +169,8 @@ export default function Custodians() {
         getPositions(),
         getAllocation(),
       ]);
-      setPositions(posData.positions);
-      setPosTotal(posData.total_market_value);
+      setPositions(posData?.positions ?? []);
+      setPosTotal(posData?.total_market_value ?? 0);
       setAllocation(allocData);
     } catch (err) {
       console.error(err);
@@ -188,8 +188,8 @@ export default function Custodians() {
     setLoadingTxns(true);
     try {
       const data = await getTransactions({ page: txnPage, page_size: txnPageSize });
-      setTxns(data.transactions);
-      setTxnTotal(data.total);
+      setTxns(data?.transactions ?? []);
+      setTxnTotal(data?.total ?? 0);
     } catch (err) {
       console.error(err);
     } finally {

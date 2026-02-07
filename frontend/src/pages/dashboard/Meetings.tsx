@@ -107,6 +107,7 @@ const MeetingsPage: React.FC = () => {
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'analysis' | 'transcript' | 'actions'>('analysis');
   const [, setShowNewMeetingModal] = useState(false);
 
@@ -138,8 +139,9 @@ const MeetingsPage: React.FC = () => {
           loadMeetingDetails(completedMeeting.id);
         }
       }
-    } catch (error) {
-      console.error('Failed to load meetings:', error);
+    } catch (err) {
+      console.error('Failed to load meetings:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load meetings');
     } finally {
       setIsLoading(false);
     }
@@ -256,6 +258,18 @@ const MeetingsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <AlertTriangle className="w-8 h-8 text-red-400" />
+        <p className="text-red-400">{error}</p>
+        <button onClick={() => { setError(null); loadMeetings(); }} className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300">
+          Try again
+        </button>
       </div>
     );
   }

@@ -125,7 +125,7 @@ export function Households() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{household.name}</h3>
-                  <p className="text-sm text-gray-500">{household.members.join(', ')}</p>
+                  <p className="text-sm text-gray-500">{(household.members ?? []).join(', ')}</p>
                 </div>
                 {getStatusBadge(household.status)}
               </div>
@@ -140,7 +140,7 @@ export function Households() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Accounts</p>
-                  <p className="text-lg font-semibold text-gray-900">{household.accounts.length}</p>
+                  <p className="text-lg font-semibold text-gray-900">{(household.accounts ?? []).length}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Risk Score</p>
@@ -175,14 +175,14 @@ export function Households() {
                 ) : (
                   <ChevronRight size={16} />
                 )}
-                {isExpanded ? 'Hide' : 'Show'} Accounts ({household.accounts.length})
+                {isExpanded ? 'Hide' : 'Show'} Accounts ({(household.accounts ?? []).length})
               </button>
 
               {/* Expanded Accounts List */}
               {isExpanded && (
                 <div className="border-t border-gray-200 pt-4 -mx-8 px-8 -mb-8 pb-8 bg-gray-50">
                   <div className="space-y-3">
-                    {household.accounts.map((account) => (
+                    {(household.accounts ?? []).map((account) => (
                       <div
                         key={account.id}
                         className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"

@@ -1,0 +1,1030 @@
+"""
+Centralized mock data store for all EdgeAI features.
+Returns demo data matching exact endpoint response shapes when the DB is unavailable.
+"""
+
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ── Standard IDs (must match backend/api/auth.py mock user) ───────────────
+ADVISOR_ID = "a0000000-0000-4000-8000-000000000001"
+FIRM_ID = "b0000000-0000-4000-8000-000000000001"
+
+_now = datetime.utcnow
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PROSPECTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _prospects() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "c1000000-0000-4000-8000-000000000001",
+            "advisor_id": ADVISOR_ID,
+            "first_name": "Robert",
+            "last_name": "Williams",
+            "email": "r.williams@email.com",
+            "phone": "(555) 567-8901",
+            "company": "Williams Industries",
+            "title": "CEO",
+            "estimated_assets": 5_000_000,
+            "lead_source": "referral",
+            "status": "active",
+            "stage": "discovery",
+            "lead_score": 85,
+            "score": 85,
+            "notes": "Referred by John Smith. Looking to consolidate accounts from three custodians.",
+            "next_action": "Schedule discovery meeting",
+            "next_action_date": (_now() + timedelta(days=3)).isoformat(),
+            "tags": ["HNW", "referral"],
+            "days_in_stage": 5,
+            "total_days_in_pipeline": 14,
+            "created_at": (_now() - timedelta(days=14)).isoformat(),
+            "updated_at": (_now() - timedelta(days=1)).isoformat(),
+        },
+        {
+            "id": "c1000000-0000-4000-8000-000000000002",
+            "advisor_id": ADVISOR_ID,
+            "first_name": "Lisa",
+            "last_name": "Anderson",
+            "email": "l.anderson@email.com",
+            "phone": "(555) 678-9012",
+            "company": "Tech Startup Inc",
+            "title": "Founder",
+            "estimated_assets": 3_000_000,
+            "lead_source": "website",
+            "status": "active",
+            "stage": "initial_contact",
+            "lead_score": 72,
+            "score": 72,
+            "notes": "Submitted contact form. Recently sold company — liquidity event.",
+            "next_action": "Initial phone call",
+            "next_action_date": (_now() + timedelta(days=1)).isoformat(),
+            "tags": ["tech", "liquidity-event"],
+            "days_in_stage": 2,
+            "total_days_in_pipeline": 2,
+            "created_at": (_now() - timedelta(days=2)).isoformat(),
+            "updated_at": (_now() - timedelta(hours=6)).isoformat(),
+        },
+        {
+            "id": "c1000000-0000-4000-8000-000000000003",
+            "advisor_id": ADVISOR_ID,
+            "first_name": "David",
+            "last_name": "Martinez",
+            "email": "d.martinez@email.com",
+            "phone": "(555) 789-0123",
+            "company": "Martinez Law Firm",
+            "title": "Partner",
+            "estimated_assets": 2_000_000,
+            "lead_source": "seminar",
+            "status": "active",
+            "stage": "proposal",
+            "lead_score": 90,
+            "score": 90,
+            "notes": "Attended retirement planning seminar. Very engaged, ready for proposal.",
+            "next_action": "Send proposal",
+            "next_action_date": _now().isoformat(),
+            "tags": ["attorney", "retirement"],
+            "days_in_stage": 7,
+            "total_days_in_pipeline": 30,
+            "created_at": (_now() - timedelta(days=30)).isoformat(),
+            "updated_at": (_now() - timedelta(days=2)).isoformat(),
+        },
+        {
+            "id": "c1000000-0000-4000-8000-000000000004",
+            "advisor_id": ADVISOR_ID,
+            "first_name": "Jennifer",
+            "last_name": "Park",
+            "email": "j.park@email.com",
+            "phone": "(555) 890-1234",
+            "company": "Park Medical Group",
+            "title": "Physician",
+            "estimated_assets": 1_500_000,
+            "lead_source": "referral",
+            "status": "active",
+            "stage": "negotiation",
+            "lead_score": 88,
+            "score": 88,
+            "notes": "Physician looking for comprehensive financial planning. Reviewing proposal.",
+            "next_action": "Follow up on proposal",
+            "next_action_date": (_now() + timedelta(days=2)).isoformat(),
+            "tags": ["physician", "financial-planning"],
+            "days_in_stage": 4,
+            "total_days_in_pipeline": 21,
+            "created_at": (_now() - timedelta(days=21)).isoformat(),
+            "updated_at": (_now() - timedelta(days=1)).isoformat(),
+        },
+    ]
+
+
+def prospect_list_response(
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    items = _prospects()
+    if status:
+        items = [p for p in items if p["status"] == status]
+    return {"prospects": items, "total": len(items), "page": page, "page_size": page_size}
+
+
+def pipeline_summary_response() -> Dict[str, Any]:
+    stages = {
+        "initial_contact": {"count": 1, "value": 3_000_000},
+        "discovery": {"count": 1, "value": 5_000_000},
+        "proposal": {"count": 1, "value": 2_000_000},
+        "negotiation": {"count": 1, "value": 1_500_000},
+    }
+    return {
+        "stages": stages,
+        "total_prospects": 4,
+        "total_pipeline_value": 11_500_000,
+    }
+
+
+def conversion_metrics_response(days: int = 90) -> Dict[str, Any]:
+    return {
+        "period_days": days,
+        "total_created": 8,
+        "won": 3,
+        "lost": 1,
+        "conversion_rate": 37.5,
+        "in_progress": 4,
+    }
+
+
+def pending_tasks_response() -> Dict[str, Any]:
+    return {
+        "tasks": [
+            {
+                "id": "t1000000-0000-4000-8000-000000000001",
+                "prospect_id": "c1000000-0000-4000-8000-000000000003",
+                "type": "follow_up",
+                "description": "Send proposal to David Martinez",
+                "due_date": _now().isoformat(),
+                "status": "pending",
+                "created_at": (_now() - timedelta(days=2)).isoformat(),
+            },
+            {
+                "id": "t1000000-0000-4000-8000-000000000002",
+                "prospect_id": "c1000000-0000-4000-8000-000000000002",
+                "type": "call",
+                "description": "Initial phone call with Lisa Anderson",
+                "due_date": (_now() + timedelta(days=1)).isoformat(),
+                "status": "pending",
+                "created_at": (_now() - timedelta(days=1)).isoformat(),
+            },
+        ],
+        "total": 2,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CUSTODIANS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def available_custodians_response() -> Dict[str, Any]:
+    return {
+        "custodians": [
+            {"id": "schwab", "custodian_type": "schwab", "display_name": "Charles Schwab", "supports_oauth": True, "logo_url": None, "status": "available"},
+            {"id": "fidelity", "custodian_type": "fidelity", "display_name": "Fidelity Investments", "supports_oauth": True, "logo_url": None, "status": "available"},
+            {"id": "td_ameritrade", "custodian_type": "td_ameritrade", "display_name": "TD Ameritrade", "supports_oauth": True, "logo_url": None, "status": "available"},
+            {"id": "pershing", "custodian_type": "pershing", "display_name": "Pershing (BNY Mellon)", "supports_oauth": False, "logo_url": None, "status": "available"},
+            {"id": "interactive_brokers", "custodian_type": "interactive_brokers", "display_name": "Interactive Brokers", "supports_oauth": True, "logo_url": None, "status": "available"},
+        ],
+        "total": 5,
+    }
+
+
+def custodian_connections_response() -> Dict[str, Any]:
+    return {
+        "connections": [
+            {
+                "id": "cc100000-0000-4000-8000-000000000001",
+                "custodian_type": "schwab",
+                "display_name": "Charles Schwab",
+                "status": "active",
+                "accounts_linked": 12,
+                "total_assets": 15_500_000,
+                "last_sync_at": (_now() - timedelta(hours=1)).isoformat(),
+                "created_at": (_now() - timedelta(days=180)).isoformat(),
+            },
+            {
+                "id": "cc100000-0000-4000-8000-000000000002",
+                "custodian_type": "fidelity",
+                "display_name": "Fidelity Investments",
+                "status": "active",
+                "accounts_linked": 8,
+                "total_assets": 9_200_000,
+                "last_sync_at": (_now() - timedelta(hours=2)).isoformat(),
+                "created_at": (_now() - timedelta(days=120)).isoformat(),
+            },
+            {
+                "id": "cc100000-0000-4000-8000-000000000003",
+                "custodian_type": "td_ameritrade",
+                "display_name": "TD Ameritrade",
+                "status": "active",
+                "accounts_linked": 5,
+                "total_assets": 4_300_000,
+                "last_sync_at": (_now() - timedelta(hours=3)).isoformat(),
+                "created_at": (_now() - timedelta(days=90)).isoformat(),
+            },
+        ],
+        "total": 3,
+    }
+
+
+def custodian_accounts_response() -> Dict[str, Any]:
+    accts = [
+        {"id": "ca100000-0000-4000-8000-00000000000" + str(i), "custodian_type": cust, "account_name": name, "account_number": num, "account_type": atype, "market_value": mv, "cash_balance": cash, "client_id": None, "client_name": cname, "household_id": None, "is_active": True, "last_updated": (_now() - timedelta(hours=h)).isoformat()}
+        for i, (cust, name, num, atype, mv, cash, cname, h) in enumerate([
+            ("schwab", "Smith Joint Brokerage", "****4567", "brokerage", 450_000, 25_000, "John Smith", 1),
+            ("schwab", "Smith IRA", "****4568", "ira", 380_000, 8_000, "John Smith", 1),
+            ("schwab", "Wilson 401k Rollover", "****4569", "rollover_ira", 620_000, 15_000, "Leslie Wilson", 1),
+            ("fidelity", "Johnson Roth IRA", "****7890", "roth_ira", 650_000, 15_000, "Sarah Johnson", 2),
+            ("fidelity", "Johnson Brokerage", "****7891", "brokerage", 1_200_000, 45_000, "Sarah Johnson", 2),
+            ("td_ameritrade", "Chen Conservative", "****2345", "brokerage", 850_000, 85_000, "Michael Chen", 3),
+        ], start=1)
+    ]
+    total_mv = sum(a["market_value"] for a in accts)
+    total_cash = sum(a["cash_balance"] for a in accts)
+    return {"accounts": accts, "total": len(accts), "total_market_value": total_mv, "total_cash_balance": total_cash}
+
+
+def custodian_positions_response() -> Dict[str, Any]:
+    positions = [
+        {"symbol": "VTI", "security_name": "Vanguard Total Stock Market ETF", "asset_class": "US Equity", "total_quantity": 850, "total_market_value": 385_000, "total_cost_basis": 340_000, "unrealized_gain_loss": 45_000, "accounts": [{"account_name": "Smith Joint", "quantity": 400}, {"account_name": "Johnson Brokerage", "quantity": 450}]},
+        {"symbol": "VXUS", "security_name": "Vanguard Intl Stock ETF", "asset_class": "International Equity", "total_quantity": 600, "total_market_value": 210_000, "total_cost_basis": 195_000, "unrealized_gain_loss": 15_000, "accounts": [{"account_name": "Smith Joint", "quantity": 300}, {"account_name": "Johnson Brokerage", "quantity": 300}]},
+        {"symbol": "BND", "security_name": "Vanguard Total Bond Market ETF", "asset_class": "Fixed Income", "total_quantity": 1200, "total_market_value": 280_000, "total_cost_basis": 295_000, "unrealized_gain_loss": -15_000, "accounts": [{"account_name": "Chen Conservative", "quantity": 800}, {"account_name": "Smith IRA", "quantity": 400}]},
+        {"symbol": "AAPL", "security_name": "Apple Inc.", "asset_class": "US Equity", "total_quantity": 500, "total_market_value": 120_000, "total_cost_basis": 85_000, "unrealized_gain_loss": 35_000, "accounts": [{"account_name": "Johnson Brokerage", "quantity": 500}]},
+        {"symbol": "VNQ", "security_name": "Vanguard Real Estate ETF", "asset_class": "Real Estate", "total_quantity": 300, "total_market_value": 95_000, "total_cost_basis": 88_000, "unrealized_gain_loss": 7_000, "accounts": [{"account_name": "Wilson 401k Rollover", "quantity": 300}]},
+        {"symbol": "VTIP", "security_name": "Vanguard Short-Term TIPS ETF", "asset_class": "Fixed Income", "total_quantity": 400, "total_market_value": 72_000, "total_cost_basis": 74_000, "unrealized_gain_loss": -2_000, "accounts": [{"account_name": "Chen Conservative", "quantity": 400}]},
+    ]
+    total_mv = sum(p["total_market_value"] for p in positions)
+    total_cb = sum(p["total_cost_basis"] for p in positions)
+    return {"positions": positions, "total_positions": len(positions), "total_market_value": total_mv, "total_cost_basis": total_cb}
+
+
+def custodian_allocation_response() -> Dict[str, Any]:
+    allocation = [
+        {"asset_class": "US Equity", "market_value": 505_000, "percentage": 43.4},
+        {"asset_class": "International Equity", "market_value": 210_000, "percentage": 18.0},
+        {"asset_class": "Fixed Income", "market_value": 352_000, "percentage": 30.2},
+        {"asset_class": "Real Estate", "market_value": 95_000, "percentage": 8.2},
+        {"asset_class": "Cash", "market_value": 193_000, "percentage": 0.2},
+    ]
+    return {"total_value": sum(a["market_value"] for a in allocation), "allocation": allocation}
+
+
+def custodian_transactions_response(page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+    txns = [
+        {"id": f"tx-{i}", "account_name": acct, "custodian": cust, "transaction_type": ttype, "symbol": sym, "quantity": qty, "price": price, "gross_amount": amt, "net_amount": amt, "transaction_date": (_now() - timedelta(days=d)).isoformat(), "settlement_date": (_now() - timedelta(days=d - 2)).isoformat()}
+        for i, (acct, cust, ttype, sym, qty, price, amt, d) in enumerate([
+            ("Smith Joint", "schwab", "buy", "VTI", 50, 226.50, 11_325, 3),
+            ("Johnson Brokerage", "fidelity", "sell", "AAPL", 25, 240.20, -6_005, 5),
+            ("Chen Conservative", "td_ameritrade", "buy", "BND", 100, 72.30, 7_230, 7),
+            ("Smith IRA", "schwab", "dividend", "VTI", 0, 0, 850, 10),
+            ("Johnson Roth IRA", "fidelity", "buy", "VXUS", 75, 58.40, 4_380, 12),
+            ("Wilson 401k Rollover", "schwab", "buy", "VNQ", 40, 84.50, 3_380, 15),
+        ], start=1)
+    ]
+    return {"transactions": txns, "total": len(txns), "page": page, "page_size": page_size}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TAX-LOSS HARVESTING
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _tax_opportunities() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "th100000-0000-4000-8000-000000000001",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "account_id": None,
+            "symbol": "VTI",
+            "security_name": "Vanguard Total Stock Market ETF",
+            "shares": 100,
+            "cost_basis": 22_500,
+            "current_price": 198.00,
+            "current_value": 19_800,
+            "unrealized_loss": -2_700,
+            "loss_type": "short_term",
+            "holding_period_days": 180,
+            "wash_sale_risk": False,
+            "wash_sale_until": None,
+            "estimated_tax_savings": 810,
+            "replacement_symbol": "ITOT",
+            "replacement_name": "iShares Core S&P Total US Stock",
+            "status": "identified",
+            "expires_at": (_now() + timedelta(days=30)).isoformat(),
+            "created_at": (_now() - timedelta(days=1)).isoformat(),
+            "updated_at": (_now() - timedelta(hours=2)).isoformat(),
+        },
+        {
+            "id": "th100000-0000-4000-8000-000000000002",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "account_id": None,
+            "symbol": "ARKK",
+            "security_name": "ARK Innovation ETF",
+            "shares": 50,
+            "cost_basis": 8_500,
+            "current_price": 104.00,
+            "current_value": 5_200,
+            "unrealized_loss": -3_300,
+            "loss_type": "long_term",
+            "holding_period_days": 450,
+            "wash_sale_risk": True,
+            "wash_sale_until": (_now() + timedelta(days=15)).isoformat(),
+            "estimated_tax_savings": 990,
+            "replacement_symbol": "QQQM",
+            "replacement_name": "Invesco NASDAQ 100 ETF",
+            "status": "identified",
+            "expires_at": (_now() + timedelta(days=30)).isoformat(),
+            "created_at": (_now() - timedelta(days=3)).isoformat(),
+            "updated_at": (_now() - timedelta(hours=6)).isoformat(),
+        },
+        {
+            "id": "th100000-0000-4000-8000-000000000003",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "account_id": None,
+            "symbol": "BND",
+            "security_name": "Vanguard Total Bond Market ETF",
+            "shares": 200,
+            "cost_basis": 18_000,
+            "current_price": 82.00,
+            "current_value": 16_400,
+            "unrealized_loss": -1_600,
+            "loss_type": "long_term",
+            "holding_period_days": 720,
+            "wash_sale_risk": False,
+            "wash_sale_until": None,
+            "estimated_tax_savings": 480,
+            "replacement_symbol": "AGG",
+            "replacement_name": "iShares Core US Aggregate Bond",
+            "status": "recommended",
+            "expires_at": (_now() + timedelta(days=30)).isoformat(),
+            "created_at": (_now() - timedelta(days=5)).isoformat(),
+            "updated_at": (_now() - timedelta(days=1)).isoformat(),
+        },
+    ]
+
+
+def tax_opportunity_list_response() -> Dict[str, Any]:
+    return {"opportunities": _tax_opportunities(), "total": 3}
+
+
+def tax_summary_response() -> Dict[str, Any]:
+    return {"total_opportunities": 3, "total_harvestable_loss": 7_600, "total_estimated_savings": 2_280}
+
+
+def tax_settings_response() -> Dict[str, Any]:
+    return {
+        "id": "ts100000-0000-4000-8000-000000000001",
+        "min_loss_amount": 500,
+        "min_loss_percentage": 5.0,
+        "min_tax_savings": 100,
+        "short_term_tax_rate": 37.0,
+        "long_term_tax_rate": 20.0,
+        "auto_identify": True,
+        "auto_recommend": False,
+        "require_approval": True,
+        "excluded_symbols": [],
+        "notify_on_opportunity": True,
+        "notify_on_wash_sale_risk": True,
+        "is_active": True,
+    }
+
+
+def tax_wash_sales_response() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "ws-001",
+            "symbol": "ARKK",
+            "sold_date": (_now() - timedelta(days=15)).isoformat(),
+            "sold_shares": 25,
+            "sold_amount": 2_600,
+            "watch_until": (_now() + timedelta(days=15)).isoformat(),
+            "watch_symbols": ["ARKK", "ARKG", "ARKW"],
+            "status": "active",
+        }
+    ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MODEL PORTFOLIOS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _model_portfolios() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "mp100000-0000-4000-8000-000000000001",
+            "advisor_id": ADVISOR_ID,
+            "name": "EdgeAI Growth",
+            "description": "Aggressive growth portfolio — US equities & emerging markets",
+            "category": "growth",
+            "risk_level": 8,
+            "status": "active",
+            "total_aum": 45_000_000,
+            "total_subscribers": 32,
+            "inception_date": (_now() - timedelta(days=730)).isoformat(),
+            "ytd_return": 18.5,
+            "one_year_return": 22.3,
+            "expense_ratio": 0.35,
+            "is_published": True,
+            "provider": "EdgeAI Advisory",
+            "holdings": [
+                {"id": "h1", "symbol": "VTI", "name": "Vanguard Total Stock Market", "target_weight": 40, "current_weight": 41.2},
+                {"id": "h2", "symbol": "VGT", "name": "Vanguard Info Tech", "target_weight": 20, "current_weight": 21.5},
+                {"id": "h3", "symbol": "VWO", "name": "Vanguard Emerging Markets", "target_weight": 15, "current_weight": 13.8},
+                {"id": "h4", "symbol": "VXUS", "name": "Vanguard International", "target_weight": 15, "current_weight": 14.5},
+                {"id": "h5", "symbol": "BND", "name": "Vanguard Total Bond", "target_weight": 10, "current_weight": 9.0},
+            ],
+            "created_at": (_now() - timedelta(days=730)).isoformat(),
+            "updated_at": (_now() - timedelta(days=7)).isoformat(),
+        },
+        {
+            "id": "mp100000-0000-4000-8000-000000000002",
+            "advisor_id": ADVISOR_ID,
+            "name": "EdgeAI Balanced",
+            "description": "Moderate risk — growth & income blend",
+            "category": "balanced",
+            "risk_level": 5,
+            "status": "active",
+            "total_aum": 78_000_000,
+            "total_subscribers": 56,
+            "inception_date": (_now() - timedelta(days=1095)).isoformat(),
+            "ytd_return": 12.1,
+            "one_year_return": 14.8,
+            "expense_ratio": 0.28,
+            "is_published": True,
+            "provider": "EdgeAI Advisory",
+            "holdings": [
+                {"id": "h6", "symbol": "VTI", "name": "Vanguard Total Stock Market", "target_weight": 35, "current_weight": 35.8},
+                {"id": "h7", "symbol": "VXUS", "name": "Vanguard International", "target_weight": 15, "current_weight": 14.2},
+                {"id": "h8", "symbol": "BND", "name": "Vanguard Total Bond", "target_weight": 30, "current_weight": 30.5},
+                {"id": "h9", "symbol": "BNDX", "name": "Vanguard Intl Bond", "target_weight": 10, "current_weight": 9.8},
+                {"id": "h10", "symbol": "VNQ", "name": "Vanguard Real Estate", "target_weight": 10, "current_weight": 9.7},
+            ],
+            "created_at": (_now() - timedelta(days=1095)).isoformat(),
+            "updated_at": (_now() - timedelta(days=14)).isoformat(),
+        },
+        {
+            "id": "mp100000-0000-4000-8000-000000000003",
+            "advisor_id": ADVISOR_ID,
+            "name": "EdgeAI Conservative Income",
+            "description": "Capital preservation & income focused",
+            "category": "income",
+            "risk_level": 3,
+            "status": "active",
+            "total_aum": 32_000_000,
+            "total_subscribers": 28,
+            "inception_date": (_now() - timedelta(days=1460)).isoformat(),
+            "ytd_return": 6.2,
+            "one_year_return": 7.8,
+            "expense_ratio": 0.22,
+            "is_published": True,
+            "provider": "EdgeAI Advisory",
+            "holdings": [
+                {"id": "h11", "symbol": "BND", "name": "Vanguard Total Bond", "target_weight": 40, "current_weight": 40.3},
+                {"id": "h12", "symbol": "VCSH", "name": "Vanguard Short-Term Corp", "target_weight": 20, "current_weight": 19.5},
+                {"id": "h13", "symbol": "VIG", "name": "Vanguard Dividend Growth", "target_weight": 20, "current_weight": 20.8},
+                {"id": "h14", "symbol": "VTIP", "name": "Vanguard TIPS", "target_weight": 10, "current_weight": 9.9},
+                {"id": "h15", "symbol": "VMBS", "name": "Vanguard Mortgage-Backed", "target_weight": 10, "current_weight": 9.5},
+            ],
+            "created_at": (_now() - timedelta(days=1460)).isoformat(),
+            "updated_at": (_now() - timedelta(days=30)).isoformat(),
+        },
+        {
+            "id": "mp100000-0000-4000-8000-000000000004",
+            "advisor_id": None,
+            "name": "DFA Global Equity",
+            "description": "Dimensional factor-based global equity strategy",
+            "category": "growth",
+            "risk_level": 8,
+            "status": "active",
+            "total_aum": 125_000_000,
+            "total_subscribers": 0,
+            "inception_date": (_now() - timedelta(days=2555)).isoformat(),
+            "ytd_return": 16.8,
+            "one_year_return": 19.5,
+            "expense_ratio": 0.42,
+            "is_published": True,
+            "provider": "Dimensional Fund Advisors",
+            "holdings": [
+                {"id": "h16", "symbol": "DFAC", "name": "DFA US Core Equity", "target_weight": 35, "current_weight": 35.2},
+                {"id": "h17", "symbol": "DFAI", "name": "DFA Intl Core Equity", "target_weight": 25, "current_weight": 24.8},
+                {"id": "h18", "symbol": "DFAE", "name": "DFA Emerging Markets", "target_weight": 15, "current_weight": 15.3},
+                {"id": "h19", "symbol": "DFSV", "name": "DFA US Small Value", "target_weight": 15, "current_weight": 14.7},
+                {"id": "h20", "symbol": "DISV", "name": "DFA Intl Small Value", "target_weight": 10, "current_weight": 10.0},
+            ],
+            "created_at": (_now() - timedelta(days=2555)).isoformat(),
+            "updated_at": (_now() - timedelta(days=60)).isoformat(),
+        },
+    ]
+
+
+def model_list_response() -> Dict[str, Any]:
+    own = [m for m in _model_portfolios() if m["advisor_id"] == ADVISOR_ID]
+    return {"models": own, "total": len(own)}
+
+
+def marketplace_response() -> Dict[str, Any]:
+    return {"models": _model_portfolios(), "total": len(_model_portfolios())}
+
+
+def model_assignments_response() -> Dict[str, Any]:
+    return {
+        "assignments": [
+            {"id": "as-001", "account_id": "ca100000-0000-4000-8000-000000000001", "account_name": "Smith Joint Brokerage", "model_id": "mp100000-0000-4000-8000-000000000002", "model_name": "EdgeAI Balanced", "current_drift_pct": 1.2, "assigned_at": (_now() - timedelta(days=60)).isoformat()},
+            {"id": "as-002", "account_id": "ca100000-0000-4000-8000-000000000004", "account_name": "Johnson Roth IRA", "model_id": "mp100000-0000-4000-8000-000000000001", "model_name": "EdgeAI Growth", "current_drift_pct": 2.8, "assigned_at": (_now() - timedelta(days=45)).isoformat()},
+            {"id": "as-003", "account_id": "ca100000-0000-4000-8000-000000000006", "account_name": "Chen Conservative", "model_id": "mp100000-0000-4000-8000-000000000003", "model_name": "EdgeAI Conservative Income", "current_drift_pct": 0.5, "assigned_at": (_now() - timedelta(days=30)).isoformat()},
+        ],
+        "total": 3,
+    }
+
+
+def rebalance_signals_response() -> Dict[str, Any]:
+    return {
+        "signals": [
+            {
+                "id": "rs-001",
+                "assignment_id": "as-002",
+                "account_name": "Johnson Roth IRA",
+                "model_name": "EdgeAI Growth",
+                "trigger_type": "drift",
+                "drift_pct": 2.8,
+                "trades_required": 3,
+                "estimated_turnover": 4_500,
+                "status": "pending",
+                "created_at": (_now() - timedelta(hours=6)).isoformat(),
+            },
+        ],
+        "total": 1,
+        "pending": 1,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ALTERNATIVE ASSETS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _alt_investments() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "ai100000-0000-4000-8000-000000000001",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "fund_name": "Sequoia Capital Fund XV",
+            "sponsor_name": "Sequoia Capital",
+            "asset_type": "private_equity",
+            "vintage_year": 2021,
+            "total_commitment": 500_000,
+            "called_capital": 350_000,
+            "uncalled_capital": 150_000,
+            "current_nav": 485_000,
+            "total_distributions": 75_000,
+            "irr": 18.5,
+            "tvpi": 1.60,
+            "dpi": 0.21,
+            "rvpi": 1.39,
+            "moic": 1.60,
+            "status": "active",
+            "created_at": (_now() - timedelta(days=365)).isoformat(),
+            "updated_at": (_now() - timedelta(days=7)).isoformat(),
+        },
+        {
+            "id": "ai100000-0000-4000-8000-000000000002",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "fund_name": "Bridgewater All Weather Fund",
+            "sponsor_name": "Bridgewater Associates",
+            "asset_type": "hedge_fund",
+            "vintage_year": 2022,
+            "total_commitment": 250_000,
+            "called_capital": 250_000,
+            "uncalled_capital": 0,
+            "current_nav": 278_000,
+            "total_distributions": 22_000,
+            "irr": 8.2,
+            "tvpi": 1.20,
+            "dpi": 0.09,
+            "rvpi": 1.11,
+            "moic": 1.20,
+            "status": "active",
+            "created_at": (_now() - timedelta(days=240)).isoformat(),
+            "updated_at": (_now() - timedelta(days=14)).isoformat(),
+        },
+        {
+            "id": "ai100000-0000-4000-8000-000000000003",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "fund_name": "Blackstone Real Estate Partners IX",
+            "sponsor_name": "Blackstone",
+            "asset_type": "real_estate",
+            "vintage_year": 2020,
+            "total_commitment": 200_000,
+            "called_capital": 180_000,
+            "uncalled_capital": 20_000,
+            "current_nav": 195_000,
+            "total_distributions": 45_000,
+            "irr": 12.3,
+            "tvpi": 1.33,
+            "dpi": 0.25,
+            "rvpi": 1.08,
+            "moic": 1.33,
+            "status": "active",
+            "created_at": (_now() - timedelta(days=500)).isoformat(),
+            "updated_at": (_now() - timedelta(days=30)).isoformat(),
+        },
+        {
+            "id": "ai100000-0000-4000-8000-000000000004",
+            "advisor_id": ADVISOR_ID,
+            "client_id": None,
+            "fund_name": "Apollo Direct Lending Fund",
+            "sponsor_name": "Apollo Global Management",
+            "asset_type": "private_credit",
+            "vintage_year": 2023,
+            "total_commitment": 150_000,
+            "called_capital": 150_000,
+            "uncalled_capital": 0,
+            "current_nav": 162_000,
+            "total_distributions": 18_000,
+            "irr": 10.5,
+            "tvpi": 1.20,
+            "dpi": 0.12,
+            "rvpi": 1.08,
+            "moic": 1.20,
+            "status": "active",
+            "created_at": (_now() - timedelta(days=180)).isoformat(),
+            "updated_at": (_now() - timedelta(days=10)).isoformat(),
+        },
+    ]
+
+
+def alt_investment_list_response() -> Dict[str, Any]:
+    return {"investments": _alt_investments(), "total": len(_alt_investments())}
+
+
+def alt_pending_calls_response() -> Dict[str, Any]:
+    calls = [
+        {
+            "id": "cc-alt-001",
+            "investment_id": "ai100000-0000-4000-8000-000000000001",
+            "fund_name": "Sequoia Capital Fund XV",
+            "call_amount": 75_000,
+            "due_date": (_now() + timedelta(days=45)).isoformat(),
+            "status": "pending",
+            "notice_date": (_now() - timedelta(days=5)).isoformat(),
+            "purpose": "Follow-on investment in portfolio company",
+        },
+        {
+            "id": "cc-alt-002",
+            "investment_id": "ai100000-0000-4000-8000-000000000003",
+            "fund_name": "Blackstone Real Estate Partners IX",
+            "call_amount": 20_000,
+            "due_date": (_now() + timedelta(days=90)).isoformat(),
+            "status": "pending",
+            "notice_date": (_now() - timedelta(days=2)).isoformat(),
+            "purpose": "Final capital call — property acquisition",
+        },
+    ]
+    return {"calls": calls, "total": len(calls), "total_amount": sum(c["call_amount"] for c in calls)}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONVERSATION INTELLIGENCE
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _analyses() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "cv100000-0000-4000-8000-000000000001",
+            "advisor_id": ADVISOR_ID,
+            "meeting_id": None,
+            "client_name": "John Smith",
+            "channel": "meeting",
+            "primary_topic": "portfolio_review",
+            "topics_discussed": ["Q4 performance", "rebalancing", "ESG investing"],
+            "sentiment_score": 0.78,
+            "engagement_score": 85,
+            "talk_ratio": 0.42,
+            "summary": "Quarterly portfolio review. Client satisfied with returns. Discussed increasing equity allocation and ESG options.",
+            "compliance_flags": [],
+            "action_items": [
+                {"id": "ai-001", "title": "Rebalance portfolio to 70/30", "status": "pending", "priority": "high", "due_date": (_now() + timedelta(days=7)).isoformat(), "assigned_to": "Leslie Wilson"},
+                {"id": "ai-002", "title": "Research ESG fund options", "status": "pending", "priority": "medium", "due_date": (_now() + timedelta(days=14)).isoformat(), "assigned_to": "Leslie Wilson"},
+            ],
+            "created_at": (_now() - timedelta(days=7)).isoformat(),
+            "updated_at": (_now() - timedelta(days=7)).isoformat(),
+        },
+        {
+            "id": "cv100000-0000-4000-8000-000000000002",
+            "advisor_id": ADVISOR_ID,
+            "meeting_id": None,
+            "client_name": "Sarah Johnson",
+            "channel": "phone",
+            "primary_topic": "tax_planning",
+            "topics_discussed": ["Roth conversion", "tax brackets", "year-end planning"],
+            "sentiment_score": 0.85,
+            "engagement_score": 90,
+            "talk_ratio": 0.38,
+            "summary": "Discussed Roth conversion strategy. Client wants to convert $100k this year while in lower bracket.",
+            "compliance_flags": [
+                {"id": "cf-001", "category": "suitability", "risk_level": "low", "flagged_text": "Recommended Roth conversion", "status": "reviewed", "resolution": "Appropriate for client's tax situation"},
+            ],
+            "action_items": [
+                {"id": "ai-003", "title": "Model Roth conversion tax impact", "status": "completed", "priority": "high", "due_date": (_now() - timedelta(days=2)).isoformat(), "assigned_to": "Leslie Wilson"},
+            ],
+            "created_at": (_now() - timedelta(days=3)).isoformat(),
+            "updated_at": (_now() - timedelta(days=2)).isoformat(),
+        },
+        {
+            "id": "cv100000-0000-4000-8000-000000000003",
+            "advisor_id": ADVISOR_ID,
+            "meeting_id": None,
+            "client_name": "Michael Chen",
+            "channel": "email",
+            "primary_topic": "fixed_income",
+            "topics_discussed": ["CD rates", "bond allocation", "risk tolerance"],
+            "sentiment_score": 0.62,
+            "engagement_score": 70,
+            "talk_ratio": 0.50,
+            "summary": "Client inquired about rising CD rates and whether to move funds from bonds. Reinforced importance of diversification.",
+            "compliance_flags": [],
+            "action_items": [
+                {"id": "ai-004", "title": "Prepare CD vs bond comparison", "status": "pending", "priority": "medium", "due_date": (_now() + timedelta(days=5)).isoformat(), "assigned_to": "Leslie Wilson"},
+            ],
+            "created_at": (_now() - timedelta(days=1)).isoformat(),
+            "updated_at": (_now() - timedelta(hours=12)).isoformat(),
+        },
+    ]
+
+
+def conversation_analyses_response() -> Dict[str, Any]:
+    return {"analyses": _analyses(), "total": len(_analyses())}
+
+
+def conversation_metrics_response(days: int = 30) -> Dict[str, Any]:
+    return {
+        "period_days": days,
+        "total_conversations": 12,
+        "avg_sentiment_score": 0.75,
+        "avg_engagement_score": 82,
+        "total_compliance_flags": 1,
+        "action_items_created": 8,
+        "action_items_completed": 5,
+        "top_topics": {
+            "portfolio_review": 4,
+            "tax_planning": 3,
+            "retirement": 2,
+            "risk_tolerance": 2,
+            "fixed_income": 1,
+        },
+    }
+
+
+def conversation_flags_response() -> Dict[str, Any]:
+    flags = [
+        {
+            "id": "cf-001",
+            "analysis_id": "cv100000-0000-4000-8000-000000000002",
+            "category": "suitability",
+            "risk_level": "low",
+            "flagged_text": "Recommended Roth conversion of $100k",
+            "context": "Client in lower tax bracket this year. Conversion aligns with long-term plan.",
+            "status": "reviewed",
+            "reviewed_by": ADVISOR_ID,
+            "resolution": "Appropriate recommendation for client's tax situation",
+            "created_at": (_now() - timedelta(days=3)).isoformat(),
+        },
+        {
+            "id": "cf-002",
+            "analysis_id": "cv100000-0000-4000-8000-000000000001",
+            "category": "documentation",
+            "risk_level": "medium",
+            "flagged_text": "Discussed increasing equity allocation without updating IPS",
+            "context": "Client wants to move from 60/40 to 70/30 allocation.",
+            "status": "pending",
+            "reviewed_by": None,
+            "resolution": None,
+            "created_at": (_now() - timedelta(days=7)).isoformat(),
+        },
+    ]
+    return {"flags": flags, "total": len(flags), "pending": 1, "high_risk": 0}
+
+
+def conversation_action_items_response() -> Dict[str, Any]:
+    items = [
+        {"id": "ai-001", "analysis_id": "cv100000-0000-4000-8000-000000000001", "title": "Rebalance portfolio to 70/30", "description": "Increase equity allocation per client request", "status": "pending", "priority": "high", "due_date": (_now() + timedelta(days=7)).isoformat(), "assigned_to": "Leslie Wilson", "created_at": (_now() - timedelta(days=7)).isoformat()},
+        {"id": "ai-002", "analysis_id": "cv100000-0000-4000-8000-000000000001", "title": "Research ESG fund options", "description": "Client interested in sustainable investing options", "status": "pending", "priority": "medium", "due_date": (_now() + timedelta(days=14)).isoformat(), "assigned_to": "Leslie Wilson", "created_at": (_now() - timedelta(days=7)).isoformat()},
+        {"id": "ai-003", "analysis_id": "cv100000-0000-4000-8000-000000000002", "title": "Model Roth conversion tax impact", "description": "Run scenarios for $50k, $75k, $100k conversions", "status": "completed", "priority": "high", "due_date": (_now() - timedelta(days=2)).isoformat(), "assigned_to": "Leslie Wilson", "completed_at": (_now() - timedelta(days=2)).isoformat(), "created_at": (_now() - timedelta(days=3)).isoformat()},
+        {"id": "ai-004", "analysis_id": "cv100000-0000-4000-8000-000000000003", "title": "Prepare CD vs bond comparison", "description": "Show client rate comparison and portfolio impact", "status": "pending", "priority": "medium", "due_date": (_now() + timedelta(days=5)).isoformat(), "assigned_to": "Leslie Wilson", "created_at": (_now() - timedelta(days=1)).isoformat()},
+    ]
+    pending = [i for i in items if i["status"] == "pending"]
+    overdue = [i for i in pending if i["due_date"] < _now().isoformat()]
+    return {"items": items, "total": len(items), "pending": len(pending), "overdue": len(overdue)}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIQUIDITY
+# ═══════════════════════════════════════════════════════════════════════════
+
+def liquidity_withdrawals_response() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "wr100000-0000-4000-8000-000000000001",
+            "client_id": "c0000000-0000-4000-8000-000000000001",
+            "requested_amount": 25_000,
+            "requested_date": (_now() - timedelta(days=3)).isoformat(),
+            "purpose": "Home renovation",
+            "priority": "normal",
+            "lot_selection": "tax_opt",
+            "status": "pending_approval",
+            "optimized_plan_id": "lp-001",
+            "plans": [
+                {
+                    "id": "lp-001",
+                    "strategy": "tax_optimized",
+                    "is_recommended": True,
+                    "total_amount": 25_000,
+                    "estimated_tax_cost": 750,
+                    "estimated_wash_sale_risk": False,
+                    "lots_count": 3,
+                    "created_at": (_now() - timedelta(days=3)).isoformat(),
+                },
+                {
+                    "id": "lp-002",
+                    "strategy": "pro_rata",
+                    "is_recommended": False,
+                    "total_amount": 25_000,
+                    "estimated_tax_cost": 1_200,
+                    "estimated_wash_sale_risk": False,
+                    "lots_count": 5,
+                    "created_at": (_now() - timedelta(days=3)).isoformat(),
+                },
+            ],
+            "created_at": (_now() - timedelta(days=3)).isoformat(),
+            "updated_at": (_now() - timedelta(days=3)).isoformat(),
+        },
+        {
+            "id": "wr100000-0000-4000-8000-000000000002",
+            "client_id": "c0000000-0000-4000-8000-000000000002",
+            "requested_amount": 85_000,
+            "requested_date": (_now() - timedelta(days=7)).isoformat(),
+            "purpose": "Quarterly distribution",
+            "priority": "high",
+            "lot_selection": "tax_opt",
+            "status": "approved",
+            "optimized_plan_id": "lp-003",
+            "plans": [
+                {
+                    "id": "lp-003",
+                    "strategy": "tax_optimized",
+                    "is_recommended": True,
+                    "total_amount": 85_000,
+                    "estimated_tax_cost": 2_500,
+                    "estimated_wash_sale_risk": True,
+                    "lots_count": 8,
+                    "created_at": (_now() - timedelta(days=7)).isoformat(),
+                },
+            ],
+            "created_at": (_now() - timedelta(days=7)).isoformat(),
+            "updated_at": (_now() - timedelta(days=5)).isoformat(),
+        },
+    ]
+
+
+def liquidity_profile_response(client_id: str) -> Dict[str, Any]:
+    return {
+        "id": "lpr-001",
+        "client_id": client_id,
+        "default_priority": "normal",
+        "default_lot_selection": "tax_opt",
+        "federal_tax_bracket": 37.0,
+        "state_tax_rate": 0.0,
+        "capital_gains_rate_short": 37.0,
+        "capital_gains_rate_long": 20.0,
+        "min_cash_reserve": 10_000,
+        "max_single_position_liquidation_pct": 25.0,
+        "avoid_wash_sales": True,
+        "ytd_short_term_gains": 5_200,
+        "ytd_long_term_gains": 12_800,
+        "ytd_short_term_losses": 1_500,
+        "ytd_long_term_losses": 3_200,
+        "loss_carryforward": 0,
+        "created_at": (_now() - timedelta(days=90)).isoformat(),
+        "updated_at": (_now() - timedelta(days=7)).isoformat(),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COMPLIANCE DOCS (ADV 2B / Form CRS)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def compliance_documents_response() -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "cd100000-0000-4000-8000-000000000001",
+            "document_type": "adv_part_2b",
+            "title": "ADV Part 2B — Leslie Wilson",
+            "description": "Brochure supplement for advisory representative",
+            "status": "published",
+            "current_version_id": "dv-001",
+            "firm_id": FIRM_ID,
+            "effective_date": (_now() - timedelta(days=90)).isoformat(),
+            "created_at": (_now() - timedelta(days=365)).isoformat(),
+            "updated_at": (_now() - timedelta(days=30)).isoformat(),
+        },
+        {
+            "id": "cd100000-0000-4000-8000-000000000002",
+            "document_type": "form_crs",
+            "title": "Form CRS — IAB Advisors, Inc.",
+            "description": "Client Relationship Summary",
+            "status": "published",
+            "current_version_id": "dv-002",
+            "firm_id": FIRM_ID,
+            "effective_date": (_now() - timedelta(days=60)).isoformat(),
+            "created_at": (_now() - timedelta(days=365)).isoformat(),
+            "updated_at": (_now() - timedelta(days=15)).isoformat(),
+        },
+    ]
+
+
+def compliance_doc_versions_response(document_id: str) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": "dv-001" if "001" in document_id else "dv-002",
+            "document_id": document_id,
+            "version_number": 1,
+            "status": "published",
+            "created_by": ADVISOR_ID,
+            "approved_by": ADVISOR_ID,
+            "created_at": (_now() - timedelta(days=90)).isoformat(),
+            "published_at": (_now() - timedelta(days=88)).isoformat(),
+        },
+    ]
+
+
+def compliance_adv2b_data_response(advisor_id: str) -> Dict[str, Any]:
+    return {
+        "id": "adv-data-001",
+        "advisor_id": advisor_id,
+        "firm_id": FIRM_ID,
+        "full_name": "Leslie Wilson",
+        "crd_number": "7891234",
+        "education": [
+            {"institution": "University of Texas at Austin", "degree": "BBA Finance", "year": 2005},
+            {"institution": "CFP Board", "degree": "Certified Financial Planner", "year": 2008},
+        ],
+        "professional_designations": ["CFP®", "Series 65"],
+        "business_experience": [
+            {"firm": "IAB Advisors, Inc.", "title": "Managing Partner", "start_year": 2018, "end_year": None},
+            {"firm": "Morgan Stanley", "title": "Senior Financial Advisor", "start_year": 2010, "end_year": 2018},
+            {"firm": "Merrill Lynch", "title": "Financial Advisor", "start_year": 2005, "end_year": 2010},
+        ],
+        "disciplinary_history": "No disciplinary history.",
+        "other_business_activities": "None.",
+        "additional_compensation": "None.",
+        "supervision": {
+            "supervisor": "James Thompson, Chief Compliance Officer",
+            "phone": "(555) 100-2000",
+        },
+        "updated_at": (_now() - timedelta(days=30)).isoformat(),
+    }
+
+
+def compliance_form_crs_data_response() -> Dict[str, Any]:
+    return {
+        "id": "crs-data-001",
+        "firm_id": FIRM_ID,
+        "firm_name": "IAB Advisors, Inc.",
+        "crd_number": "7891234",
+        "website": "https://iabadvisors.com",
+        "introduction": "IAB Advisors, Inc. is registered with the Securities and Exchange Commission as an investment adviser.",
+        "services_offered": "We offer investment advisory services including discretionary portfolio management, financial planning, and retirement planning.",
+        "fees_and_costs": "We charge an asset-based fee ranging from 0.50% to 1.00% annually, depending on portfolio size.",
+        "conflicts_of_interest": "As a fee-only advisor, we do not receive commissions. We may receive referral fees from third-party service providers.",
+        "disciplinary_history": "We have no disciplinary history. Visit investor.gov/CRS for a free search tool.",
+        "additional_information": "For additional information about our advisory services, visit www.adviserinfo.sec.gov.",
+        "conversation_starters": [
+            "Given my financial situation, should I choose an investment advisory service? Why or why not?",
+            "How will you choose investments to recommend to me?",
+            "What is your relevant experience, including your licenses, education and other qualifications?",
+        ],
+        "updated_at": (_now() - timedelta(days=15)).isoformat(),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Helper: generic "no data yet" responses for mutating endpoints
+# ═══════════════════════════════════════════════════════════════════════════
+
+def empty_list(key: str = "items") -> Dict[str, Any]:
+    return {key: [], "total": 0}

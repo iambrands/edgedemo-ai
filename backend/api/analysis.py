@@ -50,12 +50,12 @@ async def analyze_household(
         raise HTTPException(500, "Analysis failed")
 
 
-@router.get("/fees/{account_id}")
+@router.get("/fees/{account_id}/detailed")
 async def fee_impact(
     account_id: str,
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Fee impact report for account."""
+    """Detailed fee impact report for account (DB-backed)."""
     try:
         iim = IIMService(session)
         result = await iim.calculate_fee_impact(account_id)

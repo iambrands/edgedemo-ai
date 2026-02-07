@@ -91,13 +91,17 @@ def get_users_db() -> dict:
     if _users_db is None:
         _users_db = {
             "leslie@iabadvisors.com": {
-                "id": "ria-001",
+                "id": "a0000000-0000-4000-8000-000000000001",  # UUID format required by DB endpoints
                 "email": "leslie@iabadvisors.com",
                 "password_hash": hash_password("CreateWealth2026$"),
                 "firstName": "Leslie",
                 "lastName": "Wilson",
                 "role": "ria",
                 "firm": "IAB Advisors, Inc.",
+                # Fields required by various endpoints (UUID format for DB-backed endpoints):
+                "firm_id": "b0000000-0000-4000-8000-000000000001",   # compliance_docs, onboarding
+                "advisor_id": "a0000000-0000-4000-8000-000000000001", # alias of id for clarity
+                "user_id": "a0000000-0000-4000-8000-000000000001",   # liquidity (same as id)
                 "licenses": ["Series 6", "Series 7", "Series 63", "Series 65 (pending)"],
                 "crd": "7891234",
                 "state": "TX",

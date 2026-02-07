@@ -12,3 +12,6 @@ export { default as Liquidity } from './Liquidity';
 export { default as Custodians } from './Custodians';
 export { default as TaxHarvest } from './TaxHarvest';
 export { default as Prospects } from './Prospects';
+export { default as Conversations } from './Conversations';
+export { default as ModelPortfolios } from './ModelPortfolios';
+export { default as AlternativeAssets } from './AlternativeAssets';

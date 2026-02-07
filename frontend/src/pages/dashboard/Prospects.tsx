@@ -395,7 +395,7 @@ export default function Prospects() {
         }),
         getPipelineSummary(),
       ]);
-      setProspects(prospectsRes.prospects);
+      setProspects(prospectsRes?.prospects ?? []);
       setPipelineSummary(summaryRes);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load prospects');

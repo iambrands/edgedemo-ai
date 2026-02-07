@@ -208,7 +208,7 @@ export function Overview() {
                 </TableCell>
                 <TableCell>{getStatusBadge(household.status)}</TableCell>
                 <TableCell className="text-gray-500">
-                  {household.lastAnalysis.slice(5)}
+                  {household.lastAnalysis?.slice(5) ?? '—'}
                 </TableCell>
               </TableRow>
             ))}

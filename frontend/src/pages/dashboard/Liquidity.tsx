@@ -95,7 +95,7 @@ export default function Liquidity() {
       setRequests([newReq, ...requests]);
       setSelectedRequest(newReq);
       setSelectedPlan(
-        newReq.plans.find((p) => p.is_recommended) || newReq.plans[0] || null
+        (newReq.plans ?? []).find((p) => p.is_recommended) || (newReq.plans ?? [])[0] || null
       );
       setShowCreateModal(false);
       setFormData({
@@ -221,8 +221,8 @@ export default function Liquidity() {
                   onClick={() => {
                     setSelectedRequest(req);
                     setSelectedPlan(
-                      req.plans.find((p) => p.is_recommended) ||
-                        req.plans[0] ||
+                      (req.plans ?? []).find((p) => p.is_recommended) ||
+                        (req.plans ?? [])[0] ||
                         null
                     );
                   }}
@@ -252,7 +252,7 @@ export default function Liquidity() {
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                     <span>{PRIORITY_LABELS[req.priority] || req.priority}</span>
                     <span>·</span>
-                    <span>{req.plans.length} plan{req.plans.length !== 1 ? 's' : ''}</span>
+                    <span>{(req.plans ?? []).length} plan{(req.plans ?? []).length !== 1 ? 's' : ''}</span>
                     <span>·</span>
                     <span>{formatDate(req.created_at)}</span>
                   </div>
@@ -272,12 +272,12 @@ export default function Liquidity() {
 
           {selectedRequest ? (
             <div className="space-y-3">
-              {selectedRequest.plans.length === 0 ? (
+              {(selectedRequest.plans ?? []).length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
                   No plans generated yet
                 </div>
               ) : (
-                selectedRequest.plans.map((plan) => (
+                (selectedRequest.plans ?? []).map((plan) => (
                   <button
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan)}

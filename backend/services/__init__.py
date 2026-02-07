@@ -8,6 +8,9 @@ from .nudge_engine import NudgeEngine
 from .portal_auth_service import PortalAuthService
 from .tax_harvest import TaxHarvestService
 from .prospect import ProspectService
+from .conversation import ConversationService
+from .model_portfolio import ModelPortfolioService
+from .alternative import AlternativeAssetService
 
 __all__ = [
     "ComplianceDocService",
@@ -18,4 +21,7 @@ __all__ = [
     "PortalAuthService",
     "TaxHarvestService",
     "ProspectService",
+    "ConversationService",
+    "ModelPortfolioService",
+    "AlternativeAssetService",
 ]
