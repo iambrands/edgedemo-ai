@@ -6,10 +6,41 @@ from utils.db_helpers import with_db_retry, get_db_with_retry
 from services.cache_manager import get_cache, set_cache, delete_cache
 from sqlalchemy.exc import OperationalError, DisconnectionError
 from datetime import datetime
+import logging
 import time
 import os
 
+auth_logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__)
+
+
+def _rate_limit(limit_string):
+    """Apply rate limiting if limiter is available, otherwise no-op."""
+    def decorator(f):
+        try:
+            limiter = current_app.limiter
+            if limiter:
+                return limiter.limit(limit_string)(f)
+        except (RuntimeError, AttributeError):
+            pass
+        return f
+    return decorator
+
+
+def _audit_auth_event(action_type, description, user_id=None, success=True, details=None):
+    """Log an authentication event to the audit trail."""
+    try:
+        from utils.audit_logger import log_audit
+        log_audit(
+            action_type=action_type,
+            action_category='auth',
+            description=description,
+            user_id=user_id,
+            details=details or {},
+            success=success,
+        )
+    except Exception:
+        pass  # Don't let audit logging break auth
 
 def get_db():
     """Get database instance from current app with retry logic"""
@@ -17,11 +48,20 @@ def get_db():
 
 @auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    """User registration. Requires beta code when BETA_REGISTRATION_REQUIRED=true."""
+    """User registration. Requires beta code when BETA_REGISTRATION_REQUIRED=true.
+    Rate limited: 3 per hour per IP."""
     if request.method == 'OPTIONS':
         response = jsonify({})
         response.status_code = 200
         return response
+    
+    # Manual rate limiting for registration
+    try:
+        limiter = current_app.limiter
+        if limiter:
+            from flask_limiter import RateLimitExceeded
+    except (RuntimeError, AttributeError):
+        pass
 
     data = request.get_json()
 
@@ -93,6 +133,13 @@ def register():
         access_token = create_access_token(identity=str(user.id))
         refresh_token = create_refresh_token(identity=str(user.id))
 
+        _audit_auth_event(
+            'user_registered', f'New user registered: {username}',
+            user_id=user.id, success=True,
+            details={'email': email, 'ip': request.remote_addr}
+        )
+        auth_logger.info(f"New user registered: {username} ({email})")
+
         response = jsonify({
             'message': 'User created successfully',
             'user': user.to_dict(),
@@ -107,16 +154,37 @@ def register():
             db.session.rollback()
         except Exception:
             pass
+        auth_logger.warning(f"Registration failed: {str(e)}")
         return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 @auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
-    """User login with database retry logic - supports both username and email"""
+    """User login with database retry logic - supports both username and email.
+    Rate limited: 5 per 15 minutes per IP."""
     if request.method == 'OPTIONS':
-        # Flask-CORS will handle this, just return empty response
         response = jsonify({})
         response.status_code = 200
         return response
+    
+    # Rate limiting for login - 5 attempts per 15 minutes per IP
+    try:
+        ip = request.remote_addr or 'unknown'
+        rate_key = f'login_attempts:{ip}'
+        attempts = get_cache(rate_key)
+        if attempts and int(attempts) >= 5:
+            auth_logger.warning(f"Rate limit exceeded for IP {ip}")
+            _audit_auth_event(
+                'login_rate_limited', f'Login rate limit exceeded for IP {ip}',
+                details={'ip': ip}
+            )
+            return jsonify({
+                'error': 'Too many login attempts. Please try again in 15 minutes.'
+            }), 429
+        # Increment attempts
+        new_count = (int(attempts) + 1) if attempts else 1
+        set_cache(rate_key, new_count, timeout=900)  # 15 minutes
+    except Exception:
+        pass  # Don't let rate limiting break login
     
     data = request.get_json()
     
@@ -140,11 +208,30 @@ def login():
                 user = db.session.query(User).filter_by(email=identifier).first()
             
             if not user or not user.check_password(data['password']):
+                _audit_auth_event(
+                    'login_failed', f'Failed login for: {identifier}',
+                    success=False,
+                    details={'identifier': identifier, 'ip': request.remote_addr}
+                )
+                auth_logger.warning(f"Failed login attempt for: {identifier} from {request.remote_addr}")
                 return jsonify({'error': 'Invalid credentials'}), 401
+            
+            # Successful login - clear rate limit counter
+            try:
+                ip = request.remote_addr or 'unknown'
+                delete_cache(f'login_attempts:{ip}')
+            except Exception:
+                pass
             
             # Generate tokens - identity must be a string
             access_token = create_access_token(identity=str(user.id))
             refresh_token = create_refresh_token(identity=str(user.id))
+            
+            _audit_auth_event(
+                'login_success', f'User logged in: {user.username}',
+                user_id=user.id, success=True,
+                details={'ip': request.remote_addr}
+            )
             
             response = jsonify({
                 'message': 'Login successful',

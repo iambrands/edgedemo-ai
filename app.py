@@ -63,6 +63,22 @@ def check_tradier_client():
 
 def create_app(config_name=None):
     """Application factory pattern"""
+    # Optional Sentry error tracking
+    sentry_dsn = os.environ.get('SENTRY_DSN')
+    if sentry_dsn:
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.flask import FlaskIntegration
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                integrations=[FlaskIntegration()],
+                traces_sample_rate=0.1,
+                environment=os.environ.get('FLASK_ENV', 'production'),
+            )
+            logging.getLogger(__name__).info('Sentry error tracking initialized')
+        except ImportError:
+            logging.getLogger(__name__).warning('SENTRY_DSN set but sentry-sdk not installed')
+
     # Don't set static_folder in Flask init - we'll handle React Router manually
     app = Flask(__name__)
     
@@ -89,6 +105,22 @@ def create_app(config_name=None):
     # Initialize Flask-Migrate (doesn't connect to DB during init)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    
+    # Initialize rate limiter
+    try:
+        from flask_limiter import Limiter
+        from flask_limiter.util import get_remote_address
+        limiter = Limiter(
+            app=app,
+            key_func=get_remote_address,
+            default_limits=[],  # No default limits - applied per-route
+            storage_uri=os.environ.get('REDIS_URL', 'memory://'),
+        )
+        app.limiter = limiter
+        app.logger.info('✅ Rate limiter initialized')
+    except Exception as e:
+        app.logger.warning(f'⚠️ Rate limiter not available: {e}')
+        app.limiter = None
     
     # CORS configuration - configurable via environment variable
     cors_origins = app.config.get('CORS_ORIGINS', ['http://localhost:4000'])

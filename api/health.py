@@ -34,6 +34,58 @@ def health_check():
         }), 503
 
 
+@health_bp.route('/health/full', methods=['GET'])
+def full_health_check():
+    """
+    Comprehensive health check that validates all subsystems.
+    Use for external monitoring (UptimeRobot, Better Uptime, etc.)
+    """
+    checks = {
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '1.0.0',
+        'checks': {}
+    }
+
+    # Database check
+    try:
+        from app import db
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        checks['checks']['database'] = 'ok'
+    except Exception as e:
+        checks['checks']['database'] = f'error: {str(e)[:100]}'
+        checks['status'] = 'unhealthy'
+
+    # Redis check
+    try:
+        from services.cache_manager import CacheManager
+        cm = CacheManager()
+        if cm.enabled and cm.redis:
+            cm.redis.ping()
+            checks['checks']['redis'] = 'ok'
+        else:
+            checks['checks']['redis'] = 'not_configured'
+    except Exception as e:
+        checks['checks']['redis'] = f'error: {str(e)[:100]}'
+        if checks['status'] == 'healthy':
+            checks['status'] = 'degraded'
+
+    # Trading halt status
+    try:
+        from services.cache_manager import get_cache
+        halt = get_cache('global_trading_halt')
+        if halt and halt.get('halted'):
+            checks['checks']['trading'] = f"halted: {halt.get('reason', 'unknown')}"
+        else:
+            checks['checks']['trading'] = 'active'
+    except Exception:
+        checks['checks']['trading'] = 'unknown'
+
+    status_code = 200 if checks['status'] == 'healthy' else 503
+    return jsonify(checks), status_code
+
+
 @health_bp.route('/health/cache', methods=['GET'])
 def cache_health():
     """Detailed cache statistics with comprehensive status"""

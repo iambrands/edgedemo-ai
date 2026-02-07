@@ -58,6 +58,25 @@ class TradeExecutor:
             Dict with trade details
         """
         db = self._get_db()
+        
+        # Check global trading halt (kill switch)
+        try:
+            from services.cache_manager import get_cache
+            halt_status = get_cache('global_trading_halt')
+            if halt_status and halt_status.get('halted'):
+                reason = halt_status.get('reason', 'Unknown reason')
+                import logging
+                logging.getLogger(__name__).critical(
+                    f"TRADE BLOCKED - Trading halted: {reason} | user={user_id} symbol={symbol}"
+                )
+                raise ValueError(f"Trading is currently halted by administrator: {reason}")
+        except ImportError:
+            pass  # Cache not available, allow trade
+        except ValueError:
+            raise  # Re-raise halt errors
+        except Exception:
+            pass  # Cache error, allow trade to proceed
+        
         user = db.session.query(User).get(user_id)
         
         if not user:

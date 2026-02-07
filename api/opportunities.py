@@ -82,9 +82,9 @@ def test_cache():
 
 
 @opportunities_bp.route('/today', methods=['GET'])
-# @token_required  # Temporarily disabled for testing
+@token_required
 @log_performance(threshold=2.0)
-def get_today_opportunities(current_user=None):
+def get_today_opportunities(current_user):
     """Get today's top trading opportunities - optimized for speed"""
     import sys
     
@@ -392,9 +392,9 @@ def quick_scan(current_user):
         }), 200
 
 @opportunities_bp.route('/market-movers', methods=['GET'])
-# @token_required  # Temporarily disabled for testing
+@token_required
 @log_performance(threshold=2.0)
-def get_market_movers(current_user=None):
+def get_market_movers(current_user):
     """Get market movers - high volume/volatility stocks"""
     import sys
     
@@ -580,8 +580,8 @@ def get_ai_suggestions(current_user):
 
 
 @opportunities_bp.route('/high-probability', methods=['GET'])
-# @token_required  # Temporarily disabled for testing
-def get_high_probability(current_user=None):
+@token_required
+def get_high_probability(current_user):
     """Get high probability opportunities."""
     try:
         current_app.logger.info("High probability opportunities requested")
@@ -608,8 +608,8 @@ def get_high_probability(current_user=None):
 
 
 @opportunities_bp.route('/earnings', methods=['GET'])
-# @token_required  # Temporarily disabled for testing
-def get_earnings_plays(current_user=None):
+@token_required
+def get_earnings_plays(current_user):
     """Get earnings plays."""
     try:
         current_app.logger.info("Earnings plays requested")
@@ -635,8 +635,8 @@ def get_earnings_plays(current_user=None):
 
 
 @opportunities_bp.route('/unusual-activity', methods=['GET'])
-# @token_required  # Temporarily disabled for testing
-def get_unusual_activity(current_user=None):
+@token_required
+def get_unusual_activity(current_user):
     """Get unusual activity."""
     try:
         current_app.logger.info("Unusual activity requested")

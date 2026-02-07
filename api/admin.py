@@ -231,9 +231,9 @@ def get_beta_code_users(current_user, code_id):
     return jsonify(out)
 
 
-# Diagnostic endpoint - no auth, no database (test if blueprint is loaded)
 @admin_bp.route('/admin/ping', methods=['GET'])
-def ping():
+@admin_required
+def ping(current_user):
     """Simple test endpoint - no auth, no database. Use this to verify admin routes work.
     
     Access at: /api/admin/ping
@@ -255,9 +255,9 @@ def ping():
             'timestamp': datetime.utcnow().isoformat()
         }), 500
 
-# Manual cache warming endpoint
 @admin_bp.route('/admin/warm-cache', methods=['POST'])
-def warm_cache_now():
+@admin_required
+def warm_cache_now(current_user):
     """
     Manually trigger cache warming.
     
@@ -342,7 +342,8 @@ def warm_cache_now():
 
 
 @admin_bp.route('/admin/cache-status', methods=['GET'])
-def cache_status():
+@admin_required
+def cache_status(current_user):
     """
     Check cache status for options flow symbols.
     
@@ -396,12 +397,9 @@ def cache_status():
         }), 500
 
 
-# TODO: Add authentication middleware for production
-# For now, these are unprotected - add auth before production launch
-
-# Debug route to check if admin blueprint is loaded (no auth required for debugging)
 @admin_bp.route('/admin/debug', methods=['GET'])
-def admin_debug():
+@admin_required
+def admin_debug(current_user):
     """Debug endpoint to verify admin blueprint is registered"""
     try:
         from flask import current_app
@@ -431,7 +429,8 @@ def admin_debug():
 # REMOVED: Duplicate cache-status endpoint (moved to line ~155 with better implementation)
 
 @admin_bp.route('/admin/pnl-diagnostic', methods=['GET'])
-def pnl_diagnostic():
+@admin_required
+def pnl_diagnostic(current_user):
     """
     Diagnostic endpoint to see trades contributing to realized P&L.
     
@@ -503,14 +502,11 @@ def pnl_diagnostic():
         }), 500
 
 
-# Performance test endpoint - NO AUTH REQUIRED for debugging  
 @admin_bp.route('/admin/performance-test', methods=['GET'])
-def performance_test():
+@admin_required
+def performance_test(current_user):
     """
-    PUBLIC ENDPOINT - Test performance of cached endpoints
-    
-    Returns timing information for all major endpoints to verify caching is working
-    NO AUTHENTICATION REQUIRED - for testing only
+    Test performance of cached endpoints. Requires admin authentication.
     
     Access at: /api/admin/performance-test
     """
@@ -603,7 +599,8 @@ def performance_test():
 
 
 @admin_bp.route('/admin/cleanup/expired', methods=['POST'])
-def manual_cleanup_expired():
+@admin_required
+def manual_cleanup_expired(current_user):
     """Manually trigger expired position cleanup"""
     try:
         count = cleanup_expired_positions()
@@ -623,7 +620,8 @@ def manual_cleanup_expired():
 
 
 @admin_bp.route('/admin/cleanup/cache', methods=['POST'])
-def manual_cleanup_cache():
+@admin_required
+def manual_cleanup_cache(current_user):
     """Manually clear cache"""
     try:
         # Use cache_manager for consistency
@@ -651,7 +649,8 @@ def manual_cleanup_cache():
 
 
 @admin_bp.route('/admin/positions/expiring', methods=['GET'])
-def check_expiring_positions():
+@admin_required
+def check_expiring_positions(current_user):
     """Get positions expiring today"""
     try:
         expiring = get_expiring_today()
@@ -679,7 +678,8 @@ def check_expiring_positions():
 
 
 @admin_bp.route('/admin/positions/stale', methods=['GET'])
-def check_stale_positions():
+@admin_required
+def check_stale_positions(current_user):
     """Find positions with stale price data"""
     try:
         hours = request.args.get('hours', 24, type=int)
@@ -711,7 +711,8 @@ def check_stale_positions():
 
 
 @admin_bp.route('/admin/cache/stats', methods=['GET'])
-def cache_stats():
+@admin_required
+def cache_stats(current_user):
     """Get detailed cache statistics"""
     try:
         # Use CacheManager for consistency
@@ -1251,10 +1252,10 @@ def force_cache_warming(current_user):
 
 
 @admin_bp.route('/admin/test-earnings', methods=['GET'])
-def test_earnings():
+@admin_required
+def test_earnings(current_user):
     """
-    PUBLIC ENDPOINT - Test Finnhub earnings calendar integration
-    NO AUTHENTICATION REQUIRED - for debugging only
+    Test Finnhub earnings calendar integration. Requires admin authentication.
     
     Access at: /api/admin/test-earnings
     
@@ -1374,10 +1375,10 @@ def test_earnings():
 
 
 @admin_bp.route('/admin/test-finnhub-full', methods=['GET'])
-def test_finnhub_full():
+@admin_required
+def test_finnhub_full(current_user):
     """
-    PUBLIC ENDPOINT - Test all Finnhub endpoints
-    NO AUTHENTICATION REQUIRED - for debugging only
+    Test all Finnhub endpoints. Requires admin authentication.
     
     Access at: /api/admin/test-finnhub-full
     """
@@ -1525,4 +1526,120 @@ def debug_positions(current_user):
             'error': str(e),
             'timestamp': datetime.utcnow().isoformat()
         }), 500
+
+
+# ============================================================
+# TRADING HALT / KILL SWITCH ENDPOINTS
+# ============================================================
+
+@admin_bp.route('/admin/trading/halt', methods=['POST'])
+@admin_required
+def halt_trading(current_user):
+    """
+    Emergency halt all trading. Sets a global flag checked by TradeExecutor.
+    
+    POST /api/admin/trading/halt
+    Body: {"reason": "Market volatility"} (optional)
+    """
+    try:
+        data = request.get_json() or {}
+        reason = data.get('reason', 'Emergency halt by administrator')
+
+        halt_data = {
+            'halted': True,
+            'reason': reason,
+            'halted_at': datetime.utcnow().isoformat(),
+            'halted_by': current_user.email,
+        }
+        set_cache('global_trading_halt', halt_data, timeout=86400 * 7)  # 7 days
+
+        logger.critical(f"TRADING HALTED by {current_user.email}: {reason}")
+
+        try:
+            from utils.audit_logger import log_audit
+            log_audit(
+                action_type='trading_halted',
+                action_category='admin',
+                description=f'Trading halted: {reason}',
+                user_id=current_user.id,
+                details=halt_data,
+                success=True,
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'message': 'Trading has been HALTED',
+            'halt_status': halt_data,
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to halt trading: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/trading/resume', methods=['POST'])
+@admin_required
+def resume_trading(current_user):
+    """
+    Resume trading after a halt.
+    
+    POST /api/admin/trading/resume
+    """
+    try:
+        resume_data = {
+            'halted': False,
+            'reason': None,
+            'resumed_at': datetime.utcnow().isoformat(),
+            'resumed_by': current_user.email,
+        }
+        set_cache('global_trading_halt', resume_data, timeout=86400)
+
+        logger.critical(f"TRADING RESUMED by {current_user.email}")
+
+        try:
+            from utils.audit_logger import log_audit
+            log_audit(
+                action_type='trading_resumed',
+                action_category='admin',
+                description='Trading resumed',
+                user_id=current_user.id,
+                details=resume_data,
+                success=True,
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'message': 'Trading has been RESUMED',
+            'halt_status': resume_data,
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to resume trading: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/trading/status', methods=['GET'])
+@admin_required
+def trading_status(current_user):
+    """
+    Get current trading halt status.
+    
+    GET /api/admin/trading/status
+    """
+    try:
+        halt_status = get_cache('global_trading_halt')
+        if halt_status is None:
+            halt_status = {'halted': False, 'reason': None}
+
+        return jsonify({
+            'trading_active': not halt_status.get('halted', False),
+            'halt_status': halt_status,
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'trading_active': True,  # Fail open
+            'error': str(e),
+        }), 200
 
