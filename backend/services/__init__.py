@@ -6,6 +6,7 @@ from .iim_service import IIMService
 from .liquidity_optimizer import LiquidityOptimizer
 from .nudge_engine import NudgeEngine
 from .portal_auth_service import PortalAuthService
+from .tax_harvest import TaxHarvestService
 
 __all__ = [
     "ComplianceDocService",
@@ -14,4 +15,5 @@ __all__ = [
     "LiquidityOptimizer",
     "NudgeEngine",
     "PortalAuthService",
+    "TaxHarvestService",
 ]
