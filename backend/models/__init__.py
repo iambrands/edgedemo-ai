@@ -131,6 +131,31 @@ from .tax_harvest import (  # noqa: E402
     SecurityRelationType,
     TaxLotStatus,
 )
+from .prospect import (  # noqa: E402
+    Prospect,
+    ProspectActivity,
+    Proposal,
+    LeadScoringRule,
+    EmailTemplate,
+    PipelineStageConfig,
+    ProspectStatus,
+    LeadSource,
+    ActivityType,
+    ProposalStatus,
+)
+from .conversation import (  # noqa: E402
+    ConversationAnalysis,
+    ComplianceFlag,
+    ConversationActionItem,
+    SpeakerSegment,
+    ComplianceRule,
+    ConversationInsight,
+    ComplianceRiskLevel,
+    ComplianceCategoryType,
+    SentimentType,
+    ActionItemStatus,
+    ActionItemPriority,
+)
 
 __all__ = [
     "Account",
@@ -209,4 +234,27 @@ __all__ = [
     "WashSaleStatus",
     "SecurityRelationType",
     "TaxLotStatus",
+    # Prospect Pipeline models
+    "Prospect",
+    "ProspectActivity",
+    "Proposal",
+    "LeadScoringRule",
+    "EmailTemplate",
+    "PipelineStageConfig",
+    "ProspectStatus",
+    "LeadSource",
+    "ActivityType",
+    "ProposalStatus",
+    # Conversation Intelligence models
+    "ConversationAnalysis",
+    "ComplianceFlag",
+    "ConversationActionItem",
+    "SpeakerSegment",
+    "ComplianceRule",
+    "ConversationInsight",
+    "ComplianceRiskLevel",
+    "ComplianceCategoryType",
+    "SentimentType",
+    "ActionItemStatus",
+    "ActionItemPriority",
 ]

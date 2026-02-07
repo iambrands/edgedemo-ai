@@ -11,6 +11,7 @@ import {
   DollarSign,
   Link2,
   Scissors,
+  UserPlus,
   MessageSquare,
   Settings,
   LogOut,
@@ -41,6 +42,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/liquidity', icon: DollarSign, label: 'Liquidity' },
     { to: '/dashboard/custodians', icon: Link2, label: 'Custodians' },
     { to: '/dashboard/tax-harvest', icon: Scissors, label: 'Tax Harvest' },
+    { to: '/dashboard/prospects', icon: UserPlus, label: 'Prospects' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];

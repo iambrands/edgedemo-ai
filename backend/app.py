@@ -112,7 +112,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="EdgeAI Portfolio Analyzer API",
     description="Backend API for EdgeAI Portfolio Analysis powered by OpenAI GPT",
-    version="1.7.0"
+    version="1.8.0"
 )
 
 # Initialize rate limiter (in-memory for simple deployment)
@@ -295,6 +295,15 @@ try:
 except Exception as e:
     _ria_router_errors.append(f"tax_harvest: {type(e).__name__}: {e}")
     logger.error("Failed to mount tax_harvest router: %s", e, exc_info=True)
+
+# Mount Prospect Pipeline router
+try:
+    from backend.api.prospects import router as prospects_router
+    app.include_router(prospects_router)
+    _ria_routers_mounted.append("prospects")
+except Exception as e:
+    _ria_router_errors.append(f"prospects: {type(e).__name__}: {e}")
+    logger.error("Failed to mount prospects router: %s", e, exc_info=True)
 
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))

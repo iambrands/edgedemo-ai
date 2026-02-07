@@ -11,3 +11,4 @@ export { default as ComplianceDocs } from './ComplianceDocs';
 export { default as Liquidity } from './Liquidity';
 export { default as Custodians } from './Custodians';
 export { default as TaxHarvest } from './TaxHarvest';
+export { default as Prospects } from './Prospects';

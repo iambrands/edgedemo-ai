@@ -7,6 +7,7 @@ from .liquidity_optimizer import LiquidityOptimizer
 from .nudge_engine import NudgeEngine
 from .portal_auth_service import PortalAuthService
 from .tax_harvest import TaxHarvestService
+from .prospect import ProspectService
 
 __all__ = [
     "ComplianceDocService",
@@ -16,4 +17,5 @@ __all__ = [
     "NudgeEngine",
     "PortalAuthService",
     "TaxHarvestService",
+    "ProspectService",
 ]

@@ -15,6 +15,7 @@ import {
   Liquidity,
   Custodians,
   TaxHarvest,
+  Prospects,
 } from './pages/dashboard';
 import { PortalLogin, PortalDashboard, PortalGoals } from './pages/portal';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="liquidity" element={<Liquidity />} />
         <Route path="custodians" element={<Custodians />} />
         <Route path="tax-harvest" element={<TaxHarvest />} />
+        <Route path="prospects" element={<Prospects />} />
         <Route path="chat" element={<Chat />} />
         <Route path="settings" element={<Settings />} />
       </Route>
