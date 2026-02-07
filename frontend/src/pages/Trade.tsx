@@ -4,6 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useDevice } from '../hooks/useDevice';
 import TradingModeToggle from '../components/TradingModeToggle';
+import TradingDisclaimer from '../components/TradingDisclaimer';
 import { useTradingMode } from '../contexts/TradingModeContext';
 
 interface Expiration {
@@ -479,6 +480,7 @@ const Trade: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <TradingDisclaimer />
       {/* Trading Mode Toggle */}
       <TradingModeToggle />
 

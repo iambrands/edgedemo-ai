@@ -228,7 +228,11 @@ const Register: React.FC = () => {
               className="h-4 w-4 mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-700">
-              I agree to the <Link to="/terms" className="text-indigo-600 hover:text-indigo-700 font-medium">Terms of Service</Link>
+              I agree to the{' '}
+              <Link to="/terms" className="text-indigo-600 hover:text-indigo-700 font-medium">Terms of Service</Link>
+              {' '}and{' '}
+              <Link to="/privacy" className="text-indigo-600 hover:text-indigo-700 font-medium">Privacy Policy</Link>,
+              and I understand that options trading involves substantial risk of loss.
             </label>
           </div>
 

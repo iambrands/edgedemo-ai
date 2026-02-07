@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { tradesService } from '../services/trades';
 import api from '../services/api';
+import TradingDisclaimer from '../components/TradingDisclaimer';
 import toast from 'react-hot-toast';
 import { Position, Trade } from '../types/trades';
 import { Line, Bar } from 'react-chartjs-2';
@@ -168,6 +169,7 @@ const Portfolio: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <TradingDisclaimer />
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>

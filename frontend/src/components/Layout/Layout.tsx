@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useDevice } from '../../hooks/useDevice';
 import FloatingFeedbackButton from '../FloatingFeedbackButton';
 import BottomNav from '../navigation/BottomNav';
+import RiskAcknowledgmentModal from '../RiskAcknowledgmentModal';
+import api from '../../services/api';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,6 +21,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { isMobile, isTablet, isDesktop } = useDevice();
+  const [showRiskModal, setShowRiskModal] = useState(false);
+
+  // Show risk acknowledgment modal if user hasn't acknowledged
+  React.useEffect(() => {
+    if (user && !user.risk_acknowledged) {
+      setShowRiskModal(true);
+    }
+  }, [user]);
+
+  const handleRiskAccept = useCallback(async () => {
+    try {
+      await api.post('/api/user/acknowledge-risk');
+      setShowRiskModal(false);
+      // Reload to update user state with acknowledgment
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to acknowledge risk:', error);
+      // Still close modal on error to avoid blocking the user
+      setShowRiskModal(false);
+    }
+  }, []);
+
+  const handleRiskDecline = useCallback(() => {
+    // Just close modal; user can continue but will see it again next session
+    setShowRiskModal(false);
+  }, []);
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     trading: true,
     discovery: false,
@@ -170,6 +199,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         >
           {children}
         </main>
+
+        {/* Footer */}
+        <footer className="border-t py-6 bg-gray-50 px-4 md:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex gap-4 md:gap-6 text-sm text-gray-500 flex-wrap justify-center">
+                <Link to="/terms" className="hover:text-gray-700">Terms of Service</Link>
+                <Link to="/privacy" className="hover:text-gray-700">Privacy Policy</Link>
+                <Link to="/audit-log" className="hover:text-gray-700">Audit Log</Link>
+              </div>
+              <p className="text-sm text-gray-500">&copy; 2026 IAB Advisors, Inc. All rights reserved.</p>
+            </div>
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Options trading involves substantial risk. Past performance does not guarantee future results. Not investment advice.
+            </p>
+          </div>
+        </footer>
       </div>
 
       {/* Bottom Navigation - Mobile/Tablet Only */}
@@ -177,6 +223,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Floating Feedback Button - Desktop Only */}
       {isDesktop && <FloatingFeedbackButton />}
+
+      {/* Risk Acknowledgment Modal */}
+      <RiskAcknowledgmentModal
+        isOpen={showRiskModal}
+        onAccept={handleRiskAccept}
+        onDecline={handleRiskDecline}
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import OnboardingModal from '../components/OnboardingModal';
 import EarningsWidget from '../components/EarningsWidget';
 import UnusualOptionsWidget from '../components/UnusualOptionsWidget';
+import TradingDisclaimer from '../components/TradingDisclaimer';
 import { useDevice } from '../hooks/useDevice';
 import ResponsiveTable, { ColumnDef } from '../components/common/ResponsiveTable';
 import ResponsiveModal from '../components/common/ResponsiveModal';
@@ -791,6 +792,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <TradingDisclaimer />
       {/* Onboarding Modal */}
       {showOnboarding && (
         <OnboardingModal

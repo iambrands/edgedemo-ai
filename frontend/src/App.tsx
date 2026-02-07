@@ -26,6 +26,9 @@ import Management from './pages/Management';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import AuditLog from './pages/AuditLog';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { TradingModeProvider } from './contexts/TradingModeContext';
 
@@ -112,6 +115,8 @@ function AppRoutes() {
             )
           } 
         />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route 
           path="/health" 
           element={<HealthCheck />} 
@@ -170,6 +175,7 @@ function AppRoutes() {
                       </AdminRoute>
                     } 
                   />
+                  <Route path="/audit-log" element={<AuditLog />} />
                   {/* Legacy routes - redirect to unified Opportunities page */}
                   <Route path="/discover" element={<Navigate to="/opportunities?tab=signals" replace />} />
                   <Route path="/market" element={<Navigate to="/opportunities?tab=movers" replace />} />

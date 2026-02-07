@@ -9,6 +9,7 @@ import OptionsChainTable from '../components/OptionsChain/OptionsChainTable';
 import { useDevice } from '../hooks/useDevice';
 import { useDebounce } from '../hooks/useDebounce';
 import RealTimePriceDisplay from '../components/RealTimePriceDisplay';
+import TradingDisclaimer from '../components/TradingDisclaimer';
 
 type AnalyzerTab = 'single' | 'debit-spread' | 'credit-spread';
 
@@ -648,6 +649,7 @@ const OptionsAnalyzer: React.FC = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <TradingDisclaimer />
       {/* Page Header */}
       <div className="bg-white rounded-lg shadow p-4 md:p-6">
         <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-secondary mb-4`}>Options Analyzer</h1>

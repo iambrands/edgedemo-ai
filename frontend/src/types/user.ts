@@ -9,6 +9,9 @@ export interface User {
   paper_balance?: number;
   timezone?: string;  // IANA timezone name (e.g., 'America/Chicago')
   created_at: string;
+  risk_acknowledged?: boolean;
+  risk_acknowledged_at?: string | null;
+  terms_accepted_at?: string | null;
 }
 
 export interface AuthResponse {
