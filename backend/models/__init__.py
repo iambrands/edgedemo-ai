@@ -106,6 +106,20 @@ from .liquidity import (  # noqa: E402
     WithdrawalStatus,
     CashFlowType,
 )
+from .custodian import (  # noqa: E402
+    Custodian,
+    CustodianConnection,
+    CustodianAccount,
+    AggregatedPosition,
+    AggregatedTransaction,
+    CustodianSyncLog,
+    CustodianType,
+    ConnectionStatus,
+    SyncStatus,
+    CustodianAssetClass,
+    CustodianTransactionType,
+    CustodianAccountType,
+)
 
 __all__ = [
     "Account",
@@ -161,4 +175,17 @@ __all__ = [
     "LotSelectionMethod",
     "WithdrawalStatus",
     "CashFlowType",
+    # Custodian aggregation models
+    "Custodian",
+    "CustodianConnection",
+    "CustodianAccount",
+    "AggregatedPosition",
+    "AggregatedTransaction",
+    "CustodianSyncLog",
+    "CustodianType",
+    "ConnectionStatus",
+    "SyncStatus",
+    "CustodianAssetClass",
+    "CustodianTransactionType",
+    "CustodianAccountType",
 ]
