@@ -291,14 +291,14 @@ export default function ModelPortfolios() {
             )}
 
             {/* Allocation bar */}
-            {model.holdings.length > 0 && (
+            {(model.holdings ?? []).length > 0 && (
               <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-gray-200">
-                {model.holdings.map((h) => (
+                {(model.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
                     className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
-                    style={{ width: `${h.target_weight_pct}%` }}
-                    title={`${h.symbol}: ${h.target_weight_pct.toFixed(1)}%`}
+                    style={{ width: `${h.target_weight_pct ?? 0}%` }}
+                    title={`${h.symbol}: ${(h.target_weight_pct ?? 0).toFixed(1)}%`}
                   />
                 ))}
               </div>
@@ -317,12 +317,12 @@ export default function ModelPortfolios() {
               </div>
               <div>
                 <p className="text-gray-500">Risk Level</p>
-                <p className="font-medium text-gray-900">{model.risk_level}/10</p>
+                <p className="font-medium text-gray-900">{model.risk_level ?? '—'}/10</p>
               </div>
             </div>
 
             <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-              <span>{model.holdings.length} holdings</span>
+              <span>{(model.holdings ?? []).length} holdings</span>
               <span>
                 {model.total_subscribers}{' '}
                 {model.total_subscribers === 1 ? 'subscriber' : 'subscribers'}
@@ -389,35 +389,35 @@ export default function ModelPortfolios() {
             </p>
 
             {/* Allocation bar */}
-            {model.holdings.length > 0 && (
+            {(model.holdings ?? []).length > 0 && (
               <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-gray-200">
-                {model.holdings.map((h) => (
+                {(model.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
                     className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
-                    style={{ width: `${h.target_weight_pct}%` }}
-                    title={`${h.symbol}: ${h.target_weight_pct.toFixed(1)}%`}
+                    style={{ width: `${h.target_weight_pct ?? 0}%` }}
+                    title={`${h.symbol}: ${(h.target_weight_pct ?? 0).toFixed(1)}%`}
                   />
                 ))}
               </div>
             )}
 
             {/* Holdings legend */}
-            {model.holdings.length > 0 && (
+            {(model.holdings ?? []).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                {model.holdings.slice(0, 4).map((h) => (
+                {(model.holdings ?? []).slice(0, 4).map((h) => (
                   <span key={h.id} className="flex items-center text-xs text-gray-500">
                     <span
                       className={`inline-block w-2 h-2 rounded-full mr-1 ${
                         ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
                       }`}
                     />
-                    {h.symbol} {h.target_weight_pct.toFixed(0)}%
+                    {h.symbol} {(h.target_weight_pct ?? 0).toFixed(0)}%
                   </span>
                 ))}
-                {model.holdings.length > 4 && (
+                {(model.holdings ?? []).length > 4 && (
                   <span className="text-xs text-gray-400">
-                    +{model.holdings.length - 4} more
+                    +{(model.holdings ?? []).length - 4} more
                   </span>
                 )}
               </div>
@@ -546,7 +546,7 @@ export default function ModelPortfolios() {
                     <div className="flex items-center gap-2">
                       {statusBadge(signal.status, signalStatusColors)}
                       <span className="font-medium text-gray-900">
-                        Drift: {signal.total_drift_pct.toFixed(2)}%
+                        Drift: {(signal.total_drift_pct ?? 0).toFixed(2)}%
                       </span>
                       <span className="text-xs text-gray-400">
                         {signal.trigger_type.replace('_', ' ')}
@@ -714,7 +714,7 @@ export default function ModelPortfolios() {
               },
               {
                 label: 'Drift Threshold',
-                value: `${selectedModel.drift_threshold_pct}%`,
+                value: `${selectedModel.drift_threshold_pct ?? 5}%`,
                 color: 'text-gray-900',
               },
               {
@@ -756,7 +756,7 @@ export default function ModelPortfolios() {
         <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-gray-900">
-              Holdings ({selectedModel.holdings.length})
+              Holdings ({(selectedModel.holdings ?? []).length})
             </h3>
             {validation && (
               <span
@@ -764,28 +764,28 @@ export default function ModelPortfolios() {
                   validation.is_valid ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                Total: {validation.total_weight.toFixed(2)}%{' '}
+                Total: {(validation.total_weight ?? 0).toFixed(2)}%{' '}
                 {validation.is_valid
                   ? '[valid]'
-                  : `(${validation.difference > 0 ? '+' : ''}${validation.difference.toFixed(2)}%)`}
+                  : `(${(validation.difference ?? 0) > 0 ? '+' : ''}${(validation.difference ?? 0).toFixed(2)}%)`}
               </span>
             )}
           </div>
 
           {/* Allocation bar */}
-          {selectedModel.holdings.length > 0 && (
+          {(selectedModel.holdings ?? []).length > 0 && (
             <div className="mb-4">
               <div className="h-4 rounded-full overflow-hidden flex bg-gray-200">
-                {selectedModel.holdings.map((h) => (
+                {(selectedModel.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
                     className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
-                    style={{ width: `${h.target_weight_pct}%` }}
+                    style={{ width: `${h.target_weight_pct ?? 0}%` }}
                   />
                 ))}
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                {selectedModel.holdings.map((h) => (
+                {(selectedModel.holdings ?? []).map((h) => (
                   <span
                     key={h.id}
                     className="flex items-center text-xs text-gray-600"
@@ -795,7 +795,7 @@ export default function ModelPortfolios() {
                         ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
                       }`}
                     />
-                    {h.symbol} ({h.target_weight_pct.toFixed(1)}%)
+                    {h.symbol} ({(h.target_weight_pct ?? 0).toFixed(1)}%)
                   </span>
                 ))}
               </div>
@@ -815,7 +815,7 @@ export default function ModelPortfolios() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {selectedModel.holdings.map((h) => (
+                {(selectedModel.holdings ?? []).map((h) => (
                   <tr key={h.id} className="hover:bg-gray-50">
                     <td className="py-2.5 font-medium text-gray-900">{h.symbol}</td>
                     <td className="py-2.5 text-gray-600">{h.security_name}</td>
@@ -825,18 +825,18 @@ export default function ModelPortfolios() {
                           ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
                         }`}
                       >
-                        {ASSET_CLASS_LABELS[h.asset_class] || h.asset_class.replace(/_/g, ' ')}
+                        {ASSET_CLASS_LABELS[h.asset_class] || (h.asset_class ?? '').replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="py-2.5 text-right font-mono text-gray-900">
-                      {h.target_weight_pct.toFixed(1)}%
+                      {(h.target_weight_pct ?? 0).toFixed(1)}%
                     </td>
                     <td className="py-2.5 text-right text-gray-500">
                       {h.expense_ratio != null ? `${h.expense_ratio}%` : '-'}
                     </td>
                   </tr>
                 ))}
-                {selectedModel.holdings.length === 0 && (
+                {(selectedModel.holdings ?? []).length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-6 text-center text-gray-400">
                       No holdings in this model
@@ -870,7 +870,7 @@ export default function ModelPortfolios() {
                 <div className="text-right">
                   <p
                     className={`font-medium ${
-                      (a.current_drift_pct || 0) > selectedModel.drift_threshold_pct
+                      (a.current_drift_pct || 0) > (selectedModel.drift_threshold_pct ?? 5)
                         ? 'text-red-600'
                         : 'text-green-600'
                     }`}

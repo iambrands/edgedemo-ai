@@ -238,6 +238,22 @@ async def list_models():
     return _store().model_list_response()
 
 
+@model_router.get("/{model_id}/assignments")
+async def model_assignments_for_model(model_id: str):
+    return _store().model_assignments_response()
+
+
+@model_router.get("/{model_id}/validate-holdings")
+async def validate_holdings(model_id: str):
+    return {
+        "model_id": model_id,
+        "total_weight": 100.0,
+        "is_valid": True,
+        "difference": 0.0,
+        "errors": [],
+    }
+
+
 @model_router.get("/{model_id}")
 async def get_model(model_id: str):
     data = _store().marketplace_response()
