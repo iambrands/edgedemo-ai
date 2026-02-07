@@ -710,19 +710,36 @@ def parse_openai_response(response_text: str) -> Dict[str, Any]:
 
 def _find_frontend_dir() -> tuple[Path, Path]:
     """Find frontend dist and dev index.html, trying multiple root locations."""
+    logger.info("SPA path resolution: __file__ = %s", __file__)
+    logger.info("SPA path resolution: __file__ resolved = %s", Path(__file__).resolve())
+    
     candidates = [
-        Path(__file__).parent.parent,          # /app/backend/app.py → /app
-        Path(__file__).parent,                  # /app/app.py → /app
-        Path("/app"),                           # Direct Docker path
+        Path(__file__).resolve().parent.parent,   # /app/backend/app.py → /app
+        Path(__file__).resolve().parent,           # /app/app.py → /app
+        Path("/app"),                              # Direct Docker path
     ]
+    
+    # Log what we find at each candidate
+    for root in candidates:
+        dist = root / "frontend" / "dist"
+        logger.info("SPA check: root=%s  dist_exists=%s", root, dist.is_dir())
+        if root.is_dir():
+            try:
+                items = [p.name for p in root.iterdir()]
+                logger.info("SPA check: root contents = %s", items[:20])
+            except Exception:
+                pass
+    
     for root in candidates:
         dist = root / "frontend" / "dist"
         dev = root / "frontend" / "index.html"
         if dist.is_dir():
             logger.info("Found frontend dist at %s (root=%s)", dist, root)
             return dist, dev
+    
     # Fallback to first candidate even if dist doesn't exist
     root = candidates[0]
+    logger.warning("Frontend dist NOT found in any candidate. Defaulting to %s", root / "frontend" / "dist")
     return root / "frontend" / "dist", root / "frontend" / "index.html"
 
 _DIST_DIR, _DEV_INDEX = _find_frontend_dir()
