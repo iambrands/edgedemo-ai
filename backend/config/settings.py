@@ -19,5 +19,15 @@ class Settings:
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
     DOMAIN: str = os.getenv("DOMAIN", "https://demo.edgeadvisors.ai")
 
+    # Multi-Custodian Aggregation
+    CUSTODIAN_ENCRYPTION_KEY: str = os.getenv("CUSTODIAN_ENCRYPTION_KEY", "")
+    CUSTODIAN_ENCRYPTION_SALT: str = os.getenv(
+        "CUSTODIAN_ENCRYPTION_SALT", "edgeai-custodian-salt"
+    )
+    SCHWAB_CLIENT_ID: str = os.getenv("SCHWAB_CLIENT_ID", "")
+    SCHWAB_CLIENT_SECRET: str = os.getenv("SCHWAB_CLIENT_SECRET", "")
+    FIDELITY_CLIENT_ID: str = os.getenv("FIDELITY_CLIENT_ID", "")
+    FIDELITY_CLIENT_SECRET: str = os.getenv("FIDELITY_CLIENT_SECRET", "")
+
 
 settings = Settings()
