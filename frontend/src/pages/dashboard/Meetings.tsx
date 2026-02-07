@@ -69,18 +69,18 @@ interface Transcript {
 }
 
 const statusColors: Record<string, string> = {
-  scheduled: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  in_progress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  processing: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  completed: 'bg-green-500/20 text-green-400 border-green-500/30',
-  failed: 'bg-red-500/20 text-red-400 border-red-500/30',
+  scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
+  in_progress: 'bg-amber-50 text-amber-700 border-amber-200',
+  processing: 'bg-purple-50 text-purple-700 border-purple-200',
+  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  failed: 'bg-red-50 text-red-700 border-red-200',
 };
 
 const priorityColors: Record<string, string> = {
-  urgent: 'text-red-400',
-  high: 'text-orange-400',
-  medium: 'text-yellow-400',
-  low: 'text-gray-400',
+  urgent: 'text-red-600',
+  high: 'text-orange-600',
+  medium: 'text-amber-600',
+  low: 'text-gray-500',
 };
 
 // Ensure HTTPS for production Railway URLs to prevent mixed content errors
@@ -257,7 +257,7 @@ const MeetingsPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -265,9 +265,9 @@ const MeetingsPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <AlertTriangle className="w-8 h-8 text-red-400" />
-        <p className="text-red-400">{error}</p>
-        <button onClick={() => { setError(null); loadMeetings(); }} className="px-4 py-2 text-sm text-blue-400 hover:text-blue-300">
+        <AlertTriangle className="w-8 h-8 text-red-500" />
+        <p className="text-red-600">{error}</p>
+        <button onClick={() => { setError(null); loadMeetings(); }} className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700">
           Try again
         </button>
       </div>
@@ -279,8 +279,8 @@ const MeetingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Meeting Intelligence</h1>
-          <p className="text-gray-400 mt-1">
+          <h1 className="text-2xl font-semibold text-gray-900">Meeting Intelligence</h1>
+          <p className="text-gray-500 mt-1">
             AI-powered meeting transcription, analysis, and action tracking
           </p>
         </div>
@@ -295,53 +295,53 @@ const MeetingsPage: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-4">
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <Video className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Video className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{meetings.length}</p>
-              <p className="text-sm text-gray-400">Total Meetings</p>
+              <p className="text-2xl font-bold text-gray-900">{meetings.length}</p>
+              <p className="text-sm text-gray-500">Total Meetings</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-4">
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-400" />
+            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {meetings.filter(m => m.status === 'completed').length}
               </p>
-              <p className="text-sm text-gray-400">Analyzed</p>
+              <p className="text-sm text-gray-500">Analyzed</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-4">
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-yellow-400" />
+            <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {analysis?.action_items?.filter(a => a.status === 'pending').length || 0}
               </p>
-              <p className="text-sm text-gray-400">Pending Actions</p>
+              <p className="text-sm text-gray-500">Pending Actions</p>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-4">
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {Math.round(meetings.reduce((acc, m) => acc + (m.duration_seconds || 0), 0) / 60)}m
               </p>
-              <p className="text-sm text-gray-400">Total Time</p>
+              <p className="text-sm text-gray-500">Total Time</p>
             </div>
           </div>
         </div>
@@ -350,9 +350,11 @@ const MeetingsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Meetings List */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-4">
-            <h2 className="text-lg font-medium text-white mb-4">Recent Meetings</h2>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">Recent Meetings</h2>
+            </div>
+            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
               {meetings.map((meeting) => (
                 <div
                   key={meeting.id}
@@ -365,19 +367,19 @@ const MeetingsPage: React.FC = () => {
                       setTranscript(null);
                     }
                   }}
-                  className={`p-4 rounded-lg cursor-pointer transition-all ${
+                  className={`p-4 cursor-pointer transition-all ${
                     selectedMeeting?.id === meeting.id
-                      ? 'bg-blue-600/20 border border-blue-500'
-                      : 'bg-slate-700/30 hover:bg-slate-700/50 border border-transparent'
+                      ? 'bg-blue-50 border-l-2 border-l-blue-600'
+                      : 'hover:bg-gray-50 border-l-2 border-l-transparent'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-white truncate pr-2">{meeting.title}</h3>
+                    <h3 className="font-medium text-gray-900 truncate pr-2">{meeting.title}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-xs border whitespace-nowrap ${statusColors[meeting.status]}`}>
                       {meeting.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
                     {meeting.scheduled_at && (
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
@@ -397,7 +399,7 @@ const MeetingsPage: React.FC = () => {
                   </div>
                   {meeting.has_analysis && (
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-green-400 flex items-center gap-1">
+                      <span className="text-xs text-emerald-600 flex items-center gap-1">
                         <BarChart2 className="w-3 h-3" />
                         Analysis Ready
                       </span>
@@ -414,11 +416,11 @@ const MeetingsPage: React.FC = () => {
           {selectedMeeting ? (
             <div className="space-y-4">
               {/* Meeting Header */}
-              <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">{selectedMeeting.title}</h2>
-                    <p className="text-gray-400 mt-1">
+                    <h2 className="text-xl font-semibold text-gray-900">{selectedMeeting.title}</h2>
+                    <p className="text-gray-500 mt-1">
                       {selectedMeeting.meeting_type.replace('_', ' ')} • {selectedMeeting.platform || 'In Person'}
                       {selectedMeeting.scheduled_at && ` • ${formatDate(selectedMeeting.scheduled_at)} at ${formatTime(selectedMeeting.scheduled_at)}`}
                     </p>
@@ -431,7 +433,7 @@ const MeetingsPage: React.FC = () => {
                 {/* Participants */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {selectedMeeting.participants.map((p, i) => (
-                    <span key={i} className="px-3 py-1 bg-slate-700/50 rounded-full text-sm text-gray-300">
+                    <span key={i} className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
                       {p.name} {p.role && <span className="text-gray-500">({p.role})</span>}
                     </span>
                   ))}
@@ -439,7 +441,7 @@ const MeetingsPage: React.FC = () => {
 
                 {/* Upload Recording */}
                 {(selectedMeeting.status === 'scheduled' || selectedMeeting.status === 'failed') && (
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
                     <input
                       type="file"
                       accept="audio/*,video/*"
@@ -455,11 +457,11 @@ const MeetingsPage: React.FC = () => {
                       htmlFor="recording-upload"
                       className="cursor-pointer flex flex-col items-center"
                     >
-                      <Upload className={`w-10 h-10 mb-3 ${isUploading ? 'text-blue-400 animate-pulse' : 'text-gray-400'}`} />
-                      <span className="text-white font-medium">
+                      <Upload className={`w-10 h-10 mb-3 ${isUploading ? 'text-blue-600 animate-pulse' : 'text-gray-400'}`} />
+                      <span className="text-gray-900 font-medium">
                         {isUploading ? 'Uploading & Processing...' : 'Upload Meeting Recording'}
                       </span>
-                      <span className="text-gray-400 text-sm mt-1">
+                      <span className="text-gray-500 text-sm mt-1">
                         MP3, MP4, WAV, or WebM
                       </span>
                     </label>
@@ -468,11 +470,11 @@ const MeetingsPage: React.FC = () => {
 
                 {/* Processing Status */}
                 {selectedMeeting.status === 'processing' && (
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 flex items-center gap-4">
-                    <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full" />
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center gap-4">
+                    <div className="animate-spin w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full" />
                     <div>
-                      <p className="text-white font-medium">Processing Recording</p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-900 font-medium">Processing Recording</p>
+                      <p className="text-gray-500 text-sm">
                         Transcribing and analyzing... This may take a few minutes.
                       </p>
                     </div>
@@ -483,13 +485,13 @@ const MeetingsPage: React.FC = () => {
               {/* Tabs */}
               {selectedMeeting.status === 'completed' && analysis && (
                 <>
-                  <div className="flex gap-2 border-b border-slate-700/50">
+                  <div className="flex gap-6 border-b border-gray-200 px-1">
                     <button
                       onClick={() => setActiveTab('analysis')}
-                      className={`px-4 py-2 font-medium transition-colors ${
+                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                         activeTab === 'analysis'
-                          ? 'text-blue-400 border-b-2 border-blue-400'
-                          : 'text-gray-400 hover:text-white'
+                          ? 'text-blue-600 border-blue-600'
+                          : 'text-gray-500 border-transparent hover:text-gray-700'
                       }`}
                     >
                       <BarChart2 className="w-4 h-4 inline mr-2" />
@@ -497,10 +499,10 @@ const MeetingsPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setActiveTab('transcript')}
-                      className={`px-4 py-2 font-medium transition-colors ${
+                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                         activeTab === 'transcript'
-                          ? 'text-blue-400 border-b-2 border-blue-400'
-                          : 'text-gray-400 hover:text-white'
+                          ? 'text-blue-600 border-blue-600'
+                          : 'text-gray-500 border-transparent hover:text-gray-700'
                       }`}
                     >
                       <FileText className="w-4 h-4 inline mr-2" />
@@ -508,10 +510,10 @@ const MeetingsPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setActiveTab('actions')}
-                      className={`px-4 py-2 font-medium transition-colors ${
+                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                         activeTab === 'actions'
-                          ? 'text-blue-400 border-b-2 border-blue-400'
-                          : 'text-gray-400 hover:text-white'
+                          ? 'text-blue-600 border-blue-600'
+                          : 'text-gray-500 border-transparent hover:text-gray-700'
                       }`}
                     >
                       <CheckCircle className="w-4 h-4 inline mr-2" />
@@ -523,42 +525,42 @@ const MeetingsPage: React.FC = () => {
                   {activeTab === 'analysis' && (
                     <div className="space-y-4">
                       {/* Executive Summary */}
-                      <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                        <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-blue-400" />
+                      <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+                        <h3 className="text-lg font-medium text-blue-900 mb-3 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-blue-600" />
                           Executive Summary
                         </h3>
-                        <p className="text-gray-300 leading-relaxed">{analysis.executive_summary}</p>
+                        <p className="text-gray-700 leading-relaxed">{analysis.executive_summary}</p>
                       </div>
 
                       {/* Key Topics & Sentiment */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                          <h3 className="text-lg font-medium text-white mb-3">Key Topics</h3>
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Key Topics</h3>
                           <div className="flex flex-wrap gap-2">
                             {analysis.key_topics.map((topic, i) => (
-                              <span key={i} className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+                              <span key={i} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">
                                 {topic}
                               </span>
                             ))}
                           </div>
                         </div>
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                          <h3 className="text-lg font-medium text-white mb-3">Client Sentiment</h3>
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                          <h3 className="text-lg font-medium text-gray-900 mb-3">Client Sentiment</h3>
                           <div className="flex items-center gap-4">
                             <div className="text-4xl">{getSentimentEmoji(analysis.sentiment_score)}</div>
                             <div>
-                              <p className="text-white font-medium">{getSentimentLabel(analysis.sentiment_score)}</p>
-                              <p className="text-gray-400 text-sm">
+                              <p className="text-gray-900 font-medium">{getSentimentLabel(analysis.sentiment_score)}</p>
+                              <p className="text-gray-500 text-sm">
                                 Score: {(analysis.sentiment_score * 100).toFixed(0)}%
                               </p>
                             </div>
                           </div>
                           {analysis.sentiment_breakdown && (
                             <div className="mt-3 flex gap-4 text-sm">
-                              <span className="text-green-400">+{(analysis.sentiment_breakdown.positive * 100).toFixed(0)}%</span>
-                              <span className="text-gray-400">{(analysis.sentiment_breakdown.neutral * 100).toFixed(0)}%</span>
-                              <span className="text-red-400">-{(analysis.sentiment_breakdown.negative * 100).toFixed(0)}%</span>
+                              <span className="text-emerald-600">+{(analysis.sentiment_breakdown.positive * 100).toFixed(0)}%</span>
+                              <span className="text-gray-500">{(analysis.sentiment_breakdown.neutral * 100).toFixed(0)}%</span>
+                              <span className="text-red-600">-{(analysis.sentiment_breakdown.negative * 100).toFixed(0)}%</span>
                             </div>
                           )}
                         </div>
@@ -566,22 +568,22 @@ const MeetingsPage: React.FC = () => {
 
                       {/* Client Concerns */}
                       {analysis.client_concerns.length > 0 && (
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                          <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                        <div className="bg-amber-50 rounded-xl border border-amber-200 p-6">
+                          <h3 className="text-lg font-medium text-amber-900 mb-3 flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-600" />
                             Client Concerns
                           </h3>
                           <div className="space-y-3">
                             {analysis.client_concerns.map((concern, i) => (
-                              <div key={i} className="flex items-start gap-3 p-3 bg-slate-700/30 rounded-lg">
+                              <div key={i} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-amber-100">
                                 <span className={`w-2 h-2 rounded-full mt-2 ${
                                   concern.severity === 'high' ? 'bg-red-500' :
-                                  concern.severity === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
+                                  concern.severity === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
                                 }`} />
                                 <div className="flex-1">
-                                  <span className="text-gray-300">{concern.concern}</span>
+                                  <span className="text-gray-700">{concern.concern}</span>
                                   {concern.requires_action && (
-                                    <span className="ml-2 text-xs text-orange-400">(Action Required)</span>
+                                    <span className="ml-2 text-xs px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Action Required</span>
                                   )}
                                 </div>
                               </div>
@@ -592,21 +594,24 @@ const MeetingsPage: React.FC = () => {
 
                       {/* Life Events */}
                       {analysis.life_events.length > 0 && (
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                          <h3 className="text-lg font-medium text-white mb-3">Life Events Detected</h3>
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-gray-500" />
+                            Life Events Detected
+                          </h3>
                           <div className="space-y-3">
                             {analysis.life_events.map((event, i) => (
-                              <div key={i} className="p-3 bg-slate-700/30 rounded-lg">
+                              <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-white font-medium">{event.event}</span>
-                                  <span className={`px-2 py-0.5 rounded text-xs ${
-                                    event.timeline === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
-                                    event.timeline === 'current' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                                  <span className="text-gray-900 font-medium">{event.event}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                                    event.timeline === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    event.timeline === 'current' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-200'
                                   }`}>
                                     {event.timeline}
                                   </span>
                                 </div>
-                                <p className="text-gray-400 text-sm">{event.financial_impact}</p>
+                                <p className="text-gray-500 text-sm">{event.financial_impact}</p>
                               </div>
                             ))}
                           </div>
@@ -615,22 +620,22 @@ const MeetingsPage: React.FC = () => {
 
                       {/* Compliance Flags */}
                       {analysis.compliance_flags.length > 0 && (
-                        <div className={`bg-slate-800/50 backdrop-blur border rounded-xl p-6 ${
-                          analysis.requires_review ? 'border-red-500/50' : 'border-slate-700/50'
+                        <div className={`bg-white rounded-xl p-6 border shadow-sm ${
+                          analysis.requires_review ? 'border-red-200 border-l-4 border-l-red-400' : 'border-gray-200'
                         }`}>
-                          <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                            <AlertTriangle className={`w-5 h-5 ${analysis.requires_review ? 'text-red-400' : 'text-yellow-400'}`} />
+                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <AlertTriangle className={`w-5 h-5 ${analysis.requires_review ? 'text-red-500' : 'text-amber-500'}`} />
                             Compliance Notes
                           </h3>
                           <div className="space-y-3">
                             {analysis.compliance_flags.map((flag, i) => (
-                              <div key={i} className={`p-3 rounded-lg ${
-                                flag.severity === 'critical' ? 'bg-red-500/20 border border-red-500/30' :
-                                flag.severity === 'warning' ? 'bg-yellow-500/20 border border-yellow-500/30' : 
-                                'bg-blue-500/20 border border-blue-500/30'
+                              <div key={i} className={`p-3 rounded-lg border ${
+                                flag.severity === 'critical' ? 'bg-red-50 border-red-200' :
+                                flag.severity === 'warning' ? 'bg-amber-50 border-amber-200' : 
+                                'bg-blue-50 border-blue-200'
                               }`}>
-                                <p className="font-medium text-white capitalize">{flag.type}</p>
-                                <p className="text-gray-300 text-sm">{flag.description}</p>
+                                <p className="font-medium text-gray-900 capitalize">{flag.type}</p>
+                                <p className="text-gray-600 text-sm">{flag.description}</p>
                               </div>
                             ))}
                           </div>
@@ -639,12 +644,12 @@ const MeetingsPage: React.FC = () => {
 
                       {/* Follow-up Email */}
                       {analysis.suggested_followup_email && (
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                          <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                            <Mail className="w-5 h-5 text-blue-400" />
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                          <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <Mail className="w-5 h-5 text-gray-500" />
                             Suggested Follow-up Email
                           </h3>
-                          <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans bg-slate-900/50 p-4 rounded-lg">
+                          <pre className="text-gray-700 text-sm whitespace-pre-wrap font-sans bg-gray-50 p-4 rounded-lg border border-gray-100">
                             {analysis.suggested_followup_email}
                           </pre>
                           <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
@@ -657,20 +662,20 @@ const MeetingsPage: React.FC = () => {
 
                   {/* Transcript Tab */}
                   {activeTab === 'transcript' && transcript && (
-                    <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-medium text-white">Meeting Transcript</h3>
-                        <span className="text-sm text-gray-400">{transcript.word_count} words</span>
+                        <h3 className="text-lg font-medium text-gray-900">Meeting Transcript</h3>
+                        <span className="text-sm text-gray-500">{transcript.word_count} words</span>
                       </div>
                       <div className="space-y-4 max-h-[500px] overflow-y-auto">
                         {transcript.segments.map((segment, i) => (
                           <div key={i} className="flex gap-4">
-                            <div className="text-xs text-gray-500 w-12 pt-1">
+                            <div className="text-xs text-gray-400 w-12 pt-1 font-mono">
                               {formatTimestamp(segment.start)}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-blue-400 mb-1">{segment.speaker}</p>
-                              <p className="text-gray-300">{segment.text}</p>
+                              <p className="text-sm font-medium text-blue-600 mb-1">{segment.speaker}</p>
+                              <p className="text-gray-700">{segment.text}</p>
                             </div>
                           </div>
                         ))}
@@ -680,14 +685,14 @@ const MeetingsPage: React.FC = () => {
 
                   {/* Actions Tab */}
                   {activeTab === 'actions' && (
-                    <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-                      <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
                         Action Items
                       </h3>
                       <div className="space-y-3">
                         {analysis.action_items.map((item) => (
-                          <div key={item.id} className="flex items-start gap-3 p-4 bg-slate-700/30 rounded-lg">
+                          <div key={item.id} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-100">
                             <input
                               type="checkbox"
                               checked={item.status === 'completed'}
@@ -696,27 +701,27 @@ const MeetingsPage: React.FC = () => {
                                 item.id,
                                 item.status === 'completed' ? 'pending' : 'completed'
                               )}
-                              className="w-5 h-5 mt-1 rounded border-gray-600 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                              className="w-5 h-5 mt-1 rounded border-gray-300 bg-white text-blue-600 focus:ring-blue-500"
                             />
                             <div className="flex-1">
-                              <p className={`text-white ${item.status === 'completed' ? 'line-through opacity-60' : ''}`}>
+                              <p className={`text-gray-900 ${item.status === 'completed' ? 'line-through opacity-60' : ''}`}>
                                 {item.description}
                               </p>
                               <div className="flex items-center gap-4 mt-2 text-sm">
-                                <span className="text-gray-400">
-                                  Assigned: <span className="text-gray-300">{item.assigned_to}</span>
+                                <span className="text-gray-500">
+                                  Assigned: <span className="text-gray-700">{item.assigned_to}</span>
                                 </span>
                                 <span className={priorityColors[item.priority]}>
                                   {item.priority} priority
                                 </span>
                                 {item.due_date && (
-                                  <span className="text-gray-400">
+                                  <span className="text-gray-500">
                                     Due: {formatDate(item.due_date)}
                                   </span>
                                 )}
                               </div>
                               {item.source_text && (
-                                <p className="mt-2 text-sm text-gray-500 italic">
+                                <p className="mt-2 text-sm text-gray-400 italic">
                                   "{item.source_text}"
                                 </p>
                               )}
@@ -730,10 +735,10 @@ const MeetingsPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-12 text-center">
-              <Video className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">No Meeting Selected</h3>
-              <p className="text-gray-400">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+              <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No Meeting Selected</h3>
+              <p className="text-gray-500">
                 Select a meeting from the list or create a new one to get started
               </p>
             </div>
