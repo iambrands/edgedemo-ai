@@ -9,3 +9,4 @@ export { Settings } from './Settings';
 export { default as Meetings } from './Meetings';
 export { default as ComplianceDocs } from './ComplianceDocs';
 export { default as Liquidity } from './Liquidity';
+export { default as Custodians } from './Custodians';

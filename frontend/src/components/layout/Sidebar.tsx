@@ -9,6 +9,7 @@ import {
   FileText,
   Video,
   DollarSign,
+  Link2,
   MessageSquare,
   Settings,
   LogOut,
@@ -37,6 +38,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/compliance-docs', icon: FileText, label: 'Compliance Docs' },
     { to: '/dashboard/meetings', icon: Video, label: 'Meetings' },
     { to: '/dashboard/liquidity', icon: DollarSign, label: 'Liquidity' },
+    { to: '/dashboard/custodians', icon: Link2, label: 'Custodians' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
