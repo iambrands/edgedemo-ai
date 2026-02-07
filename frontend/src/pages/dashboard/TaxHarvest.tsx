@@ -403,7 +403,7 @@ export default function TaxHarvest() {
                         <div>
                           <span className="text-gray-500">ST / LT:</span>
                           <span className="ml-1 font-mono">
-                            {fmtCurrency(opp.short_term_loss)} / {fmtCurrency(opp.long_term_loss)}
+                            {opp.short_term_loss != null ? fmtCurrency(opp.short_term_loss) : '—'} / {opp.long_term_loss != null ? fmtCurrency(opp.long_term_loss) : '—'}
                           </span>
                         </div>
                       </div>
@@ -481,8 +481,8 @@ export default function TaxHarvest() {
             <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
               <div><span className="text-gray-500">Cost Basis:</span> <span className="font-mono">{fmtCurrency(selected.cost_basis)}</span></div>
               <div><span className="text-gray-500">Market Value:</span> <span className="font-mono">{fmtCurrency(selected.market_value)}</span></div>
-              <div><span className="text-gray-500">Short-Term Loss:</span> <span className="font-mono">{fmtCurrency(selected.short_term_loss)}</span></div>
-              <div><span className="text-gray-500">Long-Term Loss:</span> <span className="font-mono">{fmtCurrency(selected.long_term_loss)}</span></div>
+              <div><span className="text-gray-500">Short-Term Loss:</span> <span className="font-mono">{selected.short_term_loss != null ? fmtCurrency(selected.short_term_loss) : '—'}</span></div>
+              <div><span className="text-gray-500">Long-Term Loss:</span> <span className="font-mono">{selected.long_term_loss != null ? fmtCurrency(selected.long_term_loss) : '—'}</span></div>
               <div><span className="text-gray-500">Identified:</span> {fmtDate(selected.identified_at)}</div>
               <div><span className="text-gray-500">Expires:</span> {fmtDate(selected.expires_at)}</div>
             </div>

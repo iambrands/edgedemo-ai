@@ -126,9 +126,13 @@ const MeetingsPage: React.FC = () => {
   const loadMeetings = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/v1/meetings`, {
+      // Try with auth first, fallback to no-auth for demo
+      let response = await fetch(`${API_BASE}/api/v1/meetings`, {
         headers: getAuthHeaders()
       });
+      if (!response.ok) {
+        response = await fetch(`${API_BASE}/api/v1/meetings`);
+      }
       if (response.ok) {
         const data = await response.json();
         setMeetings(data);
@@ -149,10 +153,13 @@ const MeetingsPage: React.FC = () => {
 
   const loadMeetingDetails = async (meetingId: string) => {
     try {
-      // Load analysis
-      const analysisRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/analysis`, {
+      // Load analysis (try with auth, fallback to no-auth)
+      let analysisRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/analysis`, {
         headers: getAuthHeaders()
       });
+      if (!analysisRes.ok) {
+        analysisRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/analysis`);
+      }
       if (analysisRes.ok) {
         const analysisData = await analysisRes.json();
         setAnalysis(analysisData);
@@ -160,10 +167,13 @@ const MeetingsPage: React.FC = () => {
         setAnalysis(null);
       }
 
-      // Load transcript
-      const transcriptRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/transcript`, {
+      // Load transcript (try with auth, fallback to no-auth)
+      let transcriptRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/transcript`, {
         headers: getAuthHeaders()
       });
+      if (!transcriptRes.ok) {
+        transcriptRes = await fetch(`${API_BASE}/api/v1/meetings/${meetingId}/transcript`);
+      }
       if (transcriptRes.ok) {
         const transcriptData = await transcriptRes.json();
         setTranscript(transcriptData);

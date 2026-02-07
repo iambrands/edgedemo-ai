@@ -361,9 +361,8 @@ async def list_meetings(
     status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    current_user: dict = Depends(get_current_user)
 ):
-    """List meetings with optional filters"""
+    """List meetings with optional filters (no auth for demo)"""
     meetings = list(DEMO_MEETINGS.values())
     
     if household_id:
@@ -380,9 +379,8 @@ async def list_meetings(
 @router.get("/{meeting_id}", response_model=MeetingResponse)
 async def get_meeting(
     meeting_id: str,
-    current_user: dict = Depends(get_current_user)
 ):
-    """Get meeting details"""
+    """Get meeting details (no auth for demo)"""
     meeting = DEMO_MEETINGS.get(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -470,9 +468,8 @@ async def upload_recording(
 @router.get("/{meeting_id}/transcript", response_model=TranscriptResponse)
 async def get_transcript(
     meeting_id: str,
-    current_user: dict = Depends(get_current_user)
 ):
-    """Get meeting transcript"""
+    """Get meeting transcript (no auth for demo)"""
     meeting = DEMO_MEETINGS.get(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -487,9 +484,8 @@ async def get_transcript(
 @router.get("/{meeting_id}/analysis", response_model=AnalysisResponse)
 async def get_analysis(
     meeting_id: str,
-    current_user: dict = Depends(get_current_user)
 ):
-    """Get meeting analysis"""
+    """Get meeting analysis (no auth for demo)"""
     meeting = DEMO_MEETINGS.get(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -508,9 +504,8 @@ async def get_analysis(
 async def get_action_items(
     meeting_id: str,
     status: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
 ):
-    """Get action items for a meeting"""
+    """Get action items for a meeting (no auth for demo)"""
     meeting = DEMO_MEETINGS.get(meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")

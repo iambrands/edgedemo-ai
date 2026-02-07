@@ -45,7 +45,8 @@ type TabKey = 'overview' | 'compliance' | 'actions' | 'detail';
 // HELPERS
 // ============================================================================
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds: number | undefined | null): string {
+  if (seconds == null || isNaN(seconds)) return '—';
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
