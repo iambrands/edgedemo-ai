@@ -285,7 +285,7 @@ export default function ComplianceDocs() {
 
           {documents.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-6 text-center">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <FileText className="mx-auto h-12 w-12 text-gray-500" />
               <p className="mt-2 text-gray-500">No documents yet</p>
               <button
                 onClick={() => setShowGenerateModal(true)}
@@ -320,7 +320,7 @@ export default function ComplianceDocs() {
                       {doc.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">Updated {formatDate(doc.updated_at)}</p>
+                  <p className="text-xs text-gray-500 mt-2">Updated {formatDate(doc.updated_at)}</p>
                 </button>
               ))}
             </div>
@@ -450,7 +450,7 @@ export default function ComplianceDocs() {
           ) : (
             <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 h-64 flex items-center justify-center">
               <div>
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p>Select a document to preview</p>
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function ComplianceDocs() {
               <h2 className="text-xl font-semibold">Generate Document</h2>
               <button
                 onClick={() => setShowGenerateModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>

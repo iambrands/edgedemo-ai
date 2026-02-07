@@ -362,13 +362,13 @@ export default function TaxHarvest() {
           {/* List */}
           {loadingOpps ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
             </div>
           ) : opportunities.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <TrendingDown className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <TrendingDown className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">No harvesting opportunities found</p>
-              <p className="text-sm text-gray-400 mt-1">Run a scan to identify tax-loss opportunities</p>
+              <p className="text-sm text-gray-500 mt-1">Run a scan to identify tax-loss opportunities</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -416,7 +416,7 @@ export default function TaxHarvest() {
                           <button
                             onClick={e => { e.stopPropagation(); handleReject(opp.id); }}
                             disabled={actionLoading}
-                            className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 transition-colors"
+                            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-200 transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -430,7 +430,7 @@ export default function TaxHarvest() {
                           </button>
                         </>
                       )}
-                      <ChevronRight className="h-5 w-5 text-gray-300" />
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
                     </div>
                   </div>
                 </div>
@@ -510,11 +510,11 @@ export default function TaxHarvest() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Replacement Recommendations</h3>
             {loadingRecs ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
                 <span className="ml-2 text-sm text-gray-500">Generating recommendations…</span>
               </div>
             ) : recommendations.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-6">No replacement recommendations available</p>
+              <p className="text-sm text-gray-500 text-center py-6">No replacement recommendations available</p>
             ) : (
               <div className="space-y-3">
                 {recommendations.map(rec => (
@@ -588,13 +588,13 @@ export default function TaxHarvest() {
         <div className="space-y-4">
           {loadingWash ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
             </div>
           ) : washSales.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <Shield className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">No active wash sale windows</p>
-              <p className="text-sm text-gray-400 mt-1">Executed harvests will create 61-day monitoring windows</p>
+              <p className="text-sm text-gray-500 mt-1">Executed harvests will create 61-day monitoring windows</p>
             </div>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">

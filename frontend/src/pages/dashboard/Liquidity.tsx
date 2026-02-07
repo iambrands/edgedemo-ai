@@ -204,7 +204,7 @@ export default function Liquidity() {
 
           {requests.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-6 text-center">
-              <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
+              <DollarSign className="mx-auto h-12 w-12 text-gray-500" />
               <p className="mt-2 text-gray-500">No withdrawal requests yet</p>
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -249,7 +249,7 @@ export default function Liquidity() {
                       {req.status.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                     <span>{PRIORITY_LABELS[req.priority] || req.priority}</span>
                     <span>·</span>
                     <span>{(req.plans ?? []).length} plan{(req.plans ?? []).length !== 1 ? 's' : ''}</span>
@@ -299,7 +299,7 @@ export default function Liquidity() {
                           <Zap size={14} className="text-purple-500" />
                         )}
                       </div>
-                      <ChevronRight size={16} className="text-gray-400" />
+                      <ChevronRight size={16} className="text-gray-500" />
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -331,7 +331,7 @@ export default function Liquidity() {
                       </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-gray-400">
+                    <div className="mt-2 text-xs text-gray-500">
                       {plan.line_items.length} position{plan.line_items.length !== 1 ? 's' : ''} to liquidate
                     </div>
                   </button>
@@ -377,7 +377,7 @@ export default function Liquidity() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-              <DollarSign className="mx-auto h-10 w-10 text-gray-300 mb-2" />
+              <DollarSign className="mx-auto h-10 w-10 text-gray-400 mb-2" />
               Select a request to view plans
             </div>
           )}
@@ -461,7 +461,7 @@ export default function Liquidity() {
                   Positions to Liquidate
                 </p>
                 {selectedPlan.line_items.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">
+                  <p className="text-sm text-gray-500 text-center py-4">
                     No line items — AI optimization pending
                   </p>
                 ) : (

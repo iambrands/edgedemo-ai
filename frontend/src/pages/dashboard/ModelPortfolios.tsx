@@ -269,7 +269,7 @@ export default function ModelPortfolios() {
           >
             <p className="text-sm text-gray-500">{stat.label}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{stat.sub}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{stat.sub}</p>
           </div>
         ))}
       </div>
@@ -321,7 +321,7 @@ export default function ModelPortfolios() {
               </div>
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
               <span>{(model.holdings ?? []).length} holdings</span>
               <span>
                 {model.total_subscribers}{' '}
@@ -332,7 +332,7 @@ export default function ModelPortfolios() {
         ))}
 
         {models.length === 0 && (
-          <p className="col-span-3 text-center text-gray-400 py-12">
+          <p className="col-span-3 text-center text-gray-500 py-12">
             No models yet. Create your first model portfolio to get started.
           </p>
         )}
@@ -416,7 +416,7 @@ export default function ModelPortfolios() {
                   </span>
                 ))}
                 {(model.holdings ?? []).length > 4 && (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-500">
                     +{(model.holdings ?? []).length - 4} more
                   </span>
                 )}
@@ -471,7 +471,7 @@ export default function ModelPortfolios() {
         ))}
 
         {marketplaceModels.length === 0 && (
-          <p className="col-span-3 text-center text-gray-400 py-12">
+          <p className="col-span-3 text-center text-gray-500 py-12">
             No models available in the marketplace
           </p>
         )}
@@ -548,7 +548,7 @@ export default function ModelPortfolios() {
                       <span className="font-medium text-gray-900">
                         Drift: {(signal.total_drift_pct ?? 0).toFixed(2)}%
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {signal.trigger_type.replace('_', ' ')}
                       </span>
                     </div>
@@ -557,7 +557,7 @@ export default function ModelPortfolios() {
                       {signal.estimated_trades_count} trades required
                     </p>
                     {signal.created_at && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-500 mt-0.5">
                         Created: {new Date(signal.created_at).toLocaleDateString()}
                       </p>
                     )}
@@ -632,7 +632,7 @@ export default function ModelPortfolios() {
             ))}
 
             {signals.length === 0 && (
-              <p className="p-8 text-center text-gray-400">
+              <p className="p-8 text-center text-gray-500">
                 No rebalance signals. Click &quot;Check All for Drift&quot; to scan
                 portfolios.
               </p>
@@ -838,7 +838,7 @@ export default function ModelPortfolios() {
                 ))}
                 {(selectedModel.holdings ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-gray-400">
+                    <td colSpan={5} className="py-6 text-center text-gray-500">
                       No holdings in this model
                     </td>
                   </tr>
@@ -886,7 +886,7 @@ export default function ModelPortfolios() {
               </div>
             ))}
             {assignments.length === 0 && (
-              <p className="text-center text-gray-400 py-6">
+              <p className="text-center text-gray-500 py-6">
                 No accounts assigned to this model
               </p>
             )}

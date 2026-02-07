@@ -275,7 +275,7 @@ export default function Custodians() {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <span>{connections.filter(c => c.status === 'connected').length} connected</span>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-400">|</span>
           <span>{accounts.length || '—'} accounts</span>
         </div>
       </div>
@@ -315,7 +315,7 @@ export default function Custodians() {
           {/* Active Connections */}
           {loadingConn ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             </div>
           ) : (
             <>
@@ -461,7 +461,7 @@ export default function Custodians() {
         <div className="space-y-6">
           {loadingPortfolio ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             </div>
           ) : (
             <>
@@ -541,7 +541,7 @@ export default function Custodians() {
                   <div className="relative">
                     <Search
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
                     />
                     <input
                       type="text"
@@ -553,7 +553,7 @@ export default function Custodians() {
                   </div>
                 </div>
                 {filteredPositions.length === 0 ? (
-                  <p className="text-center py-8 text-gray-400 text-sm">
+                  <p className="text-center py-8 text-gray-500 text-sm">
                     {positions.length === 0
                       ? 'No positions synced yet. Connect a custodian and sync data.'
                       : 'No positions match your search.'}
@@ -626,7 +626,7 @@ export default function Custodians() {
         <div className="space-y-6">
           {loadingAccts ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             </div>
           ) : (
             <>
@@ -668,11 +668,11 @@ export default function Custodians() {
                         </h3>
                         <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                           <span>{a.custodian_name}</span>
-                          <span className="text-gray-300">|</span>
+                          <span className="text-gray-400">|</span>
                           <span className="capitalize">
                             {a.account_type.replace(/_/g, ' ')}
                           </span>
-                          <span className="text-gray-300">|</span>
+                          <span className="text-gray-400">|</span>
                           <span className="capitalize">{a.tax_status.replace(/_/g, ' ')}</span>
                         </div>
                         {a.client_id && (
@@ -703,7 +703,7 @@ export default function Custodians() {
         <div className="space-y-4">
           {loadingTxns ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
             </div>
           ) : txns.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">

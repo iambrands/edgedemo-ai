@@ -118,7 +118,7 @@ export function Settings() {
                 />
                 <button
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
                 >
                   {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

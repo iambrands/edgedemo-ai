@@ -526,7 +526,7 @@ export default function Prospects() {
                       <p className="text-xs text-gray-600 mt-1">{fmtCurrency(prospect.estimated_aum)}</p>
                     )}
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-400">{prospect.days_in_stage}d in stage</span>
+                      <span className="text-xs text-gray-500">{prospect.days_in_stage}d in stage</span>
                       {prospect.next_action_date && (
                         <span className="text-xs text-blue-600">{fmtDate(prospect.next_action_date)}</span>
                       )}
@@ -534,7 +534,7 @@ export default function Prospects() {
                   </div>
                 ))}
                 {stageProspects.length === 0 && (
-                  <p className="text-center text-gray-400 text-xs py-4">No prospects</p>
+                  <p className="text-center text-gray-500 text-xs py-4">No prospects</p>
                 )}
               </div>
             </div>
@@ -627,7 +627,7 @@ export default function Prospects() {
             ))}
             {prospects.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   No prospects found
                 </td>
               </tr>
@@ -773,7 +773,7 @@ export default function Prospects() {
                   <span key={tag} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{tag}</span>
                 ))}
                 {(!selectedProspect.tags || selectedProspect.tags.length === 0) && (
-                  <span className="text-sm text-gray-400">None</span>
+                  <span className="text-sm text-gray-500">None</span>
                 )}
               </div>
             </div>
@@ -812,15 +812,15 @@ export default function Prospects() {
                   {activity.subject && <p className="text-sm text-gray-700">{activity.subject}</p>}
                   {activity.description && <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>}
                   {activity.call_outcome && (
-                    <span className="text-xs text-gray-400 capitalize">Outcome: {activity.call_outcome}</span>
+                    <span className="text-xs text-gray-500 capitalize">Outcome: {activity.call_outcome}</span>
                   )}
                   {activity.is_automated && (
-                    <span className="ml-2 text-xs text-gray-400 italic">auto</span>
+                    <span className="ml-2 text-xs text-gray-500 italic">auto</span>
                   )}
                 </div>
               ))}
               {activities.length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-4">No activities yet</p>
+                <p className="text-gray-500 text-sm text-center py-4">No activities yet</p>
               )}
             </div>
           </div>
@@ -853,7 +853,7 @@ export default function Prospects() {
                 </div>
               ))}
               {proposals.length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-4">No proposals yet</p>
+                <p className="text-gray-500 text-sm text-center py-4">No proposals yet</p>
               )}
             </div>
           </div>

@@ -255,7 +255,7 @@ export function Compliance() {
                 <TableCell className="max-w-xs truncate text-gray-500">
                   {log.detail}
                 </TableCell>
-                <TableCell className="text-gray-400 font-mono text-xs">
+                <TableCell className="text-gray-500 font-mono text-xs">
                   {log.promptVersion}
                 </TableCell>
               </TableRow>

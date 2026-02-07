@@ -145,7 +145,7 @@ export function Overview() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-700">{alert.message}</p>
-                  <p className="text-xs text-gray-400 mt-1">{alert.date}</p>
+                  <p className="text-xs text-gray-500 mt-1">{alert.date}</p>
                 </div>
               </div>
             ))}
@@ -163,7 +163,7 @@ export function Overview() {
               <div key={activity.id} className="border-b border-gray-100 pb-3 last:border-0">
                 <p className="text-sm font-medium text-gray-900">{activity.action}</p>
                 <p className="text-sm text-gray-500">{activity.detail}</p>
-                <p className="text-xs text-gray-400 mt-1">{activity.date}</p>
+                <p className="text-xs text-gray-500 mt-1">{activity.date}</p>
               </div>
             ))}
           </div>

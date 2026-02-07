@@ -85,7 +85,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         {/* Platform Label */}
         {!isCollapsed && (
           <div className="px-4 py-3">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               RIA Platform
             </span>
           </div>

@@ -159,7 +159,7 @@ export function Statements() {
             {uploading ? (
               <RefreshCw className="w-8 h-8 text-primary-500 animate-spin" />
             ) : (
-              <Upload className="w-8 h-8 text-gray-400" />
+              <Upload className="w-8 h-8 text-gray-500" />
             )}
           </div>
           <p className="text-gray-700 font-medium mb-2">
@@ -226,7 +226,7 @@ export function Statements() {
               <TableRow key={statement.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-400" />
+                    <FileText className="w-4 h-4 text-gray-500" />
                     <span className="font-medium text-gray-900">{statement.filename}</span>
                   </div>
                 </TableCell>

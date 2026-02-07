@@ -201,7 +201,7 @@ export function Chat() {
                   
                   {/* Pipeline metadata for assistant messages */}
                   {message.role === 'assistant' && message.pipeline && (
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         {getPipelineIcon(message.pipeline.iim)}
                         IIM
@@ -214,12 +214,12 @@ export function Chat() {
                         {getPipelineIcon(message.pipeline.bim)}
                         BIM
                       </span>
-                      <span className="text-gray-300">•</span>
+                      <span className="text-gray-400">•</span>
                       <span>{message.pipeline.latency_ms}ms</span>
                     </div>
                   )}
                   
-                  <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-right text-gray-400' : 'text-gray-400'}`}>
+                  <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-right text-gray-500' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>

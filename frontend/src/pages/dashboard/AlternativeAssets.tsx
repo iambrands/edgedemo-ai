@@ -214,7 +214,7 @@ export default function AlternativeAssets() {
         <div className="bg-white rounded-lg shadow p-5">
           <p className="text-sm text-gray-500">Total NAV</p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(summaryData.totalNav)}</p>
-          <p className="text-xs text-gray-400 mt-1">{investments.length} investments</p>
+          <p className="text-xs text-gray-500 mt-1">{investments.length} investments</p>
         </div>
         <div className="bg-white rounded-lg shadow p-5">
           <p className="text-sm text-gray-500">Total Commitment</p>
@@ -223,7 +223,7 @@ export default function AlternativeAssets() {
         <div className="bg-white rounded-lg shadow p-5">
           <p className="text-sm text-gray-500">Called / Uncalled</p>
           <p className="text-lg font-bold mt-1">{formatCurrency(summaryData.totalCalled)}</p>
-          <p className="text-sm text-gray-400">{formatCurrency(summaryData.totalUncalled)} uncalled</p>
+          <p className="text-sm text-gray-500">{formatCurrency(summaryData.totalUncalled)} uncalled</p>
         </div>
         <div className="bg-white rounded-lg shadow p-5">
           <p className="text-sm text-gray-500">Distributions</p>
@@ -274,7 +274,7 @@ export default function AlternativeAssets() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{cfg.label}</p>
                       <p className="text-sm font-bold">{formatCurrency(nav)}</p>
-                      <p className="text-xs text-gray-400">{pct.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-500">{pct.toFixed(1)}%</p>
                     </div>
                   </div>
                 );
@@ -334,7 +334,7 @@ export default function AlternativeAssets() {
             );
           })}
           {investments.length === 0 && (
-            <p className="p-8 text-center text-gray-400">No investments yet</p>
+            <p className="p-8 text-center text-gray-500">No investments yet</p>
           )}
         </div>
       </div>
@@ -453,7 +453,7 @@ export default function AlternativeAssets() {
                         {formatPercent(inv.irr)}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-gray-500">-</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">{formatMultiple(inv.tvpi)}</td>
@@ -468,7 +468,7 @@ export default function AlternativeAssets() {
             })}
             {filteredInvestments.length === 0 && (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-gray-400">
+                <td colSpan={9} className="py-12 text-center text-gray-500">
                   No investments match the current filters
                 </td>
               </tr>
@@ -545,8 +545,8 @@ export default function AlternativeAssets() {
           })}
           {pendingCalls.length === 0 && (
             <div className="py-16 text-center">
-              <p className="text-gray-400 text-lg">No pending capital calls</p>
-              <p className="text-gray-300 text-sm mt-1">All capital calls are up to date</p>
+              <p className="text-gray-500 text-lg">No pending capital calls</p>
+              <p className="text-gray-400 text-sm mt-1">All capital calls are up to date</p>
             </div>
           )}
         </div>
@@ -616,7 +616,7 @@ export default function AlternativeAssets() {
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase tracking-wide">NAV</p>
               <p className="text-xl font-bold mt-1">{formatCurrency(inv.current_nav)}</p>
-              {inv.nav_date && <p className="text-xs text-gray-400">as of {formatDate(inv.nav_date)}</p>}
+              {inv.nav_date && <p className="text-xs text-gray-500">as of {formatDate(inv.nav_date)}</p>}
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Commitment</p>
@@ -625,7 +625,7 @@ export default function AlternativeAssets() {
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Called</p>
               <p className="text-xl font-bold mt-1">{formatCurrency(inv.called_capital)}</p>
-              <p className="text-xs text-gray-400">{formatCurrency(inv.uncalled_capital)} uncalled</p>
+              <p className="text-xs text-gray-500">{formatCurrency(inv.uncalled_capital)} uncalled</p>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase tracking-wide">Distributions</p>
@@ -642,7 +642,7 @@ export default function AlternativeAssets() {
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase tracking-wide">TVPI / MOIC</p>
               <p className="text-xl font-bold mt-1">{formatMultiple(inv.tvpi)}</p>
-              <p className="text-xs text-gray-400">DPI {formatMultiple(inv.dpi)}</p>
+              <p className="text-xs text-gray-500">DPI {formatMultiple(inv.dpi)}</p>
             </div>
           </div>
 

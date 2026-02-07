@@ -99,7 +99,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
                 <button
                   type="button"
                   onClick={() => removeMember(index)}
-                  className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                  className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
                 >
                   <Trash2 size={18} />
                 </button>

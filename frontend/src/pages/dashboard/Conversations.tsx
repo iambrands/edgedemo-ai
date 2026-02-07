@@ -156,7 +156,7 @@ export default function Conversations() {
         <div className="bg-white p-4 rounded-lg shadow">
           <p className="text-sm text-gray-500">Conversations</p>
           <p className="text-2xl font-bold">{metrics?.total_conversations ?? 0}</p>
-          <p className="text-xs text-gray-400">Last 30 days</p>
+          <p className="text-xs text-gray-500">Last 30 days</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <p className="text-sm text-gray-500">Avg Sentiment</p>
@@ -213,7 +213,7 @@ export default function Conversations() {
         </div>
         <div className="divide-y">
           {analyses.length === 0 && (
-            <p className="p-8 text-center text-gray-400">
+            <p className="p-8 text-center text-gray-500">
               No conversation analyses yet
             </p>
           )}
@@ -250,7 +250,7 @@ export default function Conversations() {
                     <p className="text-gray-500">
                       {formatDuration(analysis.total_duration_seconds)}
                     </p>
-                    <p className="text-gray-400">{formatDate(analysis.created_at)}</p>
+                    <p className="text-gray-500">{formatDate(analysis.created_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-sm">
@@ -291,7 +291,7 @@ export default function Conversations() {
         </div>
         <div className="divide-y">
           {flags.length === 0 && (
-            <p className="p-8 text-center text-gray-400">No compliance flags found</p>
+            <p className="p-8 text-center text-gray-500">No compliance flags found</p>
           )}
           {flags.map((flag) => (
             <div key={flag.id} className="p-4">
@@ -306,7 +306,7 @@ export default function Conversations() {
                     <span className="font-medium capitalize">
                       {flag.category.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-gray-400">
+                    <span className="text-gray-500">
                       @ {formatTimestamp(flag.timestamp_start)}
                     </span>
                   </div>
@@ -364,7 +364,7 @@ export default function Conversations() {
         </div>
         <div className="divide-y">
           {actionItems.length === 0 && (
-            <p className="p-8 text-center text-gray-400">No action items found</p>
+            <p className="p-8 text-center text-gray-500">No action items found</p>
           )}
           {actionItems.map((item) => {
             const isOverdue =
@@ -390,7 +390,7 @@ export default function Conversations() {
                       <span
                         className={
                           item.status === 'completed'
-                            ? 'line-through text-gray-400'
+                            ? 'line-through text-gray-500'
                             : 'font-medium'
                         }
                       >
@@ -411,7 +411,7 @@ export default function Conversations() {
                     {item.description && (
                       <p className="mt-1 text-sm text-gray-600 ml-6">{item.description}</p>
                     )}
-                    <div className="mt-1 text-xs text-gray-400 ml-6">
+                    <div className="mt-1 text-xs text-gray-500 ml-6">
                       <span className="capitalize">{item.owner_type}</span>
                       {item.category && <span> &middot; {item.category}</span>}
                     </div>
@@ -488,7 +488,7 @@ export default function Conversations() {
               <p className="text-lg font-semibold">
                 {selectedAnalysis.talk_ratio?.toFixed(2) ?? '--'}
               </p>
-              <p className="text-xs text-gray-400">Advisor / Client</p>
+              <p className="text-xs text-gray-500">Advisor / Client</p>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded">
               <p className="text-sm text-gray-500">Compliance Flags</p>
@@ -601,7 +601,7 @@ export default function Conversations() {
                       <span className="capitalize">
                         {flag.category.replace(/_/g, ' ')}
                       </span>
-                      <span className="text-gray-400">
+                      <span className="text-gray-500">
                         @ {formatTimestamp(flag.timestamp_start)}
                       </span>
                     </div>
@@ -644,7 +644,7 @@ export default function Conversations() {
                     <p
                       className={
                         item.status === 'completed'
-                          ? 'line-through text-gray-400'
+                          ? 'line-through text-gray-500'
                           : ''
                       }
                     >
@@ -672,7 +672,7 @@ export default function Conversations() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
+      <div className="flex items-center justify-center h-64 text-gray-500">
         Loading conversation intelligence...
       </div>
     );
