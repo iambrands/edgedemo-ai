@@ -1,303 +1,773 @@
-import { useState, useEffect } from 'react';
-import { Download, Filter, RefreshCw, ChevronDown, Table as TableIcon, FileText } from 'lucide-react';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '../../components/ui/Table';
-import { complianceApi, type ComplianceLog } from '../../services/api';
-import { exportToCSV, exportToPDF } from '../../utils/export';
+  Shield,
+  AlertTriangle,
+  FileCheck,
+  CheckSquare,
+  ClipboardList,
+  TrendingUp,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  Plus,
+  Calendar,
+  User,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
+import {
+  getDashboardMetrics,
+  getAlerts,
+  updateAlertStatus,
+  getTasks,
+  createTask,
+  completeTask,
+  getAuditLogs,
+  type ComplianceDashboardMetrics,
+  type ComplianceAlert,
+  type ComplianceTask,
+  type ComplianceAuditLogEntry,
+} from '../../services/complianceApi';
 
-export function Compliance() {
-  const [logs, setLogs] = useState<ComplianceLog[]>([]);
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type TabType = 'overview' | 'alerts' | 'reviews' | 'tasks' | 'audit';
+
+// ---------------------------------------------------------------------------
+// Styling helpers
+// ---------------------------------------------------------------------------
+
+const severityColors: Record<string, string> = {
+  critical: 'bg-red-100 text-red-800 border border-red-200',
+  high: 'bg-orange-100 text-orange-800 border border-orange-200',
+  medium: 'bg-amber-100 text-amber-800 border border-amber-200',
+  low: 'bg-blue-100 text-blue-800 border border-blue-200',
+};
+
+const statusColors: Record<string, string> = {
+  open: 'bg-red-50 text-red-700',
+  under_review: 'bg-amber-50 text-amber-700',
+  escalated: 'bg-orange-50 text-orange-700',
+  resolved: 'bg-emerald-50 text-emerald-700',
+  false_positive: 'bg-gray-100 text-gray-600',
+  pending: 'bg-amber-50 text-amber-700',
+  in_progress: 'bg-blue-50 text-blue-700',
+  completed: 'bg-emerald-50 text-emerald-700',
+  overdue: 'bg-red-50 text-red-700',
+};
+
+const severityDot: Record<string, string> = {
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-amber-500',
+  low: 'bg-blue-400',
+};
+
+function scoreColor(score: number) {
+  if (score >= 90) return 'text-emerald-600';
+  if (score >= 70) return 'text-amber-600';
+  return 'text-red-600';
+}
+
+function scoreBg(score: number) {
+  if (score >= 90) return 'bg-emerald-500';
+  if (score >= 70) return 'bg-amber-500';
+  return 'bg-red-500';
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function Compliance() {
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [metrics, setMetrics] = useState<ComplianceDashboardMetrics | null>(null);
+  const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
+  const [tasks, setTasks] = useState<ComplianceTask[]>([]);
+  const [auditLog, setAuditLog] = useState<ComplianceAuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
-  const fetchData = async () => {
+  // Create task modal
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState('medium');
+
+  // ── Data loading ────────────────────────────────────────────────────────
+
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await complianceApi.getAuditTrail();
-      setLogs(data);
+      const metricsData = await getDashboardMetrics();
+      setMetrics(metricsData);
+
+      // Load tab-specific data in parallel when needed
+      const [alertsData, tasksData, auditData] = await Promise.all([
+        getAlerts().catch(() => [] as ComplianceAlert[]),
+        getTasks({ include_completed: true }).catch(() => [] as ComplianceTask[]),
+        getAuditLogs().catch(() => [] as ComplianceAuditLogEntry[]),
+      ]);
+      setAlerts(alertsData);
+      setTasks(tasksData);
+      setAuditLog(auditData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load compliance data');
+      setError('Failed to load compliance data');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
-  const getResultBadge = (result: string) => {
-    switch (result) {
-      case 'PASS':
-        return <Badge variant="green">PASS</Badge>;
-      case 'FAIL':
-        return <Badge variant="red">FAIL</Badge>;
-      case 'WARNING':
-        return <Badge variant="amber">WARNING</Badge>;
-      default:
-        return <Badge variant="gray">{result}</Badge>;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────
+
+  const handleUpdateAlertStatus = async (alertId: string, newStatus: string) => {
+    try {
+      await updateAlertStatus(alertId, { status: newStatus });
+      loadData();
+    } catch (err) {
+      console.error('Failed to update alert status:', err);
     }
   };
 
-  const passCount = logs.filter((log) => log.result === 'PASS').length;
-  const failCount = logs.filter((log) => log.result === 'FAIL').length;
-  const warningCount = logs.filter((log) => log.result === 'WARNING').length;
-
-  const handleExportCSV = () => {
-    exportToCSV(logs as unknown as Record<string, unknown>[], 'edgeai-compliance-audit-trail', [
-      { key: 'date', header: 'Date' },
-      { key: 'household', header: 'Household' },
-      { key: 'rule', header: 'Rule' },
-      { key: 'result', header: 'Result' },
-      { key: 'detail', header: 'Detail' },
-      { key: 'promptVersion', header: 'Model Version' },
-    ]);
-    setExportMenuOpen(false);
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      await completeTask(taskId);
+      loadData();
+    } catch (err) {
+      console.error('Failed to complete task:', err);
+    }
   };
 
-  const handleExportPDF = () => {
-    const tableRows = logs.map(log => `
-      <tr>
-        <td>${log.date}</td>
-        <td>${log.household}</td>
-        <td>${log.rule}</td>
-        <td class="${log.result.toLowerCase()}">${log.result}</td>
-        <td>${log.detail}</td>
-      </tr>
-    `).join('');
-
-    const content = `
-      <h1>Compliance Audit Trail</h1>
-      <p><strong>Report Period:</strong> ${logs[logs.length - 1]?.date || 'N/A'} to ${logs[0]?.date || 'N/A'}</p>
-      <p><strong>Total Records:</strong> ${logs.length}</p>
-      
-      <div class="summary-box">
-        <div class="summary-grid">
-          <div class="summary-item">
-            <div class="summary-value pass">${passCount}</div>
-            <div class="summary-label">Passed</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value warning">${warningCount}</div>
-            <div class="summary-label">Warnings</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value fail">${failCount}</div>
-            <div class="summary-label">Failed</div>
-          </div>
-        </div>
-      </div>
-      
-      <h2>Detailed Audit Log</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Household</th>
-            <th>Rule</th>
-            <th>Result</th>
-            <th>Detail</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-      </table>
-    `;
-
-    exportToPDF('EdgeAI Compliance Audit Trail', content, 'compliance-report');
-    setExportMenuOpen(false);
+  const handleCreateTask = async () => {
+    if (!newTaskTitle.trim()) return;
+    try {
+      await createTask({
+        title: newTaskTitle,
+        description: newTaskDesc || undefined,
+        priority: newTaskPriority,
+      });
+      setNewTaskTitle('');
+      setNewTaskDesc('');
+      setShowCreateTask(false);
+      loadData();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 text-primary-500 animate-spin" />
-      </div>
-    );
-  }
+  // ── Tabs config ─────────────────────────────────────────────────────────
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-red-500">{error}</p>
-        <button
-          onClick={fetchData}
-          className="px-4 py-2 text-sm text-primary-600 hover:text-primary-700"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
+  const tabs = [
+    { id: 'overview' as const, label: 'Overview', icon: TrendingUp },
+    { id: 'alerts' as const, label: 'Alerts', icon: AlertTriangle, count: metrics?.alerts?.open },
+    { id: 'reviews' as const, label: 'Reviews', icon: FileCheck, count: metrics?.pending_reviews },
+    { id: 'tasks' as const, label: 'Tasks', icon: CheckSquare, count: metrics?.tasks?.pending },
+    { id: 'audit' as const, label: 'Audit Log', icon: ClipboardList },
+  ];
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Compliance</h1>
-          <p className="text-gray-500">Audit trail and regulatory compliance monitoring</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Compliance</h1>
+          <p className="text-gray-500 mt-1">Monitor alerts, reviews, and compliance tasks</p>
         </div>
-        
-        {/* Export Dropdown */}
-        <div className="relative">
-          <Button
-            variant="secondary"
-            className="flex items-center gap-2"
-            onClick={() => setExportMenuOpen(!exportMenuOpen)}
-          >
-            <Download size={18} />
-            Export Report
-            <ChevronDown size={16} className={`transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} />
-          </Button>
-          
-          {exportMenuOpen && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setExportMenuOpen(false)} 
+        <button
+          onClick={loadData}
+          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span
+                  className={`px-2 py-0.5 text-xs rounded-full ${
+                    activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+          <span className="text-red-700">{error}</span>
+          <button onClick={loadData} className="ml-auto text-red-600 hover:text-red-800 text-sm font-medium">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && !metrics && (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 text-blue-600 animate-spin" />
+        </div>
+      )}
+
+      {/* ────────────── OVERVIEW TAB ────────────── */}
+      {activeTab === 'overview' && metrics && (
+        <div className="space-y-6">
+          {/* Compliance Score */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Compliance Score</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  Based on open alerts, overdue tasks, and pending reviews
+                </p>
+              </div>
+              <div className="text-right">
+                <div className={`text-5xl font-bold ${scoreColor(metrics.compliance_score)}`}>
+                  {metrics.compliance_score}
+                </div>
+                <div className="text-gray-500 text-sm">out of 100</div>
+              </div>
+            </div>
+            <div className="mt-4 h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${scoreBg(metrics.compliance_score)}`}
+                style={{ width: `${metrics.compliance_score}%` }}
               />
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+            </div>
+          </div>
+
+          {/* Metric Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Open Alerts */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Open Alerts</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.alerts.open}</p>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+              {metrics.alerts.by_severity.critical > 0 && (
+                <p className="text-xs text-red-600 mt-2 font-medium">
+                  {metrics.alerts.by_severity.critical} critical
+                </p>
+              )}
+            </div>
+
+            {/* Pending Reviews */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Pending Reviews</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.pending_reviews}</p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg">
+                  <FileCheck className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Open Tasks */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Open Tasks</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {metrics.tasks.pending + metrics.tasks.in_progress}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <CheckSquare className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+              {metrics.tasks.overdue > 0 && (
+                <p className="text-xs text-red-600 mt-2 font-medium">
+                  {metrics.tasks.overdue} overdue
+                </p>
+              )}
+            </div>
+
+            {/* Resolved This Month */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Resolved This Month</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.alerts.resolved}</p>
+                </div>
+                <div className="p-3 bg-emerald-50 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Two-column: Recent Alerts + Upcoming Tasks */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Alerts */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Recent Alerts</h3>
                 <button
-                  onClick={handleExportCSV}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => setActiveTab('alerts')}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  <TableIcon size={18} className="text-green-600" />
-                  Export as CSV
-                </button>
-                <button
-                  onClick={handleExportPDF}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <FileText size={18} className="text-red-600" />
-                  Export as PDF
+                  View All
                 </button>
               </div>
-            </>
-          )}
+              <div className="divide-y divide-gray-100">
+                {alerts.filter((a) => a.status !== 'resolved' && a.status !== 'false_positive').slice(0, 5).map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="p-4 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setActiveTab('alerts')}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-gray-400'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{alert.title}</p>
+                        <p className="text-sm text-gray-500 mt-0.5">{alert.client_name || 'General'}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${severityColors[alert.severity] ?? ''}`}>
+                        {alert.severity}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {alerts.filter((a) => a.status !== 'resolved').length === 0 && (
+                  <div className="p-8 text-center text-gray-500">
+                    <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    No open alerts
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Upcoming Tasks */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Upcoming Tasks</h3>
+                <button
+                  onClick={() => setShowCreateTask(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  + Add Task
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {tasks.filter((t) => t.status !== 'completed').slice(0, 5).map((task) => (
+                  <div key={task.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={() => handleCompleteTask(task.id)}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900">{task.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <span
+                            className={`text-xs ${
+                              new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-gray-500'
+                            }`}
+                          >
+                            Due {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                          {task.priority === 'urgent' && (
+                            <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700">Urgent</span>
+                          )}
+                          {task.priority === 'high' && (
+                            <span className="px-1.5 py-0.5 text-xs rounded bg-orange-100 text-orange-700">High</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {tasks.filter((t) => t.status !== 'completed').length === 0 && (
+                  <div className="p-8 text-center text-gray-500">No pending tasks</div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-green-50 border-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-700">Passing Checks</p>
-              <p className="text-3xl font-bold text-green-600">{passCount}</p>
-            </div>
-            <Badge variant="green">PASS</Badge>
+      {/* ────────────── ALERTS TAB ────────────── */}
+      {activeTab === 'alerts' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">
+              All Alerts{' '}
+              <span className="text-gray-500 font-normal text-sm">({alerts.length})</span>
+            </h3>
           </div>
-        </Card>
+          <div className="divide-y divide-gray-100">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-start gap-4">
+                  <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-gray-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-gray-900">{alert.title}</p>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${severityColors[alert.severity] ?? ''}`}>
+                        {alert.severity}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[alert.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {alert.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
 
-        <Card className="bg-amber-50 border-amber-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-amber-700">Warnings</p>
-              <p className="text-3xl font-bold text-amber-600">{warningCount}</p>
-            </div>
-            <Badge variant="amber">WARNING</Badge>
-          </div>
-        </Card>
+                    {/* AI Recommendation */}
+                    {alert.ai_analysis?.recommendation && (
+                      <div className="mt-2 p-2.5 bg-blue-50 rounded-lg border border-blue-100">
+                        <p className="text-xs font-medium text-blue-800 mb-0.5">AI Recommendation</p>
+                        <p className="text-sm text-blue-700">{alert.ai_analysis.recommendation}</p>
+                      </div>
+                    )}
 
-        <Card className="bg-red-50 border-red-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-red-700">Failed Checks</p>
-              <p className="text-3xl font-bold text-red-600">{failCount}</p>
-            </div>
-            <Badge variant="red">FAIL</Badge>
-          </div>
-        </Card>
-      </div>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      {alert.client_name && (
+                        <span className="flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {alert.client_name}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(alert.created_at).toLocaleDateString()}
+                      </span>
+                      {alert.due_date && (
+                        <span
+                          className={`flex items-center gap-1 ${
+                            new Date(alert.due_date) < new Date() && alert.status !== 'resolved'
+                              ? 'text-red-600 font-medium'
+                              : ''
+                          }`}
+                        >
+                          <Calendar className="h-3 w-3" />
+                          Due {new Date(alert.due_date).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
 
-      {/* Audit Trail Table */}
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Compliance Audit Trail</h2>
-          <Button variant="secondary" size="sm" className="flex items-center gap-2">
-            <Filter size={16} />
-            Filter
-          </Button>
-        </div>
+                    {alert.resolution_notes && (
+                      <div className="mt-2 p-2 bg-emerald-50 rounded border border-emerald-100 text-sm text-emerald-700">
+                        <span className="font-medium">Resolution:</span> {alert.resolution_notes}
+                      </div>
+                    )}
+                  </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Household</TableHead>
-              <TableHead>Rule</TableHead>
-              <TableHead>Result</TableHead>
-              <TableHead>Detail</TableHead>
-              <TableHead>Prompt Version</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {logs.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell className="text-gray-500">{log.date}</TableCell>
-                <TableCell className="font-medium">{log.household}</TableCell>
-                <TableCell>
-                  <Badge variant="blue">{log.rule}</Badge>
-                </TableCell>
-                <TableCell>{getResultBadge(log.result)}</TableCell>
-                <TableCell className="max-w-xs truncate text-gray-500">
-                  {log.detail}
-                </TableCell>
-                <TableCell className="text-gray-500 font-mono text-xs">
-                  {log.promptVersion}
-                </TableCell>
-              </TableRow>
+                  {/* Status dropdown */}
+                  <div className="flex-shrink-0">
+                    {alert.status !== 'resolved' && alert.status !== 'false_positive' ? (
+                      <select
+                        value={alert.status}
+                        onChange={(e) => handleUpdateAlertStatus(alert.id, e.target.value)}
+                        className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="open">Open</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="escalated">Escalated</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="false_positive">False Positive</option>
+                      </select>
+                    ) : (
+                      <span className={`px-2.5 py-1 text-xs rounded-full ${statusColors[alert.status] ?? ''}`}>
+                        {alert.status.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Compliance Rules Reference */}
-      <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Compliance Rules Reference</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="font-medium text-gray-900 mb-1">FINRA 2111 - Suitability</p>
-            <p className="text-sm text-gray-500">
-              Requires reasonable basis to believe recommendations are suitable based on
-              client's investment profile.
-            </p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="font-medium text-gray-900 mb-1">FINRA 2330 - Variable Products</p>
-            <p className="text-sm text-gray-500">
-              Special suitability requirements for variable annuity and variable life
-              insurance recommendations.
-            </p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="font-medium text-gray-900 mb-1">Regulation Best Interest (Reg BI)</p>
-            <p className="text-sm text-gray-500">
-              Broker-dealers must act in retail customer's best interest and disclose
-              material conflicts of interest.
-            </p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="font-medium text-gray-900 mb-1">SEC Rule 206(4)-7</p>
-            <p className="text-sm text-gray-500">
-              Investment advisers must adopt and implement written compliance policies and
-              procedures.
-            </p>
+            {alerts.length === 0 && (
+              <div className="p-12 text-center">
+                <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+                <h3 className="font-medium text-gray-900">No alerts</h3>
+                <p className="text-gray-500 mt-1">All compliance checks are passing</p>
+              </div>
+            )}
           </div>
         </div>
-      </Card>
+      )}
+
+      {/* ────────────── REVIEWS TAB ────────────── */}
+      {activeTab === 'reviews' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+          <div className="text-center max-w-md mx-auto">
+            <div className="p-4 bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <FileCheck className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Document Reviews</h3>
+            <p className="text-gray-500 mt-2 mb-6">
+              Compliance document reviews, ADV Part 2B generation, and Form CRS management are handled
+              in the dedicated Compliance Docs module.
+            </p>
+            <a
+              href="/dashboard/compliance-docs"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              Go to Compliance Docs
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────── TASKS TAB ────────────── */}
+      {activeTab === 'tasks' && (
+        <div className="space-y-4">
+          {/* Create Task Modal/Inline */}
+          {showCreateTask && (
+            <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-5">
+              <h3 className="font-semibold text-gray-900 mb-4">New Compliance Task</h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Task title..."
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <textarea
+                  placeholder="Description (optional)"
+                  value={newTaskDesc}
+                  onChange={(e) => setNewTaskDesc(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="flex items-center gap-3">
+                  <select
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                  <div className="flex-1" />
+                  <button
+                    onClick={() => setShowCreateTask(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateTask}
+                    disabled={!newTaskTitle.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Create Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">
+                Compliance Tasks{' '}
+                <span className="text-gray-500 font-normal text-sm">({tasks.length})</span>
+              </h3>
+              {!showCreateTask && (
+                <button
+                  onClick={() => setShowCreateTask(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Task
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-gray-100">
+              {tasks.map((task) => (
+                <div key={task.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start gap-4">
+                    <input
+                      type="checkbox"
+                      checked={task.status === 'completed'}
+                      onChange={() => {
+                        if (task.status !== 'completed') handleCompleteTask(task.id);
+                      }}
+                      disabled={task.status === 'completed'}
+                      className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p
+                          className={`font-medium ${
+                            task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {task.status.replace(/_/g, ' ')}
+                        </span>
+                        {task.priority === 'urgent' && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 font-medium">
+                            Urgent
+                          </span>
+                        )}
+                        {task.priority === 'high' && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">
+                            High
+                          </span>
+                        )}
+                      </div>
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <span
+                          className={`flex items-center gap-1 ${
+                            new Date(task.due_date) < new Date() && task.status !== 'completed'
+                              ? 'text-red-600 font-medium'
+                              : ''
+                          }`}
+                        >
+                          <Calendar className="h-3 w-3" />
+                          Due {new Date(task.due_date).toLocaleDateString()}
+                        </span>
+                        {task.assigned_to_name && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {task.assigned_to_name}
+                          </span>
+                        )}
+                        {task.category && (
+                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                            {task.category.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {tasks.length === 0 && (
+                <div className="p-12 text-center">
+                  <CheckSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="font-medium text-gray-900">No tasks</h3>
+                  <p className="text-gray-500 mt-1">Create a task to track compliance activities</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────── AUDIT LOG TAB ────────────── */}
+      {activeTab === 'audit' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="p-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900">
+              Audit Trail{' '}
+              <span className="text-gray-500 font-normal text-sm">({auditLog.length} entries)</span>
+            </h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {auditLog.map((entry) => {
+              const actionLabel = entry.action.replace(/_/g, ' ');
+              const isAlert = entry.entity_type.includes('alert');
+              const isDoc = entry.entity_type.includes('document');
+              const isTask = entry.entity_type.includes('task');
+              const isCheck = entry.entity_type.includes('check');
+
+              return (
+                <div key={entry.id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`p-2 rounded-lg flex-shrink-0 ${
+                        isAlert
+                          ? 'bg-red-50'
+                          : isDoc
+                          ? 'bg-blue-50'
+                          : isTask
+                          ? 'bg-emerald-50'
+                          : isCheck
+                          ? 'bg-amber-50'
+                          : 'bg-gray-100'
+                      }`}
+                    >
+                      {isAlert ? (
+                        <AlertTriangle className={`h-4 w-4 text-red-600`} />
+                      ) : isDoc ? (
+                        <FileCheck className={`h-4 w-4 text-blue-600`} />
+                      ) : isTask ? (
+                        <CheckSquare className={`h-4 w-4 text-emerald-600`} />
+                      ) : isCheck ? (
+                        <Shield className={`h-4 w-4 text-amber-600`} />
+                      ) : (
+                        <ClipboardList className={`h-4 w-4 text-gray-600`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 capitalize">{actionLabel}</p>
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        {Object.entries(entry.details)
+                          .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+                          .join(' · ')}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {auditLog.length === 0 && (
+              <div className="p-12 text-center">
+                <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="font-medium text-gray-900">No audit entries</h3>
+                <p className="text-gray-500 mt-1">Activity will be logged here</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Also provide named export for backward compatibility
+export { Compliance };

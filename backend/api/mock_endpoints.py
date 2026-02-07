@@ -402,6 +402,77 @@ async def document_versions(document_id: str):
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE CO-PILOT  /api/v1/compliance  (alerts, tasks, audit-trail)
+# ════════════════════════════════════════════════════════════════════════════
+
+compliance_copilot_router = APIRouter(
+    prefix="/api/v1/compliance", tags=["compliance-copilot-mock"]
+)
+
+
+@compliance_copilot_router.get("/alerts")
+async def list_alerts(
+    status: Optional[str] = None,
+    severity: Optional[str] = None,
+):
+    return _store().compliance_alerts_response(status=status, severity=severity)
+
+
+@compliance_copilot_router.get("/alerts/{alert_id}")
+async def get_alert(alert_id: str):
+    detail = _store().compliance_alert_detail_response(alert_id)
+    if detail is None:
+        return {"detail": "Alert not found"}
+    return detail
+
+
+@compliance_copilot_router.patch("/alerts/{alert_id}/status")
+async def update_alert_status(alert_id: str):
+    detail = _store().compliance_alert_detail_response(alert_id)
+    if detail is None:
+        return {"detail": "Alert not found"}
+    return detail
+
+
+@compliance_copilot_router.post("/alerts/{alert_id}/comments")
+async def add_alert_comment(alert_id: str):
+    return {
+        "id": "cm-new-001",
+        "user_name": "Demo Advisor",
+        "content": "Comment added.",
+        "created_at": _store()._now().isoformat() if hasattr(_store(), '_now') else "2025-01-01T00:00:00",
+    }
+
+
+@compliance_copilot_router.get("/tasks")
+async def list_tasks(
+    status: Optional[str] = None,
+    include_completed: bool = False,
+):
+    return _store().compliance_tasks_response(status=status, include_completed=include_completed)
+
+
+@compliance_copilot_router.post("/tasks")
+async def create_task():
+    return _store().compliance_tasks_response()[0]
+
+
+@compliance_copilot_router.post("/tasks/{task_id}/complete")
+async def complete_task(task_id: str):
+    tasks = _store()._compliance_tasks()
+    for t in tasks:
+        if t["id"] == task_id:
+            t["status"] = "completed"
+            return t
+    return {"detail": "Task not found"}
+
+
+@compliance_copilot_router.get("/audit-trail")
+async def audit_trail():
+    return _store().compliance_audit_log_response()
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # All mock routers in a single list for easy mounting
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -414,4 +485,5 @@ ALL_MOCK_ROUTERS = [
     ("conversations", conv_router),
     ("liquidity", liquidity_router),
     ("compliance_docs", compliance_docs_router),
+    ("compliance_copilot", compliance_copilot_router),
 ]

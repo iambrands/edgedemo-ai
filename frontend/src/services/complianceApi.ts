@@ -272,3 +272,154 @@ export async function deliverDocument(
 export async function listDeliveries(documentId: string): Promise<DocumentDelivery[]> {
   return fetchComplianceApi<DocumentDelivery[]>(`/api/v1/compliance/documents/${documentId}/deliveries`);
 }
+
+// ============================================================================
+// COMPLIANCE CO-PILOT — Dashboard, Alerts, Tasks, Audit
+// ============================================================================
+
+export interface ComplianceDashboardMetrics {
+  compliance_score: number;
+  alerts: {
+    total: number;
+    open: number;
+    under_review: number;
+    escalated: number;
+    resolved: number;
+    by_severity: { critical: number; high: number; medium: number; low: number };
+  };
+  tasks: {
+    total: number;
+    pending: number;
+    in_progress: number;
+    completed: number;
+    overdue: number;
+  };
+  pending_reviews: number;
+}
+
+export interface ComplianceAlert {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'under_review' | 'escalated' | 'resolved' | 'false_positive';
+  client_name?: string;
+  ai_analysis?: { recommendation: string; confidence: number } | null;
+  due_date?: string;
+  resolved_at?: string;
+  resolution_notes?: string;
+  created_at: string;
+  comments?: ComplianceAlertComment[];
+}
+
+export interface ComplianceAlertComment {
+  id: string;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface ComplianceTask {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  assigned_to_name?: string;
+  due_date: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+export interface ComplianceAuditLogEntry {
+  id: string;
+  action: string;
+  entity_type: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────────
+
+export async function getDashboardMetrics(): Promise<ComplianceDashboardMetrics> {
+  return fetchComplianceApi<ComplianceDashboardMetrics>('/api/v1/compliance/dashboard');
+}
+
+// ─── Alerts ──────────────────────────────────────────────────────────────
+
+export async function getAlerts(params?: {
+  status?: string;
+  severity?: string;
+}): Promise<ComplianceAlert[]> {
+  const query = params ? new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+  ).toString() : '';
+  return fetchComplianceApi<ComplianceAlert[]>(`/api/v1/compliance/alerts${query ? `?${query}` : ''}`);
+}
+
+export async function getAlert(alertId: string): Promise<ComplianceAlert> {
+  return fetchComplianceApi<ComplianceAlert>(`/api/v1/compliance/alerts/${alertId}`);
+}
+
+export async function updateAlertStatus(
+  alertId: string,
+  data: { status: string; resolution_notes?: string }
+): Promise<ComplianceAlert> {
+  return fetchComplianceApi<ComplianceAlert>(`/api/v1/compliance/alerts/${alertId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function addAlertComment(
+  alertId: string,
+  content: string
+): Promise<ComplianceAlertComment> {
+  return fetchComplianceApi<ComplianceAlertComment>(`/api/v1/compliance/alerts/${alertId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+// ─── Tasks ───────────────────────────────────────────────────────────────
+
+export async function getTasks(params?: {
+  status?: string;
+  include_completed?: boolean;
+}): Promise<ComplianceTask[]> {
+  const query = params ? new URLSearchParams(
+    Object.fromEntries(
+      Object.entries(params)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, String(v)])
+    )
+  ).toString() : '';
+  return fetchComplianceApi<ComplianceTask[]>(`/api/v1/compliance/tasks${query ? `?${query}` : ''}`);
+}
+
+export async function createTask(data: {
+  title: string;
+  description?: string;
+  category?: string;
+  priority?: string;
+  due_date?: string;
+}): Promise<ComplianceTask> {
+  return fetchComplianceApi<ComplianceTask>('/api/v1/compliance/tasks', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function completeTask(taskId: string): Promise<ComplianceTask> {
+  return fetchComplianceApi<ComplianceTask>(`/api/v1/compliance/tasks/${taskId}/complete`, {
+    method: 'POST',
+  });
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────
+
+export async function getAuditLogs(): Promise<ComplianceAuditLogEntry[]> {
+  return fetchComplianceApi<ComplianceAuditLogEntry[]>('/api/v1/compliance/audit-trail');
+}
