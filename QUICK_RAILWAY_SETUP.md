@@ -20,8 +20,8 @@ Go to your service → Variables tab and add:
 ```
 FLASK_ENV=production
 JWT_SECRET_KEY=<generate-a-random-secret-key>
-TRADIER_API_KEY=V89b68MNEX6tHXCytKysZa2kyfRr
-TRADIER_ACCOUNT_ID=VA60605861
+TRADIER_API_KEY=your-tradier-api-key-here
+TRADIER_ACCOUNT_ID=your-tradier-account-id-here
 TRADIER_BASE_URL=https://sandbox.tradier.com/v1
 USE_MOCK_DATA=false
 ```

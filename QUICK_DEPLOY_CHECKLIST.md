@@ -63,10 +63,10 @@ heroku config:set USE_MOCK_DATA=false
 heroku config:set USE_YAHOO_DATA=true
 heroku config:set DISABLE_AUTH=false
 heroku config:set CORS_ORIGINS=https://YOUR_APP_NAME.herokuapp.com
-heroku config:set OPENAI_API_KEY=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
+heroku config:set OPENAI_API_KEY=your-openai-api-key-here
 heroku config:set USE_OPENAI_ALERTS=true
-heroku config:set TRADIER_API_KEY=V89b68MNEX6tHXCytKysZa2kyfRr
-heroku config:set TRADIER_ACCOUNT_ID=VA60605861
+heroku config:set TRADIER_API_KEY=your-tradier-api-key-here
+heroku config:set TRADIER_ACCOUNT_ID=your-tradier-account-id-here
 heroku config:set TRADIER_BASE_URL=https://sandbox.tradier.com/v1
 heroku config:set TRADIER_SANDBOX=true
 ```

@@ -36,12 +36,12 @@ heroku config:set DISABLE_AUTH=false --app $APP_NAME
 heroku config:set CORS_ORIGINS="https://$APP_NAME.herokuapp.com,https://www.$APP_NAME.herokuapp.com" --app $APP_NAME
 
 # OpenAI Configuration
-heroku config:set OPENAI_API_KEY="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" --app $APP_NAME
+heroku config:set OPENAI_API_KEY="your-openai-api-key-here" --app $APP_NAME
 heroku config:set USE_OPENAI_ALERTS=true --app $APP_NAME
 
 # Tradier Configuration
-heroku config:set TRADIER_API_KEY="V89b68MNEX6tHXCytKysZa2kyfRr" --app $APP_NAME
-heroku config:set TRADIER_ACCOUNT_ID="VA60605861" --app $APP_NAME
+heroku config:set TRADIER_API_KEY="your-tradier-api-key-here" --app $APP_NAME
+heroku config:set TRADIER_ACCOUNT_ID="your-tradier-account-id-here" --app $APP_NAME
 heroku config:set TRADIER_BASE_URL="https://sandbox.tradier.com/v1" --app $APP_NAME
 heroku config:set TRADIER_SANDBOX=true --app $APP_NAME
 

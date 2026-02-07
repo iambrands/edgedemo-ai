@@ -17,8 +17,8 @@ Go to Railway dashboard → Your web service → Variables tab, verify:
 - ✅ `FLASK_ENV` = `production`
 - ✅ `SECRET_KEY` = (your secret key)
 - ✅ `JWT_SECRET_KEY` = (your JWT secret)
-- ✅ `TRADIER_API_KEY` = `V89b68MNEX6tHXCytKysZa2kyfRr`
-- ✅ `TRADIER_ACCOUNT_ID` = `VA60605861`
+- ✅ `TRADIER_API_KEY` = `your-tradier-api-key-here`
+- ✅ `TRADIER_ACCOUNT_ID` = `your-tradier-account-id-here`
 - ✅ `TRADIER_BASE_URL` = `https://sandbox.tradier.com/v1`
 - ✅ `TRADIER_SANDBOX` = `true`
 - ✅ `USE_MOCK_DATA` = `false`

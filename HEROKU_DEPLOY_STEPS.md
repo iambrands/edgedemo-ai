@@ -79,7 +79,7 @@ heroku config:set DISABLE_AUTH=false
 heroku config:set CORS_ORIGINS=https://iab-optionsbot-beta.herokuapp.com
 
 # OpenAI (you already have this)
-heroku config:set OPENAI_API_KEY=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
+heroku config:set OPENAI_API_KEY=your-openai-api-key-here
 heroku config:set USE_OPENAI_ALERTS=true
 
 # Tradier (when you have credentials - optional for now)
