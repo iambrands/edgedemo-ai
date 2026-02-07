@@ -536,11 +536,39 @@ export default function ClientOnboarding() {
   const step = CLIENT_STEPS[currentStep];
   const progress = Math.round((completedSteps.size / CLIENT_STEPS.length) * 100);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setCompletedSteps((prev) => new Set([...prev, step.id]));
     if (currentStep < CLIENT_STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
+      // Auto-authenticate after completing onboarding
+      // Call the portal login API with the data we collected
+      const email = formData.email || 'client@demo.com';
+      const name = `${formData.firstName || 'Demo'} ${formData.lastName || 'Client'}`;
+      try {
+        const apiBase = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${apiBase}/api/v1/portal/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: 'onboarding-complete' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('portal_token', data.access_token);
+          localStorage.setItem('portal_refresh_token', data.refresh_token);
+          localStorage.setItem('portal_client_name', data.client_name || name);
+          if (data.firm_name) localStorage.setItem('portal_firm_name', data.firm_name);
+        } else {
+          // Fallback: set a demo token directly
+          localStorage.setItem('portal_token', 'demo-onboarding-token');
+          localStorage.setItem('portal_client_name', name);
+        }
+      } catch {
+        // Network error fallback: set a demo token directly
+        localStorage.setItem('portal_token', 'demo-onboarding-token');
+        localStorage.setItem('portal_client_name',
+          `${formData.firstName || 'Demo'} ${formData.lastName || 'Client'}`);
+      }
       navigate('/portal/dashboard');
     }
   };

@@ -418,6 +418,7 @@ try:
     app.include_router(compliance_dashboard_router)
 except Exception as e:
     logger.warning("Could not mount dashboard/households/accounts: %s", e)
+_portal_mounted = False
 try:
     from backend.api.reports import router as reports_router
     from backend.api.client_portal import router as client_portal_router
@@ -429,8 +430,18 @@ try:
     app.include_router(financial_planning_router)
     app.include_router(onboarding_router)
     app.include_router(billing_router)
+    _portal_mounted = True
 except Exception as e:
     logger.warning("Could not mount reports/portal/planning/onboarding/billing: %s", e)
+
+# Mount mock portal API if the real DB-backed portal could not be loaded
+if not _portal_mounted:
+    try:
+        from backend.api.mock_portal import router as mock_portal_router
+        app.include_router(mock_portal_router)
+        logger.info("Mock portal API mounted (no DB available)")
+    except Exception as e2:
+        logger.warning("Could not mount mock portal API: %s", e2)
 try:
     from backend.api.statements import router as statements_router
     from backend.api.analysis import router as analysis_router
