@@ -61,18 +61,21 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={clsx(
-        'fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-40 transition-all duration-200',
+        'fixed left-0 top-0 h-full bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 z-40 transition-all duration-200',
         isCollapsed ? 'w-16' : 'w-60'
       )}
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
           {!isCollapsed && (
             <span className="text-xl font-bold">
-              <span className="text-gray-900">Edge</span>
-              <span className="text-primary-500">AI</span>
+              <span className="text-blue-600">Edge</span>
+              <span className="text-teal-500">AI</span>
             </span>
+          )}
+          {isCollapsed && (
+            <span className="text-lg font-bold text-blue-600 mx-auto">E</span>
           )}
           <button
             onClick={onToggle}
@@ -85,7 +88,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         {/* Platform Label */}
         {!isCollapsed && (
           <div className="px-4 py-3">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
               RIA Platform
             </span>
           </div>
@@ -100,14 +103,14 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
               end={item.to === '/dashboard'}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 transition-colors',
+                  'flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 transition-all duration-150',
                   isActive
-                    ? 'bg-primary-50 text-primary-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
                 )
               }
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
               {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
             </NavLink>
           ))}

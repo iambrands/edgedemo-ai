@@ -32,7 +32,7 @@ export function DashboardLayout() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-50">
       <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
 
       {/* Main Content */}
@@ -42,8 +42,11 @@ export function DashboardLayout() {
           isSidebarCollapsed ? 'ml-16' : 'ml-60'
         )}
       >
+        {/* Brand accent line */}
+        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 sticky top-0 z-40" />
+
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+        <header className="h-14 bg-white/80 backdrop-blur-sm border-b border-gray-200/80 flex items-center justify-between px-6 sticky top-1 z-30">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
