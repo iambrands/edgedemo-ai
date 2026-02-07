@@ -12,6 +12,7 @@ import {
   HelpCircle,
   ArrowLeft,
 } from 'lucide-react';
+import PortalNav from '../../components/portal/PortalNav';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -132,10 +133,15 @@ export default function ClientHelpCenter() {
       })).filter((cat) => cat.questions.length > 0)
     : CLIENT_FAQS;
 
+  const isAuthenticated = !!localStorage.getItem('portal_token');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+      {/* Portal Nav if authenticated */}
+      {isAuthenticated && <PortalNav />}
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className={isAuthenticated ? '' : 'bg-white border-b border-gray-200'}>
         <div className="max-w-4xl mx-auto px-6 pt-6 pb-12">
           <Link
             to="/portal/dashboard"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Target, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Target, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
+import PortalNav from '../../components/portal/PortalNav';
 import { 
   getGoals, createGoal, deleteGoal, 
   Goal, GoalCreateRequest, PortalApiError 
@@ -113,17 +113,14 @@ export default function PortalGoals() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link 
-              to="/portal/dashboard" 
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="text-xl font-bold text-gray-900">Your Goals</h1>
+      <PortalNav />
+
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Your Goals</h1>
+            <p className="text-gray-500 text-sm mt-1">Track progress toward your financial objectives</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -133,9 +130,6 @@ export default function PortalGoals() {
             <span className="hidden sm:inline">Add Goal</span>
           </button>
         </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 py-6">
         {goals.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
             <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto">

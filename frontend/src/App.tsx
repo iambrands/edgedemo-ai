@@ -20,7 +20,15 @@ import {
   ModelPortfolios,
   AlternativeAssets,
 } from './pages/dashboard';
-import { PortalLogin, PortalDashboard, PortalGoals, ClientOnboarding } from './pages/portal';
+import {
+  PortalLogin,
+  PortalDashboard,
+  PortalGoals,
+  PortalDocuments,
+  PortalNarratives,
+  PortalSettings,
+  ClientOnboarding,
+} from './pages/portal';
 import { RIAOnboarding } from './pages/onboarding';
 import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -87,6 +95,30 @@ export default function App() {
         element={
           <PortalGuard>
             <PortalGoals />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/documents"
+        element={
+          <PortalGuard>
+            <PortalDocuments />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/updates"
+        element={
+          <PortalGuard>
+            <PortalNarratives />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/settings"
+        element={
+          <PortalGuard>
+            <PortalSettings />
           </PortalGuard>
         }
       />
