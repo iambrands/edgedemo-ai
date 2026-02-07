@@ -120,6 +120,17 @@ from .custodian import (  # noqa: E402
     CustodianTransactionType,
     CustodianAccountType,
 )
+from .tax_harvest import (  # noqa: E402
+    SecurityRelationship,
+    HarvestTaxLot,
+    HarvestOpportunity,
+    WashSaleTransaction,
+    HarvestingSettings,
+    HarvestStatus,
+    WashSaleStatus,
+    SecurityRelationType,
+    TaxLotStatus,
+)
 
 __all__ = [
     "Account",
@@ -188,4 +199,14 @@ __all__ = [
     "CustodianAssetClass",
     "CustodianTransactionType",
     "CustodianAccountType",
+    # Tax-Loss Harvesting models
+    "SecurityRelationship",
+    "HarvestTaxLot",
+    "HarvestOpportunity",
+    "WashSaleTransaction",
+    "HarvestingSettings",
+    "HarvestStatus",
+    "WashSaleStatus",
+    "SecurityRelationType",
+    "TaxLotStatus",
 ]
