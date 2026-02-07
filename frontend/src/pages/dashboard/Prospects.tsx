@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Users, DollarSign, TrendingUp, Trophy } from 'lucide-react';
 import {
   listProspects,
   getPipelineSummary,
@@ -465,27 +466,55 @@ export default function Prospects() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Total Prospects</p>
-          <p className="text-2xl font-bold">{pipelineSummary?.total_prospects ?? 0}</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Prospects</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{pipelineSummary?.total_prospects ?? 0}</p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-xl">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Pipeline Value</p>
-          <p className="text-2xl font-bold">{fmtCurrency(pipelineSummary?.total_pipeline_value)}</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Pipeline Value</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{fmtCurrency(pipelineSummary?.total_pipeline_value)}</p>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-xl">
+              <DollarSign className="h-6 w-6 text-amber-600" />
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">In Progress</p>
-          <p className="text-2xl font-bold">
-            {Object.entries(pipelineSummary?.stages ?? {})
-              .filter(([k]) => !['won', 'lost'].includes(k))
-              .reduce((sum, [, v]) => sum + v.count, 0)}
-          </p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">In Progress</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {Object.entries(pipelineSummary?.stages ?? {})
+                  .filter(([k]) => !['won', 'lost'].includes(k))
+                  .reduce((sum, [, v]) => sum + v.count, 0)}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-purple-600" />
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Won</p>
-          <p className="text-2xl font-bold text-green-600">
-            {pipelineSummary?.stages?.won?.count ?? 0}
-          </p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Won</p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1">
+                {pipelineSummary?.stages?.won?.count ?? 0}
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-50 rounded-xl">
+              <Trophy className="h-6 w-6 text-emerald-600" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -547,7 +576,7 @@ export default function Prospects() {
   // ── List View ─────────────────────────────────────────────────
 
   const renderList = () => (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <input
           type="text"
@@ -576,7 +605,7 @@ export default function Prospects() {
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
@@ -657,7 +686,7 @@ export default function Prospects() {
         </button>
 
         {/* Header Card */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
               <h2 className="text-2xl font-bold">
@@ -798,7 +827,7 @@ export default function Prospects() {
         {/* Activities & Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Activities */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="font-semibold mb-4">Recent Activities</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {activities.map((activity) => (
@@ -826,7 +855,7 @@ export default function Prospects() {
           </div>
 
           {/* Proposals */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="font-semibold mb-4">Proposals</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {proposals.map((proposal) => (

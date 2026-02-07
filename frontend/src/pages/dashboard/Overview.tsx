@@ -137,7 +137,12 @@ export function Overview() {
             {data.alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                className={clsx(
+                  'flex items-start gap-3 p-3 rounded-lg border-l-4',
+                  alert.severity === 'high' && 'border-l-red-500 bg-red-50/30',
+                  alert.severity === 'medium' && 'border-l-amber-500 bg-amber-50/30',
+                  alert.severity === 'low' && 'border-l-emerald-500 bg-emerald-50/30'
+                )}
               >
                 <div
                   className={clsx(

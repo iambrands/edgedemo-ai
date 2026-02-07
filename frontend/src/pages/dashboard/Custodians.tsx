@@ -467,23 +467,44 @@ export default function Custodians() {
             <>
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Total Market Value</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {fmtCurrency(posTotal)}
-                  </p>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total Market Value</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {fmtCurrency(posTotal)}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-xl">
+                      <TrendingUp className="h-6 w-6 text-amber-600" />
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Positions</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {positions.length}
-                  </p>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Positions</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {positions.length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-blue-50 rounded-xl">
+                      <Briefcase className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Asset Classes</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
-                    {allocation?.allocation.length || 0}
-                  </p>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Asset Classes</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {allocation?.allocation.length || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-indigo-50 rounded-xl">
+                      <PieChart className="h-6 w-6 text-indigo-600" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -717,7 +738,7 @@ export default function Custodians() {
             <>
               <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
                     <tr className="text-left text-xs font-medium text-gray-500 uppercase">
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Type</th>

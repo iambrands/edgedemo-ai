@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MessageSquareText, TrendingUp, ShieldAlert, CheckSquare, BarChart3 } from 'lucide-react';
 import {
   listAnalyses,
   getAnalysis,
@@ -154,26 +155,46 @@ export default function Conversations() {
     <div className="space-y-6">
       {/* Metrics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Conversations</p>
-          <p className="text-2xl font-bold">{metrics?.total_conversations ?? 0}</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Conversations</p>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <MessageSquareText className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{metrics?.total_conversations ?? 0}</p>
           <p className="text-xs text-gray-500">Last 30 days</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Avg Sentiment</p>
-          <p className="text-2xl font-bold">
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Avg Sentiment</p>
+            <div className="p-2 bg-teal-50 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-teal-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
             {metrics?.avg_sentiment_score != null
               ? (metrics.avg_sentiment_score > 0 ? '+' : '') +
                 metrics.avg_sentiment_score.toFixed(2)
               : '--'}
           </p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Avg Engagement</p>
-          <p className="text-2xl font-bold">{metrics?.avg_engagement_score ?? 0}%</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Avg Engagement</p>
+            <div className="p-2 bg-indigo-50 rounded-lg">
+              <BarChart3 className="h-5 w-5 text-indigo-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{metrics?.avg_engagement_score ?? 0}%</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Compliance Flags</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Compliance Flags</p>
+            <div className="p-2 bg-red-50 rounded-lg">
+              <ShieldAlert className="h-5 w-5 text-red-600" />
+            </div>
+          </div>
           <p className="text-2xl font-bold text-orange-600">
             {metrics?.total_compliance_flags ?? 0}
           </p>
@@ -181,10 +202,15 @@ export default function Conversations() {
             <p className="text-xs text-red-500">{pendingFlags} pending</p>
           )}
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Action Items</p>
-          <p className="text-2xl font-bold">{metrics?.action_items_created ?? 0}</p>
-          <p className="text-xs text-green-500">
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Action Items</p>
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <CheckSquare className="h-5 w-5 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{metrics?.action_items_created ?? 0}</p>
+          <p className="text-xs text-emerald-500">
             {metrics?.action_items_completed ?? 0} completed
           </p>
         </div>
@@ -208,7 +234,7 @@ export default function Conversations() {
       )}
 
       {/* Recent Analyses */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b">
           <h3 className="font-semibold">Recent Conversations</h3>
         </div>
@@ -283,7 +309,7 @@ export default function Conversations() {
   // ── Tab: Compliance ────────────────────────────────────────────
   const renderCompliance = () => (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-semibold">Compliance Flags</h3>
           <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">
@@ -354,7 +380,7 @@ export default function Conversations() {
   // ── Tab: Actions ───────────────────────────────────────────────
   const renderActions = () => (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-semibold">Action Items</h3>
           {overdueItems > 0 && (
@@ -451,7 +477,7 @@ export default function Conversations() {
         </button>
 
         {/* Summary Card */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <div className="flex justify-between items-start gap-4">
             <div>
               <h2 className="text-xl font-bold">
@@ -586,7 +612,7 @@ export default function Conversations() {
         {/* Compliance Flags */}
         {selectedAnalysis.compliance_flags &&
           selectedAnalysis.compliance_flags.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
               <h3 className="font-semibold mb-4">
                 Compliance Flags ({selectedAnalysis.compliance_flags.length})
               </h3>
@@ -623,7 +649,7 @@ export default function Conversations() {
 
         {/* Action Items */}
         {selectedAnalysis.action_items && selectedAnalysis.action_items.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="font-semibold mb-4">
               Action Items ({selectedAnalysis.action_items.length})
             </h3>

@@ -30,8 +30,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Comprehensive portfolio analysis including asset allocation, diversification metrics, and optimization suggestions.',
     icon: PieChart,
-    iconBg: 'bg-primary-50',
-    iconColor: 'text-primary-500',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
     status: 'available',
   },
   {
@@ -40,8 +40,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Identify hidden fees, expense ratios, and cost optimization opportunities across all accounts.',
     icon: DollarSign,
-    iconBg: 'bg-green-50',
-    iconColor: 'text-green-500',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
     status: 'available',
   },
   {
@@ -50,8 +50,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Tax-loss harvesting opportunities, asset location optimization, and tax efficiency scoring.',
     icon: Receipt,
-    iconBg: 'bg-purple-50',
-    iconColor: 'text-purple-500',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
     status: 'available',
   },
   {
@@ -60,8 +60,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Risk assessment including concentration analysis, correlation metrics, and stress testing scenarios.',
     icon: AlertTriangle,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-500',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
     status: 'available',
   },
   {
@@ -70,8 +70,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Build custom ETF portfolios with factor-based screening and replication strategies.',
     icon: Layers,
-    iconBg: 'bg-teal-50',
-    iconColor: 'text-teal-500',
+    iconBg: 'bg-teal-100',
+    iconColor: 'text-teal-600',
     status: 'available',
   },
   {
@@ -80,8 +80,8 @@ const ANALYSIS_TOOLS: AnalysisTool[] = [
     description:
       'Generate compliant Investment Policy Statements based on client profiles and objectives.',
     icon: FileText,
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-500',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
     status: 'available',
   },
 ];

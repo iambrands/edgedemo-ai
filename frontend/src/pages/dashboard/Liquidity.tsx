@@ -203,7 +203,7 @@ export default function Liquidity() {
           <h2 className="font-medium text-gray-900">Withdrawal Requests</h2>
 
           {requests.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
               <DollarSign className="mx-auto h-12 w-12 text-gray-500" />
               <p className="mt-2 text-gray-500">No withdrawal requests yet</p>
               <button
@@ -226,9 +226,9 @@ export default function Liquidity() {
                         null
                     );
                   }}
-                  className={`w-full text-left bg-white rounded-lg shadow p-4 hover:shadow-md transition ${
+                  className={`w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all ${
                     selectedRequest?.id === req.id
-                      ? 'ring-2 ring-blue-500'
+                      ? 'ring-2 ring-blue-500 border-blue-200'
                       : ''
                   }`}
                 >
@@ -273,7 +273,7 @@ export default function Liquidity() {
           {selectedRequest ? (
             <div className="space-y-3">
               {(selectedRequest.plans ?? []).length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
                   No plans generated yet
                 </div>
               ) : (
@@ -281,9 +281,9 @@ export default function Liquidity() {
                   <button
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan)}
-                    className={`w-full text-left bg-white rounded-lg shadow p-4 hover:shadow-md transition ${
+                    className={`w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all ${
                       selectedPlan?.id === plan.id
-                        ? 'ring-2 ring-blue-500'
+                        ? 'ring-2 ring-blue-500 border-blue-200'
                         : ''
                     }`}
                   >
@@ -376,7 +376,7 @@ export default function Liquidity() {
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
               <DollarSign className="mx-auto h-10 w-10 text-gray-400 mb-2" />
               Select a request to view plans
             </div>
@@ -390,7 +390,7 @@ export default function Liquidity() {
           <h2 className="font-medium text-gray-900">Plan Details</h2>
 
           {selectedPlan ? (
-            <div className="bg-white rounded-lg shadow p-4 space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
               {/* AI Reasoning */}
               {selectedPlan.ai_reasoning && (
                 <div className="bg-purple-50 rounded-lg p-3">
@@ -506,7 +506,7 @@ export default function Liquidity() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
               Select a plan to view details
             </div>
           )}

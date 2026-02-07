@@ -161,7 +161,7 @@ export function Chat() {
                 <button
                   key={i}
                   onClick={() => handleQuickPrompt(prompt)}
-                  className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                  className="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-full hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all shadow-sm"
                 >
                   {prompt}
                 </button>
@@ -176,7 +176,7 @@ export function Chat() {
                 className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <Bot size={18} className="text-white" />
                   </div>
                 )}
@@ -285,7 +285,7 @@ export function Chat() {
                 key={i}
                 onClick={() => handleQuickPrompt(prompt)}
                 disabled={isLoading}
-                className="px-3 py-1.5 text-xs bg-white border border-gray-200 hover:border-gray-300 text-gray-600 rounded-full whitespace-nowrap transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-xs bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-gray-600 rounded-full whitespace-nowrap transition-all disabled:opacity-50"
               >
                 {prompt}
               </button>

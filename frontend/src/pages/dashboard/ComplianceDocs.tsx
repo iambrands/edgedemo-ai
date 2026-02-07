@@ -284,7 +284,7 @@ export default function ComplianceDocs() {
           <h2 className="font-medium text-gray-900">Documents</h2>
 
           {documents.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
               <FileText className="mx-auto h-12 w-12 text-gray-500" />
               <p className="mt-2 text-gray-500">No documents yet</p>
               <button
@@ -300,7 +300,7 @@ export default function ComplianceDocs() {
                 <button
                   key={doc.id}
                   onClick={() => loadVersions(doc)}
-                  className={`w-full text-left bg-white rounded-lg shadow p-4 hover:shadow-md transition-all ${
+                  className={`w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all ${
                     selectedDoc?.id === doc.id ? 'ring-2 ring-blue-500' : ''
                   }`}
                 >
@@ -357,7 +357,7 @@ export default function ComplianceDocs() {
           {selectedDoc && versions.length > 0 ? (
             <div className="space-y-2">
               {versions.map((version) => (
-                <div key={version.id} className="bg-white rounded-lg shadow p-4">
+                <div key={version.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Version {version.version_number}</p>
@@ -419,7 +419,7 @@ export default function ComplianceDocs() {
               ))}
             </div>
           ) : selectedDoc ? (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
               No versions yet
             </div>
           ) : null}
@@ -430,7 +430,7 @@ export default function ComplianceDocs() {
           <h2 className="font-medium text-gray-900">Preview</h2>
 
           {previewHtml ? (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="p-2 bg-gray-100 border-b flex justify-between items-center">
                 <span className="text-sm text-gray-600">Document Preview</span>
                 <button
@@ -448,7 +448,7 @@ export default function ComplianceDocs() {
               />
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 h-64 flex items-center justify-center">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500 h-64 flex items-center justify-center">
               <div>
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p>Select a document to preview</p>

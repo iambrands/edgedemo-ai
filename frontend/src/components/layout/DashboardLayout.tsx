@@ -32,7 +32,7 @@ export function DashboardLayout() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-blue-50/30">
       <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
 
       {/* Main Content */}

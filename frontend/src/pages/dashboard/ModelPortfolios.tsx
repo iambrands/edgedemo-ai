@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PieChart, DollarSign, Users, Bell } from 'lucide-react';
 import {
   listModels,
   listSignals,
@@ -240,36 +241,55 @@ export default function ModelPortfolios() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: 'Total Models',
             value: models.length,
             sub: `${models.filter((m) => m.status === 'active').length} active`,
+            icon: PieChart,
+            iconBg: 'bg-blue-50',
+            iconColor: 'text-blue-600',
           },
           {
             label: 'Total AUM',
             value: fmtCurrency(models.reduce((s, m) => s + (m.total_aum || 0), 0)),
             sub: 'across all models',
+            icon: DollarSign,
+            iconBg: 'bg-amber-50',
+            iconColor: 'text-amber-600',
           },
           {
             label: 'Subscribers',
             value: models.reduce((s, m) => s + (m.total_subscribers || 0), 0),
             sub: 'total subscribers',
+            icon: Users,
+            iconBg: 'bg-indigo-50',
+            iconColor: 'text-indigo-600',
           },
           {
             label: 'Pending Signals',
             value: signals.filter((s) => s.status === 'pending').length,
             sub: 'require review',
+            icon: Bell,
+            iconBg: 'bg-purple-50',
+            iconColor: 'text-purple-600',
           },
         ].map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-lg shadow p-4 border border-gray-100"
+            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5"
           >
-            <p className="text-sm text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{stat.sub}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{stat.sub}</p>
+              </div>
+              <div className={`p-3 ${stat.iconBg} rounded-xl`}>
+                <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -280,7 +300,7 @@ export default function ModelPortfolios() {
           <div
             key={model.id}
             onClick={() => loadModelDetail(model)}
-            className="bg-white rounded-lg shadow border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 truncate">{model.name}</h3>
@@ -375,7 +395,7 @@ export default function ModelPortfolios() {
         {marketplaceModels.map((model) => (
           <div
             key={model.id}
-            className="bg-white rounded-lg shadow border border-gray-100 p-4"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 truncate">{model.name}</h3>
@@ -528,7 +548,7 @@ export default function ModelPortfolios() {
           ].map((st) => (
             <div
               key={st.label}
-              className="bg-white rounded-lg shadow border border-gray-100 p-3 text-center"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 text-center"
             >
               <p className="text-sm text-gray-500">{st.label}</p>
               <p className={`text-xl font-bold ${st.color}`}>{st.value}</p>
@@ -537,7 +557,7 @@ export default function ModelPortfolios() {
         </div>
 
         {/* Signal cards */}
-        <div className="bg-white rounded-lg shadow border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="divide-y divide-gray-100">
             {[...pending, ...other].map((signal) => (
               <div key={signal.id} className="p-4">
@@ -663,7 +683,7 @@ export default function ModelPortfolios() {
         </button>
 
         {/* Header Card */}
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
@@ -753,7 +773,7 @@ export default function ModelPortfolios() {
         </div>
 
         {/* Holdings Table */}
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-gray-900">
               Holdings ({(selectedModel.holdings ?? []).length})
@@ -849,7 +869,7 @@ export default function ModelPortfolios() {
         </div>
 
         {/* Account Assignments */}
-        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">
             Account Assignments ({assignments.length})
           </h3>

@@ -120,7 +120,11 @@ export function Households() {
           const isExpanded = expandedHousehold === household.id;
 
           return (
-            <Card key={household.id} className="overflow-hidden">
+            <Card key={household.id} className={clsx(
+              'overflow-hidden hover:shadow-md transition-all',
+              household.status === 'attention' && 'border-l-4 border-l-red-500',
+              household.status === 'rebalance' && 'border-l-4 border-l-amber-500'
+            )}>
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>

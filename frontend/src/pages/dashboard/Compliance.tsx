@@ -72,9 +72,9 @@ function scoreColor(score: number) {
 }
 
 function scoreBg(score: number) {
-  if (score >= 90) return 'bg-emerald-500';
-  if (score >= 70) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (score >= 90) return 'bg-gradient-to-r from-emerald-400 to-emerald-500';
+  if (score >= 70) return 'bg-gradient-to-r from-amber-400 to-amber-500';
+  return 'bg-gradient-to-r from-red-400 to-red-500';
 }
 
 // ---------------------------------------------------------------------------
@@ -269,13 +269,13 @@ export default function Compliance() {
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Open Alerts */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Open Alerts</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.alerts.open}</p>
+                  <p className="text-sm font-medium text-gray-500">Open Alerts</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.alerts.open}</p>
                 </div>
-                <div className="p-3 bg-red-50 rounded-lg">
+                <div className="p-3 bg-red-50 rounded-xl">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
@@ -287,28 +287,28 @@ export default function Compliance() {
             </div>
 
             {/* Pending Reviews */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending Reviews</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.pending_reviews}</p>
+                  <p className="text-sm font-medium text-gray-500">Pending Reviews</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.pending_reviews}</p>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-lg">
+                <div className="p-3 bg-amber-50 rounded-xl">
                   <FileCheck className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
             </div>
 
             {/* Open Tasks */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Open Tasks</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-500">Open Tasks</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
                     {metrics.tasks.pending + metrics.tasks.in_progress}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="p-3 bg-blue-50 rounded-xl">
                   <CheckSquare className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
@@ -320,13 +320,13 @@ export default function Compliance() {
             </div>
 
             {/* Resolved This Month */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Resolved This Month</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{metrics.alerts.resolved}</p>
+                  <p className="text-sm font-medium text-gray-500">Resolved This Month</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.alerts.resolved}</p>
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-lg">
+                <div className="p-3 bg-emerald-50 rounded-xl">
                   <CheckCircle className="h-6 w-6 text-emerald-600" />
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Landmark, DollarSign, ArrowDownRight, TrendingUp, AlertCircle } from 'lucide-react';
 import {
   listInvestments,
   getInvestment,
@@ -211,36 +212,61 @@ export default function AlternativeAssets() {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500">Total NAV</p>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(summaryData.totalNav)}</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Total NAV</p>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Landmark className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(summaryData.totalNav)}</p>
           <p className="text-xs text-gray-500 mt-1">{investments.length} investments</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500">Total Commitment</p>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(summaryData.totalCommitment)}</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Total Commitment</p>
+            <div className="p-2 bg-amber-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(summaryData.totalCommitment)}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500">Called / Uncalled</p>
-          <p className="text-lg font-bold mt-1">{formatCurrency(summaryData.totalCalled)}</p>
-          <p className="text-sm text-gray-500">{formatCurrency(summaryData.totalUncalled)} uncalled</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Called / Uncalled</p>
+            <div className="p-2 bg-indigo-50 rounded-lg">
+              <ArrowDownRight className="h-5 w-5 text-indigo-600" />
+            </div>
+          </div>
+          <p className="text-lg font-bold text-gray-900">{formatCurrency(summaryData.totalCalled)}</p>
+          <p className="text-xs text-gray-500">{formatCurrency(summaryData.totalUncalled)} uncalled</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500">Distributions</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Distributions</p>
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-emerald-600">
             {formatCurrency(summaryData.totalDistributions)}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <p className="text-sm text-gray-500">Pending Calls</p>
-          <p className="text-2xl font-bold text-orange-600 mt-1">{pendingCalls.length}</p>
-          <p className="text-sm text-orange-400">{formatCurrency(pendingTotalAmount)}</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-500">Pending Calls</p>
+            <div className="p-2 bg-orange-50 rounded-lg">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-orange-600">{pendingCalls.length}</p>
+          <p className="text-xs text-orange-400">{formatCurrency(pendingTotalAmount)}</p>
         </div>
       </div>
 
       {/* Allocation by type */}
       {Object.keys(navByType).length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h3 className="text-lg font-semibold mb-4">Allocation by Asset Type</h3>
           {/* Bar */}
           <div className="flex h-6 rounded-full overflow-hidden mb-4">
@@ -284,7 +310,7 @@ export default function AlternativeAssets() {
       )}
 
       {/* Recent investments */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Recent Investments</h3>
           <button
@@ -341,7 +367,7 @@ export default function AlternativeAssets() {
 
       {/* Upcoming capital calls */}
       {pendingCalls.length > 0 && (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold">Upcoming Capital Calls</h3>
             <button
@@ -410,9 +436,9 @@ export default function AlternativeAssets() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         <table className="min-w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Investment</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
@@ -496,7 +522,7 @@ export default function AlternativeAssets() {
         </h2>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="divide-y divide-gray-100">
           {pendingCalls.map((call) => {
             const inv = investments.find((i) => i.id === call.investment_id);
@@ -583,7 +609,7 @@ export default function AlternativeAssets() {
         </button>
 
         {/* Header card */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-xl ${cfg.color} flex items-center justify-center text-3xl text-white`}>
@@ -689,7 +715,7 @@ export default function AlternativeAssets() {
 
         {/* Capital Calls */}
         {calls.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Capital Calls</h3>
             <div className="space-y-3">
               {calls.map((call) => (
@@ -724,7 +750,7 @@ export default function AlternativeAssets() {
 
         {/* Transactions */}
         {txns.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
             <div className="space-y-2">
               {txns.map((txn) => (
@@ -747,7 +773,7 @@ export default function AlternativeAssets() {
 
         {/* Valuation History */}
         {vals.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Valuation History</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -790,7 +816,7 @@ export default function AlternativeAssets() {
 
         {/* K-1 Documents */}
         {k1Docs.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">K-1 Documents</h3>
             <div className="space-y-3">
               {k1Docs.map((doc) => (
@@ -853,7 +879,7 @@ export default function AlternativeAssets() {
 
         {/* Other Documents */}
         {otherDocs.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Documents</h3>
             <div className="space-y-2">
               {otherDocs.map((doc) => (

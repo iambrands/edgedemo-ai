@@ -61,7 +61,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={clsx(
-        'fixed left-0 top-0 h-full bg-gradient-to-b from-slate-50 to-white border-r border-gray-200 z-40 transition-all duration-200',
+        'fixed left-0 top-0 h-full bg-gradient-to-b from-slate-50 via-white to-slate-50 border-r border-gray-200 shadow-sm z-40 transition-all duration-200',
         isCollapsed ? 'w-16' : 'w-60'
       )}
     >
@@ -117,11 +117,11 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         </nav>
 
         {/* User Section */}
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-gray-100 p-4 bg-gray-50/50">
           {!isCollapsed && user && (
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary-600">
+              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-sm font-semibold text-white">
                   {user.firstName[0]}
                   {user.lastName[0]}
                 </span>

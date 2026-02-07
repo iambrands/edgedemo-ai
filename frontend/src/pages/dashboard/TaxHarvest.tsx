@@ -257,50 +257,50 @@ export default function TaxHarvest() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingDown className="h-5 w-5 text-blue-600" />
-            </div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Opportunities</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm font-medium text-gray-500">Opportunities</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
                 {loadingSummary ? '—' : summary?.total_opportunities ?? 0}
               </p>
             </div>
+            <div className="p-3 bg-blue-50 rounded-xl">
+              <TrendingDown className="h-6 w-6 text-blue-600" />
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <DollarSign className="h-5 w-5 text-red-600" />
-            </div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Harvestable Loss</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-sm font-medium text-gray-500">Harvestable Loss</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">
                 {loadingSummary ? '—' : fmtCurrency(summary?.total_harvestable_loss ?? 0)}
               </p>
             </div>
+            <div className="p-3 bg-red-50 rounded-xl">
+              <DollarSign className="h-6 w-6 text-red-600" />
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Percent className="h-5 w-5 text-green-600" />
-            </div>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Est. Tax Savings</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-sm font-medium text-gray-500">Est. Tax Savings</p>
+              <p className="text-2xl font-bold text-emerald-600 mt-1">
                 {loadingSummary ? '—' : fmtCurrency(summary?.total_estimated_savings ?? 0)}
               </p>
             </div>
+            <div className="p-3 bg-emerald-50 rounded-xl">
+              <Percent className="h-6 w-6 text-emerald-600" />
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center justify-center">
           <button
             onClick={handleScan}
             disabled={scanning}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
           >
             <RefreshCw className={`h-4 w-4 ${scanning ? 'animate-spin' : ''}`} />
             {scanning ? 'Scanning…' : 'Scan Portfolio'}
@@ -599,7 +599,7 @@ export default function TaxHarvest() {
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale Date</th>

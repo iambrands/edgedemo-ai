@@ -20,7 +20,7 @@ interface TableHeaderProps {
 }
 
 export function TableHeader({ children }: TableHeaderProps) {
-  return <thead className="bg-gray-50 border-b border-gray-200">{children}</thead>;
+  return <thead className="bg-slate-50 border-b border-gray-200 sticky top-0 z-10">{children}</thead>;
 }
 
 interface TableBodyProps {
@@ -41,7 +41,7 @@ export function TableRow({ children, className, onClick }: TableRowProps) {
   return (
     <tr
       className={clsx(
-        'hover:bg-gray-50 transition-colors',
+        'hover:bg-blue-50/50 transition-colors',
         onClick && 'cursor-pointer',
         className
       )}
@@ -60,7 +60,7 @@ export function TableHead({ children, className, ...props }: TableHeadProps) {
   return (
     <th
       className={clsx(
-        'px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider',
+        'px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider',
         className
       )}
       {...props}
