@@ -473,6 +473,96 @@ async def audit_trail():
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# ANALYSIS MOCK ROUTER — serves demo results for all 6 analysis tool types
+# ════════════════════════════════════════════════════════════════════════════
+
+analysis_mock_router = APIRouter(prefix="/api/v1/analysis", tags=["analysis-mock"])
+
+_ANALYSIS_RESULTS = {
+    "portfolio": {
+        "allocation": [
+            {"category": "US Equity", "percentage": 48, "color": "#3B82F6"},
+            {"category": "Int'l Equity", "percentage": 15, "color": "#10B981"},
+            {"category": "Fixed Income", "percentage": 22, "color": "#F59E0B"},
+            {"category": "Alternatives", "percentage": 8, "color": "#8B5CF6"},
+            {"category": "Cash", "percentage": 7, "color": "#94A3B8"},
+        ],
+        "metrics": [
+            {"label": "Diversification Score", "value": "78/100"},
+            {"label": "Sharpe Ratio", "value": "1.42"},
+            {"label": "Risk-Adj Return", "value": "12.8%"},
+        ],
+        "recommendations": [
+            "Consider reducing US large-cap tech concentration from 35% to below 25%",
+            "Increase international emerging market exposure by 5% for diversification",
+            "Add TIPS allocation (3-5%) to hedge against inflation risk",
+            "Move excess cash to short-duration treasuries for better yield",
+        ],
+    },
+    "fee": {
+        "totalFees": 3840,
+        "feePercentage": 0.72,
+        "potentialSavings": 1620,
+        "breakdown": [
+            {"account": "NW Mutual VA IRA (4532)", "feePercent": 1.35, "annualCost": 2275, "status": "high"},
+            {"account": "Robinhood Individual (8821)", "feePercent": 0.12, "annualCost": 324, "status": "low"},
+            {"account": "E*TRADE 401(k) (3390)", "feePercent": 0.45, "annualCost": 498, "status": "moderate"},
+            {"account": "NW Mutual 529 Plan (6617)", "feePercent": 0.95, "annualCost": 743, "status": "high"},
+        ],
+    },
+    "tax": {
+        "unrealizedGains": 6406,
+        "unrealizedLosses": 1855,
+        "taxEfficiencyScore": 74,
+        "harvestingOpportunities": [
+            {"ticker": "TSLA", "description": "Short-term loss — replace with broad EV/auto ETF", "loss": 464},
+            {"ticker": "NWMRE", "description": "Real estate fund loss — swap to SCHH for similar exposure", "loss": 180},
+            {"ticker": "BND", "description": "Bond fund loss — switch to AGG to maintain duration", "loss": 85},
+        ],
+    },
+    "risk": {
+        "riskScore": 58,
+        "riskFactors": [
+            {"name": "Single Stock Concentration", "description": "NVDA is 15.6% of portfolio — above 10% threshold", "level": "high"},
+            {"name": "Sector Concentration", "description": "Technology sector at 38% — above 30% guideline", "level": "high"},
+            {"name": "Account Diversification", "description": "Assets spread across 4 custodians with varied strategies", "level": "low"},
+            {"name": "Interest Rate Sensitivity", "description": "Bond duration of 5.2 years — moderate rate risk", "level": "moderate"},
+            {"name": "Liquidity Risk", "description": "92% of portfolio in liquid securities", "level": "low"},
+        ],
+    },
+    "etf": {
+        "recommendations": [
+            {"ticker": "VTI", "name": "Vanguard Total Stock Market", "category": "US Broad Market", "allocation": 40, "expenseRatio": 0.03},
+            {"ticker": "VXUS", "name": "Vanguard Total Int'l Stock", "category": "International Equity", "allocation": 20, "expenseRatio": 0.07},
+            {"ticker": "BND", "name": "Vanguard Total Bond Market", "category": "Fixed Income", "allocation": 25, "expenseRatio": 0.03},
+            {"ticker": "VNQ", "name": "Vanguard Real Estate ETF", "category": "Alternatives (REITs)", "allocation": 5, "expenseRatio": 0.12},
+            {"ticker": "VTIP", "name": "Vanguard Short-Term TIPS", "category": "Inflation Protection", "allocation": 5, "expenseRatio": 0.04},
+            {"ticker": "SGOV", "name": "iShares 0-3 Month Treasury", "category": "Cash / Ultra Short", "allocation": 5, "expenseRatio": 0.05},
+        ],
+        "totalExpenseRatio": 0.05,
+    },
+    "ips": {
+        "clientProfile": "Nicole Wilson, age 42. Married with two children (Emma, 15; James, 12). Employed as a marketing director with household income of $185,000. Moderate risk tolerance with a 20+ year investment horizon for retirement assets.",
+        "objectives": "Primary: Accumulate retirement assets targeting $1.2M by age 65. Secondary: Fund college education for two children ($150K combined target by 2028/2031). Tertiary: Maintain 6-month emergency reserve.",
+        "riskTolerance": "Moderate — willing to accept short-term volatility of up to 20% drawdown for higher long-term returns. Risk capacity is above average given dual income, stable employment, and long time horizon. Risk questionnaire score: 62/100.",
+        "allocationGuidelines": "Target: 55-65% equities (split domestic/international 70/30), 20-30% fixed income, 5-10% alternatives, 3-7% cash equivalents. Maximum single-stock position: 10%. Maximum sector concentration: 25%.",
+        "rebalancingPolicy": "Calendar rebalancing quarterly with 5% threshold bands. Tax-aware rebalancing preferred — harvest losses when available, defer short-term gains. Annual comprehensive review with advisor in Q4.",
+    },
+}
+
+
+@analysis_mock_router.post("/{tool_type}/{household_id}")
+async def run_mock_analysis(tool_type: str, household_id: str):
+    """Return mock analysis results for any tool type."""
+    import asyncio
+    await asyncio.sleep(1.2)  # simulate processing
+    data = _ANALYSIS_RESULTS.get(tool_type)
+    if data is None:
+        return {"error": f"Unknown analysis type: {tool_type}"}
+    return data
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # All mock routers in a single list for easy mounting
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -486,4 +576,5 @@ ALL_MOCK_ROUTERS = [
     ("liquidity", liquidity_router),
     ("compliance_docs", compliance_docs_router),
     ("compliance_copilot", compliance_copilot_router),
+    ("analysis", analysis_mock_router),
 ]
