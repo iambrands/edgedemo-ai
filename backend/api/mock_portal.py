@@ -829,3 +829,323 @@ async def mark_all_notifications_read(authorization: str | None = Header(None)):
     for n in _NOTIFICATIONS.get(prefix, []):
         n["is_read"] = True
     return {"ok": True}
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  AI FINANCIAL ASSISTANT                                                    ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+import math as _math
+
+_RESPONSE_KEYWORDS: list[tuple[str, list[str]]] = [
+    ("balance",     ["balance", "how much", "total", "worth", "value", "portfolio"]),
+    ("performance", ["performance", "return", "gains", "doing", "ytd", "growth"]),
+    ("advisor",     ["advisor", "contact", "speak", "call", "meet", "schedule"]),
+    ("fees",        ["fee", "cost", "expense", "charge"]),
+    ("tax",         ["tax", "1099", "capital gain", "harvest"]),
+    ("goal",        ["goal", "retirement", "target", "progress", "saving"]),
+    ("rebalance",   ["rebalance", "allocation", "drift", "diversi"]),
+    ("account",     ["account", "ira", "401k", "roth", "brokerage"]),
+    ("document",    ["document", "statement", "report", "download"]),
+    ("risk",        ["risk", "volatility", "conservative", "aggressive"]),
+]
+
+
+def _classify(msg: str) -> str:
+    low = msg.lower()
+    for cat, keywords in _RESPONSE_KEYWORDS:
+        if any(k in low for k in keywords):
+            return cat
+    return "general"
+
+
+def _build_response(cat: str, hh: dict) -> dict:
+    total = sum(a["current_value"] for a in hh["accounts"])
+    acct_count = len(hh["accounts"])
+    name = hh["client_name"].split()[0]
+    rp = hh.get("risk_profile", {})
+
+    templates: dict[str, tuple[str, list[str]]] = {
+        "balance": (
+            f"{name}, your total household portfolio value is **${total:,.2f}** across {acct_count} account{'s' if acct_count != 1 else ''}.\n\n"
+            + "\n".join(f"• **{a['account_name']}** — ${a['current_value']:,.2f} ({a['tax_type']})" for a in hh["accounts"]),
+            ["How is my portfolio performing?", "Show my goals", "View risk profile"],
+        ),
+        "performance": (
+            f"{name}, your portfolio is up **{hh['ytd_return']*100:.1f}%** year-to-date, which translates to roughly **${total * hh['ytd_return']:,.0f}** in gains this year.\n\n"
+            "You can see a detailed breakdown including monthly returns and benchmark comparison on your Performance page.",
+            ["View performance charts", "What's my asset allocation?", "Show tax impact"],
+        ),
+        "advisor": (
+            f"Your advisor is **{_ADVISOR}** at {_FIRM}.\n\n"
+            "You can:\n"
+            "• **Schedule a meeting** — go to your Meetings page\n"
+            "• **Call** — (555) 281-4567\n"
+            "• **Email** — leslie@iabadvisors.com\n\n"
+            "Would you like me to help you schedule a meeting?",
+            ["Schedule a meeting", "What are my open action items?", "View my goals"],
+        ),
+        "fees": (
+            f"{name}, here's a summary of fees across your accounts:\n\n"
+            + "\n".join(f"• **{a['account_name']}** — {a['custodian']}" for a in hh["accounts"])
+            + "\n\nYour advisor is monitoring fee levels and has flagged any high-fee accounts in your action items.",
+            ["Show my action items", "View account details", "Contact advisor"],
+        ),
+        "tax": (
+            f"{name}, for the current tax year:\n\n"
+            "• Your **realized gains** and tax documents are available in the Tax Center\n"
+            "• Tax forms (1099-DIV, 1099-B) can be downloaded from the Documents page\n"
+            "• Your advisor is monitoring **tax-loss harvesting** opportunities\n\n"
+            "Visit your Tax Center for a detailed breakdown of gains, losses, and estimated tax liability.",
+            ["Go to Tax Center", "View tax documents", "What are tax-loss opportunities?"],
+        ),
+        "goal": (
+            f"{name}, you have **{len(hh.get('goals', []))}** active goals:\n\n"
+            + "\n".join(
+                f"• **{g['name']}** — ${g['current_amount']:,.0f} of ${g['target_amount']:,.0f} "
+                f"({g['progress_pct']*100:.0f}%) {'✅ On track' if g['on_track'] else '⚠️ Needs attention'}"
+                for g in hh.get("goals", [])
+            )
+            + "\n\nYou can adjust contributions or timelines on your Goals page.",
+            ["Adjust a goal", "Run what-if scenario", "Contact advisor"],
+        ),
+        "rebalance": (
+            f"{name}, your current allocation based on your **{rp.get('risk_level', 'Moderate')}** risk profile targets:\n\n"
+            f"• Equities: {rp.get('target_equity', 55)}%\n"
+            f"• Fixed Income: {rp.get('target_fixed_income', 35)}%\n"
+            f"• Alternatives: {rp.get('target_alternatives', 10)}%\n\n"
+            "Check your Performance page for current vs. target allocation details. Your advisor reviews allocation drift quarterly.",
+            ["View allocation chart", "Retake risk assessment", "Schedule rebalance review"],
+        ),
+        "account": (
+            f"{name}, you have {acct_count} accounts in your household:\n\n"
+            + "\n".join(f"• **{a['account_name']}** — {a['account_type']} at {a['custodian']} — ${a['current_value']:,.2f}" for a in hh["accounts"])
+            + "\n\nClick on any account in your Dashboard to see holdings details.",
+            ["Show portfolio performance", "View account holdings", "Contact advisor"],
+        ),
+        "document": (
+            f"{name}, your documents are organized in the Documents page. You currently have **{len(hh.get('documents', []))}** documents available including:\n\n"
+            "• Performance reports\n• Account statements\n• Tax forms (1099s)\n• Advisory agreements\n\n"
+            "Visit the Documents page to view or download any document.",
+            ["Go to Documents", "View tax forms", "Show latest statement"],
+        ),
+        "risk": (
+            f"{name}, your risk profile is **{rp.get('risk_level', 'Moderate')}** (score: {rp.get('risk_score', 50)}/100).\n\n"
+            f"This means your recommended allocation is {rp.get('target_equity', 55)}% equities, "
+            f"{rp.get('target_fixed_income', 35)}% fixed income, and {rp.get('target_alternatives', 10)}% alternatives.\n\n"
+            "You can retake the risk assessment anytime from your Risk Profile page if your circumstances have changed.",
+            ["Retake risk assessment", "View allocation", "Run what-if scenario"],
+        ),
+        "general": (
+            f"Hi {name}! I'm your AI financial assistant. I can help with:\n\n"
+            "• 💰 **Account balances** — \"What's my portfolio worth?\"\n"
+            "• 📈 **Performance** — \"How are my investments doing?\"\n"
+            "• 🎯 **Goals** — \"Am I on track for retirement?\"\n"
+            "• 📋 **Tax info** — \"Show my tax summary\"\n"
+            "• 📅 **Meetings** — \"Schedule a meeting with my advisor\"\n"
+            "• 🔄 **Allocation** — \"What's my asset allocation?\"\n\n"
+            "What would you like to know?",
+            ["What's my balance?", "How am I doing?", "Show my goals"],
+        ),
+    }
+    text, followups = templates.get(cat, templates["general"])
+    return {"response": text, "suggested_follow_ups": followups, "category": cat}
+
+
+@router.get("/assistant/history")
+async def get_chat_history(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    name = hh["client_name"].split()[0]
+    return {"messages": [
+        {"role": "assistant", "content": f"Hi {name}! 👋 I'm your AI financial assistant. Ask me anything about your accounts, performance, goals, or taxes.", "timestamp": datetime.utcnow().isoformat()},
+    ]}
+
+
+@router.post("/assistant/chat")
+async def chat_with_assistant(data: dict, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    msg = data.get("message", "")
+    cat = _classify(msg)
+    return _build_response(cat, hh)
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  WHAT-IF SCENARIOS                                                         ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+def _project(current_savings: float, monthly_contrib: float, annual_return: float,
+             years: int, inflation: float = 0.025) -> list[dict]:
+    """Return year-by-year projection."""
+    balance = current_savings
+    monthly_r = annual_return / 12
+    rows: list[dict] = []
+    for y in range(years + 1):
+        rows.append({"year": y, "balance": round(balance, 0)})
+        for _ in range(12):
+            balance = balance * (1 + monthly_r) + monthly_contrib
+    return rows
+
+
+def _scenario(current_savings: float, monthly_contrib: float, annual_return: float,
+              current_age: int, retire_age: int, monthly_spending: float,
+              inflation: float = 0.025) -> dict:
+    years = retire_age - current_age
+    balance = current_savings
+    monthly_r = annual_return / 12
+    for _ in range(years * 12):
+        balance = balance * (1 + monthly_r) + monthly_contrib
+    balance = round(balance, 0)
+    real_return = annual_return - inflation
+    monthly_income = round(balance * 0.04 / 12, 0)
+    years_income = round(balance / (monthly_spending * 12), 1) if monthly_spending > 0 else 99
+    success = min(99, max(30, int(60 + (monthly_income / max(monthly_spending, 1)) * 25)))
+    return {
+        "retirement_age": retire_age,
+        "balance": balance,
+        "monthly_income": monthly_income,
+        "years_of_income": years_income,
+        "success_probability": success,
+        "shortfall_risk": monthly_income < monthly_spending,
+    }
+
+
+@router.post("/what-if/calculate")
+async def what_if_calculate(data: dict, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    current_savings = data.get("current_savings", sum(a["current_value"] for a in hh["accounts"]))
+    current_age = data.get("current_age", 45)
+    retire_age = data.get("retirement_age", 65)
+    monthly_contrib = data.get("monthly_contribution", 1500)
+    annual_return = data.get("expected_return", 7.0) / 100
+    inflation = data.get("inflation_rate", 2.5) / 100
+    monthly_spending = data.get("retirement_spending", 6000)
+
+    primary = _scenario(current_savings, monthly_contrib, annual_return, current_age, retire_age, monthly_spending, inflation)
+    yearly = _project(current_savings, monthly_contrib, annual_return, retire_age - current_age, inflation)
+
+    comparisons = []
+    for ra in [max(current_age + 5, 60), 65, 67]:
+        if ra == retire_age:
+            comparisons.append(primary)
+        else:
+            comparisons.append(_scenario(current_savings, monthly_contrib, annual_return, current_age, ra, monthly_spending, inflation))
+
+    return {
+        "projection": primary,
+        "yearly_projections": yearly,
+        "comparison": comparisons,
+        "inputs": {
+            "current_age": current_age,
+            "retirement_age": retire_age,
+            "current_savings": current_savings,
+            "monthly_contribution": monthly_contrib,
+            "expected_return": annual_return * 100,
+            "inflation_rate": inflation * 100,
+            "retirement_spending": monthly_spending,
+        },
+    }
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  TAX CENTER                                                                ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_TAX_DATA: Dict[str, dict] = {
+    "nicole": {
+        "summary": {
+            "realized_gains_st": 1250.00, "realized_gains_lt": 4500.00, "realized_losses": -890.00,
+            "net_realized": 4860.00, "estimated_tax_st": 312.50, "estimated_tax_lt": 675.00,
+            "total_estimated_tax": 987.50, "unrealized_gains": 6405.58, "unrealized_losses": -1854.86,
+            "tax_loss_harvest_opportunities": 2,
+        },
+        "realized_transactions": [
+            {"date": "2025-11-15", "symbol": "AAPL", "shares": 10, "proceeds": 2250, "cost_basis": 1800, "gain": 450, "term": "long", "account": "Robinhood"},
+            {"date": "2025-12-01", "symbol": "MSFT", "shares": 5, "proceeds": 1875, "cost_basis": 1625, "gain": 250, "term": "short", "account": "Robinhood"},
+            {"date": "2026-01-10", "symbol": "VTI", "shares": 20, "proceeds": 4500, "cost_basis": 4000, "gain": 500, "term": "long", "account": "E*TRADE"},
+            {"date": "2025-08-20", "symbol": "NWMRE", "shares": 1, "proceeds": 2420, "cost_basis": 2600, "gain": -180, "term": "long", "account": "NW Mutual"},
+            {"date": "2025-10-05", "symbol": "BND", "shares": 10, "proceeds": 880, "cost_basis": 950, "gain": -70, "term": "short", "account": "E*TRADE"},
+        ],
+        "tax_lots": [
+            {"symbol": "NVDA", "name": "NVIDIA Corporation", "shares": 65, "cost_basis": 4800, "current_value": 8586.50, "unrealized": 3786.50, "term": "long", "purchase_date": "2024-03-15", "account": "Robinhood"},
+            {"symbol": "AAPL", "name": "Apple Inc.", "shares": 25, "cost_basis": 4000, "current_value": 4637.50, "unrealized": 637.50, "term": "long", "purchase_date": "2023-08-20", "account": "Robinhood"},
+            {"symbol": "MSFT", "name": "Microsoft Corp.", "shares": 10, "cost_basis": 3200, "current_value": 3374.50, "unrealized": 174.50, "term": "long", "purchase_date": "2024-01-10", "account": "Robinhood"},
+            {"symbol": "TSLA", "name": "Tesla Inc.", "shares": 8, "cost_basis": 2100, "current_value": 1636.06, "unrealized": -463.94, "term": "short", "purchase_date": "2025-06-15", "account": "Robinhood"},
+            {"symbol": "NWMRE", "name": "Real Estate Securities Fund", "shares": 1, "cost_basis": 2600, "current_value": 2420, "unrealized": -180.00, "term": "long", "purchase_date": "2024-09-01", "account": "NW Mutual"},
+            {"symbol": "BND", "name": "Vanguard Total Bond Market", "shares": 25, "cost_basis": 2300, "current_value": 2215.08, "unrealized": -84.92, "term": "long", "purchase_date": "2024-11-20", "account": "E*TRADE"},
+            {"symbol": "NWMSB", "name": "Select Bond Fund (Allspring)", "shares": 1, "cost_basis": 5600, "current_value": 5473.65, "unrealized": -126.35, "term": "long", "purchase_date": "2024-06-01", "account": "NW Mutual"},
+        ],
+        "tax_documents": [
+            {"name": "2025 Form 1099-DIV (Robinhood)", "status": "available", "date": "2026-01-31"},
+            {"name": "2025 Form 1099-B (Robinhood)", "status": "available", "date": "2026-02-15"},
+            {"name": "2025 Form 1099-INT (E*TRADE)", "status": "pending", "date": "2026-02-28"},
+            {"name": "2024 Form 1099-DIV (Robinhood)", "status": "available", "date": "2025-01-31"},
+        ],
+    },
+    "mark": {
+        "summary": {
+            "realized_gains_st": 0, "realized_gains_lt": 8500, "realized_losses": -1200,
+            "net_realized": 7300, "estimated_tax_st": 0, "estimated_tax_lt": 1275,
+            "total_estimated_tax": 1275, "unrealized_gains": 31300, "unrealized_losses": -3170,
+            "tax_loss_harvest_opportunities": 1,
+        },
+        "realized_transactions": [
+            {"date": "2025-12-15", "symbol": "SCHD", "shares": 100, "proceeds": 8500, "cost_basis": 7200, "gain": 1300, "term": "long", "account": "Schwab Joint"},
+        ],
+        "tax_lots": [
+            {"symbol": "VTI", "name": "Vanguard Total Stock Market", "shares": 350, "cost_basis": 75000, "current_value": 83800, "unrealized": 8800, "term": "long", "purchase_date": "2022-03-01", "account": "Schwab Joint"},
+            {"symbol": "BND", "name": "Vanguard Total Bond Market", "shares": 800, "cost_basis": 72000, "current_value": 70880, "unrealized": -1120, "term": "long", "purchase_date": "2023-01-15", "account": "Schwab Joint"},
+        ],
+        "tax_documents": [
+            {"name": "2025 Form 1099-DIV (Schwab)", "status": "available", "date": "2026-01-31"},
+            {"name": "2025 Form 1099-B (Schwab)", "status": "pending", "date": "2026-02-28"},
+        ],
+    },
+    "carlos": {
+        "summary": {
+            "realized_gains_st": 500, "realized_gains_lt": 3200, "realized_losses": -400,
+            "net_realized": 3300, "estimated_tax_st": 125, "estimated_tax_lt": 480,
+            "total_estimated_tax": 605, "unrealized_gains": 30500, "unrealized_losses": -2000,
+            "tax_loss_harvest_opportunities": 1,
+        },
+        "realized_transactions": [],
+        "tax_lots": [
+            {"symbol": "SWPPX", "name": "Schwab S&P 500 Index", "shares": 2200, "cost_basis": 130000, "current_value": 150000, "unrealized": 20000, "term": "long", "purchase_date": "2021-06-01", "account": "Schwab Rollover"},
+        ],
+        "tax_documents": [
+            {"name": "2025 Form 1099-DIV (Schwab)", "status": "available", "date": "2026-01-31"},
+        ],
+    },
+    "raj": {
+        "summary": {
+            "realized_gains_st": 0, "realized_gains_lt": 2100, "realized_losses": -300,
+            "net_realized": 1800, "estimated_tax_st": 0, "estimated_tax_lt": 315,
+            "total_estimated_tax": 315, "unrealized_gains": 12886, "unrealized_losses": -1990,
+            "tax_loss_harvest_opportunities": 1,
+        },
+        "realized_transactions": [],
+        "tax_lots": [
+            {"symbol": "VTI", "name": "Vanguard Total Stock Market", "shares": 200, "cost_basis": 42000, "current_value": 47886, "unrealized": 5886, "term": "long", "purchase_date": "2021-09-01", "account": "Vanguard Brokerage"},
+        ],
+        "tax_documents": [
+            {"name": "2025 Form 1099-DIV (Vanguard)", "status": "available", "date": "2026-01-31"},
+        ],
+    },
+}
+_TAX_DATA["susan"] = _TAX_DATA["mark"]
+_TAX_DATA["priya"] = _TAX_DATA["raj"]
+
+
+@router.get("/tax/summary")
+async def get_tax_summary(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    td = _TAX_DATA.get(prefix, _TAX_DATA["nicole"])
+    return {"summary": td["summary"], "tax_documents": td["tax_documents"]}
+
+
+@router.get("/tax/lots")
+async def get_tax_lots(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    td = _TAX_DATA.get(prefix, _TAX_DATA["nicole"])
+    return {"realized_transactions": td["realized_transactions"], "tax_lots": td["tax_lots"]}

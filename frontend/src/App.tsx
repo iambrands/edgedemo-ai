@@ -31,6 +31,9 @@ import {
   PortalMeetings,
   PortalRequests,
   PortalNotifications,
+  PortalAssistant,
+  PortalWhatIf,
+  PortalTaxCenter,
   PortalSettings,
   ClientOnboarding,
 } from './pages/portal';
@@ -156,6 +159,30 @@ export default function App() {
         element={
           <PortalGuard>
             <PortalNotifications />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/assistant"
+        element={
+          <PortalGuard>
+            <PortalAssistant />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/what-if"
+        element={
+          <PortalGuard>
+            <PortalWhatIf />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/tax"
+        element={
+          <PortalGuard>
+            <PortalTaxCenter />
           </PortalGuard>
         }
       />

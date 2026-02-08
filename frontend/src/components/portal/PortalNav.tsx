@@ -10,6 +10,9 @@ import {
   LogOut,
   Bell,
   HelpCircle,
+  Bot,
+  Calculator,
+  Receipt,
 } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 
@@ -20,6 +23,9 @@ const NAV_ITEMS = [
   { to: '/portal/documents', label: 'Documents', icon: FileText },
   { to: '/portal/meetings', label: 'Meetings', icon: Calendar },
   { to: '/portal/requests', label: 'Requests', icon: Send },
+  { to: '/portal/assistant', label: 'AI Assistant', icon: Bot },
+  { to: '/portal/what-if', label: 'What-If', icon: Calculator },
+  { to: '/portal/tax', label: 'Tax Center', icon: Receipt },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 

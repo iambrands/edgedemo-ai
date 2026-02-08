@@ -471,6 +471,48 @@ export async function markAllNotificationsRead(): Promise<any> {
 }
 
 // ============================================================================
+// AI ASSISTANT
+// ============================================================================
+
+export async function getChatHistory(): Promise<any> {
+  return portalFetch<any>('/assistant/history');
+}
+
+export async function sendChatMessage(message: string): Promise<any> {
+  return portalFetch<any>('/assistant/chat', { method: 'POST', body: { message } });
+}
+
+// ============================================================================
+// WHAT-IF SCENARIOS
+// ============================================================================
+
+export interface WhatIfParams {
+  current_age: number;
+  retirement_age: number;
+  current_savings: number;
+  monthly_contribution: number;
+  expected_return: number;
+  inflation_rate: number;
+  retirement_spending: number;
+}
+
+export async function calculateWhatIf(params: WhatIfParams): Promise<any> {
+  return portalFetch<any>('/what-if/calculate', { method: 'POST', body: params });
+}
+
+// ============================================================================
+// TAX CENTER
+// ============================================================================
+
+export async function getTaxSummary(): Promise<any> {
+  return portalFetch<any>('/tax/summary');
+}
+
+export async function getTaxLots(): Promise<any> {
+  return portalFetch<any>('/tax/lots');
+}
+
+// ============================================================================
 // EXPORT ALL
 // ============================================================================
 
@@ -529,6 +571,17 @@ export const portalApi = {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+
+  // AI Assistant
+  getChatHistory,
+  sendChatMessage,
+
+  // What-If
+  calculateWhatIf,
+
+  // Tax Center
+  getTaxSummary,
+  getTaxLots,
 };
 
 export default portalApi;
