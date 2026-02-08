@@ -130,8 +130,8 @@ export default function Custodians() {
         getAvailableCustodians(),
         listConnections(),
       ]);
-      setPlatforms(plats);
-      setConnections(conns);
+      setPlatforms(Array.isArray(plats) ? plats : []);
+      setConnections(Array.isArray(conns) ? conns : []);
     } catch (err) {
       console.error(err);
       setError('Failed to load custodian data');

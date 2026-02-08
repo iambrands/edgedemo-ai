@@ -15,12 +15,12 @@ export function Card({
   ...props
 }: CardProps) {
   const variants = {
-    default: 'bg-white border border-slate-200 rounded-2xl p-8 shadow-sm',
+    default: 'bg-white border border-slate-200 rounded-xl p-8 shadow-sm',
     feature:
-      'bg-white border border-slate-200 rounded-2xl p-8 shadow-sm hover:shadow-md hover:border-slate-300 transition-all',
-    pricing: 'bg-white border border-slate-200 rounded-2xl p-8 shadow-sm',
+      'bg-white border border-slate-200 rounded-xl p-8 shadow-sm hover:shadow-md hover:border-slate-300 transition-all',
+    pricing: 'bg-white border border-slate-200 rounded-xl p-8 shadow-sm',
     'pricing-featured':
-      'bg-white border-2 border-primary-500 rounded-2xl p-8 shadow-pricing-featured',
+      'bg-white border-2 border-primary-500 rounded-xl p-8 shadow-pricing-featured',
   };
 
   return (

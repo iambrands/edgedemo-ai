@@ -61,8 +61,14 @@ export function Navbar() {
               <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
             ) : (
               <>
+                <Link
+                  to="/portal/login"
+                  className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  Client Login
+                </Link>
                 <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Sign In
+                  Advisor Login
                 </Button>
                 <Button onClick={() => navigate('/signup')}>Get Started →</Button>
               </>
@@ -101,10 +107,17 @@ export function Navbar() {
                   <>
                     <Button
                       variant="secondary"
+                      onClick={() => navigate('/portal/login')}
+                      className="w-full"
+                    >
+                      Client Login
+                    </Button>
+                    <Button
+                      variant="secondary"
                       onClick={() => navigate('/login')}
                       className="w-full"
                     >
-                      Sign In
+                      Advisor Login
                     </Button>
                     <Button onClick={() => navigate('/signup')} className="w-full">
                       Get Started →

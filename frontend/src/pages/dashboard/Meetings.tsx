@@ -115,6 +115,15 @@ const MeetingsPage: React.FC = () => {
     loadMeetings();
   }, []);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showNewMeetingModal) setShowNewMeetingModal(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showNewMeetingModal]);
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem('edgeai_token');
     return {
@@ -135,9 +144,10 @@ const MeetingsPage: React.FC = () => {
       }
       if (response.ok) {
         const data = await response.json();
-        setMeetings(data);
+        const meetingsList = Array.isArray(data) ? data : [];
+        setMeetings(meetingsList);
         // Auto-select first completed meeting
-        const completedMeeting = data.find((m: Meeting) => m.status === 'completed');
+        const completedMeeting = meetingsList.find((m: Meeting) => m.status === 'completed');
         if (completedMeeting) {
           setSelectedMeeting(completedMeeting);
           loadMeetingDetails(completedMeeting.id);
@@ -765,7 +775,7 @@ const MeetingsPage: React.FC = () => {
       {/* New Meeting Modal */}
       {showNewMeetingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-900">New Meeting</h3>
               <p className="text-sm text-slate-500 mt-1">Record or upload a meeting for AI analysis</p>

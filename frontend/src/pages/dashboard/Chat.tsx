@@ -134,7 +134,7 @@ export function Chat() {
             <Sparkles size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="font-semibold text-slate-900">EdgeAI Assistant</h2>
+            <h2 className="font-semibold text-slate-900">AI Chat Assistant</h2>
             <p className="text-sm text-slate-500">Powered by IIM → CIM → BIM pipeline</p>
           </div>
         </div>

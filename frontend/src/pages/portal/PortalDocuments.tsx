@@ -41,7 +41,7 @@ export default function PortalDocuments() {
   const loadDocuments = async () => {
     try {
       const data = await getDocuments(filter || undefined);
-      setDocuments(data);
+      setDocuments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load documents', err);
     } finally {

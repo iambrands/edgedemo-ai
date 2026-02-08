@@ -179,9 +179,9 @@ export default function PortalDashboard() {
         {/* Welcome + Advisor */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              Welcome back, {clientName}
-            </h2>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              Dashboard — Welcome back, {clientName}
+            </h1>
             <p className="text-slate-500">Wilson Household Overview</p>
           </div>
           {data?.advisor_name && (

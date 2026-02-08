@@ -87,6 +87,8 @@ export function AnalysisModal({ isOpen, onClose, toolType, toolTitle }: Analysis
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
+          role="dialog"
+          aria-modal="true"
           className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >

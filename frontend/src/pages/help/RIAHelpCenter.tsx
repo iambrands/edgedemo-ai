@@ -163,7 +163,7 @@ export default function RIAHelpCenter() {
             Back to Dashboard
           </Link>
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">How can we help you?</h1>
+            <h1 className="text-4xl font-bold mb-4">Help Center</h1>
             <p className="text-blue-100 mb-8">
               Search our knowledge base or browse categories below
             </p>

@@ -14,6 +14,9 @@
     "test:smoke": "playwright test smoke.spec.ts",
     "test:dashboard": "playwright test e2e/dashboard/",
     "test:portal": "playwright test e2e/portal/",
+    "test:portal:new": "playwright test e2e/portal/tier2-tier3.spec.ts",
+    "test:portal:perf": "playwright test e2e/portal/performance.spec.ts",
+    "test:portal:detail": "playwright test e2e/portal/performance.spec.ts e2e/portal/meetings.spec.ts e2e/portal/notifications.spec.ts e2e/portal/assistant.spec.ts",
     "test:report": "playwright show-report"
   },
   "dependencies": {

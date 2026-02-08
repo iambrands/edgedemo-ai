@@ -50,6 +50,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
+          role="dialog"
+          aria-modal="true"
           className={`relative bg-white rounded-xl shadow-xl w-full ${sizeClasses[size]} transform transition-all`}
           onClick={(e) => e.stopPropagation()}
         >

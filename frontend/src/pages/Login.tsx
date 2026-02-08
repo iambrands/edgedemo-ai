@@ -138,8 +138,16 @@ export function Login() {
         </p>
       </Card>
 
+      {/* Client portal cross-link */}
+      <p className="text-sm text-slate-500 text-center mt-6">
+        Looking for the Client Portal?{' '}
+        <Link to="/portal/login" className="text-primary-600 hover:underline font-medium">
+          Client Login
+        </Link>
+      </p>
+
       {/* Demo credentials hint */}
-      <div className="mt-6 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
+      <div className="mt-4 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
         <p className="text-xs text-slate-500 text-center">
           <span className="font-medium text-slate-700">Demo Credentials:</span>{' '}
           <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">leslie@iabadvisors.com</code>{' '}

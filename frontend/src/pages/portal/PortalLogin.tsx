@@ -160,14 +160,12 @@ export default function PortalLogin() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-slate-500">
-          <p>
-            Looking for the advisor portal?{' '}
-            <Link to="/login" className="text-blue-600 hover:underline">
-              Sign in here
-            </Link>
-          </p>
-        </div>
+        <p className="text-sm text-slate-500 text-center mt-6">
+          Are you an advisor?{' '}
+          <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            Advisor Login
+          </Link>
+        </p>
 
         {branding?.disclaimer_text && (
           <p className="mt-4 text-xs text-slate-400 text-center">

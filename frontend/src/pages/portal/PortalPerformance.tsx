@@ -70,10 +70,22 @@ export default function PortalPerformance() {
   const [period, setPeriod] = useState('YTD');
   const [tab, setTab] = useState<'overview' | 'allocation' | 'monthly'>('overview');
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     getPerformance()
-      .then((d) => setData(d))
-      .catch((e) => console.error('perf load failed', e))
+      .then((d) => {
+        // Validate the response has expected structure
+        if (d && typeof d === 'object' && d.summary && d.time_series) {
+          setData(d);
+        } else {
+          setError('Performance data is unavailable');
+        }
+      })
+      .catch((e) => {
+        console.error('perf load failed', e);
+        setError('Failed to load performance data');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -88,11 +100,28 @@ export default function PortalPerformance() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <PortalNav />
+        <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Performance</h1>
+            <p className="text-slate-500 text-sm">Track your portfolio performance over time</p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+            <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="font-medium text-slate-900">{error || 'No performance data available'}</h3>
+            <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-  const s = data.summary;
+  const s = data.summary ?? { total_value: 0, total_cost_basis: 0, total_gain_loss: 0, total_gain_loss_pct: 0, ytd_return: 0, mtd_return: 0, inception_return: 0, inception_date: '' };
   const positive = s.total_gain_loss >= 0;
-  const chartData = (data.time_series[period] || []).map((p) => ({ ...p, date: fmtDate(p.date) }));
+  const chartData = (data.time_series?.[period] ?? []).map((p) => ({ ...p, date: fmtDate(p.date) }));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -189,8 +218,8 @@ export default function PortalPerformance() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={data.asset_allocation.current} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="pct" nameKey="category" label={({ pct }: any) => `${pct}%`}>
-                      {data.asset_allocation.current.map((_, i) => (
+                    <Pie data={data.asset_allocation?.current ?? []} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="pct" nameKey="category" label={({ pct }: any) => `${pct}%`}>
+                      {(data.asset_allocation?.current ?? []).map((_, i) => (
                         <Cell key={i} fill={ALLOC_COLORS[i % ALLOC_COLORS.length]} />
                       ))}
                     </Pie>
@@ -199,7 +228,7 @@ export default function PortalPerformance() {
                 </ResponsiveContainer>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-4">
-                {data.asset_allocation.current.map((item, i) => (
+                {(data.asset_allocation?.current ?? []).map((item, i) => (
                   <div key={item.category} className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ALLOC_COLORS[i] }} />
                     <span className="text-sm text-slate-600">{item.category}</span>
@@ -213,8 +242,8 @@ export default function PortalPerformance() {
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Current vs Target</h2>
               <div className="space-y-5">
-                {data.asset_allocation.current.map((item, i) => {
-                  const tgt = data.asset_allocation.target[i];
+                {(data.asset_allocation?.current ?? []).map((item, i) => {
+                  const tgt = data.asset_allocation?.target?.[i] ?? { pct: 0 };
                   const diff = item.pct - tgt.pct;
                   return (
                     <div key={item.category}>
@@ -249,14 +278,14 @@ export default function PortalPerformance() {
             <h2 className="text-lg font-semibold text-slate-900 mb-6">Monthly Returns (Last 12 Months)</h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.monthly_returns} barGap={0}>
+                <BarChart data={data.monthly_returns ?? []} barGap={0}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748B' }} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: '#64748B' }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                   <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8 }} formatter={(v: any) => [`${(v as number).toFixed(2)}%`, '']} />
                   <Legend />
                   <Bar dataKey="return" name="Your Return" radius={[4, 4, 0, 0]}>
-                    {data.monthly_returns.map((entry, i) => (
+                    {(data.monthly_returns ?? []).map((entry, i) => (
                       <Cell key={i} fill={entry.return >= 0 ? '#10B981' : '#EF4444'} />
                     ))}
                   </Bar>

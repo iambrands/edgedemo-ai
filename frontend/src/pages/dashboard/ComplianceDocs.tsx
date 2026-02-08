@@ -68,11 +68,20 @@ export default function ComplianceDocs() {
     loadDocuments();
   }, []);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showGenerateModal) setShowGenerateModal(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showGenerateModal]);
+
   const loadDocuments = async () => {
     setError(null);
     try {
       const docs = await listDocuments();
-      setDocuments(docs);
+      setDocuments(Array.isArray(docs) ? docs : []);
     } catch (err) {
       console.error('Failed to load documents', err);
       setError('Failed to load documents');
@@ -88,7 +97,7 @@ export default function ComplianceDocs() {
 
     try {
       const vers = await listVersions(doc.id);
-      setVersions(vers);
+      setVersions(Array.isArray(vers) ? vers : []);
 
       // Load preview of current version
       if (doc.current_version_id) {
@@ -461,7 +470,7 @@ export default function ComplianceDocs() {
       {/* Generate Modal */}
       {showGenerateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-xl shadow-xl max-w-md w-full">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold">Generate Document</h2>
               <button

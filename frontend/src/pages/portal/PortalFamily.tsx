@@ -66,10 +66,22 @@ export default function PortalFamily() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [loadingMember, setLoadingMember] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     getFamilyData()
-      .then((d) => setData(d))
-      .catch((e) => console.error('Failed to load family data', e))
+      .then((d) => {
+        // Validate the response has expected structure
+        if (d && typeof d === 'object' && d.members && d.household_name) {
+          setData(d);
+        } else {
+          setError('Family data is unavailable');
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to load family data', e);
+        setError('Failed to load family data');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -99,13 +111,31 @@ export default function PortalFamily() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <PortalNav />
+        <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
+            <p className="text-slate-500 text-sm">Household overview and linked family members</p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+            <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="font-medium text-slate-900">{error || 'No family data available'}</h3>
+            <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-  const alloc = data.household_allocation;
-  const totalMembers = data.members.length;
-  const totalAccounts = data.members.reduce((s, m) => s + m.accounts_count, 0);
-  const dependents = data.dependents || [];
-  const jointAccounts = (data.joint_accounts || []).filter((j) => j.value > 0);
+  const alloc = data.household_allocation ?? { equity: 0, fixed_income: 0, alternatives: 0 };
+  const members = Array.isArray(data.members) ? data.members : [];
+  const totalMembers = members.length;
+  const totalAccounts = members.reduce((s, m) => s + (m.accounts_count ?? 0), 0);
+  const dependents = Array.isArray(data.dependents) ? data.dependents : [];
+  const jointAccounts = (Array.isArray(data.joint_accounts) ? data.joint_accounts : []).filter((j) => j.value > 0);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -170,7 +200,7 @@ export default function PortalFamily() {
             <Users className="h-4 w-4" /> Family Members
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {data.members.map((m) => (
+            {members.map((m) => (
               <div
                 key={m.id}
                 className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all ${

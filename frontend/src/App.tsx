@@ -42,6 +42,7 @@ import {
 import { RIAOnboarding } from './pages/onboarding';
 import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 /**
  * Auth guard for client portal routes.
@@ -65,23 +66,23 @@ export default function App() {
 
       {/* Dashboard Routes (Protected - Advisor) */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route index element={<Overview />} />
-        <Route path="households" element={<Households />} />
-        <Route path="accounts" element={<Accounts />} />
-        <Route path="statements" element={<Statements />} />
-        <Route path="analysis" element={<Analysis />} />
-        <Route path="compliance" element={<Compliance />} />
-        <Route path="meetings" element={<Meetings />} />
-        <Route path="compliance-docs" element={<ComplianceDocs />} />
-        <Route path="liquidity" element={<Liquidity />} />
-        <Route path="custodians" element={<Custodians />} />
-        <Route path="tax-harvest" element={<TaxHarvest />} />
-        <Route path="prospects" element={<Prospects />} />
-        <Route path="conversations" element={<Conversations />} />
-        <Route path="model-portfolios" element={<ModelPortfolios />} />
-        <Route path="alternative-assets" element={<AlternativeAssets />} />
-        <Route path="chat" element={<Chat />} />
-        <Route path="settings" element={<Settings />} />
+        <Route index element={<ErrorBoundary><Overview /></ErrorBoundary>} />
+        <Route path="households" element={<ErrorBoundary><Households /></ErrorBoundary>} />
+        <Route path="accounts" element={<ErrorBoundary><Accounts /></ErrorBoundary>} />
+        <Route path="statements" element={<ErrorBoundary><Statements /></ErrorBoundary>} />
+        <Route path="analysis" element={<ErrorBoundary><Analysis /></ErrorBoundary>} />
+        <Route path="compliance" element={<ErrorBoundary><Compliance /></ErrorBoundary>} />
+        <Route path="meetings" element={<ErrorBoundary><Meetings /></ErrorBoundary>} />
+        <Route path="compliance-docs" element={<ErrorBoundary><ComplianceDocs /></ErrorBoundary>} />
+        <Route path="liquidity" element={<ErrorBoundary><Liquidity /></ErrorBoundary>} />
+        <Route path="custodians" element={<ErrorBoundary><Custodians /></ErrorBoundary>} />
+        <Route path="tax-harvest" element={<ErrorBoundary><TaxHarvest /></ErrorBoundary>} />
+        <Route path="prospects" element={<ErrorBoundary><Prospects /></ErrorBoundary>} />
+        <Route path="conversations" element={<ErrorBoundary><Conversations /></ErrorBoundary>} />
+        <Route path="model-portfolios" element={<ErrorBoundary><ModelPortfolios /></ErrorBoundary>} />
+        <Route path="alternative-assets" element={<ErrorBoundary><AlternativeAssets /></ErrorBoundary>} />
+        <Route path="chat" element={<ErrorBoundary><Chat /></ErrorBoundary>} />
+        <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
       </Route>
 
       {/* RIA Onboarding & Help (standalone, no sidebar layout) */}
@@ -96,7 +97,7 @@ export default function App() {
         path="/portal/dashboard"
         element={
           <PortalGuard>
-            <PortalDashboard />
+            <ErrorBoundary><PortalDashboard /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -104,7 +105,7 @@ export default function App() {
         path="/portal/goals"
         element={
           <PortalGuard>
-            <PortalGoals />
+            <ErrorBoundary><PortalGoals /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -112,7 +113,7 @@ export default function App() {
         path="/portal/documents"
         element={
           <PortalGuard>
-            <PortalDocuments />
+            <ErrorBoundary><PortalDocuments /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -120,7 +121,7 @@ export default function App() {
         path="/portal/updates"
         element={
           <PortalGuard>
-            <PortalNarratives />
+            <ErrorBoundary><PortalNarratives /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -128,7 +129,7 @@ export default function App() {
         path="/portal/risk-profile"
         element={
           <PortalGuard>
-            <PortalRiskProfile />
+            <ErrorBoundary><PortalRiskProfile /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -136,7 +137,7 @@ export default function App() {
         path="/portal/performance"
         element={
           <PortalGuard>
-            <PortalPerformance />
+            <ErrorBoundary><PortalPerformance /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -144,7 +145,7 @@ export default function App() {
         path="/portal/meetings"
         element={
           <PortalGuard>
-            <PortalMeetings />
+            <ErrorBoundary><PortalMeetings /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -152,7 +153,7 @@ export default function App() {
         path="/portal/requests"
         element={
           <PortalGuard>
-            <PortalRequests />
+            <ErrorBoundary><PortalRequests /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -160,7 +161,7 @@ export default function App() {
         path="/portal/notifications"
         element={
           <PortalGuard>
-            <PortalNotifications />
+            <ErrorBoundary><PortalNotifications /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -168,7 +169,7 @@ export default function App() {
         path="/portal/assistant"
         element={
           <PortalGuard>
-            <PortalAssistant />
+            <ErrorBoundary><PortalAssistant /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -176,7 +177,7 @@ export default function App() {
         path="/portal/what-if"
         element={
           <PortalGuard>
-            <PortalWhatIf />
+            <ErrorBoundary><PortalWhatIf /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -184,7 +185,7 @@ export default function App() {
         path="/portal/tax"
         element={
           <PortalGuard>
-            <PortalTaxCenter />
+            <ErrorBoundary><PortalTaxCenter /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -192,7 +193,7 @@ export default function App() {
         path="/portal/beneficiaries"
         element={
           <PortalGuard>
-            <PortalBeneficiaries />
+            <ErrorBoundary><PortalBeneficiaries /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -200,7 +201,7 @@ export default function App() {
         path="/portal/family"
         element={
           <PortalGuard>
-            <PortalFamily />
+            <ErrorBoundary><PortalFamily /></ErrorBoundary>
           </PortalGuard>
         }
       />
@@ -208,7 +209,7 @@ export default function App() {
         path="/portal/settings"
         element={
           <PortalGuard>
-            <PortalSettings />
+            <ErrorBoundary><PortalSettings /></ErrorBoundary>
           </PortalGuard>
         }
       />

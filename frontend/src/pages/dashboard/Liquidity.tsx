@@ -64,12 +64,21 @@ export default function Liquidity() {
     loadRequests();
   }, []);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showCreateModal) setShowCreateModal(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showCreateModal]);
+
   const loadRequests = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await listWithdrawalRequests();
-      setRequests(data);
+      setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load requests', err);
       setError('Failed to load withdrawal requests');
@@ -520,6 +529,8 @@ export default function Liquidity() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <form
             onSubmit={handleCreate}
+            role="dialog"
+            aria-modal="true"
             className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4"
           >
             <h2 className="text-xl font-semibold">New Withdrawal Request</h2>

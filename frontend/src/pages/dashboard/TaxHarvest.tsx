@@ -125,7 +125,9 @@ export default function TaxHarvest() {
   const loadSummary = useCallback(async () => {
     setLoadingSummary(true);
     try {
-      setSummary(await getSummary());
+      const summaryData = await getSummary();
+      // Validate summary has expected structure
+      setSummary(summaryData && typeof summaryData === 'object' && 'total_opportunities' in summaryData ? summaryData : null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load summary');
     } finally {
@@ -137,7 +139,7 @@ export default function TaxHarvest() {
     setLoadingOpps(true);
     try {
       const opps = await getOpportunities(undefined, statusFilter || undefined);
-      setOpportunities(opps);
+      setOpportunities(Array.isArray(opps) ? opps : []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load opportunities');
     } finally {
@@ -148,7 +150,8 @@ export default function TaxHarvest() {
   const loadWashSales = useCallback(async () => {
     setLoadingWash(true);
     try {
-      setWashSales(await getWashSales());
+      const ws = await getWashSales();
+      setWashSales(Array.isArray(ws) ? ws : []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load wash sales');
     } finally {
@@ -174,7 +177,7 @@ export default function TaxHarvest() {
     setError(null);
     try {
       const newOpps = await scanPortfolio();
-      if (newOpps.length > 0) {
+      if (Array.isArray(newOpps) && newOpps.length > 0) {
         await loadOpportunities();
         await loadSummary();
       }
@@ -192,7 +195,7 @@ export default function TaxHarvest() {
     setLoadingRecs(true);
     try {
       const recs = await getRecommendations(opp.id);
-      setRecommendations(recs);
+      setRecommendations(Array.isArray(recs) ? recs : []);
     } catch {
       // recommendations may not exist yet — not critical
     } finally {

@@ -103,7 +103,12 @@ export default function Compliance() {
     setError(null);
     try {
       const metricsData = await getDashboardMetrics();
-      setMetrics(metricsData);
+      // Validate metrics has required nested structure
+      if (metricsData && typeof metricsData === 'object' && 'compliance_score' in metricsData) {
+        setMetrics(metricsData);
+      } else {
+        setMetrics(null);
+      }
 
       // Load tab-specific data in parallel when needed
       const [alertsData, tasksData, auditData] = await Promise.all([
@@ -111,9 +116,9 @@ export default function Compliance() {
         getTasks({ include_completed: true }).catch(() => [] as ComplianceTask[]),
         getAuditLogs().catch(() => [] as ComplianceAuditLogEntry[]),
       ]);
-      setAlerts(alertsData);
-      setTasks(tasksData);
-      setAuditLog(auditData);
+      setAlerts(Array.isArray(alertsData) ? alertsData : []);
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
+      setAuditLog(Array.isArray(auditData) ? auditData : []);
     } catch (err) {
       setError('Failed to load compliance data');
       console.error(err);
@@ -167,9 +172,9 @@ export default function Compliance() {
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: TrendingUp },
-    { id: 'alerts' as const, label: 'Alerts', icon: AlertTriangle, count: metrics?.alerts?.open },
-    { id: 'reviews' as const, label: 'Reviews', icon: FileCheck, count: metrics?.pending_reviews },
-    { id: 'tasks' as const, label: 'Tasks', icon: CheckSquare, count: metrics?.tasks?.pending },
+    { id: 'alerts' as const, label: 'Alerts', icon: AlertTriangle, count: metrics?.alerts?.open ?? 0 },
+    { id: 'reviews' as const, label: 'Reviews', icon: FileCheck, count: metrics?.pending_reviews ?? 0 },
+    { id: 'tasks' as const, label: 'Tasks', icon: CheckSquare, count: metrics?.tasks?.pending ?? 0 },
     { id: 'audit' as const, label: 'Audit Log', icon: ClipboardList },
   ];
 
@@ -239,6 +244,15 @@ export default function Compliance() {
         </div>
       )}
 
+      {/* Empty state when metrics failed to load */}
+      {!loading && !metrics && !error && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+          <Shield className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="font-medium text-slate-900">No compliance data available</h3>
+          <p className="text-sm text-slate-500 mt-1">Check back later or contact support.</p>
+        </div>
+      )}
+
       {/* ────────────── OVERVIEW TAB ────────────── */}
       {activeTab === 'overview' && metrics && (
         <div className="space-y-6">
@@ -252,16 +266,16 @@ export default function Compliance() {
                 </p>
               </div>
               <div className="text-right">
-                <div className={`text-5xl font-bold ${scoreColor(metrics.compliance_score)}`}>
-                  {metrics.compliance_score}
+                <div className={`text-5xl font-bold ${scoreColor(metrics?.compliance_score ?? 0)}`}>
+                  {metrics?.compliance_score ?? 0}
                 </div>
                 <div className="text-slate-500 text-sm">out of 100</div>
               </div>
             </div>
             <div className="mt-4 h-3 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${scoreBg(metrics.compliance_score)}`}
-                style={{ width: `${metrics.compliance_score}%` }}
+                className={`h-full rounded-full transition-all duration-500 ${scoreBg(metrics?.compliance_score ?? 0)}`}
+                style={{ width: `${metrics?.compliance_score ?? 0}%` }}
               />
             </div>
           </div>
@@ -273,15 +287,15 @@ export default function Compliance() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Open Alerts</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.alerts.open}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.alerts?.open ?? 0}</p>
                 </div>
                 <div className="p-3 bg-red-50 rounded-xl">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
               </div>
-              {metrics.alerts.by_severity.critical > 0 && (
+              {(metrics?.alerts?.by_severity?.critical ?? 0) > 0 && (
                 <p className="text-xs text-red-600 mt-2 font-medium">
-                  {metrics.alerts.by_severity.critical} critical
+                  {metrics?.alerts?.by_severity?.critical} critical
                 </p>
               )}
             </div>
@@ -291,7 +305,7 @@ export default function Compliance() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.pending_reviews}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.pending_reviews ?? 0}</p>
                 </div>
                 <div className="p-3 bg-amber-50 rounded-xl">
                   <FileCheck className="h-6 w-6 text-amber-600" />
@@ -305,16 +319,16 @@ export default function Compliance() {
                 <div>
                   <p className="text-sm font-medium text-slate-500">Open Tasks</p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">
-                    {metrics.tasks.pending + metrics.tasks.in_progress}
+                    {(metrics?.tasks?.pending ?? 0) + (metrics?.tasks?.in_progress ?? 0)}
                   </p>
                 </div>
                 <div className="p-3 bg-blue-50 rounded-xl">
                   <CheckSquare className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
-              {metrics.tasks.overdue > 0 && (
+              {(metrics?.tasks?.overdue ?? 0) > 0 && (
                 <p className="text-xs text-red-600 mt-2 font-medium">
-                  {metrics.tasks.overdue} overdue
+                  {metrics?.tasks?.overdue} overdue
                 </p>
               )}
             </div>
@@ -324,7 +338,7 @@ export default function Compliance() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Resolved This Month</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.alerts.resolved}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.alerts?.resolved ?? 0}</p>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl">
                   <CheckCircle className="h-6 w-6 text-emerald-600" />

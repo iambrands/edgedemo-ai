@@ -280,7 +280,7 @@ export function Analysis() {
       <Card>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Analysis</h2>
         <p className="text-slate-500 text-sm mb-4">
-          Run a quick analysis on a specific household to get instant insights.
+          Select a household below to run an instant analysis and get insights.
         </p>
         <div className="grid md:grid-cols-3 gap-4">
           {[

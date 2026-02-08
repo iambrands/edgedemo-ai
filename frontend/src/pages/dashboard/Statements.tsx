@@ -46,7 +46,7 @@ export function Statements() {
     setError(null);
     try {
       const data = await statementsApi.list();
-      setStatements(data);
+      setStatements(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load statements');
     } finally {

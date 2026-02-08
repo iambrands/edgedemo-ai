@@ -170,7 +170,7 @@ function AddProspectModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div role="dialog" aria-modal="true" className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">Add Prospect</h2>
           {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
@@ -305,7 +305,7 @@ function LogActivityModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div role="dialog" aria-modal="true" className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">Log Activity</h2>
           {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
@@ -407,6 +407,18 @@ export default function Prospects() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAddModal) setShowAddModal(false);
+        if (showActivityModal) setShowActivityModal(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showAddModal, showActivityModal]);
 
   const loadProspectDetail = async (prospect: Prospect) => {
     setSelectedProspect(prospect);

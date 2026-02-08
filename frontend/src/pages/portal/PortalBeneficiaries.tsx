@@ -79,6 +79,15 @@ export default function PortalBeneficiaries() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showModal) setShowModal(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showModal]);
+
   const handleSubmit = async () => {
     if (!formAccountId || !formDescription.trim()) return;
     setSubmitting(true);
@@ -234,7 +243,7 @@ export default function PortalBeneficiaries() {
       {/* Request Update Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="font-semibold text-slate-900">Request Beneficiary Update</h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>

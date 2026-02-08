@@ -100,9 +100,10 @@ test.describe('Client Portal — Heading Verification', () => {
   });
 
   const PORTAL_WITH_HEADINGS = PORTAL_PAGES.filter((p) =>
-    ['/portal/risk-profile', '/portal/meetings', '/portal/requests',
-     '/portal/notifications', '/portal/assistant', '/portal/what-if',
-     '/portal/tax', '/portal/beneficiaries', '/portal/settings',
+    ['/portal/dashboard', '/portal/performance', '/portal/meetings',
+     '/portal/requests', '/portal/notifications', '/portal/assistant',
+     '/portal/what-if', '/portal/tax', '/portal/beneficiaries',
+     '/portal/family', '/portal/risk-profile', '/portal/settings',
     ].includes(p.path),
   );
 

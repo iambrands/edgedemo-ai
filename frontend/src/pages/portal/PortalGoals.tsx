@@ -33,10 +33,19 @@ export default function PortalGoals() {
     loadGoals();
   }, []);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showModal) setShowModal(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showModal]);
+
   const loadGoals = async () => {
     try {
       const data = await getGoals();
-      setGoals(data);
+      setGoals(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load goals', err);
     } finally {
@@ -237,7 +246,7 @@ export default function PortalGoals() {
       {/* Create Goal Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-semibold text-slate-900">Create New Goal</h2>
               <button

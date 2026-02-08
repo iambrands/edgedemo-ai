@@ -21,7 +21,7 @@ export default function PortalNarratives() {
   const loadNarratives = async () => {
     try {
       const data = await getNarratives();
-      setNarratives(data);
+      setNarratives(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load narratives', err);
     } finally {
