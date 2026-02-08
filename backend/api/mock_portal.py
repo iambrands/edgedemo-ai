@@ -532,3 +532,300 @@ async def get_preferences():
 @router.patch("/preferences")
 async def update_preferences(data: dict):
     return {"email_narratives": data.get("email_narratives", True), "email_nudges": data.get("email_nudges", True), "email_documents": data.get("email_documents", True)}
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  PERFORMANCE REPORTING                                                     ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+import random as _random
+
+_PERFORMANCE: Dict[str, dict] = {
+    "nicole": {
+        "summary": {"total_value": 54905.58, "total_cost_basis": 48500.00, "total_gain_loss": 6405.58, "total_gain_loss_pct": 13.21, "ytd_return": 8.5, "mtd_return": 2.1, "inception_return": 13.21, "inception_date": "2022-03-15"},
+        "time_series": {
+            "1M": [{"date": "2026-01-07", "value": 53200, "benchmark": 53000}, {"date": "2026-01-14", "value": 53800, "benchmark": 53400}, {"date": "2026-01-21", "value": 54100, "benchmark": 53600}, {"date": "2026-01-28", "value": 53900, "benchmark": 53800}, {"date": "2026-02-04", "value": 54905, "benchmark": 54100}],
+            "3M": [{"date": "2025-11-07", "value": 51000, "benchmark": 50800}, {"date": "2025-12-07", "value": 52200, "benchmark": 51800}, {"date": "2026-01-07", "value": 53200, "benchmark": 53000}, {"date": "2026-02-04", "value": 54905, "benchmark": 54100}],
+            "YTD": [{"date": "2026-01-01", "value": 50600, "benchmark": 50400}, {"date": "2026-01-15", "value": 53500, "benchmark": 53200}, {"date": "2026-02-01", "value": 54500, "benchmark": 53900}, {"date": "2026-02-04", "value": 54905, "benchmark": 54100}],
+            "1Y": [{"date": "2025-02-07", "value": 45000, "benchmark": 44800}, {"date": "2025-05-07", "value": 47500, "benchmark": 47200}, {"date": "2025-08-07", "value": 49200, "benchmark": 49000}, {"date": "2025-11-07", "value": 51000, "benchmark": 50800}, {"date": "2026-02-04", "value": 54905, "benchmark": 54100}],
+            "ALL": [{"date": "2022-03-15", "value": 48500, "benchmark": 48500}, {"date": "2023-03-15", "value": 46500, "benchmark": 47000}, {"date": "2024-03-15", "value": 50500, "benchmark": 50000}, {"date": "2025-03-15", "value": 49000, "benchmark": 49500}, {"date": "2026-02-04", "value": 54905, "benchmark": 54100}],
+        },
+        "asset_allocation": {
+            "current": [{"category": "US Equity", "value": 32943, "pct": 60}, {"category": "International Equity", "value": 8236, "pct": 15}, {"category": "Fixed Income", "value": 10981, "pct": 20}, {"category": "Alternatives", "value": 2745, "pct": 5}],
+            "target": [{"category": "US Equity", "pct": 55}, {"category": "International Equity", "pct": 15}, {"category": "Fixed Income", "pct": 25}, {"category": "Alternatives", "pct": 5}],
+        },
+        "monthly_returns": [
+            {"month": "Mar 2025", "return": 2.5, "benchmark": 2.1}, {"month": "Apr 2025", "return": 1.8, "benchmark": 1.5}, {"month": "May 2025", "return": 0.9, "benchmark": 1.2}, {"month": "Jun 2025", "return": 3.2, "benchmark": 2.8},
+            {"month": "Jul 2025", "return": -0.5, "benchmark": -0.3}, {"month": "Aug 2025", "return": 1.4, "benchmark": 1.1}, {"month": "Sep 2025", "return": -2.1, "benchmark": -1.8}, {"month": "Oct 2025", "return": 2.8, "benchmark": 2.5},
+            {"month": "Nov 2025", "return": 1.6, "benchmark": 1.4}, {"month": "Dec 2025", "return": 2.2, "benchmark": 1.9}, {"month": "Jan 2026", "return": 3.1, "benchmark": 2.7}, {"month": "Feb 2026", "return": 2.1, "benchmark": 1.8},
+        ],
+        "benchmark_name": "60/40 Balanced Index",
+    },
+    "mark": {
+        "summary": {"total_value": 487230.00, "total_cost_basis": 425000.00, "total_gain_loss": 62230.00, "total_gain_loss_pct": 14.64, "ytd_return": 5.2, "mtd_return": 1.4, "inception_return": 14.64, "inception_date": "2019-06-01"},
+        "time_series": {
+            "1M": [{"date": "2026-01-07", "value": 478000, "benchmark": 476000}, {"date": "2026-01-21", "value": 483000, "benchmark": 481000}, {"date": "2026-02-04", "value": 487230, "benchmark": 485000}],
+            "YTD": [{"date": "2026-01-01", "value": 463200, "benchmark": 461000}, {"date": "2026-02-04", "value": 487230, "benchmark": 485000}],
+            "ALL": [{"date": "2019-06-01", "value": 425000, "benchmark": 425000}, {"date": "2021-01-01", "value": 410000, "benchmark": 405000}, {"date": "2023-01-01", "value": 430000, "benchmark": 435000}, {"date": "2025-01-01", "value": 470000, "benchmark": 468000}, {"date": "2026-02-04", "value": 487230, "benchmark": 485000}],
+        },
+        "asset_allocation": {
+            "current": [{"category": "US Equity", "value": 146169, "pct": 30}, {"category": "International Equity", "value": 48723, "pct": 10}, {"category": "Fixed Income", "value": 243615, "pct": 50}, {"category": "Alternatives", "value": 48723, "pct": 10}],
+            "target": [{"category": "US Equity", "pct": 30}, {"category": "International Equity", "pct": 10}, {"category": "Fixed Income", "pct": 50}, {"category": "Alternatives", "pct": 10}],
+        },
+        "monthly_returns": [
+            {"month": "Mar 2025", "return": 1.2, "benchmark": 1.0}, {"month": "Apr 2025", "return": 0.8, "benchmark": 0.7}, {"month": "May 2025", "return": 0.6, "benchmark": 0.5}, {"month": "Jun 2025", "return": 1.5, "benchmark": 1.3},
+            {"month": "Jul 2025", "return": -0.2, "benchmark": -0.1}, {"month": "Aug 2025", "return": 0.9, "benchmark": 0.8}, {"month": "Sep 2025", "return": -1.0, "benchmark": -0.9}, {"month": "Oct 2025", "return": 1.4, "benchmark": 1.2},
+            {"month": "Nov 2025", "return": 0.8, "benchmark": 0.7}, {"month": "Dec 2025", "return": 1.1, "benchmark": 1.0}, {"month": "Jan 2026", "return": 1.8, "benchmark": 1.5}, {"month": "Feb 2026", "return": 1.4, "benchmark": 1.2},
+        ],
+        "benchmark_name": "40/60 Conservative Index",
+    },
+    "carlos": {
+        "summary": {"total_value": 312500.00, "total_cost_basis": 280000.00, "total_gain_loss": 32500.00, "total_gain_loss_pct": 11.61, "ytd_return": 6.8, "mtd_return": 1.9, "inception_return": 11.61, "inception_date": "2021-01-15"},
+        "time_series": {
+            "1M": [{"date": "2026-01-07", "value": 305000, "benchmark": 304000}, {"date": "2026-01-21", "value": 309000, "benchmark": 308000}, {"date": "2026-02-04", "value": 312500, "benchmark": 311500}],
+            "YTD": [{"date": "2026-01-01", "value": 292600, "benchmark": 291500}, {"date": "2026-02-04", "value": 312500, "benchmark": 311500}],
+            "ALL": [{"date": "2021-01-15", "value": 280000, "benchmark": 280000}, {"date": "2023-01-15", "value": 290000, "benchmark": 288000}, {"date": "2025-01-15", "value": 298000, "benchmark": 296000}, {"date": "2026-02-04", "value": 312500, "benchmark": 311500}],
+        },
+        "asset_allocation": {
+            "current": [{"category": "US Equity", "value": 187500, "pct": 60}, {"category": "International Equity", "value": 46875, "pct": 15}, {"category": "Fixed Income", "value": 62500, "pct": 20}, {"category": "Alternatives", "value": 15625, "pct": 5}],
+            "target": [{"category": "US Equity", "pct": 55}, {"category": "International Equity", "pct": 15}, {"category": "Fixed Income", "pct": 20}, {"category": "Alternatives", "pct": 10}],
+        },
+        "monthly_returns": [
+            {"month": "Mar 2025", "return": 2.8, "benchmark": 2.4}, {"month": "Apr 2025", "return": 2.0, "benchmark": 1.7}, {"month": "May 2025", "return": 1.1, "benchmark": 0.9}, {"month": "Jun 2025", "return": 3.5, "benchmark": 3.0},
+            {"month": "Jul 2025", "return": -0.7, "benchmark": -0.5}, {"month": "Aug 2025", "return": 1.6, "benchmark": 1.3}, {"month": "Sep 2025", "return": -2.5, "benchmark": -2.1}, {"month": "Oct 2025", "return": 3.2, "benchmark": 2.8},
+            {"month": "Nov 2025", "return": 1.9, "benchmark": 1.6}, {"month": "Dec 2025", "return": 2.5, "benchmark": 2.2}, {"month": "Jan 2026", "return": 3.5, "benchmark": 3.0}, {"month": "Feb 2026", "return": 1.9, "benchmark": 1.6},
+        ],
+        "benchmark_name": "Moderate Growth Index",
+    },
+    "raj": {
+        "summary": {"total_value": 198750.00, "total_cost_basis": 175000.00, "total_gain_loss": 23750.00, "total_gain_loss_pct": 13.57, "ytd_return": 7.2, "mtd_return": 1.6, "inception_return": 13.57, "inception_date": "2020-09-01"},
+        "time_series": {
+            "1M": [{"date": "2026-01-07", "value": 194000, "benchmark": 193500}, {"date": "2026-01-21", "value": 196800, "benchmark": 196300}, {"date": "2026-02-04", "value": 198750, "benchmark": 198200}],
+            "YTD": [{"date": "2026-01-01", "value": 185400, "benchmark": 184900}, {"date": "2026-02-04", "value": 198750, "benchmark": 198200}],
+            "ALL": [{"date": "2020-09-01", "value": 175000, "benchmark": 175000}, {"date": "2022-09-01", "value": 178000, "benchmark": 180000}, {"date": "2024-09-01", "value": 192000, "benchmark": 191000}, {"date": "2026-02-04", "value": 198750, "benchmark": 198200}],
+        },
+        "asset_allocation": {
+            "current": [{"category": "US Equity", "value": 109312, "pct": 55}, {"category": "International Equity", "value": 29812, "pct": 15}, {"category": "Fixed Income", "value": 49688, "pct": 25}, {"category": "Alternatives", "value": 9938, "pct": 5}],
+            "target": [{"category": "US Equity", "pct": 50}, {"category": "International Equity", "pct": 15}, {"category": "Fixed Income", "pct": 30}, {"category": "Alternatives", "pct": 5}],
+        },
+        "monthly_returns": [
+            {"month": "Mar 2025", "return": 2.2, "benchmark": 1.9}, {"month": "Apr 2025", "return": 1.5, "benchmark": 1.3}, {"month": "May 2025", "return": 0.8, "benchmark": 0.7}, {"month": "Jun 2025", "return": 2.8, "benchmark": 2.4},
+            {"month": "Jul 2025", "return": -0.4, "benchmark": -0.3}, {"month": "Aug 2025", "return": 1.2, "benchmark": 1.0}, {"month": "Sep 2025", "return": -1.8, "benchmark": -1.5}, {"month": "Oct 2025", "return": 2.5, "benchmark": 2.2},
+            {"month": "Nov 2025", "return": 1.4, "benchmark": 1.2}, {"month": "Dec 2025", "return": 1.9, "benchmark": 1.6}, {"month": "Jan 2026", "return": 2.8, "benchmark": 2.4}, {"month": "Feb 2026", "return": 1.6, "benchmark": 1.4},
+        ],
+        "benchmark_name": "Moderate Balanced Index",
+    },
+}
+# Alias for shared households
+_PERFORMANCE["susan"] = _PERFORMANCE["mark"]
+_PERFORMANCE["priya"] = _PERFORMANCE["raj"]
+
+
+@router.get("/performance")
+async def get_performance(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    return _PERFORMANCE.get(prefix, _PERFORMANCE["nicole"])
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  MEETING SCHEDULER                                                         ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_MEETING_TYPES = [
+    {"id": "portfolio_review", "name": "Portfolio Review", "duration": 30, "description": "Review your portfolio performance and allocation"},
+    {"id": "financial_planning", "name": "Financial Planning", "duration": 60, "description": "Comprehensive financial planning session"},
+    {"id": "retirement_planning", "name": "Retirement Planning", "duration": 60, "description": "Retirement strategies and projections"},
+    {"id": "tax_planning", "name": "Tax Planning", "duration": 45, "description": "Tax-efficient investment strategies"},
+    {"id": "general_questions", "name": "General Questions", "duration": 30, "description": "Quick questions about your accounts"},
+]
+
+
+def _generate_slots() -> list:
+    slots = []
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    for day_offset in range(1, 15):
+        d = today + timedelta(days=day_offset)
+        if d.weekday() >= 5:
+            continue
+        for hour in [9, 10, 11, 14, 15, 16]:
+            if _random.random() > 0.3:
+                ampm = "AM" if hour < 12 else "PM"
+                h12 = hour if hour <= 12 else hour - 12
+                slots.append({
+                    "id": f"slot-{d.strftime('%Y%m%d')}-{hour:02d}00",
+                    "date": d.strftime("%Y-%m-%d"),
+                    "time": f"{h12}:00 {ampm}",
+                    "datetime": d.replace(hour=hour).isoformat(),
+                    "duration_minutes": 30,
+                })
+    return slots
+
+
+_AVAILABLE_SLOTS = _generate_slots()
+
+_SCHEDULED_MEETINGS: Dict[str, list] = {
+    "nicole": [{"id": "mtg-001", "title": "Quarterly Portfolio Review", "datetime": (datetime.utcnow() + timedelta(days=7, hours=10)).isoformat(), "duration_minutes": 30, "meeting_type": "portfolio_review", "status": "confirmed", "advisor_name": _ADVISOR, "notes": "Discuss Q1 performance and 529 reallocation", "meeting_link": "https://zoom.us/j/123456789"}],
+    "mark": [],
+    "carlos": [{"id": "mtg-002", "title": "Retirement Planning Session", "datetime": (datetime.utcnow() + timedelta(days=3, hours=14)).isoformat(), "duration_minutes": 60, "meeting_type": "retirement_planning", "status": "confirmed", "advisor_name": _ADVISOR, "notes": "Review retirement projections and early retirement timeline", "meeting_link": "https://zoom.us/j/987654321"}],
+    "raj": [],
+}
+_SCHEDULED_MEETINGS["susan"] = _SCHEDULED_MEETINGS["mark"]
+_SCHEDULED_MEETINGS["priya"] = _SCHEDULED_MEETINGS["raj"]
+
+
+@router.get("/meetings")
+async def get_meetings(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    return {"upcoming": _SCHEDULED_MEETINGS.get(prefix, []), "advisor_name": _ADVISOR, "advisor_email": "leslie@iabadvisors.com", "advisor_phone": "(555) 281-4567"}
+
+
+@router.get("/meetings/availability")
+async def get_meeting_availability(authorization: str | None = Header(None)):
+    return {"slots": _AVAILABLE_SLOTS, "meeting_types": _MEETING_TYPES}
+
+
+@router.post("/meetings")
+async def schedule_meeting(data: dict, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    mt = next((t for t in _MEETING_TYPES if t["id"] == data.get("meeting_type")), _MEETING_TYPES[0])
+    new = {
+        "id": f"mtg-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        "title": mt["name"],
+        "datetime": data["datetime"],
+        "duration_minutes": mt["duration"],
+        "meeting_type": data.get("meeting_type", "general_questions"),
+        "status": "confirmed",
+        "advisor_name": _ADVISOR,
+        "notes": data.get("notes", ""),
+        "meeting_link": f"https://zoom.us/j/{_random.randint(100000000, 999999999)}",
+    }
+    _SCHEDULED_MEETINGS.setdefault(prefix, []).append(new)
+    return {"success": True, "meeting": new}
+
+
+@router.delete("/meetings/{meeting_id}")
+async def cancel_meeting(meeting_id: str, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    meetings = _SCHEDULED_MEETINGS.get(prefix, [])
+    for i, m in enumerate(meetings):
+        if m["id"] == meeting_id:
+            meetings.pop(i)
+            return {"success": True}
+    return {"success": False, "error": "Meeting not found"}
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  REQUEST CENTER                                                            ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_REQUEST_TYPES = [
+    {"id": "withdrawal", "name": "Withdrawal Request", "description": "Request a withdrawal from an account", "icon": "banknote"},
+    {"id": "transfer", "name": "Transfer Request", "description": "Transfer funds between accounts", "icon": "arrow-right-left"},
+    {"id": "address_change", "name": "Address Change", "description": "Update your mailing address", "icon": "map-pin"},
+    {"id": "document_request", "name": "Document Request", "description": "Request specific documents", "icon": "file-text"},
+    {"id": "contribution", "name": "Contribution", "description": "Make a contribution to an account", "icon": "plus-circle"},
+    {"id": "beneficiary_change", "name": "Beneficiary Change", "description": "Update account beneficiaries", "icon": "users"},
+    {"id": "other", "name": "Other Request", "description": "Other requests or questions", "icon": "help-circle"},
+]
+
+_REQUESTS: Dict[str, list] = {
+    "nicole": [
+        {"id": "req-001", "type": "withdrawal", "type_name": "Withdrawal Request", "status": "in_review", "submitted_at": (datetime.utcnow() - timedelta(days=2)).isoformat(), "details": {"account": "Robinhood Individual (***8821)", "amount": 5000, "method": "ACH Transfer"}, "notes": "Need funds for home repair", "updates": [{"date": (datetime.utcnow() - timedelta(days=2)).isoformat(), "message": "Request submitted", "status": "submitted"}, {"date": (datetime.utcnow() - timedelta(days=1)).isoformat(), "message": "Under review by your advisor", "status": "in_review"}]},
+    ],
+    "mark": [],
+    "carlos": [],
+    "raj": [],
+}
+_REQUESTS["susan"] = _REQUESTS["mark"]
+_REQUESTS["priya"] = _REQUESTS["raj"]
+
+
+@router.get("/requests/types")
+async def get_request_types():
+    return {"types": _REQUEST_TYPES}
+
+
+@router.get("/requests")
+async def get_requests(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    return {"requests": _REQUESTS.get(prefix, [])}
+
+
+@router.post("/requests")
+async def submit_request(data: dict, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    rt = next((t for t in _REQUEST_TYPES if t["id"] == data.get("type")), None)
+    new = {
+        "id": f"req-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        "type": data.get("type", "other"),
+        "type_name": rt["name"] if rt else "Request",
+        "status": "pending",
+        "submitted_at": datetime.utcnow().isoformat(),
+        "details": data.get("details", {}),
+        "notes": data.get("notes", ""),
+        "updates": [{"date": datetime.utcnow().isoformat(), "message": "Request submitted successfully", "status": "submitted"}],
+    }
+    _REQUESTS.setdefault(prefix, []).insert(0, new)
+    return {"success": True, "request": new}
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  NOTIFICATIONS CENTER                                                      ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_NOTIFICATIONS: Dict[str, list] = {
+    "nicole": [
+        {"id": "n1", "type": "document", "title": "New Document Available", "message": "Q4 2025 Performance Report is ready to view", "link": "/portal/documents", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=2)).isoformat()},
+        {"id": "n2", "type": "alert", "title": "NVDA Concentration Warning", "message": "NVIDIA position exceeds 40% of your Robinhood account", "link": "/portal/dashboard", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=8)).isoformat()},
+        {"id": "n3", "type": "meeting", "title": "Meeting Reminder", "message": "Quarterly Portfolio Review in 7 days", "link": "/portal/meetings", "is_read": True, "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+        {"id": "n4", "type": "goal", "title": "Goal Milestone!", "message": "Emergency Reserve reached 60% of target", "link": "/portal/goals", "is_read": True, "created_at": (datetime.utcnow() - timedelta(days=3)).isoformat()},
+        {"id": "n5", "type": "request", "title": "Request Update", "message": "Your withdrawal request is under review", "link": "/portal/requests", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=20)).isoformat()},
+    ],
+    "mark": [
+        {"id": "n6", "type": "document", "title": "Tax Document Ready", "message": "2025 1099-DIV is available for download", "link": "/portal/documents", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=4)).isoformat()},
+        {"id": "n7", "type": "meeting", "title": "Annual Review", "message": "It's time to schedule your annual review", "link": "/portal/meetings", "is_read": False, "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+    ],
+    "carlos": [
+        {"id": "n8", "type": "meeting", "title": "Upcoming Meeting", "message": "Retirement Planning Session in 3 days", "link": "/portal/meetings", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=1)).isoformat()},
+        {"id": "n9", "type": "alert", "title": "Rebalance Recommended", "message": "Your equity allocation has drifted above target", "link": "/portal/performance", "is_read": False, "created_at": (datetime.utcnow() - timedelta(days=2)).isoformat()},
+    ],
+    "raj": [
+        {"id": "n10", "type": "trade", "title": "Rebalancing Complete", "message": "Quarterly rebalancing has been executed", "link": "/portal/dashboard", "is_read": False, "created_at": (datetime.utcnow() - timedelta(hours=6)).isoformat()},
+    ],
+}
+_NOTIFICATIONS["susan"] = _NOTIFICATIONS["mark"]
+_NOTIFICATIONS["priya"] = _NOTIFICATIONS["raj"]
+
+
+@router.get("/notifications")
+async def get_notifications(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    notifs = _NOTIFICATIONS.get(prefix, [])
+    return {"notifications": notifs, "unread_count": sum(1 for n in notifs if not n["is_read"])}
+
+
+@router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    for n in _NOTIFICATIONS.get(prefix, []):
+        if n["id"] == notification_id:
+            n["is_read"] = True
+            return {"ok": True}
+    return {"ok": False}
+
+
+@router.post("/notifications/read-all")
+async def mark_all_notifications_read(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    for n in _NOTIFICATIONS.get(prefix, []):
+        n["is_read"] = True
+    return {"ok": True}

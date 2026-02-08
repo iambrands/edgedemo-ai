@@ -3,8 +3,9 @@ import {
   LayoutDashboard,
   Target,
   FileText,
-  BarChart3,
-  Shield,
+  TrendingUp,
+  Calendar,
+  Send,
   Settings,
   LogOut,
   Bell,
@@ -14,10 +15,11 @@ import { portalLogout, getPortalClientName } from '../../services/portalApi';
 
 const NAV_ITEMS = [
   { to: '/portal/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/portal/performance', label: 'Performance', icon: TrendingUp },
   { to: '/portal/goals', label: 'Goals', icon: Target },
   { to: '/portal/documents', label: 'Documents', icon: FileText },
-  { to: '/portal/updates', label: 'Updates', icon: BarChart3 },
-  { to: '/portal/risk-profile', label: 'Risk Profile', icon: Shield },
+  { to: '/portal/meetings', label: 'Meetings', icon: Calendar },
+  { to: '/portal/requests', label: 'Requests', icon: Send },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -68,12 +70,16 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
             >
               <HelpCircle className="w-5 h-5" />
             </Link>
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+            <Link
+              to="/portal/notifications"
+              className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Notifications"
+            >
               <Bell className="w-5 h-5" />
               {nudgeCount > 0 && (
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               )}
-            </button>
+            </Link>
             <div className="hidden sm:flex items-center gap-2 ml-2">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-medium">
                 {initials}

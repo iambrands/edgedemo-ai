@@ -27,6 +27,10 @@ import {
   PortalDocuments,
   PortalNarratives,
   PortalRiskProfile,
+  PortalPerformance,
+  PortalMeetings,
+  PortalRequests,
+  PortalNotifications,
   PortalSettings,
   ClientOnboarding,
 } from './pages/portal';
@@ -120,6 +124,38 @@ export default function App() {
         element={
           <PortalGuard>
             <PortalRiskProfile />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/performance"
+        element={
+          <PortalGuard>
+            <PortalPerformance />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/meetings"
+        element={
+          <PortalGuard>
+            <PortalMeetings />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/requests"
+        element={
+          <PortalGuard>
+            <PortalRequests />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/notifications"
+        element={
+          <PortalGuard>
+            <PortalNotifications />
           </PortalGuard>
         }
       />

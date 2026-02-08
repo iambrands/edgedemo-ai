@@ -403,6 +403,74 @@ export async function updatePreferences(
 }
 
 // ============================================================================
+// PERFORMANCE
+// ============================================================================
+
+export async function getPerformance(): Promise<any> {
+  return portalFetch<any>('/performance');
+}
+
+// ============================================================================
+// MEETINGS
+// ============================================================================
+
+export async function getMeetings(): Promise<any> {
+  return portalFetch<any>('/meetings');
+}
+
+export async function getMeetingAvailability(): Promise<any> {
+  return portalFetch<any>('/meetings/availability');
+}
+
+export async function scheduleMeeting(data: {
+  meeting_type: string;
+  datetime: string;
+  notes?: string;
+}): Promise<any> {
+  return portalFetch<any>('/meetings', { method: 'POST', body: data });
+}
+
+export async function cancelMeeting(id: string): Promise<any> {
+  return portalFetch<any>(`/meetings/${id}`, { method: 'DELETE' });
+}
+
+// ============================================================================
+// REQUESTS
+// ============================================================================
+
+export async function getRequestTypes(): Promise<any> {
+  return portalFetch<any>('/requests/types');
+}
+
+export async function getRequests(): Promise<any> {
+  return portalFetch<any>('/requests');
+}
+
+export async function submitRequest(data: {
+  type: string;
+  details?: Record<string, any>;
+  notes?: string;
+}): Promise<any> {
+  return portalFetch<any>('/requests', { method: 'POST', body: data });
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+export async function getNotifications(): Promise<any> {
+  return portalFetch<any>('/notifications');
+}
+
+export async function markNotificationRead(id: string): Promise<any> {
+  return portalFetch<any>(`/notifications/${id}/read`, { method: 'POST' });
+}
+
+export async function markAllNotificationsRead(): Promise<any> {
+  return portalFetch<any>('/notifications/read-all', { method: 'POST' });
+}
+
+// ============================================================================
 // EXPORT ALL
 // ============================================================================
 
@@ -442,6 +510,25 @@ export const portalApi = {
   getBranding,
   getPreferences,
   updatePreferences,
+
+  // Performance
+  getPerformance,
+
+  // Meetings
+  getMeetings,
+  getMeetingAvailability,
+  scheduleMeeting,
+  cancelMeeting,
+
+  // Requests
+  getRequestTypes,
+  getRequests,
+  submitRequest,
+
+  // Notifications
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
 };
 
 export default portalApi;
