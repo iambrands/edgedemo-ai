@@ -38,7 +38,17 @@ const Login: React.FC = () => {
         window.location.href = '/';
       }, 500);
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Invalid credentials');
+      const status = err.response?.status;
+      if (status === 429) {
+        setError(
+          'Too many login attempts. For your security, please wait 15 minutes before trying again. ' +
+          "If you've forgotten your password, use the \"Forgot Password\" link below."
+        );
+      } else if (status === 401) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        setError(err.response?.data?.error || err.message || 'Login failed. Please try again later.');
+      }
       setIsLoading(false);
     }
   };

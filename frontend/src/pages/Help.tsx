@@ -645,6 +645,77 @@ const Help: React.FC = () => {
       ),
     },
     {
+      id: 'security',
+      title: 'Account Security',
+      content: (
+        <div className="space-y-4">
+          <h3 className="text-2xl font-bold text-gray-900">Account Security</h3>
+
+          <h4 className="text-xl font-semibold text-gray-900 mt-4">Rate Limiting</h4>
+          <p className="text-gray-700 mb-4">
+            To protect your account from unauthorized access, OptionsEdge limits certain actions:
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 font-medium text-gray-700">Action</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Limit</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Reset Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                <tr>
+                  <td className="px-4 py-3 text-gray-700">Login attempts</td>
+                  <td className="px-4 py-3 text-gray-700">5 attempts</td>
+                  <td className="px-4 py-3 text-gray-700">15 minutes</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 text-gray-700">Registration</td>
+                  <td className="px-4 py-3 text-gray-700">3 per IP</td>
+                  <td className="px-4 py-3 text-gray-700">1 hour</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 text-gray-700">AI Analysis</td>
+                  <td className="px-4 py-3 text-gray-700">20 requests</td>
+                  <td className="px-4 py-3 text-gray-700">1 minute</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 text-gray-700">API requests</td>
+                  <td className="px-4 py-3 text-gray-700">100 requests</td>
+                  <td className="px-4 py-3 text-gray-700">1 minute</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-800 mb-2">If you see &quot;Too Many Requests&quot;:</h4>
+            <ol className="list-decimal list-inside text-blue-700 space-y-1">
+              <li>Wait 15 minutes before trying again</li>
+              <li>Double-check your email and password</li>
+              <li>Use &quot;Forgot Password&quot; if needed</li>
+              <li>Contact support@optionsedge.ai if the issue persists</li>
+            </ol>
+          </div>
+
+          <p className="mt-4 text-sm text-gray-500">
+            Rate limiting is a security feature, not a bug. It prevents hackers from guessing passwords by making thousands of attempts. All secure platforms (banks, brokerages, etc.) use this protection.
+          </p>
+
+          <h4 className="text-xl font-semibold text-gray-900 mt-6">Other Security Measures</h4>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+            <li><strong>HTTPS Encryption:</strong> All data is encrypted in transit</li>
+            <li><strong>JWT Authentication:</strong> Secure token-based sessions</li>
+            <li><strong>Admin Protection:</strong> Administrative functions require elevated access</li>
+            <li><strong>Audit Logging:</strong> All account actions are recorded for your review at <a href="/audit-log" className="text-indigo-600 hover:underline">/audit-log</a></li>
+            <li><strong>Risk Acknowledgment:</strong> Required before first trade to ensure informed consent</li>
+          </ul>
+        </div>
+      ),
+    },
+    {
       id: 'faq',
       title: 'Frequently Asked Questions',
       content: (
@@ -790,6 +861,27 @@ const Help: React.FC = () => {
             <h4 className="text-lg font-semibold text-gray-900">Q: Is my data secure?</h4>
             <p className="text-gray-700 mt-2">
               A: Yes. API keys are encrypted at rest, all traffic uses HTTPS, and we don't share data with third parties. Your trading history is stored securely on Railway's infrastructure.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Why am I seeing &quot;Too Many Requests&quot; when trying to log in?</h4>
+            <p className="text-gray-700 mt-2">
+              A: For security, we limit login attempts to 5 per 15 minutes. Wait 15 minutes and try again. If you&apos;ve forgotten your password, use the &quot;Forgot Password&quot; link on the login page.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: How long do I have to wait after being rate limited?</h4>
+            <p className="text-gray-700 mt-2">
+              A: The rate limit resets automatically after 15 minutes. A successful login also resets the counter immediately.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900">Q: Is rate limiting a bug?</h4>
+            <p className="text-gray-700 mt-2">
+              A: No, it&apos;s a security feature. Rate limiting protects your account from hackers who try to guess passwords by making thousands of attempts. All secure platforms (banks, brokerages, etc.) use this protection. See the <a href="#security" className="text-indigo-600 hover:underline">Account Security</a> section for details.
             </p>
           </div>
 

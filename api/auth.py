@@ -178,7 +178,10 @@ def login():
                 details={'ip': ip}
             )
             return jsonify({
-                'error': 'Too many login attempts. Please try again in 15 minutes.'
+                'error': 'Too many login attempts. For your security, please wait 15 minutes before trying again.',
+                'message': 'If you\'ve forgotten your password, use the Forgot Password link.',
+                'retry_after_seconds': 900,
+                'help_url': '/help#security',
             }), 429
         # Increment attempts
         new_count = (int(attempts) + 1) if attempts else 1
