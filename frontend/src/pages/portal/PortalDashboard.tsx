@@ -65,6 +65,13 @@ export default function PortalDashboard() {
       setData(dashboardData);
       setNudges(nudgesData);
       if (brandingData) setBranding(brandingData);
+      // Sync client name to localStorage so PortalNav and other pages show correct name
+      if (dashboardData.client_name) {
+        localStorage.setItem('portal_client_name', dashboardData.client_name);
+      }
+      if (dashboardData.firm_name) {
+        localStorage.setItem('portal_firm_name', dashboardData.firm_name);
+      }
     } catch (err) {
       console.error('Failed to load dashboard', err);
     } finally {

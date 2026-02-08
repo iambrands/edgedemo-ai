@@ -258,12 +258,11 @@ _DOCUMENTS = [
 
 @router.post("/auth/login", response_model=PortalLoginResponse)
 async def portal_login(req: PortalLoginRequest):
-    name_parts = req.email.split("@")[0].replace(".", " ").title()
     return PortalLoginResponse(
         access_token=_tok(req.email),
         refresh_token=_tok(req.email + "-r"),
         expires_in=86400,
-        client_name=name_parts if name_parts else _CLIENT_NAME,
+        client_name=_CLIENT_NAME,
         firm_name=_FIRM_NAME,
     )
 
