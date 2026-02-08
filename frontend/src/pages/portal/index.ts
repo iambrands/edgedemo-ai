@@ -11,5 +11,7 @@ export { default as PortalNotifications } from './PortalNotifications';
 export { default as PortalAssistant } from './PortalAssistant';
 export { default as PortalWhatIf } from './PortalWhatIf';
 export { default as PortalTaxCenter } from './PortalTaxCenter';
+export { default as PortalBeneficiaries } from './PortalBeneficiaries';
+export { default as PortalFamily } from './PortalFamily';
 export { default as PortalSettings } from './PortalSettings';
 export { default as ClientOnboarding } from './ClientOnboarding';

@@ -13,6 +13,8 @@ import {
   Bot,
   Calculator,
   Receipt,
+  Users,
+  Home,
 } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { to: '/portal/assistant', label: 'AI Assistant', icon: Bot },
   { to: '/portal/what-if', label: 'What-If', icon: Calculator },
   { to: '/portal/tax', label: 'Tax Center', icon: Receipt },
+  { to: '/portal/beneficiaries', label: 'Beneficiaries', icon: Users },
+  { to: '/portal/family', label: 'Family', icon: Home },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 

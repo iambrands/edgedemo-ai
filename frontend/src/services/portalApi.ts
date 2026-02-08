@@ -513,6 +513,34 @@ export async function getTaxLots(): Promise<any> {
 }
 
 // ============================================================================
+// BENEFICIARIES
+// ============================================================================
+
+export async function getBeneficiaries(): Promise<any> {
+  return portalFetch<any>('/beneficiaries');
+}
+
+export async function submitBeneficiaryUpdateRequest(data: {
+  account_id: string;
+  change_type: string;
+  description: string;
+}): Promise<any> {
+  return portalFetch<any>('/beneficiaries/update-request', { method: 'POST', body: data });
+}
+
+// ============================================================================
+// FAMILY DASHBOARD
+// ============================================================================
+
+export async function getFamilyData(): Promise<any> {
+  return portalFetch<any>('/family');
+}
+
+export async function getFamilyMemberDetails(memberId: string): Promise<any> {
+  return portalFetch<any>(`/family/${memberId}`);
+}
+
+// ============================================================================
 // EXPORT ALL
 // ============================================================================
 
@@ -582,6 +610,14 @@ export const portalApi = {
   // Tax Center
   getTaxSummary,
   getTaxLots,
+
+  // Beneficiaries
+  getBeneficiaries,
+  submitBeneficiaryUpdateRequest,
+
+  // Family
+  getFamilyData,
+  getFamilyMemberDetails,
 };
 
 export default portalApi;

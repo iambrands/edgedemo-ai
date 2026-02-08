@@ -34,6 +34,8 @@ import {
   PortalAssistant,
   PortalWhatIf,
   PortalTaxCenter,
+  PortalBeneficiaries,
+  PortalFamily,
   PortalSettings,
   ClientOnboarding,
 } from './pages/portal';
@@ -183,6 +185,22 @@ export default function App() {
         element={
           <PortalGuard>
             <PortalTaxCenter />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/beneficiaries"
+        element={
+          <PortalGuard>
+            <PortalBeneficiaries />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/family"
+        element={
+          <PortalGuard>
+            <PortalFamily />
           </PortalGuard>
         }
       />

@@ -1149,3 +1149,360 @@ async def get_tax_lots(authorization: str | None = Header(None)):
     prefix = _prefix_from_email(hh["email"])
     td = _TAX_DATA.get(prefix, _TAX_DATA["nicole"])
     return {"realized_transactions": td["realized_transactions"], "tax_lots": td["tax_lots"]}
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  BENEFICIARY MANAGEMENT                                                    ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_BENEFICIARIES: Dict[str, dict] = {
+    "nicole": {
+        "accounts": [
+            {
+                "account_id": "acc-001",
+                "account_name": "NW Mutual VA IRA (4532)",
+                "account_type": "IRA",
+                "primary_beneficiaries": [
+                    {"name": "Michael Wilson", "relationship": "Spouse", "percentage": 100, "dob": "1982-05-20"},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "Emma Wilson", "relationship": "Daughter", "percentage": 50, "dob": "2010-03-15"},
+                    {"name": "James Wilson", "relationship": "Son", "percentage": 50, "dob": "2013-07-22"},
+                ],
+                "last_updated": "2024-06-15",
+                "needs_review": False,
+                "review_reason": None,
+            },
+            {
+                "account_id": "acc-002",
+                "account_name": "Robinhood Individual (8821)",
+                "account_type": "Taxable",
+                "primary_beneficiaries": [
+                    {"name": "Michael Wilson", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [],
+                "last_updated": "2023-11-20",
+                "needs_review": True,
+                "review_reason": "No contingent beneficiaries designated",
+            },
+            {
+                "account_id": "acc-003",
+                "account_name": "E*TRADE 401(k) (3390)",
+                "account_type": "401(k)",
+                "primary_beneficiaries": [
+                    {"name": "Michael Wilson", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "Emma Wilson", "relationship": "Daughter", "percentage": 50},
+                    {"name": "James Wilson", "relationship": "Son", "percentage": 50},
+                ],
+                "last_updated": "2024-01-10",
+                "needs_review": False,
+                "review_reason": None,
+            },
+            {
+                "account_id": "acc-004",
+                "account_name": "NW Mutual 529 Plan (6617)",
+                "account_type": "529",
+                "primary_beneficiaries": [
+                    {"name": "Emma Wilson", "relationship": "Daughter", "percentage": 100, "dob": "2010-03-15"},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "James Wilson", "relationship": "Son", "percentage": 100, "dob": "2013-07-22"},
+                ],
+                "last_updated": "2024-06-15",
+                "needs_review": False,
+                "review_reason": None,
+            },
+        ],
+        "pending_requests": [],
+    },
+    "mark": {
+        "accounts": [
+            {
+                "account_id": "acc-h1",
+                "account_name": "Schwab Joint Brokerage (7701)",
+                "account_type": "Joint",
+                "primary_beneficiaries": [
+                    {"name": "Susan Henderson", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "Olivia Henderson", "relationship": "Daughter", "percentage": 50},
+                    {"name": "Ethan Henderson", "relationship": "Son", "percentage": 50},
+                ],
+                "last_updated": "2024-03-20",
+                "needs_review": False,
+                "review_reason": None,
+            },
+            {
+                "account_id": "acc-h2",
+                "account_name": "Schwab Traditional IRA (7702)",
+                "account_type": "IRA",
+                "primary_beneficiaries": [
+                    {"name": "Susan Henderson", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [],
+                "last_updated": "2022-09-15",
+                "needs_review": True,
+                "review_reason": "No contingent beneficiaries; last reviewed over 2 years ago",
+            },
+        ],
+        "pending_requests": [],
+    },
+    "carlos": {
+        "accounts": [
+            {
+                "account_id": "acc-m1",
+                "account_name": "Schwab Rollover IRA (5501)",
+                "account_type": "IRA",
+                "primary_beneficiaries": [
+                    {"name": "Maria Martinez", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "Sofia Martinez", "relationship": "Daughter", "percentage": 100},
+                ],
+                "last_updated": "2024-08-10",
+                "needs_review": False,
+                "review_reason": None,
+            },
+        ],
+        "pending_requests": [],
+    },
+    "raj": {
+        "accounts": [
+            {
+                "account_id": "acc-p1",
+                "account_name": "Vanguard Brokerage (9901)",
+                "account_type": "Taxable",
+                "primary_beneficiaries": [
+                    {"name": "Priya Patel", "relationship": "Spouse", "percentage": 100},
+                ],
+                "contingent_beneficiaries": [
+                    {"name": "Arjun Patel", "relationship": "Son", "percentage": 50},
+                    {"name": "Meera Patel", "relationship": "Daughter", "percentage": 50},
+                ],
+                "last_updated": "2024-05-01",
+                "needs_review": False,
+                "review_reason": None,
+            },
+        ],
+        "pending_requests": [],
+    },
+}
+_BENEFICIARIES["susan"] = _BENEFICIARIES["mark"]
+_BENEFICIARIES["priya"] = _BENEFICIARIES["raj"]
+
+
+@router.get("/beneficiaries")
+async def get_beneficiaries(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    data = _BENEFICIARIES.get(prefix, _BENEFICIARIES["nicole"])
+    return data
+
+
+@router.post("/beneficiaries/update-request")
+async def submit_beneficiary_update(data: dict, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    ben = _BENEFICIARIES.get(prefix, _BENEFICIARIES["nicole"])
+    req_id = f"ben-req-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    new_req = {
+        "id": req_id,
+        "account_id": data.get("account_id"),
+        "change_type": data.get("change_type", "review"),
+        "description": data.get("description", ""),
+        "status": "submitted",
+        "submitted_at": datetime.utcnow().isoformat(),
+    }
+    ben["pending_requests"].insert(0, new_req)
+    return {
+        "success": True,
+        "request_id": req_id,
+        "message": "Your beneficiary update request has been submitted. Your advisor will contact you within 2 business days.",
+        "next_steps": [
+            "Advisor review within 2 business days",
+            "You may need to sign updated forms",
+            "Changes effective after processing",
+        ],
+    }
+
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  FAMILY DASHBOARD                                                          ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+_FAMILY_DATA: Dict[str, dict] = {
+    "nicole": {
+        "household_name": "Wilson Family",
+        "total_household_value": 142405.58,
+        "members": [
+            {
+                "id": "member-001",
+                "name": "Nicole Wilson",
+                "relationship": "Self",
+                "is_self": True,
+                "total_value": 54905.58,
+                "accounts_count": 3,
+                "ytd_return": 8.5,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "NW Mutual VA IRA (4532)", "value": 16849.36, "type": "IRA"},
+                    {"name": "Robinhood Individual (8821)", "value": 26982.57, "type": "Taxable"},
+                    {"name": "E*TRADE 401(k) (3390)", "value": 11073.65, "type": "401(k)"},
+                ],
+            },
+            {
+                "id": "member-002",
+                "name": "Michael Wilson",
+                "relationship": "Spouse",
+                "is_self": False,
+                "total_value": 87500.00,
+                "accounts_count": 2,
+                "ytd_return": 6.2,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Fidelity 401(k)", "value": 65000, "type": "401(k)"},
+                    {"name": "Roth IRA", "value": 22500, "type": "Roth IRA"},
+                ],
+            },
+        ],
+        "dependents": [
+            {"name": "Emma Wilson", "relationship": "Daughter", "age": 15, "has_529": True, "plan_value": 18500},
+            {"name": "James Wilson", "relationship": "Son", "age": 12, "has_529": False, "plan_value": 0},
+        ],
+        "joint_accounts": [],
+        "household_allocation": {"equity": 62, "fixed_income": 28, "alternatives": 10},
+    },
+    "mark": {
+        "household_name": "Henderson Family",
+        "total_household_value": 687230.00,
+        "members": [
+            {
+                "id": "member-003",
+                "name": "Mark Henderson",
+                "relationship": "Self",
+                "is_self": True,
+                "total_value": 487230.00,
+                "accounts_count": 4,
+                "ytd_return": 5.2,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Schwab Joint Brokerage (7701)", "value": 195000, "type": "Joint"},
+                    {"name": "Schwab Trad IRA (7702)", "value": 145000, "type": "IRA"},
+                    {"name": "Schwab Roth IRA (7703)", "value": 82230, "type": "Roth IRA"},
+                    {"name": "Fidelity 401(k) (7704)", "value": 65000, "type": "401(k)"},
+                ],
+            },
+            {
+                "id": "member-004",
+                "name": "Susan Henderson",
+                "relationship": "Spouse",
+                "is_self": False,
+                "total_value": 200000.00,
+                "accounts_count": 2,
+                "ytd_return": 4.8,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Fidelity Roth IRA", "value": 120000, "type": "Roth IRA"},
+                    {"name": "Schwab Brokerage", "value": 80000, "type": "Taxable"},
+                ],
+            },
+        ],
+        "dependents": [
+            {"name": "Olivia Henderson", "relationship": "Daughter", "age": 20, "has_529": True, "plan_value": 42000},
+            {"name": "Ethan Henderson", "relationship": "Son", "age": 17, "has_529": True, "plan_value": 35000},
+        ],
+        "joint_accounts": [{"name": "Schwab Joint Brokerage (7701)", "value": 195000, "type": "Joint"}],
+        "household_allocation": {"equity": 35, "fixed_income": 50, "alternatives": 15},
+    },
+    "carlos": {
+        "household_name": "Martinez Household",
+        "total_household_value": 312500.00,
+        "members": [
+            {
+                "id": "member-005",
+                "name": "Carlos Martinez",
+                "relationship": "Self",
+                "is_self": True,
+                "total_value": 312500.00,
+                "accounts_count": 3,
+                "ytd_return": 6.8,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Schwab Rollover IRA (5501)", "value": 180000, "type": "IRA"},
+                    {"name": "Schwab Roth IRA (5502)", "value": 67500, "type": "Roth IRA"},
+                    {"name": "Schwab Brokerage (5503)", "value": 65000, "type": "Taxable"},
+                ],
+            },
+        ],
+        "dependents": [
+            {"name": "Sofia Martinez", "relationship": "Daughter", "age": 8, "has_529": True, "plan_value": 22000},
+        ],
+        "joint_accounts": [],
+        "household_allocation": {"equity": 60, "fixed_income": 20, "alternatives": 20},
+    },
+    "raj": {
+        "household_name": "Patel Family",
+        "total_household_value": 398750.00,
+        "members": [
+            {
+                "id": "member-006",
+                "name": "Raj Patel",
+                "relationship": "Self",
+                "is_self": True,
+                "total_value": 198750.00,
+                "accounts_count": 3,
+                "ytd_return": 7.2,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Vanguard Brokerage (9901)", "value": 85000, "type": "Taxable"},
+                    {"name": "Vanguard Trad IRA (9902)", "value": 68750, "type": "IRA"},
+                    {"name": "Vanguard Roth IRA (9903)", "value": 45000, "type": "Roth IRA"},
+                ],
+            },
+            {
+                "id": "member-007",
+                "name": "Priya Patel",
+                "relationship": "Spouse",
+                "is_self": False,
+                "total_value": 200000.00,
+                "accounts_count": 2,
+                "ytd_return": 6.9,
+                "can_view_details": True,
+                "accounts": [
+                    {"name": "Fidelity 401(k)", "value": 135000, "type": "401(k)"},
+                    {"name": "Fidelity Roth IRA", "value": 65000, "type": "Roth IRA"},
+                ],
+            },
+        ],
+        "dependents": [
+            {"name": "Arjun Patel", "relationship": "Son", "age": 10, "has_529": True, "plan_value": 28000},
+            {"name": "Meera Patel", "relationship": "Daughter", "age": 7, "has_529": True, "plan_value": 19500},
+        ],
+        "joint_accounts": [],
+        "household_allocation": {"equity": 55, "fixed_income": 30, "alternatives": 15},
+    },
+}
+_FAMILY_DATA["susan"] = _FAMILY_DATA["mark"]
+_FAMILY_DATA["priya"] = _FAMILY_DATA["raj"]
+
+
+@router.get("/family")
+async def get_family(authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    return _FAMILY_DATA.get(prefix, _FAMILY_DATA["nicole"])
+
+
+@router.get("/family/{member_id}")
+async def get_family_member(member_id: str, authorization: str | None = Header(None)):
+    hh = _resolve_household(authorization)
+    prefix = _prefix_from_email(hh["email"])
+    fam = _FAMILY_DATA.get(prefix, _FAMILY_DATA["nicole"])
+    for m in fam["members"]:
+        if m["id"] == member_id:
+            if not m.get("can_view_details"):
+                raise HTTPException(status_code=403, detail="Not authorized to view this member's details")
+            return m
+    raise HTTPException(status_code=404, detail="Family member not found")
