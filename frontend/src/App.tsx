@@ -26,6 +26,7 @@ import {
   PortalGoals,
   PortalDocuments,
   PortalNarratives,
+  PortalRiskProfile,
   PortalSettings,
   ClientOnboarding,
 } from './pages/portal';
@@ -111,6 +112,14 @@ export default function App() {
         element={
           <PortalGuard>
             <PortalNarratives />
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/risk-profile"
+        element={
+          <PortalGuard>
+            <PortalRiskProfile />
           </PortalGuard>
         }
       />

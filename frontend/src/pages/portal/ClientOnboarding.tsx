@@ -307,9 +307,9 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
       question: 'What is your investment time horizon?',
       options: [
         { value: 1, label: 'Less than 3 years' },
-        { value: 2, label: '3-5 years' },
-        { value: 3, label: '5-10 years' },
-        { value: 4, label: '10-20 years' },
+        { value: 2, label: '3–5 years' },
+        { value: 3, label: '5–10 years' },
+        { value: 4, label: '10–20 years' },
         { value: 5, label: 'More than 20 years' },
       ],
     },
@@ -318,9 +318,10 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
       question: 'If your portfolio dropped 20% in value, what would you do?',
       options: [
         { value: 1, label: 'Sell everything immediately' },
-        { value: 2, label: 'Sell some investments' },
+        { value: 2, label: 'Sell some investments to reduce risk' },
         { value: 3, label: 'Hold and wait for recovery' },
         { value: 4, label: 'Buy more at lower prices' },
+        { value: 5, label: 'Aggressively buy the dip' },
       ],
     },
     {
@@ -330,17 +331,30 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
         { value: 1, label: "None — I'm new to investing" },
         { value: 2, label: 'Limited — Savings accounts and CDs' },
         { value: 3, label: 'Moderate — Stocks and mutual funds' },
-        { value: 4, label: 'Extensive — Options, alternatives, etc.' },
+        { value: 4, label: 'Experienced — Options, ETFs, alternatives' },
+        { value: 5, label: 'Expert — Professional trading experience' },
       ],
     },
     {
-      id: 'riskComfort',
-      question: 'Which statement best describes your comfort with risk?',
+      id: 'incomeStability',
+      question: 'How stable is your current income?',
       options: [
-        { value: 1, label: 'I want to preserve my capital above all else' },
-        { value: 2, label: "I'm willing to accept small fluctuations for moderate growth" },
-        { value: 3, label: "I'm comfortable with ups and downs for higher returns" },
-        { value: 4, label: 'I want maximum growth and can handle significant volatility' },
+        { value: 1, label: 'Unstable — Freelance or variable income' },
+        { value: 2, label: 'Somewhat stable — Commission-based' },
+        { value: 3, label: 'Stable — Salaried employee' },
+        { value: 4, label: 'Very stable — Multiple income sources' },
+        { value: 5, label: 'Not dependent — Retired with pension' },
+      ],
+    },
+    {
+      id: 'lossTolerance',
+      question: 'What is the maximum portfolio loss you could tolerate in a single year?',
+      options: [
+        { value: 1, label: 'Less than 5%' },
+        { value: 2, label: '5–10%' },
+        { value: 3, label: '10–20%' },
+        { value: 4, label: '20–30%' },
+        { value: 5, label: 'More than 30%' },
       ],
     },
   ];
@@ -350,8 +364,10 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
   const totalScore = allAnswered
     ? questions.reduce((sum, q) => sum + (formData[q.id] || 0), 0)
     : 0;
+  const maxScore = questions.length * 5;
+  const pct = Math.round((totalScore / maxScore) * 100);
   const riskProfile =
-    totalScore <= 6 ? 'Conservative' : totalScore <= 10 ? 'Moderate' : totalScore <= 14 ? 'Moderate Growth' : 'Aggressive Growth';
+    pct <= 25 ? 'Conservative' : pct <= 45 ? 'Moderately Conservative' : pct <= 60 ? 'Moderate' : pct <= 75 ? 'Moderate-Aggressive' : 'Aggressive';
 
   return (
     <div className="space-y-8">
@@ -389,9 +405,12 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
         <div className="p-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border border-blue-100">
           <p className="text-sm text-gray-600 mb-2">Your Risk Profile</p>
           <p className="text-2xl font-bold text-gray-900">{riskProfile}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Based on your responses, your advisor will recommend an appropriate
-            portfolio allocation.
+          <p className="text-sm text-gray-500 mt-1 mb-3">
+            Score: {pct}/100 — Based on your responses, your advisor will
+            recommend an appropriate portfolio allocation.
+          </p>
+          <p className="text-xs text-gray-400">
+            You can retake this assessment anytime from your portal's Risk Profile page.
           </p>
         </div>
       )}
@@ -542,11 +561,12 @@ export default function ClientOnboarding() {
       setCurrentStep((prev) => prev + 1);
     } else {
       // Auto-authenticate after completing onboarding
-      // Call the portal login API with the data we collected
       const email = formData.email || 'client@demo.com';
       const name = `${formData.firstName || 'Demo'} ${formData.lastName || 'Client'}`;
+      const apiBase = import.meta.env.VITE_API_URL || '';
+
       try {
-        const apiBase = import.meta.env.VITE_API_URL || '';
+        // 1. Login
         const res = await fetch(`${apiBase}/api/v1/portal/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -554,17 +574,38 @@ export default function ClientOnboarding() {
         });
         if (res.ok) {
           const data = await res.json();
-          localStorage.setItem('portal_token', data.access_token);
+          const token = data.access_token;
+          localStorage.setItem('portal_token', token);
           localStorage.setItem('portal_refresh_token', data.refresh_token);
           localStorage.setItem('portal_client_name', data.client_name || name);
           if (data.firm_name) localStorage.setItem('portal_firm_name', data.firm_name);
+
+          // 2. Save risk profile from onboarding answers
+          if (formData.timeHorizon || formData.marketDrop || formData.experience) {
+            try {
+              await fetch(`${apiBase}/api/v1/portal/risk-profile`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  time_horizon: formData.timeHorizon || 3,
+                  market_drop: formData.marketDrop || 3,
+                  experience: formData.experience || 3,
+                  income_stability: formData.incomeStability || 3,
+                  loss_tolerance: formData.lossTolerance || 3,
+                }),
+              });
+            } catch {
+              // Risk profile save is non-critical; continue
+            }
+          }
         } else {
-          // Fallback: set a demo token directly
           localStorage.setItem('portal_token', 'demo-onboarding-token');
           localStorage.setItem('portal_client_name', name);
         }
       } catch {
-        // Network error fallback: set a demo token directly
         localStorage.setItem('portal_token', 'demo-onboarding-token');
         localStorage.setItem('portal_client_name',
           `${formData.firstName || 'Demo'} ${formData.lastName || 'Client'}`);

@@ -4,6 +4,7 @@ import {
   Target,
   FileText,
   BarChart3,
+  Shield,
   Settings,
   LogOut,
   Bell,
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/portal/goals', label: 'Goals', icon: Target },
   { to: '/portal/documents', label: 'Documents', icon: FileText },
   { to: '/portal/updates', label: 'Updates', icon: BarChart3 },
+  { to: '/portal/risk-profile', label: 'Risk Profile', icon: Shield },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 
