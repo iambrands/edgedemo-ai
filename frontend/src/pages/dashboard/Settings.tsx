@@ -9,6 +9,10 @@ export function Settings() {
   const { user } = useAuth();
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [emailNotifs, setEmailNotifs] = useState(true);
+  const [weeklyReports, setWeeklyReports] = useState(true);
+  const [complianceAlerts, setComplianceAlerts] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const mockApiKey = 'edgeai_sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxx';
 
@@ -153,7 +157,7 @@ export function Settings() {
               <p className="text-sm text-gray-500">Receive alerts and updates via email</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input type="checkbox" className="sr-only peer" checked={emailNotifs} onChange={() => setEmailNotifs(!emailNotifs)} />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
@@ -163,7 +167,7 @@ export function Settings() {
               <p className="text-sm text-gray-500">Receive weekly portfolio summary reports</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input type="checkbox" className="sr-only peer" checked={weeklyReports} onChange={() => setWeeklyReports(!weeklyReports)} />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
@@ -173,7 +177,7 @@ export function Settings() {
               <p className="text-sm text-gray-500">Get notified of compliance issues immediately</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input type="checkbox" className="sr-only peer" checked={complianceAlerts} onChange={() => setComplianceAlerts(!complianceAlerts)} />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
@@ -193,10 +197,22 @@ export function Settings() {
           <Button
             variant="secondary"
             className="text-red-600 border-red-300 hover:bg-red-50"
+            onClick={() => setShowDeleteConfirm(true)}
           >
             Delete Account
           </Button>
         </div>
+        {showDeleteConfirm && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800 font-medium mb-3">Are you sure? This action cannot be undone.</p>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+              <Button variant="secondary" size="sm" className="text-red-600 border-red-300 hover:bg-red-100" onClick={() => { setShowDeleteConfirm(false); alert('Account deletion is not available in demo mode.'); }}>
+                Confirm Delete
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

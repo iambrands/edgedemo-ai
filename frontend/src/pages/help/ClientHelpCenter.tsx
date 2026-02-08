@@ -179,10 +179,9 @@ export default function ClientHelpCenter() {
             {QUICK_GUIDES.map((guide) => {
               const Icon = guide.icon;
               return (
-                <a
+                <div
                   key={guide.title}
-                  href="#"
-                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all"
+                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
                 >
                   <div className="p-3 bg-blue-50 rounded-lg">
                     <Icon className="h-5 w-5 text-blue-600" />
@@ -191,7 +190,7 @@ export default function ClientHelpCenter() {
                     <p className="font-medium text-gray-900">{guide.title}</p>
                     <p className="text-sm text-gray-500">{guide.time}</p>
                   </div>
-                </a>
+                </div>
               );
             })}
           </div>

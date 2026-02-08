@@ -186,7 +186,10 @@ export default function PortalSettings() {
                 <p className="font-medium text-gray-900">Password</p>
                 <p className="text-sm text-gray-500">Last changed: N/A</p>
               </div>
-              <button className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+              <button
+                onClick={() => alert('Password change is not available in demo mode. In production, this would send a password reset email.')}
+                className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
                 Change Password
               </button>
             </div>
@@ -195,7 +198,10 @@ export default function PortalSettings() {
                 <p className="font-medium text-gray-900">Two-Factor Authentication</p>
                 <p className="text-sm text-gray-500">Not enabled</p>
               </div>
-              <button className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+              <button
+                onClick={() => alert('2FA setup is not available in demo mode. In production, this would open an authenticator app setup wizard.')}
+                className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
                 Enable 2FA
               </button>
             </div>

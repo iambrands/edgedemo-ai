@@ -143,9 +143,13 @@ export default function PortalLogin() {
           </form>
 
           <div className="mt-6 text-center space-y-3">
-            <a href="#" className="text-sm text-blue-600 hover:underline block">
+            <button
+              type="button"
+              onClick={() => alert('Password reset is not available in demo mode. Please contact your advisor.')}
+              className="text-sm text-blue-600 hover:underline block mx-auto"
+            >
               Forgot your password?
-            </a>
+            </button>
             <p className="text-sm text-gray-500">
               First time?{' '}
               <Link to="/portal/onboarding" className="text-blue-600 font-medium hover:underline">

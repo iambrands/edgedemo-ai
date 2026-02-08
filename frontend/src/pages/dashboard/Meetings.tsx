@@ -109,7 +109,7 @@ const MeetingsPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'analysis' | 'transcript' | 'actions'>('analysis');
-  const [, setShowNewMeetingModal] = useState(false);
+  const [showNewMeetingModal, setShowNewMeetingModal] = useState(false);
 
   useEffect(() => {
     loadMeetings();
@@ -662,7 +662,14 @@ const MeetingsPage: React.FC = () => {
                           <pre className="text-gray-700 text-sm whitespace-pre-wrap font-sans bg-gray-50 p-4 rounded-lg border border-gray-100">
                             {analysis.suggested_followup_email}
                           </pre>
-                          <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                          <button
+                            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                            onClick={() => {
+                              if (analysis?.suggested_followup_email) {
+                                navigator.clipboard.writeText(analysis.suggested_followup_email);
+                              }
+                            }}
+                          >
                             Copy to Clipboard
                           </button>
                         </div>
@@ -755,6 +762,49 @@ const MeetingsPage: React.FC = () => {
           )}
         </div>
       </div>
+      {/* New Meeting Modal */}
+      {showNewMeetingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">New Meeting</h3>
+              <p className="text-sm text-gray-500 mt-1">Record or upload a meeting for AI analysis</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Title</label>
+                <input type="text" placeholder="e.g., Wilson Quarterly Review" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Client / Household</label>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select...</option>
+                  <option value="wilson">Wilson Household</option>
+                  <option value="henderson">Henderson Family</option>
+                  <option value="martinez">Martinez Household</option>
+                  <option value="patel">Patel Family</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Type</label>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="review">Portfolio Review</option>
+                  <option value="planning">Financial Planning</option>
+                  <option value="onboarding">Client Onboarding</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">After creating, upload a recording or connect a live transcription to enable AI analysis.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+              <button onClick={() => setShowNewMeetingModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={() => setShowNewMeetingModal(false)} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">Create Meeting</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

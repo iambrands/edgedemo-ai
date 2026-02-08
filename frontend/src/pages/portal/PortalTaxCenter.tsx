@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Receipt, TrendingUp, TrendingDown, DollarSign,
   Loader2, FileText, Download, Scissors,
@@ -49,6 +50,7 @@ const fmtDate = (d: string) =>
 /* ------------------------------------------------------------------ */
 
 export default function PortalTaxCenter() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<TaxSummary | null>(null);
   const [docs, setDocs] = useState<TaxDoc[]>([]);
@@ -162,7 +164,10 @@ export default function PortalTaxCenter() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-red-600">{fmtCur2(l.unrealized)}</p>
-                        <button className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5">
+                        <button
+                          onClick={() => navigate('/portal/requests')}
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                        >
                           <Scissors className="h-3 w-3" /> Harvest
                         </button>
                       </div>
@@ -288,7 +293,7 @@ export default function PortalTaxCenter() {
                       <td className={`px-4 py-3 text-right font-medium ${lot.unrealized >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {lot.unrealized >= 0 ? '+' : ''}{fmtCur2(lot.unrealized)}
                         {lot.unrealized < 0 && (
-                          <button className="ml-2 text-xs text-blue-600 hover:underline"><Scissors className="inline h-3 w-3" /></button>
+                          <button onClick={() => navigate('/portal/requests')} className="ml-2 text-xs text-blue-600 hover:underline"><Scissors className="inline h-3 w-3" /></button>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, ChevronDown, ChevronRight, Play, FileText, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +10,7 @@ import { householdsApi, type Household } from '../../services/api';
 import { clsx } from 'clsx';
 
 export function Households() {
+  const navigate = useNavigate();
   const [households, setHouseholds] = useState<Household[]>([]);
   const [expandedHousehold, setExpandedHousehold] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +223,12 @@ export function Households() {
                     <Play size={14} />
                     Run Analysis
                   </Button>
-                  <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => navigate('/dashboard/analysis')}
+                  >
                     <FileText size={14} />
                     View Report
                   </Button>
