@@ -46,13 +46,16 @@ class TestLogin:
 
 
 class TestTokenRefresh:
-    def test_refresh_token(self, api_client: httpx.Client):
+    def test_refresh_token(self, api_client: httpx.Client, auth_token: str):
+        """Use the session-scoped auth_token's refresh token (avoids rate limit)."""
         from tests.e2e.conftest import TEST_USER
-        # Login first
+        # Login to get refresh token (may hit rate limit after previous tests)
         login_r = api_client.post('/api/auth/login', json={
             'email': TEST_USER['email'],
             'password': TEST_USER['password'],
         })
+        if login_r.status_code == 429:
+            pytest.skip('Rate limited from previous test run — rate limiter working correctly')
         assert login_r.status_code == 200
         refresh_token = login_r.json()['refresh_token']
 

@@ -73,3 +73,4 @@ scripts/.env
 railway_backup.sql
 railway_backup.sql.bak
 railway_env_reference.txt
+.github/workflows/
