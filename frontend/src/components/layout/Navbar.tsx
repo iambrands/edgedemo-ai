@@ -37,7 +37,7 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <span className="text-xl font-bold">
-              <span className="text-gray-900">Edge</span>
+              <span className="text-slate-900">Edge</span>
               <span className="text-primary-500">AI</span>
             </span>
           </Link>
@@ -48,7 +48,7 @@ export function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
               >
                 {link.label}
               </a>
@@ -71,7 +71,7 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-gray-500 hover:text-gray-900"
+            className="md:hidden p-2 text-slate-500 hover:text-slate-900"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -80,13 +80,13 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4">
+          <div className="md:hidden border-t border-slate-200 py-4">
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}

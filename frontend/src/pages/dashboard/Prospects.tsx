@@ -34,9 +34,9 @@ const STATUS_CONFIG: Record<
   meeting_completed: { label: 'Meeting Done', color: 'bg-orange-100 text-orange-800' },
   proposal_sent: { label: 'Proposal Sent', color: 'bg-pink-100 text-pink-800' },
   negotiating: { label: 'Negotiating', color: 'bg-cyan-100 text-cyan-800' },
-  won: { label: 'Won', color: 'bg-green-100 text-green-800' },
+  won: { label: 'Won', color: 'bg-emerald-100 text-emerald-800' },
   lost: { label: 'Lost', color: 'bg-red-100 text-red-800' },
-  nurturing: { label: 'Nurturing', color: 'bg-gray-100 text-gray-800' },
+  nurturing: { label: 'Nurturing', color: 'bg-slate-100 text-slate-800' },
 };
 
 const PIPELINE_ORDER: ProspectStatus[] = [
@@ -97,7 +97,7 @@ const fmtDate = (iso?: string | null): string => {
 };
 
 const scoreColor = (score: number): string => {
-  if (score >= 70) return 'text-green-600';
+  if (score >= 70) return 'text-emerald-600';
   if (score >= 40) return 'text-yellow-600';
   return 'text-red-600';
 };
@@ -177,35 +177,35 @@ function AddProspectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
               <input value={form.first_name} onChange={set('first_name')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
               <input value={form.last_name} onChange={set('last_name')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
               <input type="email" value={form.email} onChange={set('email')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
               <input value={form.phone} onChange={set('phone')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Company</label>
               <input value={form.company} onChange={set('company')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
               <input value={form.title} onChange={set('title')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Industry</label>
               <input value={form.industry} onChange={set('industry')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lead Source</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Lead Source</label>
               <select value={form.lead_source} onChange={set('lead_source')} className="w-full px-3 py-2 border rounded-lg">
                 {SOURCE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -213,15 +213,15 @@ function AddProspectModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Est. AUM ($)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Est. AUM ($)</label>
               <input type="number" value={form.estimated_aum} onChange={set('estimated_aum')} className="w-full px-3 py-2 border rounded-lg" placeholder="500000" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Annual Income ($)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Annual Income ($)</label>
               <input type="number" value={form.annual_income} onChange={set('annual_income')} className="w-full px-3 py-2 border rounded-lg" placeholder="150000" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Risk Tolerance</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Risk Tolerance</label>
               <select value={form.risk_tolerance} onChange={set('risk_tolerance')} className="w-full px-3 py-2 border rounded-lg">
                 <option value="conservative">Conservative</option>
                 <option value="moderate">Moderate</option>
@@ -229,18 +229,18 @@ function AddProspectModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Source Detail</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Source Detail</label>
               <input value={form.source_detail} onChange={set('source_detail')} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g. Referred by John" />
             </div>
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
             <textarea value={form.notes} onChange={set('notes')} rows={3} className="w-full px-3 py-2 border rounded-lg" />
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
             <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {saving ? 'Saving...' : 'Add Prospect'}
             </button>
@@ -312,7 +312,7 @@ function LogActivityModal({
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
               <select value={form.activity_type} onChange={set('activity_type')} className="w-full px-3 py-2 border rounded-lg">
                 {ACTIVITY_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -320,29 +320,29 @@ function LogActivityModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
               <input value={form.subject} onChange={set('subject')} className="w-full px-3 py-2 border rounded-lg" placeholder="Brief summary" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
               <textarea value={form.description} onChange={set('description')} rows={3} className="w-full px-3 py-2 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Duration (min)</label>
               <input type="number" value={form.duration_minutes} onChange={set('duration_minutes')} className="w-full px-3 py-2 border rounded-lg" />
             </div>
 
             {form.activity_type === 'call' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Direction</label>
                   <select value={form.call_direction} onChange={set('call_direction')} className="w-full px-3 py-2 border rounded-lg">
                     <option value="outbound">Outbound</option>
                     <option value="inbound">Inbound</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Outcome</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Outcome</label>
                   <select value={form.call_outcome} onChange={set('call_outcome')} className="w-full px-3 py-2 border rounded-lg">
                     <option value="">Select...</option>
                     <option value="connected">Connected</option>
@@ -355,7 +355,7 @@ function LogActivityModal({
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
             <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {saving ? 'Saving...' : 'Log Activity'}
             </button>
@@ -466,33 +466,33 @@ export default function Prospects() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Prospects</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{pipelineSummary?.total_prospects ?? 0}</p>
+              <p className="text-sm font-medium text-slate-500">Total Prospects</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{pipelineSummary?.total_prospects ?? 0}</p>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl">
               <Users className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Pipeline Value</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{fmtCurrency(pipelineSummary?.total_pipeline_value)}</p>
+              <p className="text-sm font-medium text-slate-500">Pipeline Value</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{fmtCurrency(pipelineSummary?.total_pipeline_value)}</p>
             </div>
             <div className="p-3 bg-amber-50 rounded-xl">
               <DollarSign className="h-6 w-6 text-amber-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">In Progress</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm font-medium text-slate-500">In Progress</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
                 {Object.entries(pipelineSummary?.stages ?? {})
                   .filter(([k]) => !['won', 'lost'].includes(k))
                   .reduce((sum, [, v]) => sum + v.count, 0)}
@@ -503,10 +503,10 @@ export default function Prospects() {
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Won</p>
+              <p className="text-sm font-medium text-slate-500">Won</p>
               <p className="text-2xl font-bold text-emerald-600 mt-1">
                 {pipelineSummary?.stages?.won?.count ?? 0}
               </p>
@@ -526,10 +526,10 @@ export default function Prospects() {
           const stageData = pipelineSummary?.stages?.[status];
 
           return (
-            <div key={status} className="flex-shrink-0 w-72 bg-gray-50 rounded-lg p-3">
+            <div key={status} className="flex-shrink-0 w-72 bg-slate-50 rounded-lg p-3">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-gray-700">{config.label}</h3>
-                <span className="text-xs text-gray-500">
+                <h3 className="font-semibold text-sm text-slate-700">{config.label}</h3>
+                <span className="text-xs text-slate-500">
                   {stageData?.count ?? 0} &middot; {fmtCurrency(stageData?.value)}
                 </span>
               </div>
@@ -538,7 +538,7 @@ export default function Prospects() {
                   <div
                     key={prospect.id}
                     onClick={() => loadProspectDetail(prospect)}
-                    className="bg-white p-3 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-gray-100"
+                    className="bg-white p-3 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-slate-100"
                   >
                     <div className="flex items-center justify-between">
                       <p className="font-medium text-sm">
@@ -549,13 +549,13 @@ export default function Prospects() {
                       </span>
                     </div>
                     {prospect.company && (
-                      <p className="text-xs text-gray-500 mt-0.5">{prospect.company}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{prospect.company}</p>
                     )}
                     {prospect.estimated_aum != null && (
-                      <p className="text-xs text-gray-600 mt-1">{fmtCurrency(prospect.estimated_aum)}</p>
+                      <p className="text-xs text-slate-600 mt-1">{fmtCurrency(prospect.estimated_aum)}</p>
                     )}
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500">{prospect.days_in_stage}d in stage</span>
+                      <span className="text-xs text-slate-500">{prospect.days_in_stage}d in stage</span>
                       {prospect.next_action_date && (
                         <span className="text-xs text-blue-600">{fmtDate(prospect.next_action_date)}</span>
                       )}
@@ -563,7 +563,7 @@ export default function Prospects() {
                   </div>
                 ))}
                 {stageProspects.length === 0 && (
-                  <p className="text-center text-gray-500 text-xs py-4">No prospects</p>
+                  <p className="text-center text-slate-500 text-xs py-4">No prospects</p>
                 )}
               </div>
             </div>
@@ -576,7 +576,7 @@ export default function Prospects() {
   // ── List View ─────────────────────────────────────────────────
 
   const renderList = () => (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <input
           type="text"
@@ -597,28 +597,28 @@ export default function Prospects() {
         </select>
         <button
           onClick={loadData}
-          className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+          className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
         >
           Refresh
         </button>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">AUM</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Company</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">AUM</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Score</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Source</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-slate-200">
             {prospects.map((prospect) => (
-              <tr key={prospect.id} className="hover:bg-gray-50">
+              <tr key={prospect.id} className="hover:bg-slate-50">
                 <td className="px-6 py-4">
                   <button
                     onClick={() => loadProspectDetail(prospect)}
@@ -626,11 +626,11 @@ export default function Prospects() {
                   >
                     {prospect.first_name} {prospect.last_name}
                   </button>
-                  {prospect.email && <p className="text-xs text-gray-500">{prospect.email}</p>}
+                  {prospect.email && <p className="text-xs text-slate-500">{prospect.email}</p>}
                 </td>
                 <td className="px-6 py-4 text-sm">{prospect.company || '-'}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${STATUS_CONFIG[prospect.status]?.color ?? 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`px-2 py-1 text-xs rounded-full ${STATUS_CONFIG[prospect.status]?.color ?? 'bg-slate-100 text-slate-800'}`}>
                     {STATUS_CONFIG[prospect.status]?.label ?? prospect.status}
                   </span>
                 </td>
@@ -656,7 +656,7 @@ export default function Prospects() {
             ))}
             {prospects.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                   No prospects found
                 </td>
               </tr>
@@ -673,7 +673,7 @@ export default function Prospects() {
     if (!selectedProspect) return null;
     const config = STATUS_CONFIG[selectedProspect.status] ?? {
       label: selectedProspect.status,
-      color: 'bg-gray-100 text-gray-800',
+      color: 'bg-slate-100 text-slate-800',
     };
 
     return (
@@ -686,14 +686,14 @@ export default function Prospects() {
         </button>
 
         {/* Header Card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
               <h2 className="text-2xl font-bold">
                 {selectedProspect.first_name} {selectedProspect.last_name}
               </h2>
               {(selectedProspect.title || selectedProspect.company) && (
-                <p className="text-gray-500">
+                <p className="text-slate-500">
                   {[selectedProspect.title, selectedProspect.company].filter(Boolean).join(' at ')}
                 </p>
               )}
@@ -709,13 +709,13 @@ export default function Prospects() {
             <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => handleRescore(selectedProspect.id)}
-                className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
               >
                 Rescore
               </button>
               <button
                 onClick={() => setShowActivityModal(true)}
-                className="px-3 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
               >
                 Log Activity
               </button>
@@ -731,22 +731,22 @@ export default function Prospects() {
 
           {/* Score Breakdown */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">Overall</p>
+            <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500">Overall</p>
               <p className={`text-2xl font-bold ${scoreColor(selectedProspect.lead_score)}`}>
                 {selectedProspect.lead_score}
               </p>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">Fit</p>
+            <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500">Fit</p>
               <p className="text-xl font-semibold">{selectedProspect.fit_score}</p>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">Intent</p>
+            <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500">Intent</p>
               <p className="text-xl font-semibold">{selectedProspect.intent_score}</p>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">Engagement</p>
+            <div className="text-center p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500">Engagement</p>
               <p className="text-xl font-semibold">{selectedProspect.engagement_score}</p>
             </div>
           </div>
@@ -755,7 +755,7 @@ export default function Prospects() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
             <div>
               <h3 className="font-semibold text-sm mb-2">Contact Info</h3>
-              <div className="space-y-1 text-sm text-gray-600">
+              <div className="space-y-1 text-sm text-slate-600">
                 <p>Email: {selectedProspect.email || '-'}</p>
                 <p>Phone: {selectedProspect.phone || '-'}</p>
                 {selectedProspect.linkedin_url && (
@@ -773,7 +773,7 @@ export default function Prospects() {
             </div>
             <div>
               <h3 className="font-semibold text-sm mb-2">Financial Profile</h3>
-              <div className="space-y-1 text-sm text-gray-600">
+              <div className="space-y-1 text-sm text-slate-600">
                 <p>Est. AUM: {fmtCurrency(selectedProspect.estimated_aum)}</p>
                 <p>Annual Income: {fmtCurrency(selectedProspect.annual_income)}</p>
                 <p>Risk Tolerance: {selectedProspect.risk_tolerance || '-'}</p>
@@ -789,7 +789,7 @@ export default function Prospects() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
             <div>
               <h3 className="font-semibold text-sm mb-2">Next Action</h3>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-slate-600">
                 <p>Date: {fmtDate(selectedProspect.next_action_date)}</p>
                 <p>Type: {selectedProspect.next_action_type || '-'}</p>
                 {selectedProspect.next_action_notes && <p className="mt-1">{selectedProspect.next_action_notes}</p>}
@@ -802,13 +802,13 @@ export default function Prospects() {
                   <span key={tag} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">{tag}</span>
                 ))}
                 {(!selectedProspect.tags || selectedProspect.tags.length === 0) && (
-                  <span className="text-sm text-gray-500">None</span>
+                  <span className="text-sm text-slate-500">None</span>
                 )}
               </div>
             </div>
             <div>
               <h3 className="font-semibold text-sm mb-2">Pipeline</h3>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-slate-600">
                 <p>Days in Stage: {selectedProspect.days_in_stage}</p>
                 <p>Total in Pipeline: {selectedProspect.total_days_in_pipeline}d</p>
                 <p>Source: {(selectedProspect.lead_source || '').replace(/_/g, ' ')}</p>
@@ -817,9 +817,9 @@ export default function Prospects() {
           </div>
 
           {selectedProspect.notes && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-3 bg-slate-50 rounded-lg">
               <h3 className="font-semibold text-sm mb-1">Notes</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedProspect.notes}</p>
+              <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedProspect.notes}</p>
             </div>
           )}
         </div>
@@ -827,7 +827,7 @@ export default function Prospects() {
         {/* Activities & Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Activities */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h3 className="font-semibold mb-4">Recent Activities</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {activities.map((activity) => (
@@ -836,36 +836,36 @@ export default function Prospects() {
                     <span className="font-medium text-sm capitalize">
                       {(activity.activity_type || '').replace(/_/g, ' ')}
                     </span>
-                    <span className="text-xs text-gray-500">{fmtDate(activity.activity_date)}</span>
+                    <span className="text-xs text-slate-500">{fmtDate(activity.activity_date)}</span>
                   </div>
-                  {activity.subject && <p className="text-sm text-gray-700">{activity.subject}</p>}
-                  {activity.description && <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>}
+                  {activity.subject && <p className="text-sm text-slate-700">{activity.subject}</p>}
+                  {activity.description && <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>}
                   {activity.call_outcome && (
-                    <span className="text-xs text-gray-500 capitalize">Outcome: {activity.call_outcome}</span>
+                    <span className="text-xs text-slate-500 capitalize">Outcome: {activity.call_outcome}</span>
                   )}
                   {activity.is_automated && (
-                    <span className="ml-2 text-xs text-gray-500 italic">auto</span>
+                    <span className="ml-2 text-xs text-slate-500 italic">auto</span>
                   )}
                 </div>
               ))}
               {activities.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-4">No activities yet</p>
+                <p className="text-slate-500 text-sm text-center py-4">No activities yet</p>
               )}
             </div>
           </div>
 
           {/* Proposals */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h3 className="font-semibold mb-4">Proposals</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {proposals.map((proposal) => (
-                <div key={proposal.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div key={proposal.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-sm">{proposal.proposal_number || proposal.title}</span>
-                    <span className="text-xs capitalize px-2 py-0.5 bg-gray-200 rounded-full">{proposal.status}</span>
+                    <span className="text-xs capitalize px-2 py-0.5 bg-slate-200 rounded-full">{proposal.status}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{proposal.title}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                  <p className="text-xs text-slate-500 mt-1">{proposal.title}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                     {proposal.estimated_annual_fee != null && (
                       <span>Fee: {fmtCurrency(proposal.estimated_annual_fee)}/yr</span>
                     )}
@@ -877,12 +877,12 @@ export default function Prospects() {
                     )}
                   </div>
                   {proposal.executive_summary && (
-                    <p className="text-xs text-gray-600 mt-2 line-clamp-2">{proposal.executive_summary}</p>
+                    <p className="text-xs text-slate-600 mt-2 line-clamp-2">{proposal.executive_summary}</p>
                   )}
                 </div>
               ))}
               {proposals.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-4">No proposals yet</p>
+                <p className="text-slate-500 text-sm text-center py-4">No proposals yet</p>
               )}
             </div>
           </div>
@@ -896,7 +896,7 @@ export default function Prospects() {
   if (loading && prospects.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading prospects...</div>
+        <div className="text-slate-500">Loading prospects...</div>
       </div>
     );
   }
@@ -906,8 +906,8 @@ export default function Prospects() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prospect Pipeline</h1>
-          <p className="text-sm text-gray-500">Manage leads and track conversions</p>
+          <h1 className="text-2xl font-bold text-slate-900">Prospect Pipeline</h1>
+          <p className="text-sm text-slate-500">Manage leads and track conversions</p>
         </div>
         <div className="flex gap-2">
           {activeTab !== 'detail' && (
@@ -915,7 +915,7 @@ export default function Prospects() {
               <button
                 onClick={() => setActiveTab('pipeline')}
                 className={`px-4 py-2 rounded-lg text-sm ${
-                  activeTab === 'pipeline' ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  activeTab === 'pipeline' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
                 }`}
               >
                 Pipeline
@@ -923,7 +923,7 @@ export default function Prospects() {
               <button
                 onClick={() => setActiveTab('list')}
                 className={`px-4 py-2 rounded-lg text-sm ${
-                  activeTab === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  activeTab === 'list' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
                 }`}
               >
                 List
@@ -932,7 +932,7 @@ export default function Prospects() {
           )}
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm"
           >
             + Add Prospect
           </button>

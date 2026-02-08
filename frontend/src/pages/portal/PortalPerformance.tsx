@@ -79,7 +79,7 @@ export default function PortalPerformance() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -95,14 +95,14 @@ export default function PortalPerformance() {
   const chartData = (data.time_series[period] || []).map((p) => ({ ...p, date: fmtDate(p.date) }));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
-          <p className="text-gray-500 text-sm">Track your portfolio performance over time</p>
+          <h1 className="text-2xl font-bold text-slate-900">Performance</h1>
+          <p className="text-slate-500 text-sm">Track your portfolio performance over time</p>
         </div>
 
         {/* Summary Cards */}
@@ -135,7 +135,7 @@ export default function PortalPerformance() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                tab === t.key ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
               }`}
             >
               <t.Icon className="h-4 w-4" />
@@ -146,16 +146,16 @@ export default function PortalPerformance() {
 
         {/* ── Overview Tab ────────────────────────────── */}
         {tab === 'overview' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Portfolio vs {data.benchmark_name}</h2>
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+              <h2 className="text-lg font-semibold text-slate-900">Portfolio vs {data.benchmark_name}</h2>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
                 {PERIODS.map((p) => (
                   <button
                     key={p.key}
                     onClick={() => setPeriod(p.key)}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      period === p.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                      period === p.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {p.label}
@@ -184,8 +184,8 @@ export default function PortalPerformance() {
         {tab === 'allocation' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Pie */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Current Allocation</h2>
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Current Allocation</h2>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -202,16 +202,16 @@ export default function PortalPerformance() {
                 {data.asset_allocation.current.map((item, i) => (
                   <div key={item.category} className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ALLOC_COLORS[i] }} />
-                    <span className="text-sm text-gray-600">{item.category}</span>
-                    <span className="text-sm font-medium text-gray-900 ml-auto">{item.pct}%</span>
+                    <span className="text-sm text-slate-600">{item.category}</span>
+                    <span className="text-sm font-medium text-slate-900 ml-auto">{item.pct}%</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Current vs Target */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Current vs Target</h2>
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Current vs Target</h2>
               <div className="space-y-5">
                 {data.asset_allocation.current.map((item, i) => {
                   const tgt = data.asset_allocation.target[i];
@@ -219,17 +219,17 @@ export default function PortalPerformance() {
                   return (
                     <div key={item.category}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700">{item.category}</span>
+                        <span className="text-sm font-medium text-slate-700">{item.category}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Target: {tgt.pct}%</span>
+                          <span className="text-sm text-slate-500">Target: {tgt.pct}%</span>
                           <span className={`text-sm font-medium ${diff > 0 ? 'text-amber-600' : diff < 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
                             {diff > 0 ? '+' : ''}{diff}%
                           </span>
                         </div>
                       </div>
-                      <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="relative h-2.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="absolute h-full rounded-full" style={{ width: `${item.pct}%`, backgroundColor: ALLOC_COLORS[i] }} />
-                        <div className="absolute h-full w-0.5 bg-gray-500" style={{ left: `${tgt.pct}%` }} />
+                        <div className="absolute h-full w-0.5 bg-slate-500" style={{ left: `${tgt.pct}%` }} />
                       </div>
                     </div>
                   );
@@ -245,8 +245,8 @@ export default function PortalPerformance() {
 
         {/* ── Monthly Tab ─────────────────────────────── */}
         {tab === 'monthly' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Monthly Returns (Last 12 Months)</h2>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900 mb-6">Monthly Returns (Last 12 Months)</h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.monthly_returns} barGap={0}>
@@ -277,15 +277,15 @@ function Card({ label, main, sub, positive, icon }: {
   label: string; main: string; sub: string;
   positive?: boolean; icon?: React.ReactNode;
 }) {
-  const color = positive === undefined ? 'text-gray-900' : positive ? 'text-emerald-600' : 'text-red-600';
+  const color = positive === undefined ? 'text-slate-900' : positive ? 'text-emerald-600' : 'text-red-600';
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
+    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+      <p className="text-sm text-slate-500 mb-1">{label}</p>
       <div className="flex items-center gap-2">
         <p className={`text-2xl font-bold ${color}`}>{main}</p>
         {icon}
       </div>
-      <p className={`text-sm mt-1 ${positive === undefined ? 'text-gray-400' : color}`}>{sub}</p>
+      <p className={`text-sm mt-1 ${positive === undefined ? 'text-slate-400' : color}`}>{sub}</p>
     </div>
   );
 }

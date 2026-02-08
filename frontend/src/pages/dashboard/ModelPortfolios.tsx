@@ -40,7 +40,7 @@ const ASSET_CLASS_COLORS: Record<string, string> = {
   real_estate: 'bg-orange-500',
   commodities: 'bg-yellow-500',
   alternatives: 'bg-pink-500',
-  cash: 'bg-gray-400',
+  cash: 'bg-slate-400',
 };
 
 const ASSET_CLASS_LABELS: Record<string, string> = {
@@ -204,7 +204,7 @@ export default function ModelPortfolios() {
   // ── status badge helper ──────────────────────────────────
 
   const statusBadge = (status: string, map: Record<string, string>) => {
-    const cls = map[status] || 'bg-gray-100 text-gray-800';
+    const cls = map[status] || 'bg-slate-100 text-slate-800';
     return (
       <span className={`px-2 py-0.5 text-xs font-medium rounded ${cls}`}>
         {status}
@@ -213,8 +213,8 @@ export default function ModelPortfolios() {
   };
 
   const modelStatusColors: Record<string, string> = {
-    active: 'bg-green-100 text-green-800',
-    draft: 'bg-gray-100 text-gray-800',
+    active: 'bg-emerald-100 text-emerald-800',
+    draft: 'bg-slate-100 text-slate-800',
     paused: 'bg-yellow-100 text-yellow-800',
     archived: 'bg-red-100 text-red-800',
   };
@@ -223,9 +223,9 @@ export default function ModelPortfolios() {
     pending: 'bg-yellow-100 text-yellow-800',
     approved: 'bg-blue-100 text-blue-800',
     executing: 'bg-indigo-100 text-indigo-800',
-    completed: 'bg-green-100 text-green-800',
+    completed: 'bg-emerald-100 text-emerald-800',
     rejected: 'bg-red-100 text-red-800',
-    expired: 'bg-gray-100 text-gray-800',
+    expired: 'bg-slate-100 text-slate-800',
     failed: 'bg-red-100 text-red-800',
   };
 
@@ -237,7 +237,7 @@ export default function ModelPortfolios() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-900">My Model Portfolios</h2>
+        <h2 className="text-lg font-semibold text-slate-900">My Model Portfolios</h2>
       </div>
 
       {/* Stats Row */}
@@ -278,13 +278,13 @@ export default function ModelPortfolios() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5"
+            className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stat.sub}</p>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{stat.sub}</p>
               </div>
               <div className={`p-3 ${stat.iconBg} rounded-xl`}>
                 <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
@@ -300,23 +300,23 @@ export default function ModelPortfolios() {
           <div
             key={model.id}
             onClick={() => loadModelDetail(model)}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 truncate">{model.name}</h3>
+              <h3 className="font-semibold text-slate-900 truncate">{model.name}</h3>
               {statusBadge(model.status, modelStatusColors)}
             </div>
             {model.ticker && (
-              <p className="text-sm text-gray-500 mt-0.5">{model.ticker}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{model.ticker}</p>
             )}
 
             {/* Allocation bar */}
             {(model.holdings ?? []).length > 0 && (
-              <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-gray-200">
+              <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-slate-200">
                 {(model.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
-                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
+                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'}
                     style={{ width: `${h.target_weight_pct ?? 0}%` }}
                     title={`${h.symbol}: ${(h.target_weight_pct ?? 0).toFixed(1)}%`}
                   />
@@ -326,22 +326,22 @@ export default function ModelPortfolios() {
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
               <div>
-                <p className="text-gray-500">YTD Return</p>
+                <p className="text-slate-500">YTD Return</p>
                 <p
                   className={`font-medium ${
-                    (model.ytd_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    (model.ytd_return || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
                   }`}
                 >
                   {fmtPercent(model.ytd_return)}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500">Risk Level</p>
-                <p className="font-medium text-gray-900">{model.risk_level ?? '—'}/10</p>
+                <p className="text-slate-500">Risk Level</p>
+                <p className="font-medium text-slate-900">{model.risk_level ?? '—'}/10</p>
               </div>
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
               <span>{(model.holdings ?? []).length} holdings</span>
               <span>
                 {model.total_subscribers}{' '}
@@ -352,7 +352,7 @@ export default function ModelPortfolios() {
         ))}
 
         {models.length === 0 && (
-          <p className="col-span-3 text-center text-gray-500 py-12">
+          <p className="col-span-3 text-center text-slate-500 py-12">
             No models yet. Create your first model portfolio to get started.
           </p>
         )}
@@ -367,7 +367,7 @@ export default function ModelPortfolios() {
   const renderMarketplace = () => (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">Model Marketplace</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Model Marketplace</h2>
         <div className="flex gap-2">
           <select
             value={mpCategory}
@@ -395,26 +395,26 @@ export default function ModelPortfolios() {
         {marketplaceModels.map((model) => (
           <div
             key={model.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-4"
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 truncate">{model.name}</h3>
-              <span className="text-xs text-gray-500">
+              <h3 className="font-semibold text-slate-900 truncate">{model.name}</h3>
+              <span className="text-xs text-slate-500">
                 {model.total_subscribers}{' '}
                 {model.total_subscribers === 1 ? 'sub' : 'subs'}
               </span>
             </div>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+            <p className="text-sm text-slate-600 mt-1 line-clamp-2">
               {model.description || 'No description available'}
             </p>
 
             {/* Allocation bar */}
             {(model.holdings ?? []).length > 0 && (
-              <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-gray-200">
+              <div className="mt-3 h-3 rounded-full overflow-hidden flex bg-slate-200">
                 {(model.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
-                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
+                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'}
                     style={{ width: `${h.target_weight_pct ?? 0}%` }}
                     title={`${h.symbol}: ${(h.target_weight_pct ?? 0).toFixed(1)}%`}
                   />
@@ -426,17 +426,17 @@ export default function ModelPortfolios() {
             {(model.holdings ?? []).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
                 {(model.holdings ?? []).slice(0, 4).map((h) => (
-                  <span key={h.id} className="flex items-center text-xs text-gray-500">
+                  <span key={h.id} className="flex items-center text-xs text-slate-500">
                     <span
                       className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                        ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
+                        ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'
                       }`}
                     />
                     {h.symbol} {(h.target_weight_pct ?? 0).toFixed(0)}%
                   </span>
                 ))}
                 {(model.holdings ?? []).length > 4 && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-500">
                     +{(model.holdings ?? []).length - 4} more
                   </span>
                 )}
@@ -445,30 +445,30 @@ export default function ModelPortfolios() {
 
             <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
               <div>
-                <p className="text-gray-500">YTD</p>
+                <p className="text-slate-500">YTD</p>
                 <p
                   className={`font-medium ${
-                    (model.ytd_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    (model.ytd_return || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
                   }`}
                 >
                   {fmtPercent(model.ytd_return)}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500">1 Year</p>
-                <p className="font-medium text-gray-900">
+                <p className="text-slate-500">1 Year</p>
+                <p className="font-medium text-slate-900">
                   {fmtPercent(model.one_year_return)}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500">Risk</p>
-                <p className="font-medium text-gray-900">{model.risk_level}/10</p>
+                <p className="text-slate-500">Risk</p>
+                <p className="font-medium text-slate-900">{model.risk_level}/10</p>
               </div>
             </div>
 
             {/* Fee info */}
             {(model.subscription_fee_monthly || model.subscription_fee_annual) && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-slate-500">
                 {model.subscription_fee_monthly
                   ? `$${model.subscription_fee_monthly}/mo`
                   : ''}
@@ -491,7 +491,7 @@ export default function ModelPortfolios() {
         ))}
 
         {marketplaceModels.length === 0 && (
-          <p className="col-span-3 text-center text-gray-500 py-12">
+          <p className="col-span-3 text-center text-slate-500 py-12">
             No models available in the marketplace
           </p>
         )}
@@ -510,7 +510,7 @@ export default function ModelPortfolios() {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-slate-900">
             Rebalancing Signals
             {pending.length > 0 && (
               <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">
@@ -538,7 +538,7 @@ export default function ModelPortfolios() {
             {
               label: 'Completed',
               value: signals.filter((s) => s.status === 'completed').length,
-              color: 'text-green-600',
+              color: 'text-emerald-600',
             },
             {
               label: 'Rejected',
@@ -548,36 +548,36 @@ export default function ModelPortfolios() {
           ].map((st) => (
             <div
               key={st.label}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 text-center"
+              className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 text-center"
             >
-              <p className="text-sm text-gray-500">{st.label}</p>
+              <p className="text-sm text-slate-500">{st.label}</p>
               <p className={`text-xl font-bold ${st.color}`}>{st.value}</p>
             </div>
           ))}
         </div>
 
         {/* Signal cards */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="divide-y divide-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+          <div className="divide-y divide-slate-100">
             {[...pending, ...other].map((signal) => (
               <div key={signal.id} className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
                       {statusBadge(signal.status, signalStatusColors)}
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-900">
                         Drift: {(signal.total_drift_pct ?? 0).toFixed(2)}%
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {signal.trigger_type.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-slate-500 mt-1">
                       Account Value: {fmtCurrency(signal.account_value)} &middot;{' '}
                       {signal.estimated_trades_count} trades required
                     </p>
                     {signal.created_at && (
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         Created: {new Date(signal.created_at).toLocaleDateString()}
                       </p>
                     )}
@@ -587,13 +587,13 @@ export default function ModelPortfolios() {
                     <div className="flex gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleRejectSignal(signal.id)}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                       >
                         Reject
                       </button>
                       <button
                         onClick={() => handleApproveSignal(signal.id)}
-                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                       >
                         Approve
                       </button>
@@ -614,7 +614,7 @@ export default function ModelPortfolios() {
                           .map((t, i) => (
                             <div
                               key={i}
-                              className="flex justify-between text-gray-600"
+                              className="flex justify-between text-slate-600"
                             >
                               <span>{t.symbol || '-'}</span>
                               <span>{fmtCurrency(t.value)}</span>
@@ -623,7 +623,7 @@ export default function ModelPortfolios() {
                       </div>
                     </div>
                     <div>
-                      <p className="font-medium text-green-600">
+                      <p className="font-medium text-emerald-600">
                         Buys: {fmtCurrency(signal.estimated_buy_value)}
                       </p>
                       <div className="mt-1 space-y-1">
@@ -632,7 +632,7 @@ export default function ModelPortfolios() {
                           .map((t, i) => (
                             <div
                               key={i}
-                              className="flex justify-between text-gray-600"
+                              className="flex justify-between text-slate-600"
                             >
                               <span>{t.symbol || '-'}</span>
                               <span>{fmtCurrency(t.value)}</span>
@@ -652,7 +652,7 @@ export default function ModelPortfolios() {
             ))}
 
             {signals.length === 0 && (
-              <p className="p-8 text-center text-gray-500">
+              <p className="p-8 text-center text-slate-500">
                 No rebalance signals. Click &quot;Check All for Drift&quot; to scan
                 portfolios.
               </p>
@@ -683,16 +683,16 @@ export default function ModelPortfolios() {
         </button>
 
         {/* Header Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-slate-900">
                 {selectedModel.name}
               </h2>
               {selectedModel.ticker && (
-                <p className="text-gray-500">{selectedModel.ticker}</p>
+                <p className="text-slate-500">{selectedModel.ticker}</p>
               )}
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-slate-600">
                 {selectedModel.description || 'No description'}
               </p>
               {selectedModel.tags && selectedModel.tags.length > 0 && (
@@ -700,7 +700,7 @@ export default function ModelPortfolios() {
                   {selectedModel.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
+                      className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded"
                     >
                       {tag}
                     </span>
@@ -724,27 +724,27 @@ export default function ModelPortfolios() {
                 value: fmtPercent(selectedModel.ytd_return),
                 color:
                   (selectedModel.ytd_return || 0) >= 0
-                    ? 'text-green-600'
+                    ? 'text-emerald-600'
                     : 'text-red-600',
               },
               {
                 label: 'Risk Level',
                 value: `${selectedModel.risk_level}/10`,
-                color: 'text-gray-900',
+                color: 'text-slate-900',
               },
               {
                 label: 'Drift Threshold',
                 value: `${selectedModel.drift_threshold_pct ?? 5}%`,
-                color: 'text-gray-900',
+                color: 'text-slate-900',
               },
               {
                 label: 'Total AUM',
                 value: fmtCurrency(selectedModel.total_aum),
-                color: 'text-gray-900',
+                color: 'text-slate-900',
               },
             ].map((m) => (
-              <div key={m.label} className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">{m.label}</p>
+              <div key={m.label} className="text-center p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">{m.label}</p>
                 <p className={`text-xl font-bold ${m.color}`}>{m.value}</p>
               </div>
             ))}
@@ -765,23 +765,23 @@ export default function ModelPortfolios() {
               },
             ].map((m) => (
               <div key={m.label} className="text-center p-2 text-sm">
-                <p className="text-gray-500">{m.label}</p>
-                <p className="font-medium text-gray-900">{m.value || '-'}</p>
+                <p className="text-slate-500">{m.label}</p>
+                <p className="font-medium text-slate-900">{m.value || '-'}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Holdings Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-slate-900">
               Holdings ({(selectedModel.holdings ?? []).length})
             </h3>
             {validation && (
               <span
                 className={`text-sm font-medium ${
-                  validation.is_valid ? 'text-green-600' : 'text-red-600'
+                  validation.is_valid ? 'text-emerald-600' : 'text-red-600'
                 }`}
               >
                 Total: {(validation.total_weight ?? 0).toFixed(2)}%{' '}
@@ -795,11 +795,11 @@ export default function ModelPortfolios() {
           {/* Allocation bar */}
           {(selectedModel.holdings ?? []).length > 0 && (
             <div className="mb-4">
-              <div className="h-4 rounded-full overflow-hidden flex bg-gray-200">
+              <div className="h-4 rounded-full overflow-hidden flex bg-slate-200">
                 {(selectedModel.holdings ?? []).map((h) => (
                   <div
                     key={h.id}
-                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'}
+                    className={ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'}
                     style={{ width: `${h.target_weight_pct ?? 0}%` }}
                   />
                 ))}
@@ -808,11 +808,11 @@ export default function ModelPortfolios() {
                 {(selectedModel.holdings ?? []).map((h) => (
                   <span
                     key={h.id}
-                    className="flex items-center text-xs text-gray-600"
+                    className="flex items-center text-xs text-slate-600"
                   >
                     <span
                       className={`inline-block w-2.5 h-2.5 rounded-full mr-1.5 ${
-                        ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
+                        ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'
                       }`}
                     />
                     {h.symbol} ({(h.target_weight_pct ?? 0).toFixed(1)}%)
@@ -826,7 +826,7 @@ export default function ModelPortfolios() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-200">
+                <tr className="text-left text-slate-500 border-b border-slate-200">
                   <th className="pb-2 font-medium">Symbol</th>
                   <th className="pb-2 font-medium">Name</th>
                   <th className="pb-2 font-medium">Asset Class</th>
@@ -834,31 +834,31 @@ export default function ModelPortfolios() {
                   <th className="pb-2 font-medium text-right">Expense Ratio</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {(selectedModel.holdings ?? []).map((h) => (
-                  <tr key={h.id} className="hover:bg-gray-50">
-                    <td className="py-2.5 font-medium text-gray-900">{h.symbol}</td>
-                    <td className="py-2.5 text-gray-600">{h.security_name}</td>
+                  <tr key={h.id} className="hover:bg-slate-50">
+                    <td className="py-2.5 font-medium text-slate-900">{h.symbol}</td>
+                    <td className="py-2.5 text-slate-600">{h.security_name}</td>
                     <td className="py-2.5">
                       <span
                         className={`px-2 py-0.5 text-xs rounded text-white ${
-                          ASSET_CLASS_COLORS[h.asset_class] || 'bg-gray-400'
+                          ASSET_CLASS_COLORS[h.asset_class] || 'bg-slate-400'
                         }`}
                       >
                         {ASSET_CLASS_LABELS[h.asset_class] || (h.asset_class ?? '').replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="py-2.5 text-right font-mono text-gray-900">
+                    <td className="py-2.5 text-right font-mono text-slate-900">
                       {(h.target_weight_pct ?? 0).toFixed(1)}%
                     </td>
-                    <td className="py-2.5 text-right text-gray-500">
+                    <td className="py-2.5 text-right text-slate-500">
                       {h.expense_ratio != null ? `${h.expense_ratio}%` : '-'}
                     </td>
                   </tr>
                 ))}
                 {(selectedModel.holdings ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-gray-500">
+                    <td colSpan={5} className="py-6 text-center text-slate-500">
                       No holdings in this model
                     </td>
                   </tr>
@@ -869,21 +869,21 @@ export default function ModelPortfolios() {
         </div>
 
         {/* Account Assignments */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h3 className="font-semibold text-slate-900 mb-4">
             Account Assignments ({assignments.length})
           </h3>
           <div className="space-y-2">
             {assignments.map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
               >
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-slate-900">
                     Account: {a.account_id.slice(0, 8)}...
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     Value: {fmtCurrency(a.account_value)}
                   </p>
                 </div>
@@ -892,12 +892,12 @@ export default function ModelPortfolios() {
                     className={`font-medium ${
                       (a.current_drift_pct || 0) > (selectedModel.drift_threshold_pct ?? 5)
                         ? 'text-red-600'
-                        : 'text-green-600'
+                        : 'text-emerald-600'
                     }`}
                   >
                     Drift: {a.current_drift_pct?.toFixed(2) || '0.00'}%
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     {a.last_rebalanced_at
                       ? `Last rebalanced: ${new Date(a.last_rebalanced_at).toLocaleDateString()}`
                       : 'Never rebalanced'}
@@ -906,7 +906,7 @@ export default function ModelPortfolios() {
               </div>
             ))}
             {assignments.length === 0 && (
-              <p className="text-center text-gray-500 py-6">
+              <p className="text-center text-slate-500 py-6">
                 No accounts assigned to this model
               </p>
             )}
@@ -925,7 +925,7 @@ export default function ModelPortfolios() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-2 text-sm text-gray-500">Loading model portfolios...</p>
+          <p className="mt-2 text-sm text-slate-500">Loading model portfolios...</p>
         </div>
       </div>
     );
@@ -953,8 +953,8 @@ export default function ModelPortfolios() {
       {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Model Portfolios</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-slate-900">Model Portfolios</h1>
+          <p className="text-slate-500">
             Create, manage, and subscribe to model portfolios
           </p>
         </div>
@@ -973,7 +973,7 @@ export default function ModelPortfolios() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.key
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 {tab.label}

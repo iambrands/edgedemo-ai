@@ -51,7 +51,7 @@ const statusColors: Record<string, string> = {
   under_review: 'bg-amber-50 text-amber-700',
   escalated: 'bg-orange-50 text-orange-700',
   resolved: 'bg-emerald-50 text-emerald-700',
-  false_positive: 'bg-gray-100 text-gray-600',
+  false_positive: 'bg-slate-100 text-slate-600',
   pending: 'bg-amber-50 text-amber-700',
   in_progress: 'bg-blue-50 text-blue-700',
   completed: 'bg-emerald-50 text-emerald-700',
@@ -180,12 +180,12 @@ export default function Compliance() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Compliance</h1>
-          <p className="text-gray-500 mt-1">Monitor alerts, reviews, and compliance tasks</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Compliance</h1>
+          <p className="text-slate-500 mt-1">Monitor alerts, reviews, and compliance tasks</p>
         </div>
         <button
           onClick={loadData}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -193,7 +193,7 @@ export default function Compliance() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-slate-200">
         <nav className="flex gap-6">
           {tabs.map((tab) => (
             <button
@@ -202,7 +202,7 @@ export default function Compliance() {
               className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -210,7 +210,7 @@ export default function Compliance() {
               {tab.count !== undefined && tab.count > 0 && (
                 <span
                   className={`px-2 py-0.5 text-xs rounded-full ${
-                    activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                    activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
                   {tab.count}
@@ -243,11 +243,11 @@ export default function Compliance() {
       {activeTab === 'overview' && metrics && (
         <div className="space-y-6">
           {/* Compliance Score */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Compliance Score</h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <h2 className="text-lg font-semibold text-slate-900">Compliance Score</h2>
+                <p className="text-slate-500 text-sm mt-1">
                   Based on open alerts, overdue tasks, and pending reviews
                 </p>
               </div>
@@ -255,10 +255,10 @@ export default function Compliance() {
                 <div className={`text-5xl font-bold ${scoreColor(metrics.compliance_score)}`}>
                   {metrics.compliance_score}
                 </div>
-                <div className="text-gray-500 text-sm">out of 100</div>
+                <div className="text-slate-500 text-sm">out of 100</div>
               </div>
             </div>
-            <div className="mt-4 h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="mt-4 h-3 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${scoreBg(metrics.compliance_score)}`}
                 style={{ width: `${metrics.compliance_score}%` }}
@@ -269,11 +269,11 @@ export default function Compliance() {
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Open Alerts */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Open Alerts</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.alerts.open}</p>
+                  <p className="text-sm font-medium text-slate-500">Open Alerts</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.alerts.open}</p>
                 </div>
                 <div className="p-3 bg-red-50 rounded-xl">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
@@ -287,11 +287,11 @@ export default function Compliance() {
             </div>
 
             {/* Pending Reviews */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.pending_reviews}</p>
+                  <p className="text-sm font-medium text-slate-500">Pending Reviews</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.pending_reviews}</p>
                 </div>
                 <div className="p-3 bg-amber-50 rounded-xl">
                   <FileCheck className="h-6 w-6 text-amber-600" />
@@ -300,11 +300,11 @@ export default function Compliance() {
             </div>
 
             {/* Open Tasks */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Open Tasks</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-slate-500">Open Tasks</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">
                     {metrics.tasks.pending + metrics.tasks.in_progress}
                   </p>
                 </div>
@@ -320,11 +320,11 @@ export default function Compliance() {
             </div>
 
             {/* Resolved This Month */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Resolved This Month</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.alerts.resolved}</p>
+                  <p className="text-sm font-medium text-slate-500">Resolved This Month</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics.alerts.resolved}</p>
                 </div>
                 <div className="p-3 bg-emerald-50 rounded-xl">
                   <CheckCircle className="h-6 w-6 text-emerald-600" />
@@ -336,9 +336,9 @@ export default function Compliance() {
           {/* Two-column: Recent Alerts + Upcoming Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Alerts */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Recent Alerts</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-semibold text-slate-900">Recent Alerts</h3>
                 <button
                   onClick={() => setActiveTab('alerts')}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -346,18 +346,18 @@ export default function Compliance() {
                   View All
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-100">
                 {alerts.filter((a) => a.status !== 'resolved' && a.status !== 'false_positive').slice(0, 5).map((alert) => (
                   <div
                     key={alert.id}
-                    className="p-4 hover:bg-gray-50 cursor-pointer"
+                    className="p-4 hover:bg-slate-50 cursor-pointer"
                     onClick={() => setActiveTab('alerts')}
                   >
                     <div className="flex items-start gap-3">
-                      <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-gray-400'}`} />
+                      <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-slate-400'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{alert.title}</p>
-                        <p className="text-sm text-gray-500 mt-0.5">{alert.client_name || 'General'}</p>
+                        <p className="font-medium text-slate-900 truncate">{alert.title}</p>
+                        <p className="text-sm text-slate-500 mt-0.5">{alert.client_name || 'General'}</p>
                       </div>
                       <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${severityColors[alert.severity] ?? ''}`}>
                         {alert.severity}
@@ -366,7 +366,7 @@ export default function Compliance() {
                   </div>
                 ))}
                 {alerts.filter((a) => a.status !== 'resolved').length === 0 && (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-slate-500">
                     <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
                     No open alerts
                   </div>
@@ -375,9 +375,9 @@ export default function Compliance() {
             </div>
 
             {/* Upcoming Tasks */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Upcoming Tasks</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-semibold text-slate-900">Upcoming Tasks</h3>
                 <button
                   onClick={() => setShowCreateTask(true)}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -385,23 +385,23 @@ export default function Compliance() {
                   + Add Task
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-100">
                 {tasks.filter((t) => t.status !== 'completed').slice(0, 5).map((task) => (
-                  <div key={task.id} className="p-4 hover:bg-gray-50">
+                  <div key={task.id} className="p-4 hover:bg-slate-50">
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={false}
                         onChange={() => handleCompleteTask(task.id)}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900">{task.title}</p>
+                        <p className="font-medium text-slate-900">{task.title}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <Calendar className="h-3 w-3 text-slate-400" />
                           <span
                             className={`text-xs ${
-                              new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-gray-500'
+                              new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-slate-500'
                             }`}
                           >
                             Due {new Date(task.due_date).toLocaleDateString()}
@@ -418,7 +418,7 @@ export default function Compliance() {
                   </div>
                 ))}
                 {tasks.filter((t) => t.status !== 'completed').length === 0 && (
-                  <div className="p-8 text-center text-gray-500">No pending tasks</div>
+                  <div className="p-8 text-center text-slate-500">No pending tasks</div>
                 )}
               </div>
             </div>
@@ -428,29 +428,29 @@ export default function Compliance() {
 
       {/* ────────────── ALERTS TAB ────────────── */}
       {activeTab === 'alerts' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900">
               All Alerts{' '}
-              <span className="text-gray-500 font-normal text-sm">({alerts.length})</span>
+              <span className="text-slate-500 font-normal text-sm">({alerts.length})</span>
             </h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-100">
             {alerts.map((alert) => (
-              <div key={alert.id} className="p-4 hover:bg-gray-50">
+              <div key={alert.id} className="p-4 hover:bg-slate-50">
                 <div className="flex items-start gap-4">
-                  <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-gray-400'}`} />
+                  <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${severityDot[alert.severity] ?? 'bg-slate-400'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium text-gray-900">{alert.title}</p>
+                      <p className="font-medium text-slate-900">{alert.title}</p>
                       <span className={`px-2 py-0.5 text-xs rounded-full ${severityColors[alert.severity] ?? ''}`}>
                         {alert.severity}
                       </span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[alert.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[alert.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {alert.status.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
+                    <p className="text-sm text-slate-600 mt-1">{alert.description}</p>
 
                     {/* AI Recommendation */}
                     {alert.ai_analysis?.recommendation && (
@@ -460,7 +460,7 @@ export default function Compliance() {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                       {alert.client_name && (
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
@@ -498,7 +498,7 @@ export default function Compliance() {
                       <select
                         value={alert.status}
                         onChange={(e) => handleUpdateAlertStatus(alert.id, e.target.value)}
-                        className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-blue-500 focus:border-blue-500"
+                        className="text-sm border border-slate-300 rounded-lg px-2 py-1.5 bg-white focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="open">Open</option>
                         <option value="under_review">Under Review</option>
@@ -518,8 +518,8 @@ export default function Compliance() {
             {alerts.length === 0 && (
               <div className="p-12 text-center">
                 <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-                <h3 className="font-medium text-gray-900">No alerts</h3>
-                <p className="text-gray-500 mt-1">All compliance checks are passing</p>
+                <h3 className="font-medium text-slate-900">No alerts</h3>
+                <p className="text-slate-500 mt-1">All compliance checks are passing</p>
               </div>
             )}
           </div>
@@ -528,13 +528,13 @@ export default function Compliance() {
 
       {/* ────────────── REVIEWS TAB ────────────── */}
       {activeTab === 'reviews' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
           <div className="text-center max-w-md mx-auto">
             <div className="p-4 bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <FileCheck className="h-8 w-8 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Document Reviews</h3>
-            <p className="text-gray-500 mt-2 mb-6">
+            <h3 className="text-lg font-semibold text-slate-900">Document Reviews</h3>
+            <p className="text-slate-500 mt-2 mb-6">
               Compliance document reviews, ADV Part 2B generation, and Form CRS management are handled
               in the dedicated Compliance Docs module.
             </p>
@@ -555,27 +555,27 @@ export default function Compliance() {
           {/* Create Task Modal/Inline */}
           {showCreateTask && (
             <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-5">
-              <h3 className="font-semibold text-gray-900 mb-4">New Compliance Task</h3>
+              <h3 className="font-semibold text-slate-900 mb-4">New Compliance Task</h3>
               <div className="space-y-3">
                 <input
                   type="text"
                   placeholder="Task title..."
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <textarea
                   placeholder="Description (optional)"
                   value={newTaskDesc}
                   onChange={(e) => setNewTaskDesc(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <div className="flex items-center gap-3">
                   <select
                     value={newTaskPriority}
                     onChange={(e) => setNewTaskPriority(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-slate-700 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
@@ -585,7 +585,7 @@ export default function Compliance() {
                   <div className="flex-1" />
                   <button
                     onClick={() => setShowCreateTask(false)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-lg transition-colors"
+                    className="px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
@@ -601,11 +601,11 @@ export default function Compliance() {
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900">
                 Compliance Tasks{' '}
-                <span className="text-gray-500 font-normal text-sm">({tasks.length})</span>
+                <span className="text-slate-500 font-normal text-sm">({tasks.length})</span>
               </h3>
               {!showCreateTask && (
                 <button
@@ -617,9 +617,9 @@ export default function Compliance() {
                 </button>
               )}
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-slate-100">
               {tasks.map((task) => (
-                <div key={task.id} className="p-4 hover:bg-gray-50">
+                <div key={task.id} className="p-4 hover:bg-slate-50">
                   <div className="flex items-start gap-4">
                     <input
                       type="checkbox"
@@ -628,18 +628,18 @@ export default function Compliance() {
                         if (task.status !== 'completed') handleCompleteTask(task.id);
                       }}
                       disabled={task.status === 'completed'}
-                      className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                      className="mt-1 h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p
                           className={`font-medium ${
-                            task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'
+                            task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'
                           }`}
                         >
                           {task.title}
                         </p>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status] ?? 'bg-slate-100 text-slate-600'}`}>
                           {task.status.replace(/_/g, ' ')}
                         </span>
                         {task.priority === 'urgent' && (
@@ -654,9 +654,9 @@ export default function Compliance() {
                         )}
                       </div>
                       {task.description && (
-                        <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                        <p className="text-sm text-slate-600 mt-1">{task.description}</p>
                       )}
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                         <span
                           className={`flex items-center gap-1 ${
                             new Date(task.due_date) < new Date() && task.status !== 'completed'
@@ -674,7 +674,7 @@ export default function Compliance() {
                           </span>
                         )}
                         {task.category && (
-                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">
                             {task.category.replace(/_/g, ' ')}
                           </span>
                         )}
@@ -685,9 +685,9 @@ export default function Compliance() {
               ))}
               {tasks.length === 0 && (
                 <div className="p-12 text-center">
-                  <CheckSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="font-medium text-gray-900">No tasks</h3>
-                  <p className="text-gray-500 mt-1">Create a task to track compliance activities</p>
+                  <CheckSquare className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="font-medium text-slate-900">No tasks</h3>
+                  <p className="text-slate-500 mt-1">Create a task to track compliance activities</p>
                 </div>
               )}
             </div>
@@ -697,14 +697,14 @@ export default function Compliance() {
 
       {/* ────────────── AUDIT LOG TAB ────────────── */}
       {activeTab === 'audit' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="p-4 border-b border-slate-100">
+            <h3 className="font-semibold text-slate-900">
               Audit Trail{' '}
-              <span className="text-gray-500 font-normal text-sm">({auditLog.length} entries)</span>
+              <span className="text-slate-500 font-normal text-sm">({auditLog.length} entries)</span>
             </h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-100">
             {auditLog.map((entry) => {
               const actionLabel = entry.action.replace(/_/g, ' ');
               const isAlert = entry.entity_type.includes('alert');
@@ -725,7 +725,7 @@ export default function Compliance() {
                           ? 'bg-emerald-50'
                           : isCheck
                           ? 'bg-amber-50'
-                          : 'bg-gray-100'
+                          : 'bg-slate-100'
                       }`}
                     >
                       {isAlert ? (
@@ -737,17 +737,17 @@ export default function Compliance() {
                       ) : isCheck ? (
                         <Shield className={`h-4 w-4 text-amber-600`} />
                       ) : (
-                        <ClipboardList className={`h-4 w-4 text-gray-600`} />
+                        <ClipboardList className={`h-4 w-4 text-slate-600`} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 capitalize">{actionLabel}</p>
-                      <p className="text-sm text-gray-600 mt-0.5">
+                      <p className="font-medium text-slate-900 capitalize">{actionLabel}</p>
+                      <p className="text-sm text-slate-600 mt-0.5">
                         {Object.entries(entry.details)
                           .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
                           .join(' · ')}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         {new Date(entry.created_at).toLocaleString()}
                       </p>
                     </div>
@@ -757,9 +757,9 @@ export default function Compliance() {
             })}
             {auditLog.length === 0 && (
               <div className="p-12 text-center">
-                <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="font-medium text-gray-900">No audit entries</h3>
-                <p className="text-gray-500 mt-1">Activity will be logged here</p>
+                <ClipboardList className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="font-medium text-slate-900">No audit entries</h3>
+                <p className="text-slate-500 mt-1">Activity will be logged here</p>
               </div>
             )}
           </div>

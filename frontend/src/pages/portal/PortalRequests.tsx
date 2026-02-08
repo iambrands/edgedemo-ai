@@ -96,7 +96,7 @@ export default function PortalRequests() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
       </div>
@@ -104,14 +104,14 @@ export default function PortalRequests() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Requests</h1>
-            <p className="text-gray-500 text-sm">Submit and track service requests</p>
+            <h1 className="text-2xl font-bold text-slate-900">Requests</h1>
+            <p className="text-slate-500 text-sm">Submit and track service requests</p>
           </div>
           {view === 'list' && (
             <button onClick={() => setView('new')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
@@ -119,7 +119,7 @@ export default function PortalRequests() {
             </button>
           )}
           {view !== 'list' && (
-            <button onClick={() => { setView('list'); resetForm(); setSelReq(null); }} className="text-sm text-gray-500 hover:text-gray-700">← Back to requests</button>
+            <button onClick={() => { setView('list'); resetForm(); setSelReq(null); }} className="text-sm text-slate-500 hover:text-slate-700">← Back to requests</button>
           )}
         </div>
 
@@ -127,9 +127,9 @@ export default function PortalRequests() {
         {view === 'list' && (
           <>
             {requests.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-                <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">No requests yet</p>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                <FileText className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500">No requests yet</p>
                 <button onClick={() => setView('new')} className="mt-3 text-sm text-blue-600 hover:underline">Submit your first request →</button>
               </div>
             ) : (
@@ -140,17 +140,17 @@ export default function PortalRequests() {
                     <button
                       key={r.id}
                       onClick={() => { setSelReq(r); setView('detail'); }}
-                      className="w-full bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-blue-200 transition-all text-left"
+                      className="w-full bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4 hover:border-blue-200 transition-all text-left"
                     >
                       <div className="p-3 bg-blue-50 rounded-xl"><Icon className="h-5 w-5 text-blue-600" /></div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900">{r.type_name}</p>
-                        <p className="text-sm text-gray-500">{fmtDate(r.submitted_at)}{r.details.amount ? ` · $${r.details.amount.toLocaleString()}` : ''}</p>
+                        <p className="font-medium text-slate-900">{r.type_name}</p>
+                        <p className="text-sm text-slate-500">{fmtDate(r.submitted_at)}{r.details.amount ? ` · $${r.details.amount.toLocaleString()}` : ''}</p>
                       </div>
                       <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${STATUS_STYLES[r.status] || STATUS_STYLES.pending}`}>
                         {r.status.replace('_', ' ')}
                       </span>
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
                     </button>
                   );
                 })}
@@ -161,18 +161,18 @@ export default function PortalRequests() {
 
         {/* ── NEW REQUEST — Type Selection ────────────── */}
         {view === 'new' && !selType && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">What do you need?</h2>
-            <p className="text-sm text-gray-500 mb-5">Select a request type</p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">What do you need?</h2>
+            <p className="text-sm text-slate-500 mb-5">Select a request type</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {types.map((t) => {
                 const Icon = ICONS[t.icon] || HelpCircle;
                 return (
-                  <button key={t.id} onClick={() => setSelType(t)} className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left">
+                  <button key={t.id} onClick={() => setSelType(t)} className="flex items-start gap-4 p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left">
                     <div className="p-2 bg-blue-50 rounded-lg"><Icon className="h-5 w-5 text-blue-600" /></div>
                     <div>
-                      <p className="font-medium text-gray-900">{t.name}</p>
-                      <p className="text-sm text-gray-500">{t.description}</p>
+                      <p className="font-medium text-slate-900">{t.name}</p>
+                      <p className="text-sm text-slate-500">{t.description}</p>
                     </div>
                   </button>
                 );
@@ -183,17 +183,17 @@ export default function PortalRequests() {
 
         {/* ── NEW REQUEST — Form ──────────────────────── */}
         {view === 'new' && selType && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{selType.name}</h2>
-              <p className="text-sm text-gray-500">{selType.description}</p>
+              <h2 className="text-lg font-semibold text-slate-900">{selType.name}</h2>
+              <p className="text-sm text-slate-500">{selType.description}</p>
             </div>
 
             {/* Conditional fields */}
             {(selType.id === 'withdrawal' || selType.id === 'contribution' || selType.id === 'transfer' || selType.id === 'beneficiary_change') && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
-                <select value={account} onChange={(e) => setAccount(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Account</label>
+                <select value={account} onChange={(e) => setAccount(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                   <option value="">Select account...</option>
                   <option value="NW Mutual VA IRA (***4532)">NW Mutual VA IRA (***4532)</option>
                   <option value="Robinhood Individual (***8821)">Robinhood Individual (***8821)</option>
@@ -205,15 +205,15 @@ export default function PortalRequests() {
             {(selType.id === 'withdrawal' || selType.id === 'contribution' || selType.id === 'transfer') && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                    <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="0.00" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                    <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
-                  <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Method</label>
+                  <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                     <option>ACH Transfer</option>
                     <option>Wire Transfer</option>
                     <option>Check</option>
@@ -224,15 +224,15 @@ export default function PortalRequests() {
 
             {selType.id === 'address_change' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Address</label>
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Street, City, State, ZIP" />
+                <label className="block text-sm font-medium text-slate-700 mb-1">New Address</label>
+                <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Street, City, State, ZIP" />
               </div>
             )}
 
             {selType.id === 'document_request' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
-                <select value={docType} onChange={(e) => setDocType(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Document Type</label>
+                <select value={docType} onChange={(e) => setDocType(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                   <option value="">Select document...</option>
                   <option>Account Statement</option>
                   <option>Tax Document</option>
@@ -244,12 +244,12 @@ export default function PortalRequests() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Any additional details..." />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Any additional details..." />
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button onClick={() => { resetForm(); }} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm">Cancel</button>
+              <button onClick={() => { resetForm(); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm">Cancel</button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
@@ -265,38 +265,38 @@ export default function PortalRequests() {
         {/* ── DETAIL VIEW ────────────────────────────── */}
         {view === 'detail' && selReq && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">{selReq.type_name}</h2>
+                <h2 className="text-lg font-semibold text-slate-900">{selReq.type_name}</h2>
                 <span className={`px-3 py-1 text-sm font-medium rounded-full border ${STATUS_STYLES[selReq.status] || STATUS_STYLES.pending}`}>
                   {selReq.status.replace('_', ' ')}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4 mb-4">
-                <div><p className="text-xs text-gray-500">Submitted</p><p className="text-sm font-medium text-gray-900">{fmtDateTime(selReq.submitted_at)}</p></div>
-                <div><p className="text-xs text-gray-500">Request ID</p><p className="text-sm font-medium text-gray-900">{selReq.id}</p></div>
-                {selReq.details.account && <div><p className="text-xs text-gray-500">Account</p><p className="text-sm font-medium text-gray-900">{selReq.details.account}</p></div>}
-                {selReq.details.amount != null && <div><p className="text-xs text-gray-500">Amount</p><p className="text-sm font-medium text-gray-900">${selReq.details.amount.toLocaleString()}</p></div>}
-                {selReq.details.method && <div><p className="text-xs text-gray-500">Method</p><p className="text-sm font-medium text-gray-900">{selReq.details.method}</p></div>}
-                {selReq.details.new_address && <div className="col-span-2"><p className="text-xs text-gray-500">New Address</p><p className="text-sm font-medium text-gray-900">{selReq.details.new_address}</p></div>}
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4 mb-4">
+                <div><p className="text-xs text-slate-500">Submitted</p><p className="text-sm font-medium text-slate-900">{fmtDateTime(selReq.submitted_at)}</p></div>
+                <div><p className="text-xs text-slate-500">Request ID</p><p className="text-sm font-medium text-slate-900">{selReq.id}</p></div>
+                {selReq.details.account && <div><p className="text-xs text-slate-500">Account</p><p className="text-sm font-medium text-slate-900">{selReq.details.account}</p></div>}
+                {selReq.details.amount != null && <div><p className="text-xs text-slate-500">Amount</p><p className="text-sm font-medium text-slate-900">${selReq.details.amount.toLocaleString()}</p></div>}
+                {selReq.details.method && <div><p className="text-xs text-slate-500">Method</p><p className="text-sm font-medium text-slate-900">{selReq.details.method}</p></div>}
+                {selReq.details.new_address && <div className="col-span-2"><p className="text-xs text-slate-500">New Address</p><p className="text-sm font-medium text-slate-900">{selReq.details.new_address}</p></div>}
               </div>
-              {selReq.notes && <p className="text-sm text-gray-600 italic">"{selReq.notes}"</p>}
+              {selReq.notes && <p className="text-sm text-slate-600 italic">"{selReq.notes}"</p>}
             </div>
 
             {/* Timeline */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Status Updates</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4">Status Updates</h3>
               <div className="space-y-4">
                 {selReq.updates.map((u, i) => (
                   <div key={i} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-                      {i < selReq.updates.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 mt-1" />}
+                      <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                      {i < selReq.updates.length - 1 && <div className="w-0.5 flex-1 bg-slate-200 mt-1" />}
                     </div>
                     <div className="pb-4">
-                      <p className="text-sm font-medium text-gray-900">{u.message}</p>
-                      <p className="text-xs text-gray-500">{fmtDateTime(u.date)}</p>
+                      <p className="text-sm font-medium text-slate-900">{u.message}</p>
+                      <p className="text-xs text-slate-500">{fmtDateTime(u.date)}</p>
                     </div>
                   </div>
                 ))}

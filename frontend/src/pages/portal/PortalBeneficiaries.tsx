@@ -106,7 +106,7 @@ export default function PortalBeneficiaries() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
       </div>
@@ -117,15 +117,15 @@ export default function PortalBeneficiaries() {
   const upToDate = accounts.filter((a) => !a.needs_review);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Beneficiaries</h1>
-            <p className="text-gray-500 text-sm">Manage designated beneficiaries for your accounts</p>
+            <h1 className="text-2xl font-bold text-slate-900">Beneficiaries</h1>
+            <p className="text-slate-500 text-sm">Manage designated beneficiaries for your accounts</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -196,7 +196,7 @@ export default function PortalBeneficiaries() {
 
         {/* Up-to-Date Accounts */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-emerald-500" /> Up to Date ({upToDate.length})
           </h2>
           <div className="space-y-4">
@@ -209,21 +209,21 @@ export default function PortalBeneficiaries() {
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-2">
               <Clock className="h-4 w-4" /> Pending Requests ({pendingRequests.length})
             </h2>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
               {pendingRequests.map((r) => (
                 <div key={r.id} className="p-4 flex items-center gap-4">
                   <div className="p-2 bg-amber-50 rounded-lg"><Clock className="h-4 w-4 text-amber-600" /></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-slate-900">
                       {CHANGE_TYPES.find((t) => t.value === r.change_type)?.label || r.change_type}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{r.description}</p>
+                    <p className="text-xs text-slate-500 truncate">{r.description}</p>
                   </div>
                   <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full capitalize">{r.status}</span>
-                  <span className="text-xs text-gray-400">{fmtDate(r.submitted_at)}</span>
+                  <span className="text-xs text-slate-400">{fmtDate(r.submitted_at)}</span>
                 </div>
               ))}
             </div>
@@ -235,45 +235,45 @@ export default function PortalBeneficiaries() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900">Request Beneficiary Update</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-900">Request Beneficiary Update</h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Account</label>
                 <select
                   value={formAccountId}
                   onChange={(e) => setFormAccountId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select account...</option>
                   {accounts.map((a) => <option key={a.account_id} value={a.account_id}>{a.account_name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type of Change</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Type of Change</label>
                 <select
                   value={formChangeType}
                   onChange={(e) => setFormChangeType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {CHANGE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <textarea
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   rows={4}
                   placeholder="Describe the changes you'd like to make..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 p-5 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+            <div className="flex items-center justify-end gap-2 p-5 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
               <button
                 onClick={handleSubmit}
                 disabled={!formAccountId || !formDescription.trim() || submitting}
@@ -298,20 +298,20 @@ function AccountCard({ account, onRequestUpdate }: { account: Account; onRequest
 
   return (
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${
-      account.needs_review ? 'border-amber-300 ring-1 ring-amber-100' : 'border-gray-200'
+      account.needs_review ? 'border-amber-300 ring-1 ring-amber-100' : 'border-slate-200'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${account.needs_review ? 'bg-amber-50' : 'bg-blue-50'}`}>
             <Users className={`h-4 w-4 ${account.needs_review ? 'text-amber-600' : 'text-blue-600'}`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-gray-900">{account.account_name}</p>
-              <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">{account.account_type}</span>
+              <p className="font-semibold text-slate-900">{account.account_name}</p>
+              <span className="px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">{account.account_type}</span>
             </div>
-            <p className="text-xs text-gray-500">Last updated: {fmtDate(account.last_updated)}</p>
+            <p className="text-xs text-slate-500">Last updated: {fmtDate(account.last_updated)}</p>
           </div>
         </div>
         <button
@@ -335,13 +335,13 @@ function AccountCard({ account, onRequestUpdate }: { account: Account; onRequest
         {/* Primary */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Primary Beneficiaries</h4>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Primary Beneficiaries</h4>
             {primaryTotal !== 100 && primaryTotal > 0 && (
               <span className="text-xs text-red-600 font-medium">Total: {primaryTotal}% (should be 100%)</span>
             )}
           </div>
           {account.primary_beneficiaries.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No primary beneficiaries designated</p>
+            <p className="text-sm text-slate-400 italic">No primary beneficiaries designated</p>
           ) : (
             <div className="space-y-2">
               {account.primary_beneficiaries.map((b, i) => (
@@ -354,13 +354,13 @@ function AccountCard({ account, onRequestUpdate }: { account: Account; onRequest
         {/* Contingent */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Contingent Beneficiaries</h4>
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contingent Beneficiaries</h4>
             {contingentTotal !== 100 && account.contingent_beneficiaries.length > 0 && (
               <span className="text-xs text-red-600 font-medium">Total: {contingentTotal}% (should be 100%)</span>
             )}
           </div>
           {account.contingent_beneficiaries.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No contingent beneficiaries designated</p>
+            <p className="text-sm text-slate-400 italic">No contingent beneficiaries designated</p>
           ) : (
             <div className="space-y-2">
               {account.contingent_beneficiaries.map((b, i) => (
@@ -378,15 +378,15 @@ function AccountCard({ account, onRequestUpdate }: { account: Account; onRequest
 
 function BeneficiaryRow({ beneficiary }: { beneficiary: Beneficiary }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
         <User className="h-4 w-4 text-blue-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{beneficiary.name}</p>
-        <p className="text-xs text-gray-500">{beneficiary.relationship}{beneficiary.dob ? ` \u00b7 DOB: ${fmtDate(beneficiary.dob)}` : ''}</p>
+        <p className="text-sm font-medium text-slate-900">{beneficiary.name}</p>
+        <p className="text-xs text-slate-500">{beneficiary.relationship}{beneficiary.dob ? ` \u00b7 DOB: ${fmtDate(beneficiary.dob)}` : ''}</p>
       </div>
-      <span className="text-sm font-semibold text-gray-900">{beneficiary.percentage}%</span>
+      <span className="text-sm font-semibold text-slate-900">{beneficiary.percentage}%</span>
     </div>
   );
 }

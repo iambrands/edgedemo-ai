@@ -54,8 +54,8 @@ function WelcomeStep() {
       <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
         <Sparkles className="h-10 w-10 text-white" />
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to EdgeAI!</h3>
-      <p className="text-gray-600 max-w-md mx-auto mb-8">
+      <h3 className="text-2xl font-bold text-slate-900 mb-3">Welcome to EdgeAI!</h3>
+      <p className="text-slate-600 max-w-md mx-auto mb-8">
         Let&apos;s get your practice set up. This wizard will guide you through
         connecting your accounts, setting up compliance, and customizing your
         client portal.
@@ -63,15 +63,15 @@ function WelcomeStep() {
       <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
         <div className="p-4 bg-blue-50 rounded-lg">
           <p className="text-2xl font-bold text-blue-600">5 min</p>
-          <p className="text-xs text-gray-600">Setup time</p>
+          <p className="text-xs text-slate-600">Setup time</p>
         </div>
         <div className="p-4 bg-emerald-50 rounded-lg">
           <p className="text-2xl font-bold text-emerald-600">7</p>
-          <p className="text-xs text-gray-600">Quick steps</p>
+          <p className="text-xs text-slate-600">Quick steps</p>
         </div>
         <div className="p-4 bg-purple-50 rounded-lg">
           <p className="text-2xl font-bold text-purple-600">24/7</p>
-          <p className="text-xs text-gray-600">Support</p>
+          <p className="text-xs text-slate-600">Support</p>
         </div>
       </div>
     </div>
@@ -85,67 +85,67 @@ function ProfileStep({ formData, setFormData }: StepProps) {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
           <input
             type="text"
             value={formData.firstName || ''}
             onChange={(e) => update('firstName', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="John"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
           <input
             type="text"
             value={formData.lastName || ''}
             onChange={(e) => update('lastName', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Smith"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
         <input
           type="email"
           value={formData.email || ''}
           onChange={(e) => update('email', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="john@example.com"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
         <input
           type="tel"
           value={formData.phone || ''}
           onChange={(e) => update('phone', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="(555) 123-4567"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">CRD Number</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">CRD Number</label>
         <input
           type="text"
           value={formData.crdNumber || ''}
           onChange={(e) => update('crdNumber', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="1234567"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Licenses</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Licenses</label>
         <div className="flex flex-wrap gap-2">
           {['Series 6', 'Series 7', 'Series 63', 'Series 65', 'Series 66'].map((license) => (
             <label
               key={license}
-              className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -158,9 +158,9 @@ function ProfileStep({ formData, setFormData }: StepProps) {
                     update('licenses', licenses.filter((l) => l !== license));
                   }
                 }}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">{license}</span>
+              <span className="text-sm text-slate-700">{license}</span>
             </label>
           ))}
         </div>
@@ -182,34 +182,34 @@ function FirmStep({ formData, setFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Firm Name</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Firm Name</label>
         <input
           type="text"
           value={formData.firmName || ''}
           onChange={(e) => update('firmName', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="ABC Advisory LLC"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Firm CRD Number</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Firm CRD Number</label>
         <input
           type="text"
           value={formData.firmCrd || ''}
           onChange={(e) => update('firmCrd', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="123456"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
           <select
             value={formData.state || ''}
             onChange={(e) => update('state', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Select state...</option>
             {states.map((s) => (
@@ -218,23 +218,23 @@ function FirmStep({ formData, setFormData }: StepProps) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">ZIP Code</label>
           <input
             type="text"
             value={formData.zipCode || ''}
             onChange={(e) => update('zipCode', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="77001"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">AUM Range</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">AUM Range</label>
         <select
           value={formData.aumRange || ''}
           onChange={(e) => update('aumRange', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Select range...</option>
           <option value="under_10m">Under $10M</option>
@@ -246,11 +246,11 @@ function FirmStep({ formData, setFormData }: StepProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Number of Clients</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Number of Clients</label>
         <select
           value={formData.clientCount || ''}
           onChange={(e) => update('clientCount', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           <option value="">Select range...</option>
           <option value="1_25">1 - 25</option>
@@ -276,7 +276,7 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Registration Type</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Registration Type</label>
         <div className="space-y-2">
           {[
             { value: 'sec', label: 'SEC Registered', desc: 'AUM over $100M' },
@@ -285,7 +285,7 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
           ].map((option) => (
             <label
               key={option.value}
-              className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+              className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
             >
               <input
                 type="radio"
@@ -293,11 +293,11 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
                 value={option.value}
                 checked={formData.registrationType === option.value}
                 onChange={(e) => update('registrationType', e.target.value)}
-                className="mt-1 border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="mt-1 border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <div>
-                <p className="font-medium text-gray-900">{option.label}</p>
-                <p className="text-sm text-gray-500">{option.desc}</p>
+                <p className="font-medium text-slate-900">{option.label}</p>
+                <p className="text-sm text-slate-500">{option.desc}</p>
               </div>
             </label>
           ))}
@@ -305,7 +305,7 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Compliance Features</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Compliance Features</label>
         <div className="space-y-2">
           {[
             { key: 'autoAlerts', label: 'Automated Compliance Alerts', desc: 'Get notified of potential issues' },
@@ -315,17 +315,17 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
           ].map((feature) => (
             <label
               key={feature.key}
-              className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+              className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
             >
               <input
                 type="checkbox"
                 checked={formData[feature.key] !== false}
                 onChange={(e) => update(feature.key, e.target.checked)}
-                className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <div>
-                <p className="font-medium text-gray-900">{feature.label}</p>
-                <p className="text-sm text-gray-500">{feature.desc}</p>
+                <p className="font-medium text-slate-900">{feature.label}</p>
+                <p className="text-sm text-slate-500">{feature.desc}</p>
               </div>
             </label>
           ))}
@@ -363,12 +363,12 @@ function CustodiansStep({ formData, setFormData }: StepProps) {
               className={`p-4 border rounded-xl transition-all ${
                 isConnected
                   ? 'border-emerald-300 bg-emerald-50'
-                  : 'border-gray-200 hover:border-blue-300'
+                  : 'border-slate-200 hover:border-blue-300'
               }`}
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">{c.logo}</span>
-                <span className="font-medium text-gray-900">{c.name}</span>
+                <span className="font-medium text-slate-900">{c.name}</span>
               </div>
               {isConnected ? (
                 <div className="flex items-center gap-2 text-emerald-700 text-sm">
@@ -402,18 +402,18 @@ function BrandingStep({ formData, setFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-            <Palette className="h-8 w-8 text-gray-400" />
+        <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+          <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <Palette className="h-8 w-8 text-slate-400" />
           </div>
-          <p className="text-sm text-gray-600">Click to upload your logo</p>
-          <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+          <p className="text-sm text-slate-600">Click to upload your logo</p>
+          <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 2MB</p>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Primary Color</label>
         <div className="flex items-center gap-4">
           <input
             type="color"
@@ -425,21 +425,21 @@ function BrandingStep({ formData, setFormData }: StepProps) {
             type="text"
             value={formData.primaryColor || '#3B82F6'}
             onChange={(e) => update('primaryColor', e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="#3B82F6"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           Client Portal Welcome Message
         </label>
         <textarea
           value={formData.welcomeMessage || ''}
           onChange={(e) => update('welcomeMessage', e.target.value)}
           rows={4}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Welcome to your client portal. Here you can view your accounts, documents, and communicate with your advisor."
         />
       </div>
@@ -471,17 +471,17 @@ function BillingStep({ formData, setFormData }: StepProps) {
             className={`p-6 border rounded-xl cursor-pointer transition-all ${
               formData.plan === plan.id
                 ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                : 'border-gray-200 hover:border-blue-300'
+                : 'border-slate-200 hover:border-blue-300'
             }`}
           >
-            <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <h4 className="font-semibold text-slate-900">{plan.name}</h4>
+            <p className="text-3xl font-bold text-slate-900 mt-2">
               ${plan.price}
-              <span className="text-sm font-normal text-gray-500">/mo</span>
+              <span className="text-sm font-normal text-slate-500">/mo</span>
             </p>
             <ul className="mt-4 space-y-2">
               {plan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
+                <li key={feature} className="flex items-center gap-2 text-sm text-slate-600">
                   <CheckCircle className="h-4 w-4 text-emerald-500" />
                   {feature}
                 </li>
@@ -491,8 +491,8 @@ function BillingStep({ formData, setFormData }: StepProps) {
         ))}
       </div>
 
-      <div className="p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-600">
+      <div className="p-4 bg-slate-50 rounded-lg">
+        <p className="text-sm text-slate-600">
           Start with a <strong>14-day free trial</strong>. No credit card required. Cancel anytime.
         </p>
       </div>
@@ -545,13 +545,13 @@ export default function RIAOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-1">
             <span className="text-xl font-bold text-blue-600">Edge</span>
             <span className="text-xl font-bold text-teal-500">AI</span>
           </div>
-          <button onClick={handleSkip} className="text-sm text-gray-500 hover:text-gray-700">
+          <button onClick={handleSkip} className="text-sm text-slate-500 hover:text-slate-700">
             Skip for now
           </button>
         </div>
@@ -561,10 +561,10 @@ export default function RIAOnboarding() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Setup Progress</span>
-            <span className="text-sm text-gray-500">{progress}% complete</span>
+            <span className="text-sm font-medium text-slate-700">Setup Progress</span>
+            <span className="text-sm text-slate-500">{progress}% complete</span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-teal-500 transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -590,7 +590,7 @@ export default function RIAOnboarding() {
                       isCurrent
                         ? 'bg-blue-50 border-2 border-blue-200'
                         : isCompleted
-                        ? 'hover:bg-gray-50 cursor-pointer'
+                        ? 'hover:bg-slate-50 cursor-pointer'
                         : 'opacity-50 cursor-not-allowed'
                     }`}
                   >
@@ -600,20 +600,20 @@ export default function RIAOnboarding() {
                           ? 'bg-emerald-100'
                           : isCurrent
                           ? 'bg-blue-100'
-                          : 'bg-gray-100'
+                          : 'bg-slate-100'
                       }`}
                     >
                       {isCompleted ? (
                         <CheckCircle className="h-5 w-5 text-emerald-600" />
                       ) : (
-                        <Icon className={`h-5 w-5 ${isCurrent ? 'text-blue-600' : 'text-gray-400'}`} />
+                        <Icon className={`h-5 w-5 ${isCurrent ? 'text-blue-600' : 'text-slate-400'}`} />
                       )}
                     </div>
                     <div>
-                      <p className={`font-medium ${isCurrent ? 'text-blue-900' : 'text-gray-900'}`}>
+                      <p className={`font-medium ${isCurrent ? 'text-blue-900' : 'text-slate-900'}`}>
                         {s.title}
                       </p>
-                      <p className="text-xs text-gray-500">{s.description}</p>
+                      <p className="text-xs text-slate-500">{s.description}</p>
                     </div>
                   </button>
                 );
@@ -621,12 +621,12 @@ export default function RIAOnboarding() {
             </nav>
 
             {/* Help Link */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 text-gray-600">
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-2 text-slate-600">
                 <HelpCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Need help?</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Check our{' '}
                 <a href="/help" className="text-blue-600 hover:underline">
                   setup guide
@@ -638,25 +638,25 @@ export default function RIAOnboarding() {
 
           {/* Step Content */}
           <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
               {/* Step Header */}
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="text-xl font-semibold text-gray-900">{step.title}</h2>
-                <p className="text-gray-500 mt-1">{step.description}</p>
+              <div className="p-6 border-b border-slate-100">
+                <h2 className="text-xl font-semibold text-slate-900">{step.title}</h2>
+                <p className="text-slate-500 mt-1">{step.description}</p>
               </div>
 
               {/* Step Content */}
               <div className="p-6">{renderStep()}</div>
 
               {/* Step Actions */}
-              <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <button
                   onClick={handleBack}
                   disabled={currentStep === 0}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                     currentStep === 0
-                      ? 'text-gray-300 cursor-not-allowed'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'text-slate-300 cursor-not-allowed'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   <ArrowLeft className="h-4 w-4" />

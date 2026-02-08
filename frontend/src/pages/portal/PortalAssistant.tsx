@@ -76,7 +76,7 @@ export default function PortalAssistant() {
 
   if (initialLoad) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -86,7 +86,7 @@ export default function PortalAssistant() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <PortalNav />
 
       {/* Chat Area */}
@@ -97,8 +97,8 @@ export default function PortalAssistant() {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">AI Financial Assistant</h1>
-            <p className="text-xs text-gray-500">Ask about your accounts, performance, goals & more</p>
+            <h1 className="text-lg font-semibold text-slate-900">AI Financial Assistant</h1>
+            <p className="text-xs text-slate-500">Ask about your accounts, performance, goals & more</p>
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export default function PortalAssistant() {
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                 msg.role === 'assistant'
                   ? 'bg-gradient-to-br from-blue-600 to-teal-500'
-                  : 'bg-gray-600'
+                  : 'bg-slate-600'
               }`}>
                 {msg.role === 'assistant' ? <Bot className="h-4 w-4 text-white" /> : <User className="h-4 w-4 text-white" />}
               </div>
@@ -120,12 +120,12 @@ export default function PortalAssistant() {
                 <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user'
                     ? 'bg-blue-600 text-white rounded-br-md'
-                    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-800 rounded-bl-md shadow-sm'
                 }`}>
                   {/* Render markdown-style bold */}
                   {msg.content.split(/(\*\*.*?\*\*)/).map((part, j) =>
                     part.startsWith('**') && part.endsWith('**')
-                      ? <strong key={j} className={msg.role === 'user' ? 'text-white' : 'text-gray-900'}>{part.slice(2, -2)}</strong>
+                      ? <strong key={j} className={msg.role === 'user' ? 'text-white' : 'text-slate-900'}>{part.slice(2, -2)}</strong>
                       : <span key={j}>{part}</span>
                   )}
                 </div>
@@ -137,7 +137,7 @@ export default function PortalAssistant() {
                       <button
                         key={j}
                         onClick={() => handleSend(f)}
-                        className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 rounded-full text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all shadow-sm"
+                        className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 rounded-full text-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all shadow-sm"
                       >
                         {f}
                       </button>
@@ -154,11 +154,11 @@ export default function PortalAssistant() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-teal-500 flex items-center justify-center flex-shrink-0">
                 <Bot className="h-4 w-4 text-white" />
               </div>
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+              <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                 <div className="flex gap-1.5">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function PortalAssistant() {
         </div>
 
         {/* Input */}
-        <div className="sticky bottom-0 bg-gray-50 py-4 border-t border-gray-200">
+        <div className="sticky bottom-0 bg-slate-50 py-4 border-t border-slate-200">
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -177,7 +177,7 @@ export default function PortalAssistant() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about your accounts, performance, goals..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+              className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
               disabled={loading}
             />
             <button
@@ -188,7 +188,7 @@ export default function PortalAssistant() {
               <Send className="h-5 w-5" />
             </button>
           </div>
-          <p className="text-xs text-gray-400 text-center mt-2">
+          <p className="text-xs text-slate-400 text-center mt-2">
             AI responses are generated from your account data. For personalized advice, consult your advisor.
           </p>
         </div>

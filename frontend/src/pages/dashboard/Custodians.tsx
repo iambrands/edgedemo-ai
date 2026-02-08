@@ -72,10 +72,10 @@ function timeAgo(iso: string): string {
 }
 
 const STATUS_CFG: Record<string, { bg: string; text: string; icon: typeof CheckCircle }> = {
-  connected: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
+  connected: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
   pending:   { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
   expired:   { bg: 'bg-red-100', text: 'text-red-700', icon: AlertTriangle },
-  revoked:   { bg: 'bg-gray-100', text: 'text-gray-700', icon: AlertTriangle },
+  revoked:   { bg: 'bg-slate-100', text: 'text-slate-700', icon: AlertTriangle },
   error:     { bg: 'bg-red-100', text: 'text-red-700', icon: AlertTriangle },
 };
 
@@ -266,16 +266,16 @@ export default function Custodians() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900">
             Multi-Custodian Aggregation
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             Connect custodians, sync data, and view unified portfolio
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
           <span>{connections.filter(c => c.status === 'connected').length} connected</span>
-          <span className="text-gray-400">|</span>
+          <span className="text-slate-400">|</span>
           <span>{accounts.length || '—'} accounts</span>
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function Custodians() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-slate-200">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -299,7 +299,7 @@ export default function Custodians() {
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 tab === t.key
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
             >
               <Icon size={16} />
@@ -315,13 +315,13 @@ export default function Custodians() {
           {/* Active Connections */}
           {loadingConn ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
           ) : (
             <>
               {connections.length > 0 && (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                  <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
                     My Connections
                   </h2>
                   {connections.map(conn => {
@@ -330,10 +330,10 @@ export default function Custodians() {
                     return (
                       <div
                         key={conn.id}
-                        className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                        className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between"
                       >
                         <div>
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-slate-900">
                             {conn.custodian_name}
                           </h3>
                           <div className="flex items-center gap-3 mt-1">
@@ -344,7 +344,7 @@ export default function Custodians() {
                               {conn.status}
                             </span>
                             {conn.last_sync_at && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-slate-500">
                                 Synced {timeAgo(conn.last_sync_at)}
                               </span>
                             )}
@@ -361,7 +361,7 @@ export default function Custodians() {
                             disabled={
                               conn.status !== 'connected' || syncing === conn.id
                             }
-                            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             title="Sync now"
                           >
                             <RefreshCw
@@ -385,7 +385,7 @@ export default function Custodians() {
 
               {/* Available Custodians */}
               <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
                   Available Custodians
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -394,16 +394,16 @@ export default function Custodians() {
                     return (
                       <div
                         key={p.id}
-                        className="bg-white border border-gray-200 rounded-xl p-4"
+                        className="bg-white border border-slate-200 rounded-xl p-4"
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="font-semibold text-slate-900">
                               {p.display_name}
                             </h3>
                             <div className="flex gap-2 mt-1">
                               {p.supports_oauth && (
-                                <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                                <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
                                   OAuth
                                 </span>
                               )}
@@ -422,7 +422,7 @@ export default function Custodians() {
                         </div>
                         <div className="mt-4">
                           {connected ? (
-                            <div className="flex items-center text-green-600 text-sm font-medium">
+                            <div className="flex items-center text-emerald-600 text-sm font-medium">
                               <CheckCircle size={16} className="mr-1.5" />
                               Connected
                             </div>
@@ -445,7 +445,7 @@ export default function Custodians() {
 
               {/* Empty state */}
               {platforms.length === 0 && connections.length === 0 && (
-                <div className="text-center py-16 text-gray-500">
+                <div className="text-center py-16 text-slate-500">
                   <Link2 size={48} className="mx-auto mb-4 opacity-30" />
                   <p className="text-lg font-medium">No custodians available</p>
                   <p className="text-sm">Custodian integrations are being configured.</p>
@@ -461,17 +461,17 @@ export default function Custodians() {
         <div className="space-y-6">
           {loadingPortfolio ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
           ) : (
             <>
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Total Market Value</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                      <p className="text-sm font-medium text-slate-500">Total Market Value</p>
+                      <p className="text-2xl font-bold text-slate-900 mt-1">
                         {fmtCurrency(posTotal)}
                       </p>
                     </div>
@@ -480,11 +480,11 @@ export default function Custodians() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Positions</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                      <p className="text-sm font-medium text-slate-500">Positions</p>
+                      <p className="text-2xl font-bold text-slate-900 mt-1">
                         {positions.length}
                       </p>
                     </div>
@@ -493,11 +493,11 @@ export default function Custodians() {
                     </div>
                   </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Asset Classes</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                      <p className="text-sm font-medium text-slate-500">Asset Classes</p>
+                      <p className="text-2xl font-bold text-slate-900 mt-1">
                         {allocation?.allocation.length || 0}
                       </p>
                     </div>
@@ -510,8 +510,8 @@ export default function Custodians() {
 
               {/* Asset Allocation */}
               {allocation && allocation.allocation.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white border border-slate-200 rounded-xl p-6">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">
                     Asset Allocation
                   </h2>
                   {/* Horizontal stacked bar */}
@@ -536,10 +536,10 @@ export default function Custodians() {
                             backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length],
                           }}
                         />
-                        <span className="text-sm text-gray-700 capitalize truncate">
+                        <span className="text-sm text-slate-700 capitalize truncate">
                           {a.asset_class.replace(/_/g, ' ')}
                         </span>
-                        <span className="text-sm font-mono text-gray-500 ml-auto">
+                        <span className="text-sm font-mono text-slate-500 ml-auto">
                           {fmtPct(a.percentage)}
                         </span>
                       </div>
@@ -549,41 +549,41 @@ export default function Custodians() {
               )}
 
               {/* Unified Positions Table */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="bg-white border border-slate-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-slate-900">
                       Unified Holdings
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       {positions.length} positions &middot; {fmtCurrency(posTotal)}
                     </p>
                   </div>
                   <div className="relative">
                     <Search
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
                     />
                     <input
                       type="text"
                       placeholder="Search..."
                       value={posSearch}
                       onChange={e => setPosSearch(e.target.value)}
-                      className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     />
                   </div>
                 </div>
                 {filteredPositions.length === 0 ? (
-                  <p className="text-center py-8 text-gray-500 text-sm">
+                  <p className="text-center py-8 text-slate-500 text-sm">
                     {positions.length === 0
                       ? 'No positions synced yet. Connect a custodian and sync data.'
                       : 'No positions match your search.'}
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                    <table className="min-w-full divide-y divide-slate-200 text-sm">
                       <thead>
-                        <tr className="text-left text-xs font-medium text-gray-500 uppercase">
+                        <tr className="text-left text-xs font-medium text-slate-500 uppercase">
                           <th className="px-4 py-3">Symbol</th>
                           <th className="px-4 py-3">Name</th>
                           <th className="px-4 py-3">Asset Class</th>
@@ -592,20 +592,20 @@ export default function Custodians() {
                           <th className="px-4 py-3 text-right">Gain/Loss</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-slate-100">
                         {filteredPositions.map(pos => {
                           const gl = pos.unrealized_gain_loss ?? 0;
                           const isGain = gl >= 0;
                           return (
-                            <tr key={pos.symbol} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 font-medium text-gray-900">
+                            <tr key={pos.symbol} className="hover:bg-slate-50">
+                              <td className="px-4 py-3 font-medium text-slate-900">
                                 {pos.symbol}
                               </td>
-                              <td className="px-4 py-3 text-gray-600 truncate max-w-[200px]">
+                              <td className="px-4 py-3 text-slate-600 truncate max-w-[200px]">
                                 {pos.security_name}
                               </td>
                               <td className="px-4 py-3">
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs capitalize">
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs capitalize">
                                   {pos.asset_class.replace(/_/g, ' ')}
                                 </span>
                               </td>
@@ -617,7 +617,7 @@ export default function Custodians() {
                               </td>
                               <td
                                 className={`px-4 py-3 text-right font-mono ${
-                                  isGain ? 'text-green-600' : 'text-red-600'
+                                  isGain ? 'text-emerald-600' : 'text-red-600'
                                 }`}
                               >
                                 <span className="inline-flex items-center gap-1">
@@ -647,29 +647,29 @@ export default function Custodians() {
         <div className="space-y-6">
           {loadingAccts ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
           ) : (
             <>
               {/* KPI */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Total Market Value</p>
+                <div className="bg-white border border-slate-200 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Total Market Value</p>
                   <p className="text-2xl font-semibold">{fmtCurrency(totalMV)}</p>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Total Cash</p>
+                <div className="bg-white border border-slate-200 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Total Cash</p>
                   <p className="text-2xl font-semibold">{fmtCurrency(totalCash)}</p>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <p className="text-sm text-gray-500">Accounts</p>
+                <div className="bg-white border border-slate-200 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Accounts</p>
                   <p className="text-2xl font-semibold">{accounts.length}</p>
                 </div>
               </div>
 
               {/* Account List */}
               {accounts.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
+                <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">
                   <Briefcase size={40} className="mx-auto mb-3 opacity-30" />
                   <p className="font-medium">No accounts synced</p>
                   <p className="text-sm">
@@ -681,19 +681,19 @@ export default function Custodians() {
                   {accounts.map(a => (
                     <div
                       key={a.id}
-                      className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
+                      className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between"
                     >
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-slate-900">
                           {a.account_name}
                         </h3>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
                           <span>{a.custodian_name}</span>
-                          <span className="text-gray-400">|</span>
+                          <span className="text-slate-400">|</span>
                           <span className="capitalize">
                             {a.account_type.replace(/_/g, ' ')}
                           </span>
-                          <span className="text-gray-400">|</span>
+                          <span className="text-slate-400">|</span>
                           <span className="capitalize">{a.tax_status.replace(/_/g, ' ')}</span>
                         </div>
                         {a.client_id && (
@@ -703,10 +703,10 @@ export default function Custodians() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="font-mono font-semibold text-gray-900">
+                        <p className="font-mono font-semibold text-slate-900">
                           {fmtCurrency(a.market_value)}
                         </p>
-                        <p className="text-sm text-gray-500 font-mono">
+                        <p className="text-sm text-slate-500 font-mono">
                           {fmtCurrency(a.cash_balance)} cash
                         </p>
                       </div>
@@ -724,10 +724,10 @@ export default function Custodians() {
         <div className="space-y-4">
           {loadingTxns ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
           ) : txns.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
+            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">
               <ArrowRightLeft size={40} className="mx-auto mb-3 opacity-30" />
               <p className="font-medium">No transactions</p>
               <p className="text-sm">
@@ -736,10 +736,10 @@ export default function Custodians() {
             </div>
           ) : (
             <>
-              <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
-                    <tr className="text-left text-xs font-medium text-gray-500 uppercase">
+              <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                    <tr className="text-left text-xs font-medium text-slate-500 uppercase">
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Symbol</th>
@@ -749,32 +749,32 @@ export default function Custodians() {
                       <th className="px-4 py-3 text-right">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-100">
                     {txns.map(t => (
-                      <tr key={t.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      <tr key={t.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                           {new Date(t.trade_date).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
                               t.transaction_type === 'buy'
-                                ? 'bg-green-50 text-green-700'
+                                ? 'bg-emerald-50 text-emerald-700'
                                 : t.transaction_type === 'sell'
                                 ? 'bg-red-50 text-red-700'
-                                : 'bg-gray-100 text-gray-700'
+                                : 'bg-slate-100 text-slate-700'
                             }`}
                           >
                             {t.transaction_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-900">
+                        <td className="px-4 py-3 font-medium text-slate-900">
                           {t.symbol || '—'}
                         </td>
-                        <td className="px-4 py-3 text-gray-600 truncate max-w-[140px]">
+                        <td className="px-4 py-3 text-slate-600 truncate max-w-[140px]">
                           {t.account_name}
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{t.custodian}</td>
+                        <td className="px-4 py-3 text-slate-500">{t.custodian}</td>
                         <td className="px-4 py-3 text-right font-mono">
                           {t.quantity != null ? fmtNumber(t.quantity) : '—'}
                         </td>
@@ -790,21 +790,21 @@ export default function Custodians() {
               {/* Pagination */}
               {txnPages > 1 && (
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     Page {txnPage} of {txnPages} &middot; {txnTotal} transactions
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setTxnPage(p => Math.max(1, p - 1))}
                       disabled={txnPage <= 1}
-                      className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft size={16} />
                     </button>
                     <button
                       onClick={() => setTxnPage(p => Math.min(txnPages, p + 1))}
                       disabled={txnPage >= txnPages}
-                      className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <ChevronRight size={16} />
                     </button>

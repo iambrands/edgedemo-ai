@@ -108,8 +108,8 @@ export function Households() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Households</h1>
-          <p className="text-gray-500">{households.length} households under management</p>
+          <h1 className="text-2xl font-bold text-slate-900">Households</h1>
+          <p className="text-slate-500">{households.length} households under management</p>
         </div>
         <Button className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
           <Plus size={18} />
@@ -130,8 +130,8 @@ export function Households() {
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{household.name}</h3>
-                  <p className="text-sm text-gray-500">{(household.members ?? []).join(', ')}</p>
+                  <h3 className="text-lg font-semibold text-slate-900">{household.name}</h3>
+                  <p className="text-sm text-slate-500">{(household.members ?? []).join(', ')}</p>
                 </div>
                 {getStatusBadge(household.status)}
               </div>
@@ -139,19 +139,19 @@ export function Households() {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Total Value</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Total Value</p>
+                  <p className="text-lg font-semibold text-slate-900">
                     {formatCurrency(household.totalValue)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Accounts</p>
-                  <p className="text-lg font-semibold text-gray-900">{(household.accounts ?? []).length}</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Accounts</p>
+                  <p className="text-lg font-semibold text-slate-900">{(household.accounts ?? []).length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Risk Score</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Risk Score</p>
                   <div className="flex items-center gap-2">
-                    <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-12 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className={clsx(
                           'h-full rounded-full',
@@ -159,12 +159,12 @@ export function Households() {
                             ? 'bg-red-500'
                             : household.riskScore > 40
                             ? 'bg-amber-500'
-                            : 'bg-green-500'
+                            : 'bg-emerald-500'
                         )}
                         style={{ width: `${household.riskScore}%` }}
                       />
                     </div>
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-lg font-semibold text-slate-900">
                       {household.riskScore}
                     </span>
                   </div>
@@ -174,7 +174,7 @@ export function Households() {
               {/* Expand Button */}
               <button
                 onClick={() => toggleExpand(household.id)}
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-4"
               >
                 {isExpanded ? (
                   <ChevronDown size={16} />
@@ -186,24 +186,24 @@ export function Households() {
 
               {/* Expanded Accounts List */}
               {isExpanded && (
-                <div className="border-t border-gray-200 pt-4 -mx-8 px-8 -mb-8 pb-8 bg-gray-50">
+                <div className="border-t border-slate-200 pt-4 -mx-8 px-8 -mb-8 pb-8 bg-slate-50">
                   <div className="space-y-3">
                     {(household.accounts ?? []).map((account) => (
                       <div
                         key={account.id}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200"
                       >
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{account.name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm font-medium text-slate-900">{account.name}</p>
+                          <p className="text-xs text-slate-500">
                             {account.custodian} • {account.type}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-slate-900">
                             {formatCurrency(account.balance)}
                           </p>
-                          <p className="text-xs text-gray-500">{account.taxType}</p>
+                          <p className="text-xs text-slate-500">{account.taxType}</p>
                         </div>
                       </div>
                     ))}
@@ -213,7 +213,7 @@ export function Households() {
 
               {/* Actions */}
               {!isExpanded && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 pt-4 border-t border-slate-200">
                   <Button
                     variant="secondary"
                     size="sm"

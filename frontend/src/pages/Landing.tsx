@@ -28,11 +28,11 @@ export function Landing() {
       <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl lg:text-[48px] font-bold text-gray-900 leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-[48px] font-bold text-slate-900 leading-tight mb-6">
               Smarter Investing Starts at the{' '}
               <span className="text-primary-500">Edge</span>
             </h1>
-            <p className="text-lg sm:text-body-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-body-lg text-slate-500 mb-8 max-w-2xl mx-auto">
               Powered by AI. Built for everyone from individual investors to registered
               advisors. Get institutional-grade investment intelligence in one powerful
               platform.
@@ -50,11 +50,11 @@ export function Landing() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
               <div className="text-center">
                 <p className="text-3xl font-bold text-primary-500">+127.5K</p>
-                <p className="text-sm text-gray-500">Active Users</p>
+                <p className="text-sm text-slate-500">Active Users</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-primary-500">$2.4B+</p>
-                <p className="text-sm text-gray-500">Assets Analyzed</p>
+                <p className="text-sm text-slate-500">Assets Analyzed</p>
               </div>
             </div>
           </div>
@@ -62,13 +62,13 @@ export function Landing() {
       </section>
 
       {/* Choose Your Journey Section */}
-      <section id="investors" className="py-20 bg-gray-50">
+      <section id="investors" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
               Choose Your Investment Journey
             </h2>
-            <p className="text-gray-500 text-lg">
+            <p className="text-slate-500 text-lg">
               Select the path that matches your investment needs
             </p>
           </div>
@@ -80,11 +80,11 @@ export function Landing() {
                 <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
                   <User className="w-6 h-6 text-primary-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-slate-900">
                   For Individual Investors
                 </h3>
               </div>
-              <p className="text-gray-500 mb-6">
+              <p className="text-slate-500 mb-6">
                 Smart tools for everyday investors looking to grow their wealth with
                 AI-powered insights and guidance.
               </p>
@@ -98,14 +98,14 @@ export function Landing() {
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 text-[15px]">{feature}</span>
+                    <span className="text-slate-700 text-[15px]">{feature}</span>
                   </li>
                 ))}
               </ul>
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-500">Starting at</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  $29<span className="text-base font-normal text-gray-500">/month</span>
+              <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-slate-500">Starting at</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  $29<span className="text-base font-normal text-slate-500">/month</span>
                 </p>
                 <p className="text-sm text-primary-600">Free 14-day trial</p>
               </div>
@@ -120,11 +120,11 @@ export function Landing() {
                 <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
                   <Building2 className="w-6 h-6 text-primary-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-slate-900">
                   For Financial Professionals
                 </h3>
               </div>
-              <p className="text-gray-500 mb-6">
+              <p className="text-slate-500 mb-6">
                 Comprehensive platform for RIAs and financial advisors to manage
                 clients, compliance, and portfolios at scale.
               </p>
@@ -138,14 +138,14 @@ export function Landing() {
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700 text-[15px]">{feature}</span>
+                    <span className="text-slate-700 text-[15px]">{feature}</span>
                   </li>
                 ))}
               </ul>
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-500">Starting at</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  $499<span className="text-base font-normal text-gray-500">/month</span>
+              <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-slate-500">Starting at</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  $499<span className="text-base font-normal text-slate-500">/month</span>
                 </p>
                 <p className="text-sm text-primary-600">Up to $5M AUM</p>
               </div>
@@ -161,10 +161,10 @@ export function Landing() {
       <section id="features" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
               Powered by Advanced AI
             </h2>
-            <p className="text-gray-500 text-lg">
+            <p className="text-slate-500 text-lg">
               Three specialized AI engines working together for your success
             </p>
           </div>
@@ -175,10 +175,10 @@ export function Landing() {
               <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4">
                 <Brain className="w-6 h-6 text-primary-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Investment Intelligence Engine
               </h3>
-              <p className="text-gray-500 text-sm mb-4">
+              <p className="text-slate-500 text-sm mb-4">
                 Deep learning model trained on millions of portfolio configurations to
                 identify optimal asset allocations and investment opportunities.
               </p>
@@ -190,10 +190,10 @@ export function Landing() {
               <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
                 <Target className="w-6 h-6 text-purple-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Behavioral Finance Advisor
               </h3>
-              <p className="text-gray-500 text-sm mb-4">
+              <p className="text-slate-500 text-sm mb-4">
                 Combines behavioral economics, psychology, and portfolio theory to
                 provide personalized guidance that accounts for investor biases.
               </p>
@@ -205,10 +205,10 @@ export function Landing() {
               <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
                 <ClipboardCheck className="w-6 h-6 text-teal-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 Compliance Investment Model
               </h3>
-              <p className="text-gray-500 text-sm mb-4">
+              <p className="text-slate-500 text-sm mb-4">
                 Ensures regulatory compliance and suitability validation for every
                 recommendation, with full audit trail documentation.
               </p>
@@ -222,10 +222,10 @@ export function Landing() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
               One Platform, Multiple Asset Classes
             </h2>
-            <p className="text-gray-500 text-lg">
+            <p className="text-slate-500 text-lg">
               Trade and analyze every market from one interface
             </p>
           </div>
@@ -271,13 +271,13 @@ export function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gray-50">
+      <section id="pricing" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-gray-500 text-lg">Choose the plan that fits your needs</p>
+            <p className="text-slate-500 text-lg">Choose the plan that fits your needs</p>
           </div>
 
           {/* Individual Investors Pricing */}
@@ -288,9 +288,9 @@ export function Landing() {
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* Starter */}
               <Card className="relative">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Starter</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-6">
-                  $29<span className="text-base font-normal text-gray-500">/mo</span>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Starter</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-6">
+                  $29<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
                 <ul className="space-y-3 mb-8">
                   {[
@@ -299,7 +299,7 @@ export function Landing() {
                     'Portfolio tracking',
                     'Email alerts',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -315,9 +315,9 @@ export function Landing() {
                 <Badge variant="blue" className="absolute -top-3 left-1/2 -translate-x-1/2">
                   Most Popular
                 </Badge>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Pro</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-6">
-                  $79<span className="text-base font-normal text-gray-500">/mo</span>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Pro</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-6">
+                  $79<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
                 <ul className="space-y-3 mb-8">
                   {[
@@ -327,7 +327,7 @@ export function Landing() {
                     'Tax optimization',
                     'Priority support',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -340,9 +340,9 @@ export function Landing() {
 
               {/* Elite */}
               <Card className="relative">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Elite</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-6">
-                  $199<span className="text-base font-normal text-gray-500">/mo</span>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Elite</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-6">
+                  $199<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
                 <ul className="space-y-3 mb-8">
                   {[
@@ -352,7 +352,7 @@ export function Landing() {
                     'API access',
                     '1-on-1 coaching',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -373,11 +373,11 @@ export function Landing() {
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* RIA Starter */}
               <Card className="relative">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">RIA Starter</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-1">
-                  $499<span className="text-base font-normal text-gray-500">/mo</span>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Starter</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-1">
+                  $499<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
-                <p className="text-sm text-gray-500 mb-6">Up to $5M AUM</p>
+                <p className="text-sm text-slate-500 mb-6">Up to $5M AUM</p>
                 <ul className="space-y-3 mb-8">
                   {[
                     '10 clients',
@@ -385,7 +385,7 @@ export function Landing() {
                     'Compliance tools',
                     'Client reports',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -398,11 +398,11 @@ export function Landing() {
 
               {/* RIA Professional */}
               <Card variant="pricing-featured" className="relative">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">RIA Professional</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-1">
-                  $999<span className="text-base font-normal text-gray-500">/mo</span>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Professional</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-1">
+                  $999<span className="text-base font-normal text-slate-500">/mo</span>
                 </p>
-                <p className="text-sm text-gray-500 mb-6">Up to $25M AUM</p>
+                <p className="text-sm text-slate-500 mb-6">Up to $25M AUM</p>
                 <ul className="space-y-3 mb-8">
                   {[
                     '50 clients',
@@ -410,7 +410,7 @@ export function Landing() {
                     'Tax harvesting',
                     'White-label portal',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -423,9 +423,9 @@ export function Landing() {
 
               {/* RIA Enterprise */}
               <Card className="relative">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">RIA Enterprise</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-1">Custom</p>
-                <p className="text-sm text-gray-500 mb-6">$100M+ AUM</p>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Enterprise</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-1">Custom</p>
+                <p className="text-sm text-slate-500 mb-6">$100M+ AUM</p>
                 <ul className="space-y-3 mb-8">
                   {[
                     'Unlimited clients',
@@ -433,7 +433,7 @@ export function Landing() {
                     'API access',
                     'Dedicated support',
                   ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
@@ -460,7 +460,7 @@ export function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               size="lg"
-              className="bg-white text-primary-600 hover:bg-gray-100"
+              className="bg-white text-primary-600 hover:bg-slate-100"
               onClick={() => navigate('/signup')}
             >
               Start Free Trial

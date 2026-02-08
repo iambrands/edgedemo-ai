@@ -109,7 +109,7 @@ export function Accounts() {
     sortKeyValue: SortKey;
   }) => (
     <TableHead
-      className="cursor-pointer hover:bg-gray-100"
+      className="cursor-pointer hover:bg-slate-100"
       onClick={() => handleSort(sortKeyValue)}
     >
       <div className="flex items-center gap-2">
@@ -150,8 +150,8 @@ export function Accounts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
-        <p className="text-gray-500">{accounts.length} accounts across all households</p>
+        <h1 className="text-2xl font-bold text-slate-900">Accounts</h1>
+        <p className="text-slate-500">{accounts.length} accounts across all households</p>
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -172,8 +172,8 @@ export function Accounts() {
               <TableRow key={account.id}>
                 <TableCell>
                   <div>
-                    <p className="font-medium text-gray-900">{account.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-medium text-slate-900">{account.name}</p>
+                    <p className="text-xs text-slate-500">
                       {getHouseholdName(account.householdId)}
                     </p>
                   </div>
@@ -198,7 +198,7 @@ export function Accounts() {
                 </TableCell>
                 <TableCell
                   className={clsx(
-                    parseFloat(account.fees || '0') > 1 ? 'text-red-500 font-medium' : 'text-gray-700'
+                    parseFloat(account.fees || '0') > 1 ? 'text-red-500 font-medium' : 'text-slate-700'
                   )}
                 >
                   {account.fees}

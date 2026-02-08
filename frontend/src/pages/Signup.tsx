@@ -108,25 +108,25 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link to="/" className="mb-8">
         <span className="text-2xl font-bold">
-          <span className="text-gray-900">Edge</span>
+          <span className="text-slate-900">Edge</span>
           <span className="text-primary-500">AI</span>
         </span>
       </Link>
 
       <Card className="w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Create your account</h1>
 
           {/* Step Indicator */}
           <div className="flex items-center justify-center gap-2 mt-4">
             <div
               className={clsx(
                 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
-                step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                step >= 1 ? 'bg-primary-600 text-white' : 'bg-slate-200 text-slate-500'
               )}
             >
               1
@@ -134,13 +134,13 @@ export function Signup() {
             <div
               className={clsx(
                 'w-16 h-1 rounded',
-                step >= 2 ? 'bg-primary-600' : 'bg-gray-200'
+                step >= 2 ? 'bg-primary-600' : 'bg-slate-200'
               )}
             />
             <div
               className={clsx(
                 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
-                step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                step >= 2 ? 'bg-primary-600 text-white' : 'bg-slate-200 text-slate-500'
               )}
             >
               2
@@ -157,7 +157,7 @@ export function Signup() {
         {/* Step 1: Account Type Selection */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="text-center text-gray-500 mb-4">What type of account?</p>
+            <p className="text-center text-slate-500 mb-4">What type of account?</p>
 
             <div className="space-y-4">
               <button
@@ -166,7 +166,7 @@ export function Signup() {
                   'w-full p-4 border-2 rounded-xl text-left transition-all',
                   accountType === 'user'
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 hover:border-slate-300'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -174,8 +174,8 @@ export function Signup() {
                     <User className="w-5 h-5 text-primary-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Individual Investor</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-semibold text-slate-900">Individual Investor</p>
+                    <p className="text-sm text-slate-500">
                       Track your portfolio and get AI-powered insights
                     </p>
                   </div>
@@ -188,7 +188,7 @@ export function Signup() {
                   'w-full p-4 border-2 rounded-xl text-left transition-all',
                   accountType === 'ria'
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 hover:border-slate-300'
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -196,10 +196,10 @@ export function Signup() {
                     <Building2 className="w-5 h-5 text-primary-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900">
                       Financial Professional (RIA)
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       Manage clients, compliance, and portfolios
                     </p>
                   </div>
@@ -216,7 +216,7 @@ export function Signup() {
         {/* Step 2: Registration Form */}
         {step === 2 && (
           <form onSubmit={handleSubmit} className="space-y-5">
-            <p className="text-center text-gray-500 mb-4">
+            <p className="text-center text-slate-500 mb-4">
               {accountType === 'ria' ? 'Professional Registration' : 'Create Your Account'}
             </p>
 
@@ -260,13 +260,13 @@ export function Signup() {
                     onChange={(e) => setCrdNumber(e.target.value)}
                   />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
                       State
                     </label>
                     <select
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[15px] text-gray-900 bg-white outline-none transition-all focus:border-primary-500 focus:ring-[3px] focus:ring-primary-50"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-[15px] text-slate-900 bg-white outline-none transition-all focus:border-primary-500 focus:ring-[3px] focus:ring-primary-50"
                     >
                       <option value="">Select...</option>
                       {US_STATES.map((s) => (
@@ -320,7 +320,7 @@ export function Signup() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Already have an account?{' '}
           <Link to="/login" className="text-primary-600 font-medium hover:text-primary-700">
             Sign In

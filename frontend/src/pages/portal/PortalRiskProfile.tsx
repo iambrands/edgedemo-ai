@@ -156,7 +156,7 @@ export default function PortalRiskProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center py-32">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
@@ -168,13 +168,13 @@ export default function PortalRiskProfile() {
   const levelColor = profile ? LEVEL_COLORS[profile.risk_level] || LEVEL_COLORS['Moderate'] : LEVEL_COLORS['Moderate'];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Risk Profile</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Risk Profile</h1>
+          <p className="text-slate-500 text-sm mt-1">
             {mode === 'view'
               ? 'Your investment risk tolerance and recommended allocation'
               : 'Answer each question to determine your risk profile'}
@@ -185,9 +185,9 @@ export default function PortalRiskProfile() {
         {mode === 'view' && profile && (
           <>
             {/* Score Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-blue-600" />
                   Your Risk Score
                 </h2>
@@ -218,8 +218,8 @@ export default function PortalRiskProfile() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-gray-900">{profile.risk_score}</span>
-                    <span className="text-xs text-gray-500">/ 100</span>
+                    <span className="text-3xl font-bold text-slate-900">{profile.risk_score}</span>
+                    <span className="text-xs text-slate-500">/ 100</span>
                   </div>
                 </div>
 
@@ -229,8 +229,8 @@ export default function PortalRiskProfile() {
                       {profile.risk_level}
                     </span>
                   </div>
-                  <p className="text-gray-600 text-sm">{profile.description}</p>
-                  <p className="text-xs text-gray-400 mt-3">
+                  <p className="text-slate-600 text-sm">{profile.description}</p>
+                  <p className="text-xs text-slate-400 mt-3">
                     Last assessed: {new Date(profile.completed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
@@ -238,8 +238,8 @@ export default function PortalRiskProfile() {
             </div>
 
             {/* Target Allocation */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 mb-4">
                 <PieChart className="w-5 h-5 text-blue-600" />
                 Recommended Allocation
               </h2>
@@ -252,10 +252,10 @@ export default function PortalRiskProfile() {
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                      <span className="text-sm font-semibold text-gray-900">{item.pct}%</span>
+                      <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                      <span className="text-sm font-semibold text-slate-900">{item.pct}%</span>
                     </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${item.color}`}
                         style={{ width: `${item.pct}%` }}
@@ -279,12 +279,12 @@ export default function PortalRiskProfile() {
 
         {/* No profile completed */}
         {mode === 'view' && !profile && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
             <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-amber-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Risk Profile Not Completed</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Risk Profile Not Completed</h3>
+            <p className="text-slate-500 max-w-md mx-auto mb-6">
               Complete a short questionnaire to determine your risk tolerance and get a recommended investment allocation.
               This helps your advisor build the right portfolio for you.
             </p>
@@ -308,14 +308,14 @@ export default function PortalRiskProfile() {
             {/* Progress */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-slate-700">
                   Question {currentQ + 1} of {QUESTIONS.length}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-slate-500">
                   {Object.keys(answers).length} of {QUESTIONS.length} answered
                 </span>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-teal-500 transition-all duration-300"
                   style={{ width: `${((currentQ + 1) / QUESTIONS.length) * 100}%` }}
@@ -334,15 +334,15 @@ export default function PortalRiskProfile() {
                       ? 'bg-blue-600'
                       : answers[q.id] !== undefined
                       ? 'bg-emerald-400'
-                      : 'bg-gray-200'
+                      : 'bg-slate-200'
                   }`}
                 />
               ))}
             </div>
 
             {/* Current Question */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <p className="text-lg font-medium text-gray-900 mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <p className="text-lg font-medium text-slate-900 mb-6">
                 {currentQ + 1}. {QUESTIONS[currentQ].question}
               </p>
               <div className="space-y-3">
@@ -352,7 +352,7 @@ export default function PortalRiskProfile() {
                     className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-all ${
                       answers[QUESTIONS[currentQ].id] === option.value
                         ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                        : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
                     }`}
                   >
                     <input
@@ -361,9 +361,9 @@ export default function PortalRiskProfile() {
                       value={option.value}
                       checked={answers[QUESTIONS[currentQ].id] === option.value}
                       onChange={() => handleAnswer(QUESTIONS[currentQ].id, option.value)}
-                      className="w-4 h-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-4 h-4 border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-gray-700">{option.label}</span>
+                    <span className="text-slate-700">{option.label}</span>
                   </label>
                 ))}
               </div>
@@ -376,8 +376,8 @@ export default function PortalRiskProfile() {
                 disabled={currentQ === 0}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   currentQ === 0
-                    ? 'text-gray-300 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'text-slate-300 cursor-not-allowed'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 ← Previous
@@ -388,7 +388,7 @@ export default function PortalRiskProfile() {
                   onClick={() => {
                     setMode('view');
                   }}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

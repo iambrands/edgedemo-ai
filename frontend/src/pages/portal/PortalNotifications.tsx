@@ -83,7 +83,7 @@ export default function PortalNotifications() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -93,14 +93,14 @@ export default function PortalNotifications() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-gray-500 text-sm">
+            <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
+            <p className="text-slate-500 text-sm">
               {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function PortalNotifications() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filter === f ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                filter === f ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
               }`}
             >
               {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
@@ -132,12 +132,12 @@ export default function PortalNotifications() {
 
         {/* Notifications list */}
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-            <Bell className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">{filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}</p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+            <Bell className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500">{filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             {filtered.map((n) => {
               const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.alert;
               const Icon = cfg.Icon;
@@ -145,20 +145,20 @@ export default function PortalNotifications() {
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
-                  className={`w-full flex items-start gap-4 p-4 text-left transition-colors hover:bg-gray-50 ${!n.is_read ? 'bg-blue-50/40' : ''}`}
+                  className={`w-full flex items-start gap-4 p-4 text-left transition-colors hover:bg-slate-50 ${!n.is_read ? 'bg-blue-50/40' : ''}`}
                 >
                   <div className={`p-2.5 rounded-xl ${cfg.bg} flex-shrink-0`}>
                     <Icon className={`h-5 w-5 ${cfg.text}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className={`text-sm ${!n.is_read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                      <p className={`text-sm ${!n.is_read ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
                         {n.title}
                       </p>
                       {!n.is_read && <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />}
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">{n.message}</p>
-                    <p className="text-xs text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                    <p className="text-sm text-slate-500 mt-0.5">{n.message}</p>
+                    <p className="text-xs text-slate-400 mt-1">{timeAgo(n.created_at)}</p>
                   </div>
                 </button>
               );

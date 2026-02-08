@@ -104,7 +104,7 @@ export function Statements() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case 'parsing':
         return <Clock className="w-4 h-4 text-amber-500 animate-spin" />;
       default:
@@ -137,13 +137,13 @@ export function Statements() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Statements</h1>
-        <p className="text-gray-500">Upload and parse investment statements</p>
+        <h1 className="text-2xl font-bold text-slate-900">Statements</h1>
+        <p className="text-slate-500">Upload and parse investment statements</p>
       </div>
 
       {/* Upload Area */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">
           Upload Investment Statements
         </h2>
         <div
@@ -152,17 +152,17 @@ export function Statements() {
           onDrop={handleDrop}
           className={`
             border-2 border-dashed rounded-xl p-12 text-center transition-colors
-            ${isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-gray-400'}
+            ${isDragging ? 'border-primary-500 bg-primary-50' : 'border-slate-300 hover:border-slate-400'}
           `}
         >
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             {uploading ? (
               <RefreshCw className="w-8 h-8 text-primary-500 animate-spin" />
             ) : (
-              <Upload className="w-8 h-8 text-gray-500" />
+              <Upload className="w-8 h-8 text-slate-500" />
             )}
           </div>
-          <p className="text-gray-700 font-medium mb-2">
+          <p className="text-slate-700 font-medium mb-2">
             {uploading ? 'Uploading...' : 'Drag and drop your statements here, or'}
           </p>
           <input
@@ -181,14 +181,14 @@ export function Statements() {
           >
             Select Files
           </Button>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500">
             Supports PDF, CSV, and images from 17+ brokerages
           </p>
         </div>
 
         {/* Supported Brokerages */}
         <div className="mt-6">
-          <p className="text-sm text-gray-500 mb-3">
+          <p className="text-sm text-slate-500 mb-3">
             Supports statements from:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -204,7 +204,7 @@ export function Statements() {
       {/* Recently Parsed Statements */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-slate-900">
             Recently Parsed Statements
           </h2>
           <Badge variant="blue">{statements.length} documents</Badge>
@@ -226,22 +226,22 @@ export function Statements() {
               <TableRow key={statement.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium text-gray-900">{statement.filename}</span>
+                    <FileText className="w-4 h-4 text-slate-500" />
+                    <span className="font-medium text-slate-900">{statement.filename}</span>
                   </div>
                 </TableCell>
                 <TableCell>{statement.custodian}</TableCell>
                 <TableCell>{statement.parsed}</TableCell>
-                <TableCell className="text-gray-500">{statement.date}</TableCell>
+                <TableCell className="text-slate-500">{statement.date}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-green-500 rounded-full"
+                        className="h-full bg-emerald-500 rounded-full"
                         style={{ width: statement.confidence }}
                       />
                     </div>
-                    <span className="text-sm text-gray-500">{statement.confidence}</span>
+                    <span className="text-sm text-slate-500">{statement.confidence}</span>
                   </div>
                 </TableCell>
                 <TableCell>

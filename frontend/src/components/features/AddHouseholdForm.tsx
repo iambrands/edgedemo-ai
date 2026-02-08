@@ -65,7 +65,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Household Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Household Name *
         </label>
         <input
@@ -74,7 +74,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Smith Family"
           className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition ${
-            errors.name ? 'border-red-500' : 'border-gray-300'
+            errors.name ? 'border-red-500' : 'border-slate-300'
           }`}
         />
         {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -82,7 +82,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
 
       {/* Members */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Members *
         </label>
         <div className="space-y-2">
@@ -93,13 +93,13 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
                 value={member}
                 onChange={(e) => updateMember(index, e.target.value)}
                 placeholder="Member name"
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
               {members.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeMember(index)}
-                  className="p-2.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                  className="p-2.5 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -119,7 +119,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
 
       {/* Risk Tolerance */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Risk Tolerance *
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -131,7 +131,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
               className={`py-2.5 px-4 rounded-lg border-2 font-medium text-sm capitalize transition ${
                 riskTolerance === level
                   ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-600'
               }`}
             >
               {level}
@@ -142,14 +142,14 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
 
       {/* Investment Objective */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Investment Objective *
         </label>
         <select
           value={investmentObjective}
           onChange={(e) => setInvestmentObjective(e.target.value)}
           className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none appearance-none bg-white ${
-            errors.investmentObjective ? 'border-red-500' : 'border-gray-300'
+            errors.investmentObjective ? 'border-red-500' : 'border-slate-300'
           }`}
         >
           <option value="">Select objective</option>
@@ -164,14 +164,14 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
 
       {/* Time Horizon */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Time Horizon *
         </label>
         <select
           value={timeHorizon}
           onChange={(e) => setTimeHorizon(e.target.value)}
           className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none appearance-none bg-white ${
-            errors.timeHorizon ? 'border-red-500' : 'border-gray-300'
+            errors.timeHorizon ? 'border-red-500' : 'border-slate-300'
           }`}
         >
           <option value="">Select time horizon</option>
@@ -183,7 +183,7 @@ export function AddHouseholdForm({ onSubmit, onCancel, isLoading }: AddHousehold
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-4 border-t border-gray-200">
+      <div className="flex gap-3 pt-4 border-t border-slate-200">
         <Button
           type="button"
           variant="secondary"

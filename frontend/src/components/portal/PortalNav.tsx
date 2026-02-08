@@ -58,7 +58,7 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Top Row */}
         <div className="flex items-center justify-between h-16">
@@ -66,7 +66,7 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
             <span className="text-lg font-bold text-blue-600">Edge</span>
             <span className="text-lg font-bold text-teal-500">AI</span>
             {firmName && (
-              <span className="hidden sm:inline text-sm text-gray-400 ml-2 border-l border-gray-200 pl-2">
+              <span className="hidden sm:inline text-sm text-slate-400 ml-2 border-l border-slate-200 pl-2">
                 {firmName}
               </span>
             )}
@@ -75,14 +75,14 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
           <div className="flex items-center gap-3">
             <Link
               to="/portal/help"
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
               title="Help Center"
             >
               <HelpCircle className="w-5 h-5" />
             </Link>
             <Link
               to="/portal/notifications"
-              className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              className="relative p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
               title="Notifications"
             >
               <Bell className="w-5 h-5" />
@@ -94,11 +94,11 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-medium">
                 {initials}
               </div>
-              <span className="text-sm font-medium text-gray-700">{clientName}</span>
+              <span className="text-sm font-medium text-slate-700">{clientName}</span>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-5 h-5" />
@@ -118,7 +118,7 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                   isActive
                     ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                 }`}
               >
                 <Icon className="w-4 h-4" />

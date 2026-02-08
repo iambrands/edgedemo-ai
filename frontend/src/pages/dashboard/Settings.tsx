@@ -25,13 +25,13 @@ export function Settings() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500">Manage your account and API settings</p>
+        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="text-slate-500">Manage your account and API settings</p>
       </div>
 
       {/* Profile Section */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Profile Information</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-6">Profile Information</h2>
         <div className="space-y-6">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center">
@@ -41,51 +41,51 @@ export function Settings() {
               </span>
             </div>
             <div>
-              <p className="text-xl font-semibold text-gray-900">
+              <p className="text-xl font-semibold text-slate-900">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-gray-500">{user?.email}</p>
+              <p className="text-slate-500">{user?.email}</p>
               <Badge variant="blue" className="mt-2">
                 {user?.role === 'ria' ? 'Financial Professional' : 'Individual Investor'}
               </Badge>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
             <div>
-              <p className="text-sm text-gray-500 mb-1">First Name</p>
-              <p className="text-gray-900 font-medium">{user?.firstName}</p>
+              <p className="text-sm text-slate-500 mb-1">First Name</p>
+              <p className="text-slate-900 font-medium">{user?.firstName}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Last Name</p>
-              <p className="text-gray-900 font-medium">{user?.lastName}</p>
+              <p className="text-sm text-slate-500 mb-1">Last Name</p>
+              <p className="text-slate-900 font-medium">{user?.lastName}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Email</p>
-              <p className="text-gray-900 font-medium">{user?.email}</p>
+              <p className="text-sm text-slate-500 mb-1">Email</p>
+              <p className="text-slate-900 font-medium">{user?.email}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Account Type</p>
-              <p className="text-gray-900 font-medium capitalize">{user?.role}</p>
+              <p className="text-sm text-slate-500 mb-1">Account Type</p>
+              <p className="text-slate-900 font-medium capitalize">{user?.role}</p>
             </div>
           </div>
 
           {user?.role === 'ria' && (
-            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Firm</p>
-                <p className="text-gray-900 font-medium">{user?.firm || 'N/A'}</p>
+                <p className="text-sm text-slate-500 mb-1">Firm</p>
+                <p className="text-slate-900 font-medium">{user?.firm || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">CRD Number</p>
-                <p className="text-gray-900 font-medium">{user?.crd || 'N/A'}</p>
+                <p className="text-sm text-slate-500 mb-1">CRD Number</p>
+                <p className="text-slate-900 font-medium">{user?.crd || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">State</p>
-                <p className="text-gray-900 font-medium">{user?.state || 'N/A'}</p>
+                <p className="text-sm text-slate-500 mb-1">State</p>
+                <p className="text-slate-900 font-medium">{user?.state || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Licenses</p>
+                <p className="text-sm text-slate-500 mb-1">Licenses</p>
                 <div className="flex flex-wrap gap-1">
                   {user?.licenses?.map((license) => (
                     <Badge key={license} variant="gray">
@@ -101,15 +101,15 @@ export function Settings() {
 
       {/* API Keys Section */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">API Keys</h2>
-        <p className="text-sm text-gray-500 mb-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">API Keys</h2>
+        <p className="text-sm text-slate-500 mb-6">
           Use API keys to integrate EdgeAI with your applications. Keep your keys secure
           and never share them publicly.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Live API Key
             </label>
             <div className="flex gap-2">
@@ -118,11 +118,11 @@ export function Settings() {
                   type={showApiKey ? 'text' : 'password'}
                   value={mockApiKey}
                   readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50 pr-20"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm font-mono bg-slate-50 pr-20"
                 />
                 <button
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                 >
                   {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -149,36 +149,36 @@ export function Settings() {
 
       {/* Preferences Section */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Preferences</h2>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between py-3 border-b border-slate-100">
             <div>
-              <p className="font-medium text-gray-900">Email Notifications</p>
-              <p className="text-sm text-gray-500">Receive alerts and updates via email</p>
+              <p className="font-medium text-slate-900">Email Notifications</p>
+              <p className="text-sm text-slate-500">Receive alerts and updates via email</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={emailNotifs} onChange={() => setEmailNotifs(!emailNotifs)} />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between py-3 border-b border-slate-100">
             <div>
-              <p className="font-medium text-gray-900">Weekly Reports</p>
-              <p className="text-sm text-gray-500">Receive weekly portfolio summary reports</p>
+              <p className="font-medium text-slate-900">Weekly Reports</p>
+              <p className="text-sm text-slate-500">Receive weekly portfolio summary reports</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={weeklyReports} onChange={() => setWeeklyReports(!weeklyReports)} />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-gray-900">Compliance Alerts</p>
-              <p className="text-sm text-gray-500">Get notified of compliance issues immediately</p>
+              <p className="font-medium text-slate-900">Compliance Alerts</p>
+              <p className="text-sm text-slate-500">Get notified of compliance issues immediately</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={complianceAlerts} onChange={() => setComplianceAlerts(!complianceAlerts)} />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
             </label>
           </div>
         </div>
@@ -189,8 +189,8 @@ export function Settings() {
         <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Delete Account</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-slate-900">Delete Account</p>
+            <p className="text-sm text-slate-500">
               Permanently delete your account and all associated data
             </p>
           </div>

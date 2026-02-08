@@ -47,19 +47,19 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
       {/* Logo */}
       <Link to="/" className="mb-8">
         <span className="text-2xl font-bold">
-          <span className="text-gray-900">Edge</span>
+          <span className="text-slate-900">Edge</span>
           <span className="text-primary-500">AI</span>
         </span>
       </Link>
 
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign in to your account</h1>
-          <p className="text-gray-500 text-sm">Welcome back to EdgeAI</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in to your account</h1>
+          <p className="text-slate-500 text-sm">Welcome back to EdgeAI</p>
         </div>
 
         {error && (
@@ -81,7 +81,7 @@ export function Login() {
           />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-slate-700">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -89,12 +89,12 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all pr-12"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all pr-12"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -111,9 +111,9 @@ export function Login() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
+                className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500 cursor-pointer"
               />
-              <span className="ml-2 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+              <span className="ml-2 text-sm text-slate-600 group-hover:text-slate-800 transition-colors">
                 Remember me
               </span>
             </label>
@@ -130,7 +130,7 @@ export function Login() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Don't have an account?{' '}
           <Link to="/signup" className="text-primary-600 font-medium hover:text-primary-700">
             Sign Up
@@ -139,12 +139,12 @@ export function Login() {
       </Card>
 
       {/* Demo credentials hint */}
-      <div className="mt-6 p-4 bg-white border border-gray-200 rounded-lg max-w-md w-full shadow-sm">
-        <p className="text-xs text-gray-500 text-center">
-          <span className="font-medium text-gray-700">Demo Credentials:</span>{' '}
-          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">leslie@iabadvisors.com</code>{' '}
+      <div className="mt-6 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
+        <p className="text-xs text-slate-500 text-center">
+          <span className="font-medium text-slate-700">Demo Credentials:</span>{' '}
+          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">leslie@iabadvisors.com</code>{' '}
           /{' '}
-          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">CreateWealth2026$</code>
+          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">CreateWealth2026$</code>
         </p>
       </div>
     </div>

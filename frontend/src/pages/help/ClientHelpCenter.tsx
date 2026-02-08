@@ -141,30 +141,30 @@ export default function ClientHelpCenter() {
       {isAuthenticated && <PortalNav />}
 
       {/* Header */}
-      <div className={isAuthenticated ? '' : 'bg-white border-b border-gray-200'}>
+      <div className={isAuthenticated ? '' : 'bg-white border-b border-slate-200'}>
         <div className="max-w-4xl mx-auto px-6 pt-6 pb-12">
           <Link
             to="/portal/dashboard"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"
+            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Portal
           </Link>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">Help Center</h1>
-            <p className="text-gray-600 mb-6">
+            <h1 className="text-3xl font-bold text-slate-900 mb-3">Help Center</h1>
+            <p className="text-slate-600 mb-6">
               Find answers to common questions about your client portal
             </p>
 
             {/* Search */}
             <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for help..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>
@@ -174,21 +174,21 @@ export default function ClientHelpCenter() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Quick Guides */}
         <div className="mb-10">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Guides</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Guides</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {QUICK_GUIDES.map((guide) => {
               const Icon = guide.icon;
               return (
                 <div
                   key={guide.title}
-                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                  className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
                 >
                   <div className="p-3 bg-blue-50 rounded-lg">
                     <Icon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{guide.title}</p>
-                    <p className="text-sm text-gray-500">{guide.time}</p>
+                    <p className="font-medium text-slate-900">{guide.title}</p>
+                    <p className="text-sm text-slate-500">{guide.time}</p>
                   </div>
                 </div>
               );
@@ -198,14 +198,14 @@ export default function ClientHelpCenter() {
 
         {/* FAQs by Category */}
         <div className="mb-10">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
             Frequently Asked Questions
           </h2>
           <div className="space-y-4">
             {filteredFaqs.map((category) => (
               <div
                 key={category.category}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
               >
                 <button
                   onClick={() =>
@@ -213,36 +213,36 @@ export default function ClientHelpCenter() {
                       expandedCategory === category.category ? null : category.category,
                     )
                   }
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50"
                 >
-                  <span className="font-semibold text-gray-900">{category.category}</span>
+                  <span className="font-semibold text-slate-900">{category.category}</span>
                   <ChevronRight
-                    className={`h-5 w-5 text-gray-400 transition-transform ${
+                    className={`h-5 w-5 text-slate-400 transition-transform ${
                       expandedCategory === category.category ? 'rotate-90' : ''
                     }`}
                   />
                 </button>
 
                 {expandedCategory === category.category && (
-                  <div className="border-t border-gray-100">
+                  <div className="border-t border-slate-100">
                     {category.questions.map((item, qIndex) => (
-                      <div key={qIndex} className="border-b border-gray-100 last:border-b-0">
+                      <div key={qIndex} className="border-b border-slate-100 last:border-b-0">
                         <button
                           onClick={() =>
                             setExpandedQuestion(expandedQuestion === item.q ? null : item.q)
                           }
-                          className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
+                          className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50"
                         >
-                          <span className="text-gray-700 pr-4">{item.q}</span>
+                          <span className="text-slate-700 pr-4">{item.q}</span>
                           <ChevronRight
-                            className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
+                            className={`h-4 w-4 text-slate-400 transition-transform flex-shrink-0 ${
                               expandedQuestion === item.q ? 'rotate-90' : ''
                             }`}
                           />
                         </button>
                         {expandedQuestion === item.q && (
                           <div className="px-4 pb-4">
-                            <p className="text-gray-600 bg-blue-50 rounded-lg p-4 text-sm">
+                            <p className="text-slate-600 bg-blue-50 rounded-lg p-4 text-sm">
                               {item.a}
                             </p>
                           </div>
@@ -257,38 +257,38 @@ export default function ClientHelpCenter() {
         </div>
 
         {/* Contact Your Advisor */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
             Contact Your Advisor
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-slate-600 mb-6">
             Can&apos;t find what you&apos;re looking for? Your advisor is here to help.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/portal/dashboard"
-              className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-lg hover:bg-blue-50 transition-colors"
             >
               <MessageCircle className="h-6 w-6 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900">Send Message</span>
-              <span className="text-xs text-gray-500">Typically responds in 1 day</span>
+              <span className="text-sm font-medium text-slate-900">Send Message</span>
+              <span className="text-xs text-slate-500">Typically responds in 1 day</span>
             </Link>
             <a
               href="tel:+15551234567"
-              className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-lg hover:bg-blue-50 transition-colors"
             >
               <Phone className="h-6 w-6 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900">Call</span>
-              <span className="text-xs text-gray-500">(555) 123-4567</span>
+              <span className="text-sm font-medium text-slate-900">Call</span>
+              <span className="text-xs text-slate-500">(555) 123-4567</span>
             </a>
             <Link
               to="/portal/dashboard"
-              className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-lg hover:bg-blue-50 transition-colors"
             >
               <Clock className="h-6 w-6 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900">Schedule Meeting</span>
-              <span className="text-xs text-gray-500">View availability</span>
+              <span className="text-sm font-medium text-slate-900">Schedule Meeting</span>
+              <span className="text-xs text-slate-500">View availability</span>
             </Link>
           </div>
         </div>

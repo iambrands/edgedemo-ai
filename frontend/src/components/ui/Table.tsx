@@ -20,7 +20,7 @@ interface TableHeaderProps {
 }
 
 export function TableHeader({ children }: TableHeaderProps) {
-  return <thead className="bg-slate-50 border-b border-gray-200 sticky top-0 z-10">{children}</thead>;
+  return <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">{children}</thead>;
 }
 
 interface TableBodyProps {
@@ -28,7 +28,7 @@ interface TableBodyProps {
 }
 
 export function TableBody({ children }: TableBodyProps) {
-  return <tbody className="divide-y divide-gray-200">{children}</tbody>;
+  return <tbody className="divide-y divide-slate-200">{children}</tbody>;
 }
 
 interface TableRowProps {
@@ -60,7 +60,7 @@ export function TableHead({ children, className, ...props }: TableHeadProps) {
   return (
     <th
       className={clsx(
-        'px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider',
+        'px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider',
         className
       )}
       {...props}
@@ -76,7 +76,7 @@ interface TableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
 
 export function TableCell({ children, className, ...props }: TableCellProps) {
   return (
-    <td className={clsx('px-6 py-4 text-sm text-gray-700', className)} {...props}>
+    <td className={clsx('px-6 py-4 text-sm text-slate-700', className)} {...props}>
       {children}
     </td>
   );

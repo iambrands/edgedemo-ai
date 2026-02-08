@@ -20,11 +20,11 @@ import {
 } from '../../services/liquidityApi';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
+  draft: 'bg-slate-100 text-slate-700',
   pending_review: 'bg-yellow-100 text-yellow-700',
   approved: 'bg-blue-100 text-blue-700',
   executing: 'bg-purple-100 text-purple-700',
-  completed: 'bg-green-100 text-green-700',
+  completed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700',
   failed: 'bg-red-100 text-red-700',
 };
@@ -163,17 +163,17 @@ export default function Liquidity() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-slate-900">
             Liquidity Optimization
           </h1>
-          <p className="text-gray-500">
+          <p className="text-slate-500">
             Tax-efficient withdrawal planning and execution
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={loadRequests}
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
           >
             <RefreshCw size={16} />
             Refresh
@@ -200,12 +200,12 @@ export default function Liquidity() {
         {/* REQUEST LIST (Left Panel)                     */}
         {/* ============================================= */}
         <div className="lg:col-span-1 space-y-4">
-          <h2 className="font-medium text-gray-900">Withdrawal Requests</h2>
+          <h2 className="font-medium text-slate-900">Withdrawal Requests</h2>
 
           {requests.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
-              <DollarSign className="mx-auto h-12 w-12 text-gray-500" />
-              <p className="mt-2 text-gray-500">No withdrawal requests yet</p>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center">
+              <DollarSign className="mx-auto h-12 w-12 text-slate-500" />
+              <p className="mt-2 text-slate-500">No withdrawal requests yet</p>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -226,7 +226,7 @@ export default function Liquidity() {
                         null
                     );
                   }}
-                  className={`w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all ${
+                  className={`w-full text-left bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-all ${
                     selectedRequest?.id === req.id
                       ? 'ring-2 ring-blue-500 border-blue-200'
                       : ''
@@ -234,22 +234,22 @@ export default function Liquidity() {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-slate-900">
                         {formatCurrency(req.requested_amount)}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-slate-500">
                         {req.purpose || 'Withdrawal'}
                       </p>
                     </div>
                     <span
                       className={`text-xs px-2 py-1 rounded capitalize ${
-                        STATUS_COLORS[req.status] || 'bg-gray-100 text-gray-700'
+                        STATUS_COLORS[req.status] || 'bg-slate-100 text-slate-700'
                       }`}
                     >
                       {req.status.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
                     <span>{PRIORITY_LABELS[req.priority] || req.priority}</span>
                     <span>·</span>
                     <span>{(req.plans ?? []).length} plan{(req.plans ?? []).length !== 1 ? 's' : ''}</span>
@@ -266,14 +266,14 @@ export default function Liquidity() {
         {/* PLAN SELECTION (Middle Panel)                 */}
         {/* ============================================= */}
         <div className="lg:col-span-1 space-y-4">
-          <h2 className="font-medium text-gray-900">
+          <h2 className="font-medium text-slate-900">
             {selectedRequest ? 'Withdrawal Plans' : 'Select a request'}
           </h2>
 
           {selectedRequest ? (
             <div className="space-y-3">
               {(selectedRequest.plans ?? []).length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center text-slate-500">
                   No plans generated yet
                 </div>
               ) : (
@@ -281,7 +281,7 @@ export default function Liquidity() {
                   <button
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan)}
-                    className={`w-full text-left bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all ${
+                    className={`w-full text-left bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-all ${
                       selectedPlan?.id === plan.id
                         ? 'ring-2 ring-blue-500 border-blue-200'
                         : ''
@@ -291,7 +291,7 @@ export default function Liquidity() {
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{plan.plan_name}</p>
                         {plan.is_recommended && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
                             Recommended
                           </span>
                         )}
@@ -299,18 +299,18 @@ export default function Liquidity() {
                           <Zap size={14} className="text-purple-500" />
                         )}
                       </div>
-                      <ChevronRight size={16} className="text-gray-500" />
+                      <ChevronRight size={16} className="text-slate-500" />
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-gray-500">Tax Cost</p>
+                        <p className="text-slate-500">Tax Cost</p>
                         <p className="font-medium text-red-600">
                           {formatCurrency(plan.estimated_tax_cost || 0)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Net Gains</p>
+                        <p className="text-slate-500">Net Gains</p>
                         {(() => {
                           const net =
                             plan.estimated_long_term_gains +
@@ -320,7 +320,7 @@ export default function Liquidity() {
                           return (
                             <p
                               className={`font-medium ${
-                                net >= 0 ? 'text-green-600' : 'text-red-600'
+                                net >= 0 ? 'text-emerald-600' : 'text-red-600'
                               }`}
                             >
                               {net >= 0 ? '+' : ''}
@@ -331,7 +331,7 @@ export default function Liquidity() {
                       </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-slate-500">
                       {plan.line_items.length} position{plan.line_items.length !== 1 ? 's' : ''} to liquidate
                     </div>
                   </button>
@@ -345,13 +345,13 @@ export default function Liquidity() {
                     onClick={() =>
                       handleApprove(selectedRequest.id, selectedPlan?.id)
                     }
-                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700"
                   >
                     <Check size={16} /> Approve
                   </button>
                   <button
                     onClick={() => handleCancel(selectedRequest.id)}
-                    className="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
+                    className="flex items-center justify-center gap-2 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300"
                   >
                     <X size={16} /> Cancel
                   </button>
@@ -366,7 +366,7 @@ export default function Liquidity() {
               )}
 
               {selectedRequest.status === 'completed' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                <div className="bg-emerald-50 border border-green-200 rounded-lg p-3 text-sm text-emerald-700">
                   <Check size={14} className="inline mr-1" />
                   Completed on{' '}
                   {selectedRequest.completed_at
@@ -376,8 +376,8 @@ export default function Liquidity() {
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
-              <DollarSign className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center text-slate-500">
+              <DollarSign className="mx-auto h-10 w-10 text-slate-400 mb-2" />
               Select a request to view plans
             </div>
           )}
@@ -387,10 +387,10 @@ export default function Liquidity() {
         {/* PLAN DETAILS (Right Panel)                   */}
         {/* ============================================= */}
         <div className="lg:col-span-1 space-y-4">
-          <h2 className="font-medium text-gray-900">Plan Details</h2>
+          <h2 className="font-medium text-slate-900">Plan Details</h2>
 
           {selectedPlan ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
               {/* AI Reasoning */}
               {selectedPlan.ai_reasoning && (
                 <div className="bg-purple-50 rounded-lg p-3">
@@ -405,26 +405,26 @@ export default function Liquidity() {
 
               {/* Tax Summary */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded p-3">
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <TrendingUp size={12} className="text-green-500" />
+                <div className="bg-slate-50 rounded p-3">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <TrendingUp size={12} className="text-emerald-500" />
                     ST Gains
                   </p>
-                  <p className="font-medium text-green-600">
+                  <p className="font-medium text-emerald-600">
                     {formatCurrency(selectedPlan.estimated_short_term_gains)}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded p-3">
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <TrendingUp size={12} className="text-green-500" />
+                <div className="bg-slate-50 rounded p-3">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <TrendingUp size={12} className="text-emerald-500" />
                     LT Gains
                   </p>
-                  <p className="font-medium text-green-600">
+                  <p className="font-medium text-emerald-600">
                     {formatCurrency(selectedPlan.estimated_long_term_gains)}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded p-3">
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                <div className="bg-slate-50 rounded p-3">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
                     <TrendingDown size={12} className="text-red-500" />
                     ST Losses
                   </p>
@@ -432,8 +432,8 @@ export default function Liquidity() {
                     {formatCurrency(selectedPlan.estimated_short_term_losses)}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded p-3">
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                <div className="bg-slate-50 rounded p-3">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
                     <TrendingDown size={12} className="text-red-500" />
                     LT Losses
                   </p>
@@ -457,11 +457,11 @@ export default function Liquidity() {
 
               {/* Line Items */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">
+                <p className="text-sm font-medium text-slate-700 mb-2">
                   Positions to Liquidate
                 </p>
                 {selectedPlan.line_items.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
+                  <p className="text-sm text-slate-500 text-center py-4">
                     No line items — AI optimization pending
                   </p>
                 ) : (
@@ -469,11 +469,11 @@ export default function Liquidity() {
                     {selectedPlan.line_items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                        className="flex items-center justify-between p-2 bg-slate-50 rounded"
                       >
                         <div>
                           <p className="font-medium">{item.symbol}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-500">
                             {item.shares_to_sell.toFixed(2)} shares
                             {item.is_short_term && (
                               <span className="ml-1 text-orange-600 font-medium">
@@ -490,7 +490,7 @@ export default function Liquidity() {
                             <p
                               className={`text-xs ${
                                 item.estimated_gain_loss >= 0
-                                  ? 'text-green-600'
+                                  ? 'text-emerald-600'
                                   : 'text-red-600'
                               }`}
                             >
@@ -506,7 +506,7 @@ export default function Liquidity() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center text-gray-500">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 text-center text-slate-500">
               Select a plan to view details
             </div>
           )}
@@ -525,7 +525,7 @@ export default function Liquidity() {
             <h2 className="text-xl font-semibold">New Withdrawal Request</h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Client ID
               </label>
               <input
@@ -541,11 +541,11 @@ export default function Liquidity() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Amount
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                   $
                 </span>
                 <input
@@ -564,7 +564,7 @@ export default function Liquidity() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 Purpose (optional)
               </label>
               <input
@@ -580,7 +580,7 @@ export default function Liquidity() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Priority
                 </label>
                 <select
@@ -597,7 +597,7 @@ export default function Liquidity() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Lot Selection
                 </label>
                 <select
@@ -629,7 +629,7 @@ export default function Liquidity() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 Cancel
               </button>

@@ -63,7 +63,7 @@ export default function PortalNarratives() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center py-32">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
@@ -73,14 +73,14 @@ export default function PortalNarratives() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Updates & Reports</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Updates & Reports</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Portfolio narratives and meeting summaries from your advisor
             {unreadCount > 0 && ` · ${unreadCount} unread`}
           </p>
@@ -89,11 +89,11 @@ export default function PortalNarratives() {
         {/* Narratives List */}
         {narratives.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-slate-400" />
             </div>
-            <h3 className="font-medium text-gray-900">No updates yet</h3>
-            <p className="text-gray-500 text-sm mt-1">
+            <h3 className="font-medium text-slate-900">No updates yet</h3>
+            <p className="text-slate-500 text-sm mt-1">
               Your advisor's portfolio updates and meeting summaries will appear here.
             </p>
           </div>
@@ -108,20 +108,20 @@ export default function PortalNarratives() {
                 <div
                   key={narrative.id}
                   className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
-                    !narrative.is_read ? 'border-blue-200' : 'border-gray-200'
+                    !narrative.is_read ? 'border-blue-200' : 'border-slate-200'
                   }`}
                 >
                   {/* Header */}
                   <button
                     onClick={() => handleExpand(narrative)}
-                    className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-4 p-5 text-left hover:bg-slate-50 transition-colors"
                   >
                     <div className={`p-3 rounded-lg flex-shrink-0 ${meta.bg}`}>
                       <Icon className={`w-5 h-5 ${meta.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`font-medium text-gray-900 ${!narrative.is_read ? 'font-semibold' : ''}`}>
+                        <h3 className={`font-medium text-slate-900 ${!narrative.is_read ? 'font-semibold' : ''}`}>
                           {narrative.title}
                         </h3>
                         {!narrative.is_read && (
@@ -130,7 +130,7 @@ export default function PortalNarratives() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                      <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {formatPeriod(narrative.period_start, narrative.period_end)}
@@ -139,38 +139,38 @@ export default function PortalNarratives() {
                       </div>
                     </div>
                     {narrative.is_read && (
-                      <CheckCircle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-slate-300 flex-shrink-0" />
                     )}
                   </button>
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="px-5 pb-5 border-t border-gray-100">
+                    <div className="px-5 pb-5 border-t border-slate-100">
                       <div className="pt-4 prose prose-sm max-w-none">
                         {narrative.content.split('\n').map((paragraph, i) => {
                           if (!paragraph.trim()) return null;
                           if (paragraph.startsWith('•') || paragraph.startsWith('\u2022')) {
                             return (
-                              <p key={i} className="text-gray-600 ml-4 my-1">
+                              <p key={i} className="text-slate-600 ml-4 my-1">
                                 {paragraph}
                               </p>
                             );
                           }
                           if (paragraph.endsWith(':')) {
                             return (
-                              <p key={i} className="font-medium text-gray-800 mt-4 mb-1">
+                              <p key={i} className="font-medium text-slate-800 mt-4 mb-1">
                                 {paragraph}
                               </p>
                             );
                           }
                           return (
-                            <p key={i} className="text-gray-600 my-2">
+                            <p key={i} className="text-slate-600 my-2">
                               {paragraph}
                             </p>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-gray-400 mt-4">
+                      <p className="text-xs text-slate-400 mt-4">
                         Published {formatDate(narrative.created_at)}
                       </p>
                     </div>

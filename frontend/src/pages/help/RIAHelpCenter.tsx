@@ -170,13 +170,13 @@ export default function RIAHelpCenter() {
 
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for articles, guides, and tutorials..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+                className="w-full pl-12 pr-4 py-4 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-4 focus:ring-blue-300 focus:outline-none"
               />
             </div>
           </div>
@@ -195,53 +195,53 @@ export default function RIAHelpCenter() {
             <a
               key={link.label}
               href={link.href}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all"
+              className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all"
             >
               <div className="p-3 bg-blue-50 rounded-lg">
                 <link.icon className="h-6 w-6 text-blue-600" />
               </div>
-              <span className="text-sm font-medium text-gray-900">{link.label}</span>
+              <span className="text-sm font-medium text-slate-900">{link.label}</span>
             </a>
           ))}
         </div>
 
         {/* Categories */}
         <div id="categories">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Browse by Category</h2>
+          <h2 className="text-xl font-semibold text-slate-900 mb-6">Browse by Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             {filteredCategories.map((category) => {
               const Icon = category.icon;
               return (
                 <div
                   key={category.id}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                  className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
                 >
-                  <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Icon className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">{category.title}</h3>
+                    <h3 className="font-semibold text-slate-900">{category.title}</h3>
                   </div>
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-slate-100">
                     {category.articles.map((article) => (
                       <a
                         key={article.id}
                         href={`#article-${article.id}`}
-                        className="flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
                       >
                         {article.type === 'video' ? (
                           <Play className="h-4 w-4 text-blue-600 flex-shrink-0" />
                         ) : article.type === 'guide' ? (
                           <Book className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                         ) : (
-                          <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{article.title}</p>
-                          <p className="text-sm text-gray-500 truncate">{article.excerpt}</p>
+                          <p className="font-medium text-slate-900 truncate">{article.title}</p>
+                          <p className="text-sm text-slate-500 truncate">{article.excerpt}</p>
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0">{article.readTime}</span>
-                        <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-slate-400 flex-shrink-0">{article.readTime}</span>
+                        <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
                       </a>
                     ))}
                   </div>
@@ -253,26 +253,26 @@ export default function RIAHelpCenter() {
 
         {/* FAQs */}
         <div id="faqs">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <h2 className="text-xl font-semibold text-slate-900 mb-6">
             Frequently Asked Questions
           </h2>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             {filteredFaqs.map((faq, index) => (
-              <div key={index} className="border-b border-gray-100 last:border-b-0">
+              <div key={index} className="border-b border-slate-100 last:border-b-0">
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors"
                 >
-                  <span className="font-medium text-gray-900 pr-4">{faq.question}</span>
+                  <span className="font-medium text-slate-900 pr-4">{faq.question}</span>
                   <ChevronRight
-                    className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${
+                    className={`h-5 w-5 text-slate-400 transition-transform flex-shrink-0 ${
                       expandedFaq === index ? 'rotate-90' : ''
                     }`}
                   />
                 </button>
                 {expandedFaq === index && (
                   <div className="px-4 pb-4">
-                    <p className="text-gray-600 bg-gray-50 rounded-lg p-4">{faq.answer}</p>
+                    <p className="text-slate-600 bg-slate-50 rounded-lg p-4">{faq.answer}</p>
                   </div>
                 )}
               </div>

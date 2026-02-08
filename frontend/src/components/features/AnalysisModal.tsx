@@ -91,14 +91,14 @@ export function AnalysisModal({ isOpen, onClose, toolType, toolTitle }: Analysis
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{toolTitle}</h3>
-              <p className="text-sm text-gray-500">Select a household to analyze</p>
+              <h3 className="text-lg font-semibold text-slate-900">{toolTitle}</h3>
+              <p className="text-sm text-slate-500">Select a household to analyze</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-200 text-gray-500 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors"
             >
               <X size={20} />
             </button>
@@ -125,7 +125,7 @@ export function AnalysisModal({ isOpen, onClose, toolType, toolTitle }: Analysis
               <>
                 {/* Household Selector */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Select Household
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -136,11 +136,11 @@ export function AnalysisModal({ isOpen, onClose, toolType, toolTitle }: Analysis
                         className={`p-4 rounded-lg border-2 text-left transition-colors ${
                           selectedHousehold === hh.id
                             ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        <div className="font-medium text-gray-900">{hh.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium text-slate-900">{hh.name}</div>
+                        <div className="text-sm text-slate-500">
                           {hh.members?.join(', ')} • ${hh.totalValue?.toLocaleString()}
                         </div>
                       </button>
@@ -173,17 +173,17 @@ export function AnalysisModal({ isOpen, onClose, toolType, toolTitle }: Analysis
                 {results && (
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-semibold text-gray-900">Analysis Results</h4>
+                      <h4 className="font-semibold text-slate-900">Analysis Results</h4>
                       <div className="flex gap-2">
                         <button
                           onClick={() => setResults(null)}
-                          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                          className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-1 transition-colors"
                         >
                           <RefreshCw size={14} />
                           Re-run
                         </button>
                         <button
-                          className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 flex items-center gap-1 transition-colors"
+                          className="px-3 py-1.5 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 flex items-center gap-1 transition-colors"
                         >
                           <Download size={14} />
                           Export
@@ -267,13 +267,13 @@ function PortfolioResults({ data }: { data: PortfolioData }) {
   return (
     <div className="space-y-4">
       {/* Allocation Chart */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h5 className="text-sm font-medium text-gray-700 mb-3">Asset Allocation</h5>
+      <div className="bg-slate-50 rounded-lg p-4">
+        <h5 className="text-sm font-medium text-slate-700 mb-3">Asset Allocation</h5>
         <div className="space-y-2">
           {data.allocation.map((item, i) => (
             <div key={i} className="flex items-center gap-3">
-              <div className="w-24 text-sm text-gray-600">{item.category}</div>
-              <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+              <div className="w-24 text-sm text-slate-600">{item.category}</div>
+              <div className="flex-1 h-6 bg-slate-200 rounded-full overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all"
                   style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
@@ -288,9 +288,9 @@ function PortfolioResults({ data }: { data: PortfolioData }) {
       {/* Metrics */}
       <div className="grid grid-cols-3 gap-4">
         {data.metrics.map((metric, i) => (
-          <div key={i} className="bg-gray-50 rounded-lg p-4">
-            <div className="text-sm text-gray-500">{metric.label}</div>
-            <div className="text-xl font-semibold text-gray-900">{metric.value}</div>
+          <div key={i} className="bg-slate-50 rounded-lg p-4">
+            <div className="text-sm text-slate-500">{metric.label}</div>
+            <div className="text-xl font-semibold text-slate-900">{metric.value}</div>
           </div>
         ))}
       </div>
@@ -329,21 +329,21 @@ function FeeResults({ data }: { data: FeeData }) {
       </div>
       
       {/* Fee Breakdown */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h5 className="text-sm font-medium text-gray-700 mb-3">Fee Breakdown by Account</h5>
+      <div className="bg-slate-50 rounded-lg p-4">
+        <h5 className="text-sm font-medium text-slate-700 mb-3">Fee Breakdown by Account</h5>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-2 text-gray-500 font-medium">Account</th>
-              <th className="text-right py-2 text-gray-500 font-medium">Fee %</th>
-              <th className="text-right py-2 text-gray-500 font-medium">Annual Cost</th>
-              <th className="text-right py-2 text-gray-500 font-medium">Status</th>
+            <tr className="border-b border-slate-200">
+              <th className="text-left py-2 text-slate-500 font-medium">Account</th>
+              <th className="text-right py-2 text-slate-500 font-medium">Fee %</th>
+              <th className="text-right py-2 text-slate-500 font-medium">Annual Cost</th>
+              <th className="text-right py-2 text-slate-500 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             {data.breakdown.map((item, i) => (
-              <tr key={i} className="border-b border-gray-100">
-                <td className="py-2 text-gray-900">{item.account}</td>
+              <tr key={i} className="border-b border-slate-100">
+                <td className="py-2 text-slate-900">{item.account}</td>
                 <td className="py-2 text-right font-mono">{item.feePercent}%</td>
                 <td className="py-2 text-right font-mono">${item.annualCost.toLocaleString()}</td>
                 <td className="py-2 text-right">
@@ -369,16 +369,16 @@ function TaxResults({ data }: { data: TaxData }) {
     <div className="space-y-4">
       {/* Tax Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-500">Unrealized Gains</div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="text-sm text-slate-500">Unrealized Gains</div>
           <div className="text-xl font-bold text-green-600">+${data.unrealizedGains.toLocaleString()}</div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-500">Unrealized Losses</div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="text-sm text-slate-500">Unrealized Losses</div>
           <div className="text-xl font-bold text-red-600">-${data.unrealizedLosses.toLocaleString()}</div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-500">Tax Efficiency Score</div>
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="text-sm text-slate-500">Tax Efficiency Score</div>
           <div className="text-xl font-bold text-primary-600">{data.taxEfficiencyScore}/100</div>
         </div>
       </div>
@@ -403,8 +403,8 @@ function RiskResults({ data }: { data: RiskData }) {
   return (
     <div className="space-y-4">
       {/* Risk Score */}
-      <div className="bg-gray-50 rounded-lg p-6 text-center">
-        <div className="text-sm text-gray-500 mb-2">Overall Risk Score</div>
+      <div className="bg-slate-50 rounded-lg p-6 text-center">
+        <div className="text-sm text-slate-500 mb-2">Overall Risk Score</div>
         <div className={`text-5xl font-bold ${
           data.riskScore > 70 ? 'text-red-600' :
           data.riskScore > 40 ? 'text-amber-600' :
@@ -412,16 +412,16 @@ function RiskResults({ data }: { data: RiskData }) {
         }`}>
           {data.riskScore}
         </div>
-        <div className="text-sm text-gray-500 mt-1">out of 100</div>
+        <div className="text-sm text-slate-500 mt-1">out of 100</div>
       </div>
       
       {/* Risk Factors */}
       <div className="space-y-3">
         {data.riskFactors.map((factor, i) => (
-          <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
             <div>
-              <div className="font-medium text-gray-900">{factor.name}</div>
-              <div className="text-sm text-gray-500">{factor.description}</div>
+              <div className="font-medium text-slate-900">{factor.name}</div>
+              <div className="text-sm text-slate-500">{factor.description}</div>
             </div>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               factor.level === 'high' ? 'bg-red-100 text-red-700' :
@@ -447,21 +447,21 @@ function ETFResults({ data }: { data: ETFData }) {
       
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-2 text-gray-500 font-medium">ETF</th>
-            <th className="text-left py-2 text-gray-500 font-medium">Category</th>
-            <th className="text-right py-2 text-gray-500 font-medium">Allocation</th>
-            <th className="text-right py-2 text-gray-500 font-medium">Expense Ratio</th>
+          <tr className="border-b border-slate-200">
+            <th className="text-left py-2 text-slate-500 font-medium">ETF</th>
+            <th className="text-left py-2 text-slate-500 font-medium">Category</th>
+            <th className="text-right py-2 text-slate-500 font-medium">Allocation</th>
+            <th className="text-right py-2 text-slate-500 font-medium">Expense Ratio</th>
           </tr>
         </thead>
         <tbody>
           {data.recommendations.map((etf, i) => (
-            <tr key={i} className="border-b border-gray-100">
+            <tr key={i} className="border-b border-slate-100">
               <td className="py-2">
-                <span className="font-medium text-gray-900">{etf.ticker}</span>
-                <span className="text-gray-500 ml-2">{etf.name}</span>
+                <span className="font-medium text-slate-900">{etf.ticker}</span>
+                <span className="text-slate-500 ml-2">{etf.name}</span>
               </td>
-              <td className="py-2 text-gray-600">{etf.category}</td>
+              <td className="py-2 text-slate-600">{etf.category}</td>
               <td className="py-2 text-right font-mono">{etf.allocation}%</td>
               <td className="py-2 text-right font-mono text-green-600">{etf.expenseRatio}%</td>
             </tr>
@@ -469,8 +469,8 @@ function ETFResults({ data }: { data: ETFData }) {
         </tbody>
       </table>
       
-      <div className="flex justify-between p-3 bg-gray-50 rounded-lg text-sm">
-        <span className="text-gray-600">Total Weighted Expense Ratio</span>
+      <div className="flex justify-between p-3 bg-slate-50 rounded-lg text-sm">
+        <span className="text-slate-600">Total Weighted Expense Ratio</span>
         <span className="font-semibold text-green-600">{data.totalExpenseRatio}%</span>
       </div>
     </div>
@@ -485,30 +485,30 @@ function IPSResults({ data }: { data: IPSData }) {
         <p className="text-sm text-green-700">Compliant with FINRA 2111 suitability requirements</p>
       </div>
       
-      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+      <div className="border border-slate-200 rounded-lg p-4 space-y-4">
         <div>
-          <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Client Profile</h6>
-          <p className="text-sm text-gray-700">{data.clientProfile}</p>
+          <h6 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Client Profile</h6>
+          <p className="text-sm text-slate-700">{data.clientProfile}</p>
         </div>
         <div>
-          <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Investment Objectives</h6>
-          <p className="text-sm text-gray-700">{data.objectives}</p>
+          <h6 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Investment Objectives</h6>
+          <p className="text-sm text-slate-700">{data.objectives}</p>
         </div>
         <div>
-          <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Risk Tolerance</h6>
-          <p className="text-sm text-gray-700">{data.riskTolerance}</p>
+          <h6 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Risk Tolerance</h6>
+          <p className="text-sm text-slate-700">{data.riskTolerance}</p>
         </div>
         <div>
-          <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Asset Allocation Guidelines</h6>
-          <p className="text-sm text-gray-700">{data.allocationGuidelines}</p>
+          <h6 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Asset Allocation Guidelines</h6>
+          <p className="text-sm text-slate-700">{data.allocationGuidelines}</p>
         </div>
         <div>
-          <h6 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Rebalancing Policy</h6>
-          <p className="text-sm text-gray-700">{data.rebalancingPolicy}</p>
+          <h6 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Rebalancing Policy</h6>
+          <p className="text-sm text-slate-700">{data.rebalancingPolicy}</p>
         </div>
       </div>
       
-      <button className="w-full py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 flex items-center justify-center gap-2 transition-colors">
+      <button className="w-full py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 flex items-center justify-center gap-2 transition-colors">
         <Download size={18} />
         Download IPS Document
       </button>

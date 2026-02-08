@@ -15,17 +15,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
         )}
         <div className="relative">
           <input
             ref={ref}
             type={isPassword ? (showPassword ? 'text' : 'password') : type}
             className={clsx(
-              'w-full px-4 py-3 border rounded-lg text-[15px] text-gray-900 bg-white outline-none transition-all',
-              'placeholder:text-gray-400',
+              'w-full px-4 py-3 border rounded-lg text-[15px] text-slate-900 bg-white outline-none transition-all',
+              'placeholder:text-slate-400',
               'focus:border-primary-500 focus:ring-[3px] focus:ring-primary-50',
-              error ? 'border-red-500' : 'border-gray-300',
+              error ? 'border-red-500' : 'border-slate-300',
               isPassword && 'pr-12',
               className
             )}
@@ -35,7 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>

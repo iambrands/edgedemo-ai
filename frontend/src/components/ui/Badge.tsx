@@ -12,7 +12,7 @@ export function Badge({ children, variant = 'gray', className, ...props }: Badge
     amber: 'bg-amber-50 text-amber-700 border border-amber-200',
     red: 'bg-red-50 text-red-700 border border-red-200',
     blue: 'bg-blue-50 text-blue-700 border border-blue-200',
-    gray: 'bg-gray-100 text-gray-600 border border-gray-200',
+    gray: 'bg-slate-100 text-slate-600 border border-slate-200',
   };
 
   return (

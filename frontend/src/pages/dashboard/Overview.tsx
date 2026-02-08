@@ -84,7 +84,7 @@ export function Overview() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -93,8 +93,8 @@ export function Overview() {
           <div className="absolute top-5 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
             <DollarSign className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-sm text-gray-500 mb-1 pt-1">Total AUM</p>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.kpis.totalAUM)}</p>
+          <p className="text-sm text-slate-500 mb-1 pt-1">Total AUM</p>
+          <p className="text-2xl font-bold text-slate-900">{formatCurrency(data.kpis.totalAUM)}</p>
         </Card>
 
         <Card className="relative overflow-hidden">
@@ -102,8 +102,8 @@ export function Overview() {
           <div className="absolute top-5 right-4 w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
             <Users className="w-5 h-5 text-teal-600" />
           </div>
-          <p className="text-sm text-gray-500 mb-1 pt-1">Households</p>
-          <p className="text-2xl font-bold text-gray-900">{data.kpis.householdCount}</p>
+          <p className="text-sm text-slate-500 mb-1 pt-1">Households</p>
+          <p className="text-2xl font-bold text-slate-900">{data.kpis.householdCount}</p>
         </Card>
 
         <Card className="relative overflow-hidden">
@@ -111,8 +111,8 @@ export function Overview() {
           <div className="absolute top-5 right-4 w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
             <Briefcase className="w-5 h-5 text-indigo-600" />
           </div>
-          <p className="text-sm text-gray-500 mb-1 pt-1">Accounts</p>
-          <p className="text-2xl font-bold text-gray-900">{data.kpis.accountCount}</p>
+          <p className="text-sm text-slate-500 mb-1 pt-1">Accounts</p>
+          <p className="text-2xl font-bold text-slate-900">{data.kpis.accountCount}</p>
         </Card>
 
         <Card className="relative overflow-hidden">
@@ -120,8 +120,8 @@ export function Overview() {
           <div className="absolute top-5 right-4 w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
           </div>
-          <p className="text-sm text-gray-500 mb-1 pt-1">Active Alerts</p>
-          <p className="text-2xl font-bold text-gray-900">{data.kpis.alertCount}</p>
+          <p className="text-sm text-slate-500 mb-1 pt-1">Active Alerts</p>
+          <p className="text-2xl font-bold text-slate-900">{data.kpis.alertCount}</p>
         </Card>
       </div>
 
@@ -131,7 +131,7 @@ export function Overview() {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Active Alerts</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Active Alerts</h2>
           </div>
           <div className="space-y-4">
             {data.alerts.map((alert) => (
@@ -149,12 +149,12 @@ export function Overview() {
                     'w-2 h-2 rounded-full mt-2 flex-shrink-0',
                     alert.severity === 'high' && 'bg-red-500',
                     alert.severity === 'medium' && 'bg-amber-500',
-                    alert.severity === 'low' && 'bg-green-500'
+                    alert.severity === 'low' && 'bg-emerald-500'
                   )}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{alert.date}</p>
+                  <p className="text-sm text-slate-700">{alert.message}</p>
+                  <p className="text-xs text-slate-500 mt-1">{alert.date}</p>
                 </div>
               </div>
             ))}
@@ -165,14 +165,14 @@ export function Overview() {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-primary-500" />
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
           </div>
           <div className="space-y-4">
             {data.recentActivity.slice(0, 5).map((activity) => (
-              <div key={activity.id} className="border-b border-gray-100 pb-3 last:border-0">
-                <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                <p className="text-sm text-gray-500">{activity.detail}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.date}</p>
+              <div key={activity.id} className="border-b border-slate-100 pb-3 last:border-0">
+                <p className="text-sm font-medium text-slate-900">{activity.action}</p>
+                <p className="text-sm text-slate-500">{activity.detail}</p>
+                <p className="text-xs text-slate-500 mt-1">{activity.date}</p>
               </div>
             ))}
           </div>
@@ -181,7 +181,7 @@ export function Overview() {
 
       {/* Household Overview Table */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Household Overview</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Household Overview</h2>
         <Table>
           <TableHeader>
             <TableRow>
@@ -203,20 +203,20 @@ export function Overview() {
                 <TableCell>{household.accounts}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className={clsx(
                           'h-full rounded-full',
-                          household.riskScore > 60 ? 'bg-red-500' : household.riskScore > 40 ? 'bg-amber-500' : 'bg-green-500'
+                          household.riskScore > 60 ? 'bg-red-500' : household.riskScore > 40 ? 'bg-amber-500' : 'bg-emerald-500'
                         )}
                         style={{ width: `${household.riskScore}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-500">{household.riskScore}</span>
+                    <span className="text-xs text-slate-500">{household.riskScore}</span>
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(household.status)}</TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-slate-500">
                   {household.lastAnalysis?.slice(5) ?? '—'}
                 </TableCell>
               </TableRow>

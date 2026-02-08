@@ -62,10 +62,10 @@ function fmtDate(iso?: string): string {
 const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
   identified: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Identified' },
   recommended: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Recommended' },
-  approved: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
+  approved: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Approved' },
   executing: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Executing' },
-  executed: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Executed' },
-  expired: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Expired' },
+  executed: { bg: 'bg-slate-100', text: 'text-slate-600', label: 'Executed' },
+  expired: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Expired' },
   rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
   wash_sale_risk: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Wash Sale Risk' },
 };
@@ -240,8 +240,8 @@ export default function TaxHarvest() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tax-Loss Harvesting</h1>
-        <p className="text-gray-500 mt-1">Identify and execute tax-saving opportunities</p>
+        <h1 className="text-2xl font-bold text-slate-900">Tax-Loss Harvesting</h1>
+        <p className="text-slate-500 mt-1">Identify and execute tax-saving opportunities</p>
       </div>
 
       {/* Error banner */}
@@ -257,11 +257,11 @@ export default function TaxHarvest() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Opportunities</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm font-medium text-slate-500">Opportunities</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">
                 {loadingSummary ? '—' : summary?.total_opportunities ?? 0}
               </p>
             </div>
@@ -270,10 +270,10 @@ export default function TaxHarvest() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Harvestable Loss</p>
+              <p className="text-sm font-medium text-slate-500">Harvestable Loss</p>
               <p className="text-2xl font-bold text-red-600 mt-1">
                 {loadingSummary ? '—' : fmtCurrency(summary?.total_harvestable_loss ?? 0)}
               </p>
@@ -283,10 +283,10 @@ export default function TaxHarvest() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Est. Tax Savings</p>
+              <p className="text-sm font-medium text-slate-500">Est. Tax Savings</p>
               <p className="text-2xl font-bold text-emerald-600 mt-1">
                 {loadingSummary ? '—' : fmtCurrency(summary?.total_estimated_savings ?? 0)}
               </p>
@@ -296,7 +296,7 @@ export default function TaxHarvest() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-center">
           <button
             onClick={handleScan}
             disabled={scanning}
@@ -309,7 +309,7 @@ export default function TaxHarvest() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 flex gap-4">
+      <div className="border-b border-slate-200 flex gap-4">
         {([
           { key: 'opportunities' as TabKey, label: 'Opportunities', icon: TrendingDown },
           { key: 'wash_sales' as TabKey, label: 'Wash Sales', icon: Shield },
@@ -320,7 +320,7 @@ export default function TaxHarvest() {
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               tab === t.key
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -337,7 +337,7 @@ export default function TaxHarvest() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as HarvestStatus | '')}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white"
+              className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white"
             >
               <option value="">All Statuses</option>
               <option value="identified">Identified</option>
@@ -362,13 +362,13 @@ export default function TaxHarvest() {
           {/* List */}
           {loadingOpps ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
             </div>
           ) : opportunities.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <TrendingDown className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">No harvesting opportunities found</p>
-              <p className="text-sm text-gray-500 mt-1">Run a scan to identify tax-loss opportunities</p>
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+              <TrendingDown className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-500 font-medium">No harvesting opportunities found</p>
+              <p className="text-sm text-slate-500 mt-1">Run a scan to identify tax-loss opportunities</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -376,12 +376,12 @@ export default function TaxHarvest() {
                 <div
                   key={opp.id}
                   onClick={() => handleSelectOpportunity(opp)}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-lg font-semibold text-gray-900">{opp.symbol}</span>
+                        <span className="text-lg font-semibold text-slate-900">{opp.symbol}</span>
                         <StatusBadge status={opp.status} />
                         {opp.wash_sale_status === 'in_window' && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
@@ -390,18 +390,18 @@ export default function TaxHarvest() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-1 truncate">{opp.security_name}</p>
+                      <p className="text-sm text-slate-500 mt-1 truncate">{opp.security_name}</p>
                       <div className="flex items-center gap-6 mt-3 text-sm flex-wrap">
                         <div>
-                          <span className="text-gray-500">Loss:</span>
+                          <span className="text-slate-500">Loss:</span>
                           <span className="ml-1 font-mono text-red-600">{fmtCurrency(opp.unrealized_loss)}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Tax Savings:</span>
-                          <span className="ml-1 font-mono text-green-600">{fmtCurrency(opp.estimated_tax_savings)}</span>
+                          <span className="text-slate-500">Tax Savings:</span>
+                          <span className="ml-1 font-mono text-emerald-600">{fmtCurrency(opp.estimated_tax_savings)}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">ST / LT:</span>
+                          <span className="text-slate-500">ST / LT:</span>
                           <span className="ml-1 font-mono">
                             {opp.short_term_loss != null ? fmtCurrency(opp.short_term_loss) : '—'} / {opp.long_term_loss != null ? fmtCurrency(opp.long_term_loss) : '—'}
                           </span>
@@ -416,21 +416,21 @@ export default function TaxHarvest() {
                           <button
                             onClick={e => { e.stopPropagation(); handleReject(opp.id); }}
                             disabled={actionLoading}
-                            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-red-600 hover:border-red-200 transition-colors"
+                            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); handleApprove(opp.id); }}
                             disabled={actionLoading || opp.wash_sale_status === 'in_window'}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                           >
                             <Check className="h-4 w-4" />
                             Approve
                           </button>
                         </>
                       )}
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                      <ChevronRight className="h-5 w-5 text-slate-400" />
                     </div>
                   </div>
                 </div>
@@ -452,11 +452,11 @@ export default function TaxHarvest() {
           </button>
 
           {/* Header card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-slate-200 p-6">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selected.symbol}</h2>
-                <p className="text-gray-500">{selected.security_name}</p>
+                <h2 className="text-2xl font-bold text-slate-900">{selected.symbol}</h2>
+                <p className="text-slate-500">{selected.security_name}</p>
               </div>
               <StatusBadge status={selected.status} />
             </div>
@@ -464,27 +464,27 @@ export default function TaxHarvest() {
             {/* Metric cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-gray-500">Unrealized Loss</p>
+                <p className="text-sm text-slate-500">Unrealized Loss</p>
                 <p className="text-2xl font-bold text-red-600">{fmtCurrency(selected.unrealized_loss)}</p>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-500">Est. Tax Savings</p>
-                <p className="text-2xl font-bold text-green-600">{fmtCurrency(selected.estimated_tax_savings)}</p>
+              <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                <p className="text-sm text-slate-500">Est. Tax Savings</p>
+                <p className="text-2xl font-bold text-emerald-600">{fmtCurrency(selected.estimated_tax_savings)}</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">Quantity</p>
+              <div className="text-center p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">Quantity</p>
                 <p className="text-2xl font-bold">{selected.quantity_to_harvest.toLocaleString()}</p>
               </div>
             </div>
 
             {/* Details grid */}
             <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-              <div><span className="text-gray-500">Cost Basis:</span> <span className="font-mono">{fmtCurrency(selected.cost_basis)}</span></div>
-              <div><span className="text-gray-500">Market Value:</span> <span className="font-mono">{fmtCurrency(selected.market_value)}</span></div>
-              <div><span className="text-gray-500">Short-Term Loss:</span> <span className="font-mono">{selected.short_term_loss != null ? fmtCurrency(selected.short_term_loss) : '—'}</span></div>
-              <div><span className="text-gray-500">Long-Term Loss:</span> <span className="font-mono">{selected.long_term_loss != null ? fmtCurrency(selected.long_term_loss) : '—'}</span></div>
-              <div><span className="text-gray-500">Identified:</span> {fmtDate(selected.identified_at)}</div>
-              <div><span className="text-gray-500">Expires:</span> {fmtDate(selected.expires_at)}</div>
+              <div><span className="text-slate-500">Cost Basis:</span> <span className="font-mono">{fmtCurrency(selected.cost_basis)}</span></div>
+              <div><span className="text-slate-500">Market Value:</span> <span className="font-mono">{fmtCurrency(selected.market_value)}</span></div>
+              <div><span className="text-slate-500">Short-Term Loss:</span> <span className="font-mono">{selected.short_term_loss != null ? fmtCurrency(selected.short_term_loss) : '—'}</span></div>
+              <div><span className="text-slate-500">Long-Term Loss:</span> <span className="font-mono">{selected.long_term_loss != null ? fmtCurrency(selected.long_term_loss) : '—'}</span></div>
+              <div><span className="text-slate-500">Identified:</span> {fmtDate(selected.identified_at)}</div>
+              <div><span className="text-slate-500">Expires:</span> {fmtDate(selected.expires_at)}</div>
             </div>
 
             {/* Wash sale warning */}
@@ -506,15 +506,15 @@ export default function TaxHarvest() {
           </div>
 
           {/* Replacement recommendations */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Replacement Recommendations</h3>
+          <div className="bg-white rounded-lg border border-slate-200 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Replacement Recommendations</h3>
             {loadingRecs ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-                <span className="ml-2 text-sm text-gray-500">Generating recommendations…</span>
+                <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+                <span className="ml-2 text-sm text-slate-500">Generating recommendations…</span>
               </div>
             ) : recommendations.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-6">No replacement recommendations available</p>
+              <p className="text-sm text-slate-500 text-center py-6">No replacement recommendations available</p>
             ) : (
               <div className="space-y-3">
                 {recommendations.map(rec => (
@@ -524,27 +524,27 @@ export default function TaxHarvest() {
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                       selectedReplacement === rec.symbol
                         ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:bg-gray-50'
+                        : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-gray-900">{rec.symbol}</span>
-                          {rec.name && <span className="text-sm text-gray-500">– {rec.name}</span>}
+                          <span className="font-semibold text-slate-900">{rec.symbol}</span>
+                          {rec.name && <span className="text-sm text-slate-500">– {rec.name}</span>}
                           {rec.wash_sale_safe && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                               Safe
                             </span>
                           )}
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
                             {rec.source}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{rec.reason}</p>
+                        <p className="text-sm text-slate-600 mt-1">{rec.reason}</p>
                       </div>
                       <div className="text-right flex-shrink-0 ml-4">
-                        <p className="text-xs text-gray-500">Correlation</p>
+                        <p className="text-xs text-slate-500">Correlation</p>
                         <p className="text-lg font-mono font-semibold">{(rec.correlation * 100).toFixed(0)}%</p>
                       </div>
                     </div>
@@ -560,14 +560,14 @@ export default function TaxHarvest() {
               <button
                 onClick={() => handleReject(selected.id)}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 Reject
               </button>
               <button
                 onClick={() => handleApprove(selected.id, selectedReplacement || undefined)}
                 disabled={actionLoading || selected.wash_sale_status === 'in_window'}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
               >
                 <Check className="h-4 w-4" />
                 Approve Harvest
@@ -588,39 +588,39 @@ export default function TaxHarvest() {
         <div className="space-y-4">
           {loadingWash ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
             </div>
           ) : washSales.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">No active wash sale windows</p>
-              <p className="text-sm text-gray-500 mt-1">Executed harvests will create 61-day monitoring windows</p>
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
+              <Shield className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-500 font-medium">No active wash sale windows</p>
+              <p className="text-sm text-slate-500 mt-1">Executed harvests will create 61-day monitoring windows</p>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-slate-50 border-b border-gray-200 sticky top-0">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Window</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Loss</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Watch</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Symbol</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Sale Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Window</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Loss</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Watch</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-200">
                   {washSales.map(ws => (
-                    <tr key={ws.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{ws.symbol}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{fmtDate(ws.sale_date)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                    <tr key={ws.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-900">{ws.symbol}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{fmtDate(ws.sale_date)}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
                         {fmtDate(ws.window_start)} – {fmtDate(ws.window_end)}
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-mono text-red-600">
                         {fmtCurrency(ws.loss_amount)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-slate-600">
                         {(ws.watch_symbols || []).join(', ') || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -631,7 +631,7 @@ export default function TaxHarvest() {
                           </span>
                         )}
                         {ws.status === 'clear' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                             <Check className="h-3 w-3" />
                             Clear
                           </span>

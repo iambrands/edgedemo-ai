@@ -22,7 +22,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -33,7 +33,7 @@ export function Footer() {
                 <span className="text-primary-500">AI</span>
               </span>
             </Link>
-            <p className="text-gray-400 text-sm">
+            <p className="text-slate-400 text-sm">
               AI-powered investment intelligence for individual investors and financial
               professionals.
             </p>
@@ -47,7 +47,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-white text-sm transition-colors"
+                    className="text-slate-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
                   </a>
@@ -64,7 +64,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-white text-sm transition-colors"
+                    className="text-slate-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
                   </a>
@@ -81,7 +81,7 @@ export function Footer() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-white text-sm transition-colors"
+                    className="text-slate-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
                   </a>
@@ -92,12 +92,12 @@ export function Footer() {
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
-          <p className="text-gray-500 text-xs leading-relaxed">
+        <div className="mt-12 pt-8 border-t border-slate-800">
+          <p className="text-slate-500 text-xs leading-relaxed">
             EdgeAI provides market alerts based on sophisticated algorithmic analysis, not
             investment advice. Securities offered through IAB Advisors, Inc. Member FINRA/SIPC.
           </p>
-          <p className="text-gray-500 text-xs mt-4">
+          <p className="text-slate-500 text-xs mt-4">
             © 2026 EdgeAI by IAB Advisors, Inc. All rights reserved.
           </p>
         </div>

@@ -135,7 +135,7 @@ export default function PortalMeetings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50">
         <PortalNav />
         <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
       </div>
@@ -143,14 +143,14 @@ export default function PortalMeetings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PortalNav />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Meetings</h1>
-            <p className="text-gray-500 text-sm">Schedule and manage meetings with your advisor</p>
+            <h1 className="text-2xl font-bold text-slate-900">Meetings</h1>
+            <p className="text-slate-500 text-sm">Schedule and manage meetings with your advisor</p>
           </div>
           {step === 'list' && (
             <button
@@ -162,7 +162,7 @@ export default function PortalMeetings() {
             </button>
           )}
           {step !== 'list' && (
-            <button onClick={() => { setStep('list'); setSelType(null); setSelSlot(null); }} className="text-sm text-gray-500 hover:text-gray-700">
+            <button onClick={() => { setStep('list'); setSelType(null); setSelSlot(null); }} className="text-sm text-slate-500 hover:text-slate-700">
               ← Back to meetings
             </button>
           )}
@@ -172,38 +172,38 @@ export default function PortalMeetings() {
         {step === 'list' && (
           <>
             {/* Advisor card */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-5">
               <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white text-lg font-semibold">
                 {advisorName.split(' ').map(n => n[0]).join('').slice(0, 2) || 'LW'}
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{advisorName}</p>
-                <p className="text-sm text-gray-500">Your Financial Advisor</p>
+                <p className="font-semibold text-slate-900">{advisorName}</p>
+                <p className="text-sm text-slate-500">Your Financial Advisor</p>
               </div>
               <div className="flex gap-3">
-                <a href={`tel:${advisorPhone}`} className="p-2 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors"><Phone className="h-5 w-5" /></a>
-                <a href="mailto:leslie@iabadvisors.com" className="p-2 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors"><Mail className="h-5 w-5" /></a>
+                <a href={`tel:${advisorPhone}`} className="p-2 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors"><Phone className="h-5 w-5" /></a>
+                <a href="mailto:leslie@iabadvisors.com" className="p-2 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors"><Mail className="h-5 w-5" /></a>
               </div>
             </div>
 
             {/* Upcoming */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Upcoming Meetings</h2>
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">Upcoming Meetings</h2>
               {upcoming.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-                  <Calendar className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No upcoming meetings</p>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                  <Calendar className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">No upcoming meetings</p>
                   <button onClick={() => setStep('type')} className="mt-3 text-sm text-blue-600 hover:underline">Schedule one now →</button>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {upcoming.map((m) => (
-                    <div key={m.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
+                    <div key={m.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
                       <div className="p-3 bg-blue-50 rounded-xl"><Video className="h-5 w-5 text-blue-600" /></div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900">{m.title}</p>
-                        <p className="text-sm text-gray-500">{fmtDt(m.datetime)} · {m.duration_minutes} min</p>
-                        {m.notes && <p className="text-xs text-gray-400 mt-1 truncate">{m.notes}</p>}
+                        <p className="font-medium text-slate-900">{m.title}</p>
+                        <p className="text-sm text-slate-500">{fmtDt(m.datetime)} · {m.duration_minutes} min</p>
+                        {m.notes && <p className="text-xs text-slate-400 mt-1 truncate">{m.notes}</p>}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -212,7 +212,7 @@ export default function PortalMeetings() {
                         <a href={m.meeting_link} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                           Join
                         </a>
-                        <button onClick={() => handleCancel(m.id)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"><X className="h-4 w-4" /></button>
+                        <button onClick={() => handleCancel(m.id)} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><X className="h-4 w-4" /></button>
                       </div>
                     </div>
                   ))}
@@ -224,21 +224,21 @@ export default function PortalMeetings() {
 
         {/* ── STEP 1: TYPE ───────────────────────────── */}
         {step === 'type' && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">What would you like to discuss?</h2>
-            <p className="text-sm text-gray-500 mb-5">Choose a meeting type</p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">What would you like to discuss?</h2>
+            <p className="text-sm text-slate-500 mb-5">Choose a meeting type</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {meetingTypes.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => { setSelType(t); setStep('time'); }}
-                  className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left"
+                  className="flex items-start gap-4 p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left"
                 >
                   <div className="p-2 bg-blue-50 rounded-lg"><MessageSquare className="h-5 w-5 text-blue-600" /></div>
                   <div>
-                    <p className="font-medium text-gray-900">{t.name}</p>
-                    <p className="text-sm text-gray-500">{t.description}</p>
-                    <p className="text-xs text-gray-400 mt-1"><Clock className="inline h-3 w-3 mr-1" />{t.duration} min</p>
+                    <p className="font-medium text-slate-900">{t.name}</p>
+                    <p className="text-sm text-slate-500">{t.description}</p>
+                    <p className="text-xs text-slate-400 mt-1"><Clock className="inline h-3 w-3 mr-1" />{t.duration} min</p>
                   </div>
                 </button>
               ))}
@@ -248,16 +248,16 @@ export default function PortalMeetings() {
 
         {/* ── STEP 2: TIME ───────────────────────────── */}
         {step === 'time' && selType && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Select a date & time</h2>
-            <p className="text-sm text-gray-500 mb-4">{selType.name} · {selType.duration} min</p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Select a date & time</h2>
+            <p className="text-sm text-slate-500 mb-4">{selType.name} · {selType.duration} min</p>
 
             <div className="flex items-center justify-between mb-4">
-              <button onClick={() => setWeekOffset((o) => Math.max(0, o - 1))} disabled={weekOffset === 0} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
-              <span className="text-sm font-medium text-gray-700">
+              <button onClick={() => setWeekOffset((o) => Math.max(0, o - 1))} disabled={weekOffset === 0} className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
+              <span className="text-sm font-medium text-slate-700">
                 {fmtDay(weekDates[0])} – {fmtDay(weekDates[weekDates.length - 1])}
               </span>
-              <button onClick={() => setWeekOffset((o) => o + 1)} className="p-1.5 rounded-lg hover:bg-gray-100"><ChevronRight className="h-5 w-5" /></button>
+              <button onClick={() => setWeekOffset((o) => o + 1)} className="p-1.5 rounded-lg hover:bg-slate-100"><ChevronRight className="h-5 w-5" /></button>
             </div>
 
             <div className="grid grid-cols-5 gap-3">
@@ -265,9 +265,9 @@ export default function PortalMeetings() {
                 const daySlots = slotsByDate[date] || [];
                 return (
                   <div key={date}>
-                    <p className="text-xs font-medium text-gray-500 text-center mb-2">{fmtDay(date)}</p>
+                    <p className="text-xs font-medium text-slate-500 text-center mb-2">{fmtDay(date)}</p>
                     <div className="space-y-1.5">
-                      {daySlots.length === 0 && <p className="text-xs text-gray-300 text-center py-2">—</p>}
+                      {daySlots.length === 0 && <p className="text-xs text-slate-300 text-center py-2">—</p>}
                       {daySlots.map((sl) => (
                         <button
                           key={sl.id}
@@ -275,7 +275,7 @@ export default function PortalMeetings() {
                           className={`w-full py-2 px-1 text-xs rounded-lg border transition-all ${
                             selSlot?.id === sl.id
                               ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700'
+                              : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700'
                           }`}
                         >
                           {sl.time}
@@ -291,30 +291,30 @@ export default function PortalMeetings() {
 
         {/* ── STEP 3: CONFIRM ────────────────────────── */}
         {step === 'confirm' && selType && selSlot && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Confirm Your Meeting</h2>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Confirm Your Meeting</h2>
 
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3 mb-6">
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Type</span><span className="text-sm font-medium text-gray-900">{selType.name}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Date</span><span className="text-sm font-medium text-gray-900">{fmtDay(selSlot.date)}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Time</span><span className="text-sm font-medium text-gray-900">{selSlot.time}</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Duration</span><span className="text-sm font-medium text-gray-900">{selType.duration} min</span></div>
-              <div className="flex justify-between"><span className="text-sm text-gray-500">Advisor</span><span className="text-sm font-medium text-gray-900">{advisorName}</span></div>
+            <div className="bg-slate-50 rounded-lg p-4 space-y-3 mb-6">
+              <div className="flex justify-between"><span className="text-sm text-slate-500">Type</span><span className="text-sm font-medium text-slate-900">{selType.name}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-slate-500">Date</span><span className="text-sm font-medium text-slate-900">{fmtDay(selSlot.date)}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-slate-500">Time</span><span className="text-sm font-medium text-slate-900">{selSlot.time}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-slate-500">Duration</span><span className="text-sm font-medium text-slate-900">{selType.duration} min</span></div>
+              <div className="flex justify-between"><span className="text-sm text-slate-500">Advisor</span><span className="text-sm font-medium text-slate-900">{advisorName}</span></div>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 placeholder="What would you like to discuss?"
               />
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep('time')} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm">← Back</button>
+              <button onClick={() => setStep('time')} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm">← Back</button>
               <button
                 onClick={handleBook}
                 disabled={submitting}
