@@ -20,10 +20,10 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { href: '#features', label: 'Features' },
-    { href: '#investors', label: 'For Investors' },
-    { href: '#professionals', label: 'For Professionals' },
-    { href: '#pricing', label: 'Pricing' },
+    { to: '/about/technology', label: 'Features' },
+    { to: '/investors', label: 'For Investors' },
+    { to: '/professionals', label: 'For Professionals' },
+    { to: '/company/contact', label: 'Contact' },
   ];
 
   return (
@@ -42,13 +42,13 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
+              <Link
+                key={link.to}
+                to={link.to}
                 className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -86,14 +86,14 @@ export function Navbar() {
           <div className="md:hidden border-t border-slate-200 py-4">
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
+                <Link
+                  key={link.to}
+                  to={link.to}
                   className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
               <div className="pt-4 px-4 flex flex-col gap-2">
                 {user ? (
