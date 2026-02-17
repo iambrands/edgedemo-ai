@@ -1,5 +1,5 @@
 """
-Shared test fixtures for EdgeAI real data testing.
+Shared test fixtures for Edge real data testing.
 Uses mocked async session for DB-dependent tests (no PostgreSQL required).
 """
 

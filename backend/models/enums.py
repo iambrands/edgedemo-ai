@@ -1,4 +1,4 @@
-"""Enums for EdgeAI RIA Platform models."""
+"""Enums for Edge RIA Platform models."""
 
 import enum
 

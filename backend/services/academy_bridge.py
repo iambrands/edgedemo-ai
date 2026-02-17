@@ -1,5 +1,5 @@
 """
-Bridge between EdgeAI portfolio analysis and IAB Academy educational content.
+Bridge between Edge portfolio analysis and IAB Academy educational content.
 """
 
 import logging

@@ -15,6 +15,10 @@ import {
   MessageSquareText,
   PieChart,
   Landmark,
+  Contact,
+  FileBarChart,
+  ArrowUpDown,
+  Receipt,
   MessageSquare,
   Settings,
   LogOut,
@@ -50,6 +54,10 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/conversations', icon: MessageSquareText, label: 'Conversations' },
     { to: '/dashboard/model-portfolios', icon: PieChart, label: 'Model Portfolios' },
     { to: '/dashboard/alternative-assets', icon: Landmark, label: 'Alt Assets' },
+    { to: '/dashboard/crm', icon: Contact, label: 'CRM' },
+    { to: '/dashboard/report-builder', icon: FileBarChart, label: 'Reports' },
+    { to: '/dashboard/trading', icon: ArrowUpDown, label: 'Trading' },
+    { to: '/dashboard/billing', icon: Receipt, label: 'Billing' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
@@ -70,10 +78,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
           {!isCollapsed && (
-            <span className="text-xl font-bold">
-              <span className="text-blue-600">Edge</span>
-              <span className="text-teal-500">AI</span>
-            </span>
+            <span className="text-xl font-bold text-blue-600">Edge</span>
           )}
           {isCollapsed && (
             <span className="text-lg font-bold text-blue-600 mx-auto">E</span>

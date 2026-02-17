@@ -5,7 +5,7 @@
 
 ---
 
-## The Demo: EdgeAI Portfolio Analyzer
+## The Demo: Edge Portfolio Analyzer
 
 **Live at:** https://edgeai-demo-svlbcan3vq-uc.a.run.app
 

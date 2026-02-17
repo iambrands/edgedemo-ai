@@ -5,8 +5,8 @@ export function Footer() {
     product: [
       { label: 'For Investors', href: '#investors' },
       { label: 'For Professionals', href: '#professionals' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'API', href: '#' },
+      { label: 'Our Technology', href: '/about/technology', isRoute: true },
+      { label: 'Methodology', href: '/about/methodology', isRoute: true },
     ],
     company: [
       { label: 'About', href: '#' },
@@ -15,9 +15,9 @@ export function Footer() {
       { label: 'Contact', href: '#' },
     ],
     legal: [
-      { label: 'Terms of Use', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Disclosures', href: '#' },
+      { label: 'Terms of Use', href: '/legal/terms', isRoute: true },
+      { label: 'Privacy Policy', href: '/legal/privacy', isRoute: true },
+      { label: 'Disclosures', href: '/legal/disclosures', isRoute: true },
     ],
   };
 
@@ -28,9 +28,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <span className="text-xl font-bold">
-                <span className="text-white">Edge</span>
-                <span className="text-primary-500">AI</span>
+              <span className="text-xl font-bold text-white">Edge
               </span>
             </Link>
             <p className="text-slate-400 text-sm">
@@ -45,12 +43,15 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-slate-400 hover:text-white text-sm transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.isRoute ? (
+                    <Link to={link.href} className="text-slate-400 hover:text-white text-sm transition-colors">
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors">
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -79,12 +80,15 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-slate-400 hover:text-white text-sm transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {link.isRoute ? (
+                    <Link to={link.href} className="text-slate-400 hover:text-white text-sm transition-colors">
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors">
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -94,11 +98,11 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t border-slate-800">
           <p className="text-slate-500 text-xs leading-relaxed">
-            EdgeAI provides market alerts based on sophisticated algorithmic analysis, not
+            Edge provides market alerts based on sophisticated algorithmic analysis, not
             investment advice. Securities offered through IAB Advisors, Inc. Member FINRA/SIPC.
           </p>
           <p className="text-slate-500 text-xs mt-4">
-            © 2026 EdgeAI by IAB Advisors, Inc. All rights reserved.
+            © 2026 Edge by IAB Advisors, Inc. All rights reserved.
           </p>
         </div>
       </div>

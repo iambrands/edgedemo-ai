@@ -1,4 +1,4 @@
-# EdgeAI Frontend
+# Edge Frontend
 
 ## Structure
 

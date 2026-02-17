@@ -1,8 +1,8 @@
-# EdgeAI Portfolio Analyzer - Investor Overview
+# Edge Portfolio Analyzer - Investor Overview
 
 ## Executive Summary
 
-EdgeAI Portfolio Analyzer is a production-ready, AI-powered portfolio analysis platform that delivers institutional-grade investment intelligence to investors and financial advisors. The demo showcases advanced capabilities including automated portfolio analysis, tax optimization, compliance validation, and comprehensive visual analytics—all accessible through a professional, intuitive interface.
+Edge Portfolio Analyzer is a production-ready, AI-powered portfolio analysis platform that delivers institutional-grade investment intelligence to investors and financial advisors. The demo showcases advanced capabilities including automated portfolio analysis, tax optimization, compliance validation, and comprehensive visual analytics—all accessible through a professional, intuitive interface.
 
 **Status:** Fully functional demo with production-ready architecture  
 **Tech Stack:** FastAPI (Python), React, OpenAI GPT-4, Chart.js  
@@ -142,7 +142,7 @@ EdgeAI Portfolio Analyzer is a production-ready, AI-powered portfolio analysis p
 
 ### Use Case 1: Retirement Planning
 **Scenario:** Investor approaching retirement needs portfolio review  
-**Solution:** EdgeAI provides retirement readiness score, monthly savings targets, and allocation recommendations tailored to retirement timeline
+**Solution:** Edge provides retirement readiness score, monthly savings targets, and allocation recommendations tailored to retirement timeline
 
 ### Use Case 2: Tax Optimization
 **Scenario:** High-net-worth investor seeking tax efficiency  
@@ -339,7 +339,7 @@ EdgeAI Portfolio Analyzer is a production-ready, AI-powered portfolio analysis p
 
 ## Appendix: Feature Comparison
 
-| Feature | EdgeAI | Competitor A | Competitor B | Competitor C |
+| Feature | Edge | Competitor A | Competitor B | Competitor C |
 |---------|--------|-------------|-------------|-------------|
 | AI Analysis | ✅ GPT-4 | ❌ | ✅ Basic | ❌ |
 | Visual Charts | ✅ 3 types | ✅ Basic | ❌ | ✅ Limited |

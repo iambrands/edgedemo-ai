@@ -59,7 +59,7 @@ export function Login() {
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in to your account</h1>
-          <p className="text-slate-500 text-sm">Welcome back to EdgeAI</p>
+          <p className="text-slate-500 text-sm">Welcome back to Edge</p>
         </div>
 
         {error && (

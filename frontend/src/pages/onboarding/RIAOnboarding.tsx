@@ -35,7 +35,7 @@ interface StepProps {
 /* ------------------------------------------------------------------ */
 
 const STEPS: StepDef[] = [
-  { id: 'welcome', title: 'Welcome', description: 'Get started with EdgeAI', icon: Sparkles },
+  { id: 'welcome', title: 'Welcome', description: 'Get started with Edge', icon: Sparkles },
   { id: 'profile', title: 'Your Profile', description: 'Personal & professional info', icon: User },
   { id: 'firm', title: 'Firm Details', description: 'Your practice information', icon: Building2 },
   { id: 'compliance', title: 'Compliance Setup', description: 'Regulatory requirements', icon: Shield },
@@ -54,7 +54,7 @@ function WelcomeStep() {
       <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
         <Sparkles className="h-10 w-10 text-white" />
       </div>
-      <h3 className="text-2xl font-bold text-slate-900 mb-3">Welcome to EdgeAI!</h3>
+      <h3 className="text-2xl font-bold text-slate-900 mb-3">Welcome to Edge!</h3>
       <p className="text-slate-600 max-w-md mx-auto mb-8">
         Let&apos;s get your practice set up. This wizard will guide you through
         connecting your accounts, setting up compliance, and customizing your
@@ -270,7 +270,7 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
         <p className="text-sm text-blue-800">
-          EdgeAI helps you maintain compliance with SEC and FINRA regulations.
+          Edge helps you maintain compliance with SEC and FINRA regulations.
           Let&apos;s configure your compliance preferences.
         </p>
       </div>

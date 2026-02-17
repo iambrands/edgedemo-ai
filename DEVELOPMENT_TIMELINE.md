@@ -1,4 +1,4 @@
-# EdgeAI Portfolio Analyzer - Development Timeline
+# Edge Portfolio Analyzer - Development Timeline
 
 ## Actual Development Time
 
@@ -195,7 +195,7 @@ If built without AI assistance using traditional methods, this would take approx
 - **Personal Capital:** ~12-24 months (team of 20+)
 
 ### **Modern AI-Assisted Development:**
-- **EdgeAI Demo:** **3 hours** (solo developer + AI) ⚡
+- **Edge Demo:** **3 hours** (solo developer + AI) ⚡
 - **Speed Advantage:** **~500-1000x faster** for MVP/demo
 - **What This Means:** A full production-ready demo built in a single afternoon
 

@@ -42,7 +42,7 @@ If you don't need the full history:
 # Create new branch without history
 git checkout --orphan clean-main
 git add -A
-git commit -m "Initial commit: EdgeAI Portfolio Analyzer Demo"
+git commit -m "Initial commit: Edge Portfolio Analyzer Demo"
 git branch -D main
 git branch -m main
 git push origin main --force

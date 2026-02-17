@@ -1,4 +1,4 @@
-# Deploy EdgeAI to Vercel
+# Deploy Edge to Vercel
 
 ## Option 1: Frontend Only on Vercel (Recommended for Hybrid Setup)
 

@@ -1,5 +1,5 @@
 /**
- * API service layer for EdgeAI frontend.
+ * API service layer for Edge frontend.
  * Handles all backend communication with auth headers.
  */
 

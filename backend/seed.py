@@ -1,5 +1,5 @@
 """
-Seed database with demo data for EdgeAI RIA Platform.
+Seed database with demo data for Edge RIA Platform.
 Run: python -m backend.seed
 """
 import asyncio

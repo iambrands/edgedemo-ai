@@ -36,10 +36,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold">
-              <span className="text-slate-900">Edge</span>
-              <span className="text-primary-500">AI</span>
-            </span>
+            <span className="text-xl font-bold text-slate-900">Edge</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# EdgeAI Demo - GCP Cloud Run Deployment Script
+# Edge Demo - GCP Cloud Run Deployment Script
 # This deploys both frontend and backend together
 
 set -e  # Exit on error
 
-echo "🚀 EdgeAI Demo - GCP Cloud Run Deployment"
+echo "🚀 Edge Demo - GCP Cloud Run Deployment"
 echo "=========================================="
 echo ""
 

@@ -1,1 +1,1 @@
-"""EdgeAI RIA Platform tests."""
+"""Edge RIA Platform tests."""

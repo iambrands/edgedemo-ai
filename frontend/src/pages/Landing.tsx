@@ -455,7 +455,7 @@ export function Landing() {
             Ready to Invest Smarter?
           </h2>
           <p className="text-lg text-primary-100 mb-8">
-            Join 127,500+ investors using EdgeAI to make better investment decisions
+            Join 127,500+ investors using Edge to make better investment decisions
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button

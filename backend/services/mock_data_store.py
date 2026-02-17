@@ -1,5 +1,5 @@
 """
-Centralized mock data store for all EdgeAI features.
+Centralized mock data store for all Edge features.
 Returns demo data matching exact endpoint response shapes when the DB is unavailable.
 """
 
@@ -455,7 +455,7 @@ def _model_portfolios() -> List[Dict[str, Any]]:
         {
             "id": m1,
             "advisor_id": ADVISOR_ID,
-            "name": "EdgeAI Growth",
+            "name": "Edge Growth",
             "ticker": None,
             "description": "Aggressive growth portfolio — US equities & emerging markets",
             "category": "growth",
@@ -488,7 +488,7 @@ def _model_portfolios() -> List[Dict[str, Any]]:
         {
             "id": m2,
             "advisor_id": ADVISOR_ID,
-            "name": "EdgeAI Balanced",
+            "name": "Edge Balanced",
             "ticker": None,
             "description": "Moderate risk — growth & income blend",
             "category": "balanced",
@@ -521,7 +521,7 @@ def _model_portfolios() -> List[Dict[str, Any]]:
         {
             "id": m3,
             "advisor_id": ADVISOR_ID,
-            "name": "EdgeAI Conservative Income",
+            "name": "Edge Conservative Income",
             "ticker": None,
             "description": "Capital preservation & income focused",
             "category": "income",

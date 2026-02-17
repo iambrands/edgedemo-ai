@@ -62,7 +62,7 @@ export function Sidebar() {
       <div className="p-4 border-b border-white/10">
         <NavLink to="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-primary">
           <span className="text-2xl">📊</span>
-          EdgeAI
+          Edge
         </NavLink>
       </div>
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
@@ -97,7 +97,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-white/10 text-xs text-[var(--text-muted)]">
         © 2026 IAB Advisors
         <br />
-        EdgeAI v1.0
+        Edge v1.0
       </div>
     </aside>
   );

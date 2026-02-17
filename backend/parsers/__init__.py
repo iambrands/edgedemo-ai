@@ -1,4 +1,4 @@
-"""Statement parsers for EdgeAI RIA Platform."""
+"""Statement parsers for Edge RIA Platform."""
 
 from .base_parser import (
     BaseStatementParser,

@@ -15,9 +15,9 @@ router = APIRouter(prefix="/api/v1/help", tags=["Help Center"])
 
 _ARTICLES = [
     # Getting Started
-    {"id": "1", "category": "getting-started", "audience": "ria", "title": "Complete Setup Guide", "excerpt": "Step-by-step guide to setting up your EdgeAI account", "readTime": "10 min", "type": "guide"},
+    {"id": "1", "category": "getting-started", "audience": "ria", "title": "Complete Setup Guide", "excerpt": "Step-by-step guide to setting up your Edge account", "readTime": "10 min", "type": "guide"},
     {"id": "2", "category": "getting-started", "audience": "ria", "title": "Connecting Your First Custodian", "excerpt": "How to link Schwab, Fidelity, or other custodians", "readTime": "5 min", "type": "article"},
-    {"id": "3", "category": "getting-started", "audience": "ria", "title": "Platform Overview Video", "excerpt": "Quick tour of all EdgeAI features", "readTime": "8 min", "type": "video"},
+    {"id": "3", "category": "getting-started", "audience": "ria", "title": "Platform Overview Video", "excerpt": "Quick tour of all Edge features", "readTime": "8 min", "type": "video"},
     # Client Management
     {"id": "4", "category": "client-management", "audience": "ria", "title": "Adding New Clients", "excerpt": "How to onboard clients through the portal", "readTime": "5 min", "type": "article"},
     {"id": "5", "category": "client-management", "audience": "ria", "title": "Household Setup", "excerpt": "Organizing accounts into households", "readTime": "4 min", "type": "article"},
@@ -43,7 +43,7 @@ _ARTICLES = [
 
 _RIA_FAQS = [
     {"question": "How do I connect my custodian accounts?", "answer": "Go to Custodians in the sidebar, click \"Connect\" on your custodian, and follow the OAuth authorization flow. Most custodians connect in under 2 minutes."},
-    {"question": "Is my client data secure?", "answer": "Yes. EdgeAI uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties."},
+    {"question": "Is my client data secure?", "answer": "Yes. Edge uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties."},
     {"question": "How does the AI compliance monitoring work?", "answer": "Our AI continuously monitors your client portfolios for concentration risk, suitability issues, and regulatory concerns. You'll receive alerts when potential issues are detected, with recommended actions."},
     {"question": "Can I customize the client portal with my branding?", "answer": "Yes! Go to Settings > Branding to upload your logo, set your primary colors, and customize the welcome message your clients see."},
     {"question": "How do I generate compliance documents like Form CRS?", "answer": "Navigate to Compliance Docs, click \"Generate Document\", select the document type, and our AI will pre-fill based on your firm information. You can edit before publishing."},

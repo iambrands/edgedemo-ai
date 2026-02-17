@@ -2,7 +2,7 @@
 
 ## Executive Overview
 
-**IAB Advisors** is building a comprehensive Registered Investment Advisor (RIA) technology platform powered by proprietary AI models. The **EdgeAI Portfolio Analyzer** serves as the flagship demonstration tool, showcasing our institutional-grade investment intelligence capabilities to potential investors and clients.
+**IAB Advisors** is building a comprehensive Registered Investment Advisor (RIA) technology platform powered by proprietary AI models. The **Edge Portfolio Analyzer** serves as the flagship demonstration tool, showcasing our institutional-grade investment intelligence capabilities to potential investors and clients.
 
 ---
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Demo Tool: EdgeAI Portfolio Analyzer
+## Demo Tool: Edge Portfolio Analyzer
 
 ### What It Demonstrates
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# EdgeAI Demo - Pre-configured Deployment
+# Edge Demo - Pre-configured Deployment
 # Project: edgedemo-ai (826984558232)
 
 set -e
@@ -10,7 +10,7 @@ PROJECT_NUMBER="826984558232"
 REGION="us-central1"
 SERVICE_NAME="edgeai-demo"
 
-echo "🚀 EdgeAI Demo Deployment"
+echo "🚀 Edge Demo Deployment"
 echo "========================="
 echo "Project ID: $PROJECT_ID"
 echo "Project Number: $PROJECT_NUMBER"

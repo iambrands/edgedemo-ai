@@ -64,7 +64,6 @@ export default function PortalNav({ nudgeCount = 0, firmName }: PortalNavProps) 
         <div className="flex items-center justify-between h-16">
           <Link to="/portal/dashboard" className="flex items-center gap-2">
             <span className="text-lg font-bold text-blue-600">Edge</span>
-            <span className="text-lg font-bold text-teal-500">AI</span>
             {firmName && (
               <span className="hidden sm:inline text-sm text-slate-400 ml-2 border-l border-slate-200 pl-2">
                 {firmName}

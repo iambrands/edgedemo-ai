@@ -1,4 +1,4 @@
-# EdgeAI Railway Deployment Guide
+# Edge Railway Deployment Guide
 
 ## Quick Start
 
@@ -35,7 +35,7 @@
 ## Step 4: Deploy Backend
 
 1. Click "+ New" → "GitHub Repo"
-2. Select your EdgeAI repository
+2. Select your Edge repository
 3. **Important**: Set root directory to `backend`
 4. Add environment variables:
 

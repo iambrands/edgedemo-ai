@@ -6,7 +6,7 @@
 
 1. **Create Token:**
    - Go to: https://github.com/settings/tokens/new
-   - Name: `EdgeAI Auto Push`
+   - Name: `Edge Auto Push`
    - Expiration: `90 days` (or your preference)
    - Select scope: `repo` (all checkboxes under "repo")
    - Click "Generate token"
@@ -37,7 +37,7 @@
 1. **Add your SSH key to GitHub:**
    - Go to: https://github.com/settings/keys
    - Click "New SSH key"
-   - Title: `EdgeAI Demo`
+   - Title: `Edge Demo`
    - Key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPgvw2CAZSV7Ix0yVolIKgf6JbgoklGW8TFSxSa10B4j leslie.wilson@iambrands.com`
    - Click "Add SSH key"
 

@@ -1,4 +1,4 @@
-# Deploy EdgeAI to demo.edgeadvisors.ai
+# Deploy Edge to demo.edgeadvisors.ai
 
 ## Recommended Architecture
 
@@ -267,7 +267,7 @@ Create `deploy.sh`:
 PROJECT_ID="your-gcp-project-id"
 BACKEND_URL="https://edgeai-backend-xxxxx-uc.a.run.app"
 
-echo "🚀 Deploying EdgeAI Demo..."
+echo "🚀 Deploying Edge Demo..."
 
 # Deploy backend
 echo "📦 Deploying backend to GCP Cloud Run..."

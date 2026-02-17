@@ -1,7 +1,7 @@
 #!/bin/bash
-# Quick deployment script for EdgeAI demo
+# Quick deployment script for Edge demo
 
-echo "🚀 EdgeAI Demo Deployment"
+echo "🚀 Edge Demo Deployment"
 echo "========================="
 echo ""
 echo "Choose deployment option:"

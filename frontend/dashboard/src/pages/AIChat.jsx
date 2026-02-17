@@ -38,7 +38,7 @@ export default function AIChat() {
   };
 
   return (
-    <PageContainer title="EdgeAI Assistant">
+    <PageContainer title="Edge Assistant">
       <div className="bg-white rounded-lg border border-[var(--border)] flex flex-col h-[calc(100vh-12rem)]">
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((m, i) => (
@@ -52,7 +52,7 @@ export default function AIChat() {
                 }`}
               >
                 <p className="text-sm font-medium mb-1">
-                  {m.role === 'user' ? 'You' : '🤖 EdgeAI'}
+                  {m.role === 'user' ? 'You' : '🤖 Edge'}
                 </p>
                 <p className="text-sm">{m.text}</p>
               </div>
@@ -70,7 +70,7 @@ export default function AIChat() {
         <div className="p-4 border-t flex gap-2">
           <input
             type="text"
-            placeholder="Ask EdgeAI anything..."
+            placeholder="Ask Edge anything..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}

@@ -4,7 +4,6 @@ import {
   Search,
   Book,
   Video,
-  MessageCircle,
   ChevronRight,
   Play,
   FileText,
@@ -41,9 +40,9 @@ const CATEGORIES: HelpCategory[] = [
     title: 'Getting Started',
     icon: Book,
     articles: [
-      { id: '1', title: 'Complete Setup Guide', excerpt: 'Step-by-step guide to setting up your EdgeAI account', readTime: '10 min', type: 'guide' },
+      { id: '1', title: 'Complete Setup Guide', excerpt: 'Step-by-step guide to setting up your Edge account', readTime: '10 min', type: 'guide' },
       { id: '2', title: 'Connecting Your First Custodian', excerpt: 'How to link Schwab, Fidelity, or other custodians', readTime: '5 min', type: 'article' },
-      { id: '3', title: 'Platform Overview Video', excerpt: 'Quick tour of all EdgeAI features', readTime: '8 min', type: 'video' },
+      { id: '3', title: 'Platform Overview Video', excerpt: 'Quick tour of all Edge features', readTime: '8 min', type: 'video' },
     ],
   },
   {
@@ -88,6 +87,33 @@ const CATEGORIES: HelpCategory[] = [
   },
 ];
 
+/* Supported brokerages & custodians */
+interface Brokerage {
+  name: string;
+  integration: 'Direct API' | 'CSV/XLSX Import' | 'Coming Soon';
+  accounts: string[];
+}
+
+const SUPPORTED_BROKERAGES: Brokerage[] = [
+  { name: 'Charles Schwab', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA', 'Trust', '401(k)'] },
+  { name: 'Fidelity Investments', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA', '529', 'HSA'] },
+  { name: 'TD Ameritrade', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA', 'Trust'] },
+  { name: 'Pershing (BNY Mellon)', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA', 'Advisory'] },
+  { name: 'Interactive Brokers', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA', 'Trust', 'LLC'] },
+  { name: 'E*TRADE (Morgan Stanley)', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA', '401(k)'] },
+  { name: 'Vanguard', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA', '529'] },
+  { name: 'Robinhood', integration: 'CSV/XLSX Import', accounts: ['Individual', 'IRA', 'Roth IRA'] },
+  { name: 'Merrill Lynch', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Trust'] },
+  { name: 'Northwestern Mutual', integration: 'CSV/XLSX Import', accounts: ['Variable Annuity IRA', 'Advisory'] },
+  { name: 'Edward Jones', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Roth IRA'] },
+  { name: 'Raymond James', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Trust'] },
+  { name: 'LPL Financial', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA', 'Advisory'] },
+  { name: 'Wealthfront', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA'] },
+  { name: 'Betterment', integration: 'CSV/XLSX Import', accounts: ['Individual', 'Joint', 'IRA'] },
+  { name: 'Apex Clearing', integration: 'Direct API', accounts: ['Individual', 'Joint', 'IRA'] },
+  { name: 'SEI Investments', integration: 'Coming Soon', accounts: ['Advisory', 'Trust', 'Institutional'] },
+];
+
 const FAQS = [
   {
     question: 'How do I connect my custodian accounts?',
@@ -95,7 +121,7 @@ const FAQS = [
   },
   {
     question: 'Is my client data secure?',
-    answer: 'Yes. EdgeAI uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties.',
+    answer: 'Yes. Edge uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties.',
   },
   {
     question: 'How does the AI compliance monitoring work?',
@@ -189,8 +215,8 @@ export default function RIAHelpCenter() {
           {[
             { icon: Book, label: 'Documentation', href: '#categories' },
             { icon: Video, label: 'Video Tutorials', href: '#categories' },
-            { icon: MessageCircle, label: 'Contact Support', href: '#support' },
             { icon: HelpCircle, label: 'FAQs', href: '#faqs' },
+            { icon: Settings, label: 'Brokerages', href: '#brokerages' },
           ].map((link) => (
             <a
               key={link.label}
@@ -280,6 +306,51 @@ export default function RIAHelpCenter() {
           </div>
         </div>
 
+        {/* Supported Brokerages */}
+        <div id="brokerages" className="mt-12">
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Supported Brokerages & Custodians</h2>
+          <p className="text-sm text-slate-500 mb-6">
+            Edge supports direct API integrations and file-based imports from {SUPPORTED_BROKERAGES.length}+ platforms.
+          </p>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Brokerage / Custodian</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Integration</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Supported Account Types</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {SUPPORTED_BROKERAGES.map((b) => (
+                    <tr key={b.name} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-slate-900">{b.name}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                            b.integration === 'Direct API'
+                              ? 'bg-green-50 text-green-700'
+                              : b.integration === 'CSV/XLSX Import'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {b.integration}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">{b.accounts.join(', ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
+              Don't see your custodian? <a href="mailto:support@edge.com" className="text-blue-600 hover:text-blue-700 underline">Contact us</a> — we add new integrations regularly.
+            </div>
+          </div>
+        </div>
+
         {/* Contact Support CTA */}
         <div
           id="support"
@@ -291,7 +362,7 @@ export default function RIAHelpCenter() {
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a
-              href="mailto:support@edgeai.com"
+              href="mailto:support@edge.com"
               className="px-6 py-3 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
             >
               Email Support

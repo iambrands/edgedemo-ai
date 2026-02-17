@@ -40,7 +40,7 @@ class ChatResponse(BaseModel):
 @router.post("/message", response_model=ChatResponse)
 async def send_message(request: ChatRequest, current_user: dict = Depends(get_current_user)):
     """
-    Send a message to EdgeAI assistant.
+    Send a message to Edge assistant.
     Runs through IIM/CIM/BIM pipeline for compliant responses.
     Uses real AI when OpenAI API key is configured, otherwise falls back to mock responses.
     """

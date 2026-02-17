@@ -1,4 +1,4 @@
-# EdgeAI Dashboard — Full Local Integration Testing Checklist
+# Edge Dashboard — Full Local Integration Testing Checklist
 
 ## Prerequisites
 

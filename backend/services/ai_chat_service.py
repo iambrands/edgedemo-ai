@@ -37,7 +37,7 @@ PROMPT_VERSIONS = {
 }
 
 # System prompts
-IIM_SYSTEM_PROMPT = """You are the Investment Intelligence Model (IIM) for EdgeAI, an AI-powered RIA platform.
+IIM_SYSTEM_PROMPT = """You are the Investment Intelligence Model (IIM) for Edge, an AI-powered RIA platform.
 
 Your role is to analyze investment portfolios and provide:
 1. Asset allocation analysis
@@ -49,7 +49,7 @@ Your role is to analyze investment portfolios and provide:
 Be specific, quantitative, and actionable. Reference specific positions and percentages.
 Format your response as clear, structured markdown with headers and bullet points."""
 
-CIM_SYSTEM_PROMPT = """You are the Compliance Investment Model (CIM) for EdgeAI.
+CIM_SYSTEM_PROMPT = """You are the Compliance Investment Model (CIM) for Edge.
 
 Your role is to validate investment recommendations against regulatory requirements:
 1. FINRA Rule 2111 (Suitability)
@@ -64,7 +64,7 @@ For each recommendation, assess:
 
 Keep responses concise and action-oriented."""
 
-BIM_SYSTEM_PROMPT = """You are the Behavioral Intelligence Model (BIM) for EdgeAI.
+BIM_SYSTEM_PROMPT = """You are the Behavioral Intelligence Model (BIM) for Edge.
 
 Your role is to:
 1. Adapt communication to client's behavioral profile
@@ -145,7 +145,7 @@ class AIChatService:
     ) -> str:
         """Run the combined IIM/CIM/BIM pipeline."""
         
-        system_prompt = f"""You are EdgeAI, an AI assistant for financial advisors that combines three intelligence models:
+        system_prompt = f"""You are Edge, an AI assistant for financial advisors that combines three intelligence models:
 
 1. **IIM (Investment Intelligence Model)**: Analyzes portfolios for allocation, concentration risk, fees, and tax efficiency.
 2. **CIM (Compliance Investment Model)**: Validates all recommendations against FINRA 2111, FINRA 2330, and SEC Reg BI.

@@ -14,7 +14,7 @@ export function Settings() {
   const [complianceAlerts, setComplianceAlerts] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const mockApiKey = 'edgeai_sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxx';
+  const mockApiKey = 'edge_sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxx';
 
   const handleCopyApiKey = () => {
     navigator.clipboard.writeText(mockApiKey);
@@ -103,7 +103,7 @@ export function Settings() {
       <Card>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">API Keys</h2>
         <p className="text-sm text-slate-500 mb-6">
-          Use API keys to integrate EdgeAI with your applications. Keep your keys secure
+          Use API keys to integrate Edge with your applications. Keep your keys secure
           and never share them publicly.
         </p>
 

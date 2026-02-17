@@ -37,7 +37,18 @@ logs/
 .coverage
 htmlcov/
 
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+
+# Playwright
+frontend/test-results/
+frontend/test-results.json
+frontend/playwright-report/
+
+# Secrets
 .git-push-token
 .env.local
 .env*
-frontend/dist/

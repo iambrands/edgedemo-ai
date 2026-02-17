@@ -19,6 +19,10 @@ import {
   Conversations,
   ModelPortfolios,
   AlternativeAssets,
+  CRM,
+  ReportBuilder,
+  Trading,
+  Billing,
 } from './pages/dashboard';
 import {
   PortalLogin,
@@ -41,6 +45,8 @@ import {
 } from './pages/portal';
 import { RIAOnboarding } from './pages/onboarding';
 import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
+import { Technology, Methodology } from './pages/about';
+import { Terms, Privacy, Disclosures } from './pages/legal';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -81,6 +87,10 @@ export default function App() {
         <Route path="conversations" element={<ErrorBoundary><Conversations /></ErrorBoundary>} />
         <Route path="model-portfolios" element={<ErrorBoundary><ModelPortfolios /></ErrorBoundary>} />
         <Route path="alternative-assets" element={<ErrorBoundary><AlternativeAssets /></ErrorBoundary>} />
+        <Route path="crm" element={<ErrorBoundary><CRM /></ErrorBoundary>} />
+        <Route path="report-builder" element={<ErrorBoundary><ReportBuilder /></ErrorBoundary>} />
+        <Route path="trading" element={<ErrorBoundary><Trading /></ErrorBoundary>} />
+        <Route path="billing" element={<ErrorBoundary><Billing /></ErrorBoundary>} />
         <Route path="chat" element={<ErrorBoundary><Chat /></ErrorBoundary>} />
         <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
       </Route>
@@ -88,6 +98,15 @@ export default function App() {
       {/* RIA Onboarding & Help (standalone, no sidebar layout) */}
       <Route path="/onboarding" element={<RIAOnboarding />} />
       <Route path="/help" element={<RIAHelpCenter />} />
+
+      {/* About (AI Transparency) */}
+      <Route path="/about/technology" element={<Technology />} />
+      <Route path="/about/methodology" element={<Methodology />} />
+
+      {/* Legal */}
+      <Route path="/legal/terms" element={<Terms />} />
+      <Route path="/legal/privacy" element={<Privacy />} />
+      <Route path="/legal/disclosures" element={<Disclosures />} />
 
       {/* Client Portal Routes */}
       <Route path="/portal/login" element={<PortalLogin />} />

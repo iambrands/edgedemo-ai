@@ -1,5 +1,5 @@
 """
-EdgeAI FastAPI Application - Production Ready
+Edge FastAPI Application - Production Ready
 This module provides a clean production entry point.
 """
 import os
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
     # Startup
-    logger.info(f"EdgeAI API starting in {settings.environment} mode...")
+    logger.info(f"Edge API starting in {settings.environment} mode...")
     
     # Initialize database tables if in production
     if settings.environment == "production":
@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("EdgeAI API shutting down...")
+    logger.info("Edge API shutting down...")
 
 
 def create_app() -> FastAPI:
@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     show_docs = settings.environment != "production" or settings.debug
     
     app = FastAPI(
-        title="EdgeAI RIA Platform",
+        title="Edge RIA Platform",
         description="AI-powered wealth management platform for RIAs",
         version="1.0.0",
         lifespan=lifespan,
@@ -124,7 +124,7 @@ def create_app() -> FastAPI:
     async def root():
         """Root endpoint with API info."""
         return {
-            "message": "EdgeAI RIA Platform API",
+            "message": "Edge RIA Platform API",
             "version": "1.0.0",
             "docs": "/api/docs" if show_docs else "Disabled in production",
         }

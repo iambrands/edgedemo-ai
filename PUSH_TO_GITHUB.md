@@ -14,7 +14,7 @@ All changes have been committed locally. Now push to GitHub.
 ### Step 1: Create Personal Access Token
 1. Go to: https://github.com/settings/tokens
 2. Click "Generate new token (classic)"
-3. Name it: "EdgeAI Demo Push"
+3. Name it: "Edge Demo Push"
 4. Select scopes: `repo` (full control)
 5. Click "Generate token"
 6. **Copy the token** (you won't see it again!)

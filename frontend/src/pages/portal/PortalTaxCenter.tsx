@@ -348,7 +348,7 @@ export default function PortalTaxCenter() {
 
         {/* Disclaimer */}
         <div className="p-3 bg-slate-100 rounded-lg text-xs text-slate-500 text-center">
-          Tax estimates are for informational purposes only and may not reflect your actual tax liability. Consult a qualified tax professional for advice. EdgeAI does not provide tax, legal, or accounting advice.
+          Tax estimates are for informational purposes only and may not reflect your actual tax liability. Consult a qualified tax professional for advice. Edge does not provide tax, legal, or accounting advice.
         </div>
       </main>
     </div>

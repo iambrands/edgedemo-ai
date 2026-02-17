@@ -15,3 +15,7 @@ export { default as Prospects } from './Prospects';
 export { default as Conversations } from './Conversations';
 export { default as ModelPortfolios } from './ModelPortfolios';
 export { default as AlternativeAssets } from './AlternativeAssets';
+export { default as CRM } from './CRM';
+export { default as ReportBuilder } from './ReportBuilder';
+export { default as Trading } from './Trading';
+export { default as Billing } from './Billing';

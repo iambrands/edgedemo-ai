@@ -119,6 +119,8 @@ export interface Narrative {
   period_end: string;
   is_read: boolean;
   created_at: string;
+  edited_by?: string;
+  edited_at?: string;
 }
 
 export interface PortalDocument {
@@ -362,6 +364,16 @@ export async function markNarrativeRead(id: string): Promise<void> {
   await portalFetch(`/narratives/${id}/read`, { method: 'POST' });
 }
 
+export async function updateNarrative(
+  id: string,
+  data: { title?: string; content?: string; edited_by?: string }
+): Promise<Narrative> {
+  return portalFetch<Narrative>(`/narratives/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 // ============================================================================
 // DOCUMENTS
 // ============================================================================
@@ -571,6 +583,7 @@ export const portalApi = {
   // Narratives
   getNarratives,
   markNarrativeRead,
+  updateNarrative,
   
   // Documents
   getDocuments,

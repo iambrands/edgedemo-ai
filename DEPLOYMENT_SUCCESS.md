@@ -1,6 +1,6 @@
 # 🎉 DEPLOYMENT SUCCESSFUL!
 
-## ✅ Your EdgeAI Demo is Live!
+## ✅ Your Edge Demo is Live!
 
 **Service URL:** https://edgeai-demo-826984558232.us-central1.run.app
 

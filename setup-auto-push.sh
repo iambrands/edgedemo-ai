@@ -30,7 +30,7 @@ case $METHOD in
         echo ""
         echo "📋 Create a Personal Access Token:"
         echo "   1. Go to: https://github.com/settings/tokens/new"
-        echo "   2. Name: 'EdgeAI Auto Push'"
+        echo "   2. Name: 'Edge Auto Push'"
         echo "   3. Select scope: 'repo' (all repo permissions)"
         echo "   4. Click 'Generate token'"
         echo "   5. COPY THE TOKEN (starts with ghp_)"

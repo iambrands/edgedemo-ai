@@ -23,7 +23,7 @@ git branch -M main
 git add .
 
 # Create initial commit
-git commit -m "Initial commit: EdgeAI Portfolio Analyzer with OpenAI integration"
+git commit -m "Initial commit: Edge Portfolio Analyzer with OpenAI integration"
 
 # Add GitHub remote (replace YOUR_USERNAME with your GitHub username)
 git remote add origin https://github.com/YOUR_USERNAME/edgeai-demo.git

@@ -78,7 +78,7 @@ case $AUTH_CHOICE in
         echo ""
         echo "1. Go to: https://github.com/settings/tokens"
         echo "2. Click 'Generate new token (classic)'"
-        echo "3. Name it: 'EdgeAI Auto Push'"
+        echo "3. Name it: 'Edge Auto Push'"
         echo "4. Select scope: 'repo' (full control)"
         echo "5. Click 'Generate token'"
         echo "6. COPY THE TOKEN (you won't see it again!)"

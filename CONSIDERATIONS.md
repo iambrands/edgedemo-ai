@@ -56,7 +56,7 @@
 - **Recommendation:** Architecture already supports load balancers/containers
 
 ### 10. **Market Differentiation Messaging**
-- **Consideration:** Clearly articulate how EdgeAI differs from:
+- **Consideration:** Clearly articulate how Edge differs from:
   - Personal Capital (free but basic)
   - Betterment/Wealthfront (robo-advisors, not analysis tools)
   - YCharts/Morningstar (expensive, advisor-focused)

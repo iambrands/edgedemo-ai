@@ -1,1 +1,1 @@
-"""EdgeAI RIA Platform API routes."""
+"""Edge RIA Platform API routes."""

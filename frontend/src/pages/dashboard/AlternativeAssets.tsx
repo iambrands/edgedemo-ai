@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Landmark, DollarSign, ArrowDownRight, TrendingUp, AlertCircle } from 'lucide-react';
+import { Landmark, DollarSign, ArrowDownRight, TrendingUp, AlertCircle, BarChart3, Layers } from 'lucide-react';
 import {
   listInvestments,
   getInvestment,
@@ -108,7 +108,7 @@ function getAssetConfig(type: AlternativeAssetType) {
 
 export default function AlternativeAssets() {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'investments' | 'calls' | 'detail'
+    'overview' | 'investments' | 'calls' | 'detail' | 'analytics' | 'waterfall'
   >('overview');
   const [investments, setInvestments] = useState<AlternativeInvestment[]>([]);
   const [pendingCalls, setPendingCalls] = useState<CapitalCall[]>([]);
@@ -912,6 +912,322 @@ export default function AlternativeAssets() {
   // Main Render
   // --------------------------------------------------------------------------
 
+  // --------------------------------------------------------------------------
+  // Analytics Tab - J-Curve, Vintage Cohorts, Commitment Pacing
+  // --------------------------------------------------------------------------
+
+  const renderAnalytics = () => {
+    // Build vintage cohort data
+    const vintageMap: Record<number, { count: number; nav: number; commitment: number; irr: number; tvpi: number }> = {};
+    investments.forEach((inv) => {
+      const yr = inv.vintage_year || 2024;
+      if (!vintageMap[yr]) vintageMap[yr] = { count: 0, nav: 0, commitment: 0, irr: 0, tvpi: 0 };
+      vintageMap[yr].count++;
+      vintageMap[yr].nav += inv.current_nav || 0;
+      vintageMap[yr].commitment += inv.total_commitment || 0;
+      vintageMap[yr].irr += inv.irr || 0;
+      vintageMap[yr].tvpi += inv.tvpi || 0;
+    });
+    const vintages = Object.entries(vintageMap)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([yr, d]) => ({ year: Number(yr), ...d, avgIrr: d.count > 0 ? d.irr / d.count : 0, avgTvpi: d.count > 0 ? d.tvpi / d.count : 0 }));
+
+    // J-curve mock data points (years since inception vs cumulative return)
+    const jCurveData = [
+      { year: 0, value: -5 }, { year: 1, value: -12 }, { year: 2, value: -8 },
+      { year: 3, value: -3 }, { year: 4, value: 5 }, { year: 5, value: 15 },
+      { year: 6, value: 28 }, { year: 7, value: 38 }, { year: 8, value: 45 },
+      { year: 9, value: 52 }, { year: 10, value: 58 },
+    ];
+
+    // Commitment pacing
+    const totalCommitment = summaryData.totalCommitment;
+    const totalCalled = summaryData.totalCalled;
+    const totalUncalled = summaryData.totalUncalled;
+    const calledPct = totalCommitment > 0 ? (totalCalled / totalCommitment) * 100 : 0;
+
+    const pacingSchedule = [
+      { period: 'Q1 2026', expected: totalUncalled * 0.15, actual: 0, status: 'upcoming' },
+      { period: 'Q2 2026', expected: totalUncalled * 0.20, actual: 0, status: 'upcoming' },
+      { period: 'Q3 2026', expected: totalUncalled * 0.25, actual: 0, status: 'upcoming' },
+      { period: 'Q4 2026', expected: totalUncalled * 0.15, actual: 0, status: 'upcoming' },
+      { period: 'Q1 2027', expected: totalUncalled * 0.10, actual: 0, status: 'projected' },
+      { period: 'Q2 2027', expected: totalUncalled * 0.10, actual: 0, status: 'projected' },
+      { period: 'Q3 2027+', expected: totalUncalled * 0.05, actual: 0, status: 'projected' },
+    ];
+
+    const jMin = Math.min(...jCurveData.map(d => d.value));
+    const jMax = Math.max(...jCurveData.map(d => d.value));
+    const jRange = jMax - jMin;
+
+    return (
+      <div className="space-y-6">
+        {/* J-Curve Visualization */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-50 rounded-lg"><BarChart3 className="h-5 w-5 text-blue-600" /></div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">J-Curve Analysis</h3>
+              <p className="text-sm text-slate-500">Typical cumulative return profile across fund lifecycle</p>
+            </div>
+          </div>
+          <div className="relative h-64 border border-slate-100 rounded-lg bg-slate-50 p-4">
+            {/* Y-axis labels */}
+            <div className="absolute left-1 top-4 bottom-8 flex flex-col justify-between text-xs text-slate-400">
+              <span>{jMax}%</span>
+              <span>0%</span>
+              <span>{jMin}%</span>
+            </div>
+            {/* Zero line */}
+            <div className="absolute left-10 right-4 border-t border-dashed border-slate-300" style={{ top: `${((jMax) / jRange) * 80 + 10}%` }} />
+            {/* Curve points */}
+            <div className="ml-10 mr-4 h-full flex items-end gap-1">
+              {jCurveData.map((point, i) => {
+                const normalizedHeight = ((point.value - jMin) / jRange) * 80 + 10;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative">
+                    <div
+                      className={`w-3 h-3 rounded-full ${point.value >= 0 ? 'bg-emerald-500' : 'bg-red-400'} relative z-10`}
+                      style={{ position: 'absolute', bottom: `${normalizedHeight}%` }}
+                      title={`Year ${point.year}: ${point.value}%`}
+                    />
+                    <span className="text-[10px] text-slate-400 absolute bottom-0">Yr {point.year}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center gap-6 mt-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> Capital deployment (negative returns)</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Value creation (positive returns)</span>
+          </div>
+        </div>
+
+        {/* Vintage Year Cohort Analysis */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Vintage Year Cohort Analysis</h3>
+          {vintages.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Vintage</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Funds</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Commitment</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Current NAV</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Avg IRR</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Avg TVPI</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">NAV Share</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {vintages.map((v) => {
+                    const navPct = summaryData.totalNav > 0 ? (v.nav / summaryData.totalNav) * 100 : 0;
+                    return (
+                      <tr key={v.year} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-medium text-slate-900">{v.year}</td>
+                        <td className="px-4 py-3 text-right">{v.count}</td>
+                        <td className="px-4 py-3 text-right">{formatCurrency(v.commitment)}</td>
+                        <td className="px-4 py-3 text-right font-medium">{formatCurrency(v.nav)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={v.avgIrr >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                            {formatPercent(v.avgIrr)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">{formatMultiple(v.avgTvpi)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${navPct}%` }} />
+                            </div>
+                            <span className="text-xs text-slate-500 w-10 text-right">{navPct.toFixed(1)}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-slate-500 text-center py-8">No vintage data available</p>
+          )}
+        </div>
+
+        {/* Commitment Pacing */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">Commitment Pacing</h3>
+          <p className="text-sm text-slate-500 mb-4">
+            {formatCurrency(totalCalled)} called of {formatCurrency(totalCommitment)} total commitment ({calledPct.toFixed(1)}%)
+          </p>
+          {/* Progress bar */}
+          <div className="h-4 bg-slate-100 rounded-full overflow-hidden mb-6">
+            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${calledPct}%` }} />
+          </div>
+          {/* Pacing schedule */}
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Period</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-600">Expected Calls</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-600">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {pacingSchedule.map((p) => (
+                <tr key={p.period} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 font-medium text-slate-900">{p.period}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(p.expected)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                      p.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {p.status === 'upcoming' ? 'Upcoming' : 'Projected'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // --------------------------------------------------------------------------
+  // Waterfall Tab - Distribution Waterfall Modeling
+  // --------------------------------------------------------------------------
+
+  const renderWaterfall = () => {
+    const totalDistributed = summaryData.totalDistributions;
+    const totalCalled2 = summaryData.totalCalled;
+
+    // Waterfall tiers
+    const waterfallTiers = [
+      { tier: 'Return of Capital', description: 'Return of invested capital to LPs', amount: Math.min(totalCalled2, totalDistributed), pctOfDistributed: totalDistributed > 0 ? Math.min(totalCalled2 / totalDistributed * 100, 100) : 0 },
+      { tier: 'Preferred Return (8%)', description: '8% annualized preferred return to LPs', amount: totalCalled2 * 0.08 * 3, pctOfDistributed: totalDistributed > 0 ? (totalCalled2 * 0.08 * 3) / Math.max(totalDistributed, 1) * 100 : 0 },
+      { tier: 'GP Catch-Up (20%)', description: 'GP catch-up to 20% of profits', amount: totalCalled2 * 0.08 * 3 * 0.25, pctOfDistributed: totalDistributed > 0 ? (totalCalled2 * 0.08 * 3 * 0.25) / Math.max(totalDistributed, 1) * 100 : 0 },
+      { tier: 'Carried Interest (80/20)', description: '80% LP / 20% GP split on remaining profits', amount: Math.max(0, totalDistributed - totalCalled2 - totalCalled2 * 0.08 * 3) * 0.80, pctOfDistributed: totalDistributed > 0 ? Math.max(0, totalDistributed - totalCalled2 - totalCalled2 * 0.08 * 3) * 0.80 / Math.max(totalDistributed, 1) * 100 : 0 },
+    ];
+
+    const lpShare = waterfallTiers[0].amount + waterfallTiers[1].amount + waterfallTiers[3].amount;
+    const gpShare = waterfallTiers[2].amount + (Math.max(0, totalDistributed - totalCalled2 - totalCalled2 * 0.08 * 3) * 0.20);
+
+    // Per-fund waterfall table
+    const fundWaterfalls = investments.slice(0, 8).map((inv) => ({
+      name: inv.name,
+      type: inv.asset_type,
+      commitment: inv.total_commitment || 0,
+      called: inv.called_capital || 0,
+      distributed: inv.distributions_received || 0,
+      nav: inv.current_nav || 0,
+      tvpi: inv.tvpi || 0,
+      dpi: (inv.distributions_received || 0) / Math.max(inv.called_capital || 1, 1),
+      rvpi: (inv.current_nav || 0) / Math.max(inv.called_capital || 1, 1),
+    }));
+
+    const maxTierAmount = Math.max(...waterfallTiers.map(t => t.amount), 1);
+
+    return (
+      <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-sm text-slate-500">Total Distributions</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(totalDistributed)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-sm text-slate-500">LP Share</p>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(lpShare)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-sm text-slate-500">GP Share (Carry)</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(gpShare)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-sm text-slate-500">Overall DPI</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{totalCalled2 > 0 ? formatMultiple(totalDistributed / totalCalled2) : '-'}</p>
+          </div>
+        </div>
+
+        {/* Waterfall Tiers */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-50 rounded-lg"><Layers className="h-5 w-5 text-purple-600" /></div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Distribution Waterfall</h3>
+              <p className="text-sm text-slate-500">Standard American waterfall (deal-by-deal) structure</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {waterfallTiers.map((tier, i) => (
+              <div key={tier.tier} className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 flex-shrink-0">
+                  {i + 1}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{tier.tier}</p>
+                      <p className="text-xs text-slate-500">{tier.description}</p>
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">{formatCurrency(tier.amount)}</p>
+                  </div>
+                  <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-emerald-500' : i === 2 ? 'bg-amber-500' : 'bg-purple-500'
+                      }`}
+                      style={{ width: `${Math.min((tier.amount / maxTierAmount) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Per-Fund Performance */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Fund-Level Distribution Metrics</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Fund</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Commitment</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Called</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Distributed</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">NAV</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">TVPI</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">DPI</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">RVPI</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {fundWaterfalls.map((f) => (
+                  <tr key={f.name} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-slate-900">{f.name}</p>
+                      <p className="text-xs text-slate-500">{getAssetConfig(f.type as AlternativeAssetType).label}</p>
+                    </td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(f.commitment)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(f.called)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-600 font-medium">{formatCurrency(f.distributed)}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(f.nav)}</td>
+                    <td className="px-4 py-3 text-right font-bold">{formatMultiple(f.tvpi)}</td>
+                    <td className="px-4 py-3 text-right">{formatMultiple(f.dpi)}</td>
+                    <td className="px-4 py-3 text-right">{formatMultiple(f.rvpi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -957,6 +1273,8 @@ export default function AlternativeAssets() {
                 { key: 'overview', label: 'Overview' },
                 { key: 'investments', label: 'Investments' },
                 { key: 'calls', label: 'Capital Calls' },
+                { key: 'analytics', label: 'Analytics' },
+                { key: 'waterfall', label: 'Waterfall' },
               ] as const
             ).map(({ key, label }) => (
               <button
@@ -984,6 +1302,8 @@ export default function AlternativeAssets() {
       {activeTab === 'overview' && renderOverview()}
       {activeTab === 'investments' && renderInvestments()}
       {activeTab === 'calls' && renderCalls()}
+      {activeTab === 'analytics' && renderAnalytics()}
+      {activeTab === 'waterfall' && renderWaterfall()}
       {activeTab === 'detail' && renderDetail()}
     </div>
   );

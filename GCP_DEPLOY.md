@@ -1,4 +1,4 @@
-# Deploy EdgeAI to Google Cloud Platform (GCP)
+# Deploy Edge to Google Cloud Platform (GCP)
 
 ## Recommended: Cloud Run (Containerized Deployment)
 

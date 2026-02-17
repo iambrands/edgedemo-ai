@@ -24,7 +24,7 @@
    - Fine-grained: "Generate new token"
 
 7. **Configure your token:**
-   - **Note/Name:** `EdgeAI Auto Push`
+   - **Note/Name:** `Edge Auto Push`
    - **Expiration:** Choose your preference (30/60/90 days, or no expiration)
    - **Select scopes:** Check **`repo`** (this selects all repository permissions)
      - For classic tokens, just check the `repo` box

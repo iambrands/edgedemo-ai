@@ -1,4 +1,4 @@
-# EdgeAI RIA Platform — Architecture & Development Spec
+# Edge RIA Platform — Architecture & Development Spec
 
 ## Platform Vision
 

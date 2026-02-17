@@ -6,7 +6,7 @@ const FAKE_RIA_USER = {
   firstName: 'Test',
   lastName: 'Advisor',
   role: 'ria',
-  firm: 'EdgeAI Demo',
+  firm: 'Edge Demo',
   crd: '123456',
   state: 'CA',
   licenses: ['Series 65'],

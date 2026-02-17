@@ -1,4 +1,4 @@
-# EdgeAI Portfolio Analyzer Demo
+# Edge Portfolio Analyzer Demo
 
 Production-ready portfolio analysis application powered by OpenAI GPT, featuring a professional FinTech design.
 
@@ -197,7 +197,7 @@ services:
 3. **Create systemd service** (`/etc/systemd/system/edgeai.service`):
    ```ini
    [Unit]
-   Description=EdgeAI Portfolio Analyzer API
+   Description=Edge Portfolio Analyzer API
    After=network.target
 
    [Service]

@@ -1,4 +1,4 @@
-"""EdgeAI RIA Platform services."""
+"""Edge RIA Platform services."""
 
 from .compliance_doc_service import ComplianceDocService
 from .custodian import CustodianService

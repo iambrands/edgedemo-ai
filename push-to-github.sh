@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to push EdgeAI demo to GitHub
+# Script to push Edge demo to GitHub
 # Usage: ./push-to-github.sh YOUR_GITHUB_USERNAME
 
 if [ -z "$1" ]; then

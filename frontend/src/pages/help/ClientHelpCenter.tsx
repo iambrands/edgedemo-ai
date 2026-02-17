@@ -100,7 +100,7 @@ const CLIENT_FAQS = [
       },
       {
         q: 'How do I report suspicious activity?',
-        a: 'If you notice any unauthorized activity, contact your advisor immediately and email security@edgeai.com. We take all reports seriously.',
+        a: 'If you notice any unauthorized activity, contact your advisor immediately and email security@edge.com. We take all reports seriously.',
       },
     ],
   },

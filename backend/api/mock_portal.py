@@ -499,6 +499,22 @@ async def get_narratives(authorization: str | None = Header(None)):
 async def mark_narrative_read(narrative_id: str):
     return {"ok": True}
 
+@router.patch("/narratives/{narrative_id}")
+async def update_narrative(narrative_id: str, data: dict, authorization: str | None = Header(None)):
+    """Advisor edits an AI-generated narrative. Tracks edited_by and edited_at."""
+    hh = _resolve_household(authorization)
+    narratives = hh.get("narratives", [])
+    for n in narratives:
+        if n["id"] == narrative_id:
+            if "content" in data:
+                n["content"] = data["content"]
+            if "title" in data:
+                n["title"] = data["title"]
+            n["edited_by"] = data.get("edited_by", "advisor")
+            n["edited_at"] = datetime.utcnow().isoformat()
+            return n
+    return {"error": "Narrative not found"}
+
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  DOCUMENTS                                                                 ║

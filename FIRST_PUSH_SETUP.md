@@ -12,7 +12,7 @@
 
 1. Go to: **https://github.com/settings/tokens/new**
 2. Settings:
-   - **Note:** `EdgeAI Auto Push`
+   - **Note:** `Edge Auto Push`
    - **Expiration:** `90 days` (or your preference)
    - **Select scope:** Check `repo` (this checks all repo permissions)
 3. Click **"Generate token"**

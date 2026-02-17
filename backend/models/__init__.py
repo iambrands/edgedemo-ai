@@ -1,4 +1,4 @@
-"""EdgeAI RIA Platform data models."""
+"""Edge RIA Platform data models."""
 
 import logging
 import os

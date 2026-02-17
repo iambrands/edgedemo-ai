@@ -1,4 +1,4 @@
-# EdgeAI Platform — QA Audit Report
+# Edge Platform — QA Audit Report
 
 **Generated:** 2026-02-05  
 **Scope:** Full static code analysis of frontend pages, backend endpoints, and API connectivity  

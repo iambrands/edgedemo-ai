@@ -1,5 +1,5 @@
 """
-EdgeAI Portfolio Analyzer Backend API
+Edge Portfolio Analyzer Backend API
 Handles portfolio analysis requests using OpenAI GPT API
 """
 
@@ -74,9 +74,9 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # Debug: Print startup info (visible in Railway logs)
-print(f"[EdgeAI] Starting from: {os.getcwd()}", flush=True)
-print(f"[EdgeAI] Project root detected: {_project_root}", flush=True)
-print(f"[EdgeAI] Python path: {sys.path[:3]}...", flush=True)
+print(f"[Edge] Starting from: {os.getcwd()}", flush=True)
+print(f"[Edge] Project root detected: {_project_root}", flush=True)
+print(f"[Edge] Python path: {sys.path[:3]}...", flush=True)
 
 import json
 
@@ -110,8 +110,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="EdgeAI Portfolio Analyzer API",
-    description="Backend API for EdgeAI Portfolio Analysis powered by OpenAI GPT",
+    title="Edge Portfolio Analyzer API",
+    description="Backend API for Edge Portfolio Analysis powered by OpenAI GPT",
     version="1.11.0"
 )
 
@@ -781,7 +781,7 @@ async def serve_frontend():
         return FileResponse(str(_DEV_INDEX))
     return {
         "status": "healthy",
-        "service": "EdgeAI Portfolio Analyzer API",
+        "service": "Edge Portfolio Analyzer API",
         "version": "1.0.0",
         "message": "Frontend not found. API is running."
     }
@@ -1206,7 +1206,7 @@ def generate_mock_analysis(client: ClientInfo, holdings: List[Holding]) -> Dict[
 @limiter.limit("10/hour")
 def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
     """
-    Analyze a portfolio using EdgeAI's AI-powered intelligence
+    Analyze a portfolio using Edge's AI-powered intelligence
     
     Rate limited to 10 requests per IP per hour.
     Falls back to mock responses if AI service is not configured.

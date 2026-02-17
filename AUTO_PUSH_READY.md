@@ -12,7 +12,7 @@ export GITHUB_TOKEN=ghp_your_actual_token_here
 
 **To create token:**
 1. Go to: https://github.com/settings/tokens/new
-2. Name: `EdgeAI Auto Push`
+2. Name: `Edge Auto Push`
 3. Scope: `repo` (all)
 4. Generate and copy token
 

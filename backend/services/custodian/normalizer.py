@@ -1,5 +1,5 @@
 """
-Data normalizer for custodian-specific data to EdgeAI's unified format.
+Data normalizer for custodian-specific data to Edge's unified format.
 
 Maps custodian-specific terminology (e.g. Schwab "EQUITY", Fidelity "STOCK")
 to the canonical CustodianAssetClass / CustodianTransactionType /
@@ -17,7 +17,7 @@ from backend.models.custodian import (
 
 
 class DataNormalizer:
-    """Normalizes custodian-specific data to EdgeAI's unified format."""
+    """Normalizes custodian-specific data to Edge's unified format."""
 
     # ── Security type → asset class ────────────────────────────
 

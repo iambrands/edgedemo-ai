@@ -3,7 +3,7 @@
 ## ✅ Your Setup Looks Perfect!
 
 From your screenshot, you have:
-- ✅ Note: "EdgeAI Auto Push"
+- ✅ Note: "Edge Auto Push"
 - ✅ Expiration: 30 days
 - ✅ Scope: `repo` (perfect!)
 

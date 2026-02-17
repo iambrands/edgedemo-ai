@@ -1,4 +1,4 @@
-# Enhancement Suggestions for EdgeAI Portfolio Analyzer Demo
+# Enhancement Suggestions for Edge Portfolio Analyzer Demo
 
 ## 🎯 High-Value Additions (Recommended Priority)
 

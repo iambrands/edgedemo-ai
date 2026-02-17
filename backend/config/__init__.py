@@ -1,1 +1,1 @@
-"""EdgeAI RIA Platform configuration."""
+"""Edge RIA Platform configuration."""

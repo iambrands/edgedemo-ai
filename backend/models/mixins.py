@@ -1,4 +1,4 @@
-"""SQLAlchemy mixins for EdgeAI RIA Platform models."""
+"""SQLAlchemy mixins for Edge RIA Platform models."""
 
 import logging
 from datetime import datetime
