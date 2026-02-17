@@ -62,4 +62,10 @@ export const PUBLIC_PAGES = [
   { path: '/legal/terms',        title: 'Terms' },
   { path: '/legal/privacy',      title: 'Privacy' },
   { path: '/legal/disclosures',  title: 'Disclosures' },
+  { path: '/company/about',      title: 'About' },
+  { path: '/company/careers',    title: 'Join' },
+  { path: '/company/blog',       title: 'Insight' },
+  { path: '/company/contact',    title: 'Touch' },
+  { path: '/investors',          title: 'Invest' },
+  { path: '/professionals',      title: 'RIA' },
 ];

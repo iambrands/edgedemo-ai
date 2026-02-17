@@ -13,6 +13,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import PortalNav from '../../components/portal/PortalNav';
+import { Footer } from '../../components/layout/Footer';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -293,6 +294,7 @@ export default function ClientHelpCenter() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

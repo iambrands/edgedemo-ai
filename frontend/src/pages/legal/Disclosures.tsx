@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Shield, Info } from 'lucide-react';
+import { Footer } from '../../components/layout/Footer';
 
 const EFFECTIVE_DATE = 'January 1, 2026';
 
@@ -151,6 +152,7 @@ export default function Disclosures() {
           </section>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

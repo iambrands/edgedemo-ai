@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { clsx } from 'clsx';
+import { Footer } from '../components/layout/Footer';
 
 type AccountType = 'user' | 'ria' | null;
 
@@ -108,6 +109,7 @@ export function Signup() {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link to="/" className="mb-8">
@@ -328,5 +330,7 @@ export function Signup() {
         </p>
       </Card>
     </div>
+    <Footer />
+    </>
   );
 }

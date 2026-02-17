@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 export function Footer() {
   const footerLinks = {
     product: [
-      { label: 'For Investors', href: '#investors' },
-      { label: 'For Professionals', href: '#professionals' },
+      { label: 'For Investors', href: '/investors', isRoute: true },
+      { label: 'For Professionals', href: '/professionals', isRoute: true },
       { label: 'Our Technology', href: '/about/technology', isRoute: true },
       { label: 'Methodology', href: '/about/methodology', isRoute: true },
     ],
     company: [
-      { label: 'About', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Blog', href: '#' },
-      { label: 'Contact', href: '#' },
+      { label: 'About', href: '/company/about', isRoute: true },
+      { label: 'Careers', href: '/company/careers', isRoute: true },
+      { label: 'Blog', href: '/company/blog', isRoute: true },
+      { label: 'Contact', href: '/company/contact', isRoute: true },
     ],
     legal: [
       { label: 'Terms of Use', href: '/legal/terms', isRoute: true },
@@ -63,12 +63,9 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-slate-400 hover:text-white text-sm transition-colors"
-                  >
+                  <Link to={link.href} className="text-slate-400 hover:text-white text-sm transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

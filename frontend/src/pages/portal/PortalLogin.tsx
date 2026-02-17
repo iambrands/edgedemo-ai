@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { portalLogin, isPortalAuthenticated, getBranding, BrandingConfig, PortalApiError } from '../../services/portalApi';
+import { Footer } from '../../components/layout/Footer';
 
 export default function PortalLogin() {
   const navigate = useNavigate();
@@ -173,6 +174,7 @@ export default function PortalLogin() {
           </p>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

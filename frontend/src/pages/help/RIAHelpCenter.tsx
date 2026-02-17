@@ -14,6 +14,7 @@ import {
   HelpCircle,
   ArrowLeft,
 } from 'lucide-react';
+import { Footer } from '../../components/layout/Footer';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -376,6 +377,7 @@ export default function RIAHelpCenter() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

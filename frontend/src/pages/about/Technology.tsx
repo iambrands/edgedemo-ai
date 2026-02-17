@@ -3,6 +3,7 @@ import {
   Shield, Brain, Eye, Users, Lock, CheckCircle,
   ArrowLeft, ChevronRight, Cpu, Layers, BarChart3,
 } from 'lucide-react';
+import { Footer } from '../../components/layout/Footer';
 
 const PILLARS = [
   {
@@ -194,6 +195,7 @@ export default function Technology() {
           </Link>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

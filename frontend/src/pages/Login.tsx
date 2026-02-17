@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
+import { Footer } from '../components/layout/Footer';
 
 export function Login() {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export function Login() {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
       {/* Logo */}
       <Link to="/" className="mb-8">
@@ -156,5 +158,7 @@ export function Login() {
         </p>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }

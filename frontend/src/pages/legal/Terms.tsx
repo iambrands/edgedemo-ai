@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Footer } from '../../components/layout/Footer';
 
 const EFFECTIVE_DATE = 'January 1, 2026';
 
@@ -128,6 +129,7 @@ export default function Terms() {
           </section>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

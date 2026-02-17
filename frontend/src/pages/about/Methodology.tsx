@@ -3,6 +3,7 @@ import {
   ArrowLeft, ChevronRight, Target, BarChart3, Scale,
   Heart, FileSearch, TrendingUp, AlertTriangle, BookOpen,
 } from 'lucide-react';
+import { Footer } from '../../components/layout/Footer';
 
 const ANALYSIS_MODULES = [
   {
@@ -180,14 +181,15 @@ export default function Methodology() {
           <p className="text-slate-500 mb-4">
             Questions about our methodology?
           </p>
-          <a
-            href="mailto:support@edge.com"
+          <Link
+            to="/company/contact"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
           >
             Contact Our Team
-          </a>
+          </Link>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }
