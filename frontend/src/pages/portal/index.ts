@@ -14,4 +14,5 @@ export { default as PortalTaxCenter } from './PortalTaxCenter';
 export { default as PortalBeneficiaries } from './PortalBeneficiaries';
 export { default as PortalFamily } from './PortalFamily';
 export { default as PortalSettings } from './PortalSettings';
+export { default as PortalMessages } from './PortalMessages';
 export { default as ClientOnboarding } from './ClientOnboarding';

@@ -209,8 +209,8 @@ export function Landing() {
                 Compliance Investment Model
               </h3>
               <p className="text-slate-500 text-sm mb-4">
-                Ensures regulatory compliance and suitability validation for every
-                recommendation, with full audit trail documentation.
+                Identifies compliance requirements, flags potential issues, and generates
+                timestamped audit trails for documentation and review.
               </p>
               <Badge variant="green">In Production</Badge>
             </Card>

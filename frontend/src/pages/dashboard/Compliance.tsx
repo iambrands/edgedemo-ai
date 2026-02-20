@@ -14,6 +14,8 @@ import {
   User,
   RefreshCw,
   ExternalLink,
+  ListChecks,
+  Play,
 } from 'lucide-react';
 import {
   getDashboardMetrics,
@@ -33,7 +35,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type TabType = 'overview' | 'alerts' | 'reviews' | 'tasks' | 'audit';
+type TabType = 'overview' | 'alerts' | 'reviews' | 'tasks' | 'audit' | 'workflows';
 
 // ---------------------------------------------------------------------------
 // Styling helpers
@@ -95,6 +97,121 @@ export default function Compliance() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState('medium');
+
+  // Workflow state
+  interface WorkflowTemplate {
+    id: string; name: string; description: string; category: string; taskCount: number; estimatedDays: number;
+    tasks: { title: string; priority: string }[];
+  }
+  interface ActiveWorkflow {
+    id: string; templateName: string; clientName: string; status: string; startedAt: string;
+    tasks: { id: string; title: string; priority: string; status: string }[];
+    totalTasks: number; completedTasks: number; progressPercent: number;
+  }
+
+  const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
+    { id: 'new-client', name: 'New Client Onboarding', description: 'Complete checklist for onboarding a new client household', category: 'onboarding', taskCount: 10, estimatedDays: 14,
+      tasks: [
+        { title: 'Collect signed advisory agreement', priority: 'urgent' },
+        { title: 'Complete KYC questionnaire', priority: 'high' },
+        { title: 'Gather account statements from all custodians', priority: 'high' },
+        { title: 'Run initial portfolio analysis', priority: 'high' },
+        { title: 'Complete risk tolerance assessment', priority: 'high' },
+        { title: 'Set up household in system', priority: 'medium' },
+        { title: 'Configure compliance alerts', priority: 'medium' },
+        { title: 'Schedule initial planning meeting', priority: 'medium' },
+        { title: 'Send welcome packet via client portal', priority: 'low' },
+        { title: 'Set up recurring review schedule', priority: 'low' },
+      ] },
+    { id: 'annual-review', name: 'Annual Review', description: 'Yearly review covering performance, compliance, and planning', category: 'review', taskCount: 8, estimatedDays: 7,
+      tasks: [
+        { title: 'Generate annual performance report', priority: 'high' },
+        { title: 'Review asset allocation vs. target', priority: 'high' },
+        { title: 'Check beneficiary designations are current', priority: 'high' },
+        { title: 'Review fee schedule and total costs', priority: 'medium' },
+        { title: 'Update financial plan projections', priority: 'medium' },
+        { title: 'Assess tax-loss harvesting opportunities', priority: 'medium' },
+        { title: 'Confirm client contact info and life changes', priority: 'low' },
+        { title: 'Schedule next year review', priority: 'low' },
+      ] },
+    { id: 'death-of-client', name: 'Death of Client/Spouse', description: 'Sensitive workflow for handling accounts after a loss', category: 'life-event', taskCount: 12, estimatedDays: 30,
+      tasks: [
+        { title: 'Express condolences and offer support', priority: 'urgent' },
+        { title: 'Obtain certified copy of death certificate', priority: 'urgent' },
+        { title: 'Identify all accounts held by deceased', priority: 'high' },
+        { title: 'Notify custodians of death', priority: 'high' },
+        { title: 'Review beneficiary designations', priority: 'high' },
+        { title: 'Coordinate with estate attorney', priority: 'high' },
+        { title: 'Determine required distributions (inherited IRA rules)', priority: 'high' },
+        { title: 'Re-title accounts as needed', priority: 'medium' },
+        { title: 'Update household structure in system', priority: 'medium' },
+        { title: 'Review insurance claims and proceeds', priority: 'medium' },
+        { title: 'Adjust financial plan for surviving spouse', priority: 'medium' },
+        { title: 'Schedule follow-up meeting at 30/60/90 days', priority: 'low' },
+      ] },
+    { id: 'divorce', name: 'Divorce Processing', description: 'Dividing assets and restructuring accounts', category: 'life-event', taskCount: 10, estimatedDays: 60,
+      tasks: [
+        { title: 'Obtain copy of divorce decree/QDRO', priority: 'urgent' },
+        { title: 'Identify all joint and individual accounts', priority: 'high' },
+        { title: 'Coordinate with client divorce attorney', priority: 'high' },
+        { title: 'Calculate asset division per court order', priority: 'high' },
+        { title: 'Process QDRO transfers for retirement accounts', priority: 'high' },
+        { title: 'Re-title joint accounts', priority: 'medium' },
+        { title: 'Update beneficiary designations', priority: 'medium' },
+        { title: 'Create separate household profiles', priority: 'medium' },
+        { title: 'Revise financial plan for post-divorce situation', priority: 'medium' },
+        { title: 'Update estate planning documents', priority: 'low' },
+      ] },
+    { id: 'rollover', name: 'Rollover Processing', description: '401(k), 403(b), 457, TSP, and pension rollovers', category: 'transfer', taskCount: 8, estimatedDays: 14,
+      tasks: [
+        { title: 'Obtain most recent plan statement', priority: 'high' },
+        { title: 'Determine rollover type (direct vs. indirect)', priority: 'high' },
+        { title: 'Open receiving IRA account if needed', priority: 'high' },
+        { title: 'Complete rollover request forms', priority: 'high' },
+        { title: 'Suitability review and compliance sign-off', priority: 'high' },
+        { title: 'Submit transfer to sending custodian', priority: 'medium' },
+        { title: 'Monitor transfer status and confirm receipt', priority: 'medium' },
+        { title: 'Invest rollover proceeds per target allocation', priority: 'low' },
+      ] },
+    { id: 'account-closure', name: 'Account Closure', description: 'Orderly process for closing client accounts', category: 'administrative', taskCount: 6, estimatedDays: 14,
+      tasks: [
+        { title: 'Confirm client intent and reason for closure', priority: 'high' },
+        { title: 'Liquidate or transfer all positions', priority: 'high' },
+        { title: 'Process final advisory fee billing', priority: 'high' },
+        { title: 'Generate final account statements', priority: 'medium' },
+        { title: 'Archive client records per retention policy', priority: 'medium' },
+        { title: 'Send closing confirmation letter', priority: 'low' },
+      ] },
+  ];
+
+  const [activeWorkflows, setActiveWorkflows] = useState<ActiveWorkflow[]>([]);
+  const [workflowClientName, setWorkflowClientName] = useState('');
+
+  const startWorkflow = (template: WorkflowTemplate) => {
+    if (!workflowClientName.trim()) return;
+    const wf: ActiveWorkflow = {
+      id: `wf-${Date.now()}`,
+      templateName: template.name,
+      clientName: workflowClientName,
+      status: 'active',
+      startedAt: new Date().toISOString(),
+      tasks: template.tasks.map((t, i) => ({ id: `t-${Date.now()}-${i}`, title: t.title, priority: t.priority, status: 'pending' })),
+      totalTasks: template.tasks.length,
+      completedTasks: 0,
+      progressPercent: 0,
+    };
+    setActiveWorkflows((prev) => [wf, ...prev]);
+    setWorkflowClientName('');
+  };
+
+  const completeWorkflowTask = (workflowId: string, taskId: string) => {
+    setActiveWorkflows((prev) => prev.map((wf) => {
+      if (wf.id !== workflowId) return wf;
+      const tasks = wf.tasks.map((t) => t.id === taskId ? { ...t, status: 'completed' } : t);
+      const completed = tasks.filter((t) => t.status === 'completed').length;
+      return { ...wf, tasks, completedTasks: completed, progressPercent: Math.round(completed / wf.totalTasks * 100), status: completed === wf.totalTasks ? 'completed' : 'active' };
+    }));
+  };
 
   // ── Data loading ────────────────────────────────────────────────────────
 
@@ -176,6 +293,7 @@ export default function Compliance() {
     { id: 'reviews' as const, label: 'Reviews', icon: FileCheck, count: metrics?.pending_reviews ?? 0 },
     { id: 'tasks' as const, label: 'Tasks', icon: CheckSquare, count: metrics?.tasks?.pending ?? 0 },
     { id: 'audit' as const, label: 'Audit Log', icon: ClipboardList },
+    { id: 'workflows' as const, label: 'Workflows', icon: ListChecks },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -777,6 +895,114 @@ export default function Compliance() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* ────────────── WORKFLOWS TAB ────────────── */}
+      {activeTab === 'workflows' && (
+        <div className="space-y-6">
+          {/* Client Name Input */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Client Name (for starting a workflow)</label>
+            <input
+              type="text"
+              value={workflowClientName}
+              onChange={(e) => setWorkflowClientName(e.target.value)}
+              placeholder="Enter client name..."
+              className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Workflow Templates */}
+          <div>
+            <h3 className="text-lg font-medium text-slate-900 mb-3">Workflow Templates</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {WORKFLOW_TEMPLATES.map((tpl) => (
+                <div key={tpl.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-slate-900">{tpl.name}</h4>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      tpl.category === 'life-event' ? 'bg-purple-100 text-purple-700' :
+                      tpl.category === 'onboarding' ? 'bg-blue-100 text-blue-700' :
+                      tpl.category === 'transfer' ? 'bg-amber-100 text-amber-700' :
+                      tpl.category === 'review' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {tpl.category}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 mb-3 flex-1">{tpl.description}</p>
+                  <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                    <span>{tpl.taskCount} tasks</span>
+                    <span>~{tpl.estimatedDays} days</span>
+                  </div>
+                  <button
+                    onClick={() => startWorkflow(tpl)}
+                    disabled={!workflowClientName.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Workflow
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Workflows */}
+          {activeWorkflows.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-3">Active Workflows</h3>
+              <div className="space-y-4">
+                {activeWorkflows.map((wf) => (
+                  <div key={wf.id} className="bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{wf.templateName}</h4>
+                        <p className="text-sm text-slate-500">{wf.clientName} &middot; Started {new Date(wf.startedAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-32 bg-slate-200 rounded-full h-2">
+                          <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${wf.progressPercent}%` }} />
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">{wf.progressPercent}%</span>
+                        {wf.status === 'completed' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Complete</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {wf.tasks.map((task) => (
+                        <div key={task.id} className={`flex items-center gap-3 p-2 rounded-lg ${task.status === 'completed' ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}>
+                          <button
+                            onClick={() => completeWorkflowTask(wf.id, task.id)}
+                            disabled={task.status === 'completed'}
+                            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                              task.status === 'completed'
+                                ? 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'border-slate-300 hover:border-blue-500'
+                            }`}
+                          >
+                            {task.status === 'completed' && <CheckCircle className="h-3 w-3" />}
+                          </button>
+                          <span className={`text-sm flex-1 ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                            {task.title}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                            task.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                            task.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

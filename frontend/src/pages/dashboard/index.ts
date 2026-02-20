@@ -19,3 +19,7 @@ export { default as CRM } from './CRM';
 export { default as ReportBuilder } from './ReportBuilder';
 export { default as Trading } from './Trading';
 export { default as Billing } from './Billing';
+export { default as StockScreener } from './StockScreener';
+export { default as BulkImport } from './BulkImport';
+export { default as Messages } from './Messages';
+export { default as BestExecution } from './BestExecution';

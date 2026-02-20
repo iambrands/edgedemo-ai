@@ -186,7 +186,7 @@ export default function Professionals() {
             For RIAs & Advisors
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6">
-            The AI-Native Platform Built for Modern RIAs
+            The Platform Designed to Enhance Efficiency for Modern RIAs
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Automate portfolio analysis, streamline compliance, and scale personalized client

@@ -105,7 +105,7 @@ export default function About() {
             About Edge
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6">
-            AI-Native Wealth Management
+            Wealth Management Designed for Efficiency
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Edge is redefining how financial advisors serve their clients by combining

@@ -15,6 +15,7 @@ import {
   Receipt,
   Users,
   Home,
+  MessageCircle,
 } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { to: '/portal/tax', label: 'Tax Center', icon: Receipt },
   { to: '/portal/beneficiaries', label: 'Beneficiaries', icon: Users },
   { to: '/portal/family', label: 'Family', icon: Home },
+  { to: '/portal/messages', label: 'Messages', icon: MessageCircle },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 

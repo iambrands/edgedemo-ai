@@ -18,7 +18,7 @@ const ANALYSIS_MODULES = [
     title: 'Tax Optimization',
     approach: 'Deterministic identification of tax-loss harvesting candidates, wash-sale rule compliance, and asset location optimization across taxable/tax-deferred/tax-free accounts.',
     dataInputs: 'Holdings with cost basis, purchase dates, realized gains/losses YTD, account tax types.',
-    outputType: 'Estimated annual tax savings, specific lot-level recommendations, projected impact.',
+    outputType: 'Enhanced tax efficiency estimates, specific lot-level recommendations, projected impact.',
   },
   {
     icon: Scale,

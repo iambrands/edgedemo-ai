@@ -17,6 +17,10 @@ import {
   Calendar,
   Palette,
   FileDown,
+  Play,
+  Pause,
+  Mail,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -172,6 +176,43 @@ const PERIOD_LABELS: Record<Period, string> = {
   'custom': 'Custom Range',
 };
 
+interface ScheduleEntry {
+  id: string;
+  templateName: string;
+  frequency: string;
+  clientSelection: string;
+  clientCount: number;
+  deliveryMethod: string;
+  enabled: boolean;
+  nextRun: string;
+  lastRun: string | null;
+  lastStatus: string | null;
+  delivered: number;
+}
+
+interface RunHistory {
+  id: string;
+  templateName: string;
+  runAt: string;
+  status: string;
+  totalClients: number;
+  delivered: number;
+  failed: number;
+}
+
+const MOCK_SCHEDULES: ScheduleEntry[] = [
+  { id: 'sched-1', templateName: 'Quarterly Performance Report', frequency: 'quarterly', clientSelection: 'all', clientCount: 47, deliveryMethod: 'both', enabled: true, nextRun: '2026-04-01', lastRun: '2026-01-02', lastStatus: 'completed', delivered: 47 },
+  { id: 'sched-2', templateName: 'Monthly Compliance Summary', frequency: 'monthly', clientSelection: 'all', clientCount: 47, deliveryMethod: 'email', enabled: true, nextRun: '2026-03-01', lastRun: '2026-02-01', lastStatus: 'completed', delivered: 47 },
+  { id: 'sched-3', templateName: 'Annual Tax Summary', frequency: 'annual', clientSelection: 'all', clientCount: 47, deliveryMethod: 'portal', enabled: true, nextRun: '2027-01-15', lastRun: '2026-01-15', lastStatus: 'completed', delivered: 45 },
+];
+
+const MOCK_RUN_HISTORY: RunHistory[] = [
+  { id: 'run-1', templateName: 'Quarterly Performance Report', runAt: '2026-01-02', status: 'completed', totalClients: 47, delivered: 47, failed: 0 },
+  { id: 'run-2', templateName: 'Monthly Compliance Summary', runAt: '2026-02-01', status: 'completed', totalClients: 47, delivered: 47, failed: 0 },
+  { id: 'run-3', templateName: 'Quarterly Performance Report', runAt: '2025-10-01', status: 'completed', totalClients: 45, delivered: 44, failed: 1 },
+  { id: 'run-4', templateName: 'Annual Tax Summary', runAt: '2026-01-15', status: 'completed', totalClients: 47, delivered: 45, failed: 2 },
+];
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -184,6 +225,7 @@ export default function ReportBuilder() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('last-quarter');
   const [includeBranding, setIncludeBranding] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [schedules, setSchedules] = useState(MOCK_SCHEDULES);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -550,6 +592,128 @@ export default function ReportBuilder() {
             </TableBody>
           </Table>
         </Card>
+      </section>
+
+      {/* ------------------------------------------------------------ */}
+      {/*  5. Scheduled Reports                                        */}
+      {/* ------------------------------------------------------------ */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <RefreshCw size={20} className="text-blue-600" />
+          <h2 className="text-lg font-semibold text-slate-900">Scheduled Reports</h2>
+        </div>
+
+        <div className="space-y-4">
+          {/* Active Schedules */}
+          <Card className="p-0 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-medium text-slate-900">Active Schedules</h3>
+              <Button onClick={() => showToast('Schedule creation form would open here.')} className="flex items-center gap-2 text-sm">
+                <Plus size={16} />
+                New Schedule
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <tr>
+                  <TableHead>Report</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Clients</TableHead>
+                  <TableHead>Delivery</TableHead>
+                  <TableHead>Next Run</TableHead>
+                  <TableHead>Last Run</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </tr>
+              </TableHeader>
+              <TableBody>
+                {schedules.map((sched) => (
+                  <TableRow key={sched.id}>
+                    <TableCell><span className="font-medium text-slate-900">{sched.templateName}</span></TableCell>
+                    <TableCell><Badge variant="gray" className="capitalize">{sched.frequency}</Badge></TableCell>
+                    <TableCell>{sched.clientCount} clients</TableCell>
+                    <TableCell className="capitalize">
+                      <span className="inline-flex items-center gap-1">
+                        <Mail size={14} className="text-slate-400" />
+                        {sched.deliveryMethod}
+                      </span>
+                    </TableCell>
+                    <TableCell>{sched.nextRun}</TableCell>
+                    <TableCell>{sched.lastRun ?? '-'}</TableCell>
+                    <TableCell className="text-center">
+                      {sched.lastStatus === 'completed' ? (
+                        <Badge variant="green">
+                          <CheckCircle size={12} className="mr-1" />
+                          {sched.delivered} delivered
+                        </Badge>
+                      ) : (
+                        <Badge variant="gray">Pending</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => showToast(`Running "${sched.templateName}" now...`)}
+                          className="text-blue-600 hover:text-blue-700"
+                          title="Run Now"
+                        >
+                          <Play size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSchedules((prev) =>
+                              prev.map((s) => s.id === sched.id ? { ...s, enabled: !s.enabled } : s)
+                            );
+                            showToast(sched.enabled ? 'Schedule paused.' : 'Schedule resumed.');
+                          }}
+                          className={sched.enabled ? 'text-amber-500 hover:text-amber-600' : 'text-emerald-500 hover:text-emerald-600'}
+                          title={sched.enabled ? 'Pause' : 'Resume'}
+                        >
+                          {sched.enabled ? <Pause size={16} /> : <Play size={16} />}
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Run History */}
+          <Card className="p-0 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h3 className="font-medium text-slate-900">Delivery History</h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <tr>
+                  <TableHead>Report</TableHead>
+                  <TableHead>Run Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Total Clients</TableHead>
+                  <TableHead>Delivered</TableHead>
+                  <TableHead>Failed</TableHead>
+                </tr>
+              </TableHeader>
+              <TableBody>
+                {MOCK_RUN_HISTORY.map((run) => (
+                  <TableRow key={run.id}>
+                    <TableCell><span className="font-medium text-slate-900">{run.templateName}</span></TableCell>
+                    <TableCell>{run.runAt}</TableCell>
+                    <TableCell>
+                      <Badge variant={run.status === 'completed' ? 'green' : 'amber'} className="capitalize">
+                        {run.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{run.totalClients}</TableCell>
+                    <TableCell className="text-emerald-600 font-medium">{run.delivered}</TableCell>
+                    <TableCell className={run.failed > 0 ? 'text-red-600 font-medium' : ''}>{run.failed}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
       </section>
     </div>
   );

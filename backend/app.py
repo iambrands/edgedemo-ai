@@ -375,6 +375,60 @@ except Exception as e:
     _ria_router_errors.append(f"help: {type(e).__name__}: {e}")
     logger.error("Failed to mount help router: %s", e, exc_info=True)
 
+# Mount Stock Screener router
+try:
+    from backend.api.stock_screener import router as stock_screener_router
+    app.include_router(stock_screener_router)
+    _ria_routers_mounted.append("stock_screener")
+except Exception as e:
+    _ria_router_errors.append(f"stock_screener: {type(e).__name__}: {e}")
+    logger.error("Failed to mount stock_screener router: %s", e, exc_info=True)
+
+# Mount Enhanced Onboarding Flow router
+try:
+    from backend.api.onboarding_flow import router as onboarding_flow_router
+    app.include_router(onboarding_flow_router)
+    _ria_routers_mounted.append("onboarding_flow")
+except Exception as e:
+    _ria_router_errors.append(f"onboarding_flow: {type(e).__name__}: {e}")
+    logger.error("Failed to mount onboarding_flow router: %s", e, exc_info=True)
+
+# Mount Messaging router
+try:
+    from backend.api.messaging import router as messaging_router
+    app.include_router(messaging_router)
+    _ria_routers_mounted.append("messaging")
+except Exception as e:
+    _ria_router_errors.append(f"messaging: {type(e).__name__}: {e}")
+    logger.error("Failed to mount messaging router: %s", e, exc_info=True)
+
+# Mount Report Scheduler router
+try:
+    from backend.api.report_scheduler import router as report_scheduler_router
+    app.include_router(report_scheduler_router)
+    _ria_routers_mounted.append("report_scheduler")
+except Exception as e:
+    _ria_router_errors.append(f"report_scheduler: {type(e).__name__}: {e}")
+    logger.error("Failed to mount report_scheduler router: %s", e, exc_info=True)
+
+# Mount Workflows router
+try:
+    from backend.api.workflows import router as workflows_router
+    app.include_router(workflows_router)
+    _ria_routers_mounted.append("workflows")
+except Exception as e:
+    _ria_router_errors.append(f"workflows: {type(e).__name__}: {e}")
+    logger.error("Failed to mount workflows router: %s", e, exc_info=True)
+
+# Mount Best Execution Monitoring router
+try:
+    from backend.api.best_execution import router as best_execution_router
+    app.include_router(best_execution_router)
+    _ria_routers_mounted.append("best_execution")
+except Exception as e:
+    _ria_router_errors.append(f"best_execution: {type(e).__name__}: {e}")
+    logger.error("Failed to mount best_execution router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 

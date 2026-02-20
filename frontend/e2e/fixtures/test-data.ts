@@ -28,6 +28,10 @@ export const RIA_PAGES: PageEntry[] = [
   { path: '/dashboard/report-builder',  title: 'Report',                kind: 'mixed' },
   { path: '/dashboard/trading',         title: 'Trad',                  kind: 'mixed' },
   { path: '/dashboard/billing',         title: 'Billing',               kind: 'mixed' },
+  { path: '/dashboard/screener',       title: 'Stock',                  kind: 'mixed' },
+  { path: '/dashboard/bulk-import',    title: 'Bulk',                   kind: 'form' },
+  { path: '/dashboard/messages',       title: 'Message',                kind: 'mixed' },
+  { path: '/dashboard/best-execution', title: 'Execution',              kind: 'mixed' },
   { path: '/dashboard/chat',             title: 'Chat',                  kind: 'chat' },
   { path: '/dashboard/settings',         title: 'Settings',              kind: 'form' },
 ];
@@ -48,6 +52,7 @@ export const PORTAL_PAGES: PageEntry[] = [
   { path: '/portal/beneficiaries',   title: 'Beneficiar',     kind: 'mixed' },
   { path: '/portal/family',          title: 'Family',         kind: 'mixed' },
   { path: '/portal/settings',        title: 'Settings',       kind: 'form' },
+  { path: '/portal/messages',        title: 'Message',        kind: 'mixed' },
 ];
 
 export const PUBLIC_PAGES = [

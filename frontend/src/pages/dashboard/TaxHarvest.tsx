@@ -289,7 +289,7 @@ export default function TaxHarvest() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Est. Tax Savings</p>
+              <p className="text-sm font-medium text-slate-500">Est. Tax Efficiency</p>
               <p className="text-2xl font-bold text-emerald-600 mt-1">
                 {loadingSummary ? '—' : fmtCurrency(summary?.total_estimated_savings ?? 0)}
               </p>
@@ -400,7 +400,7 @@ export default function TaxHarvest() {
                           <span className="ml-1 font-mono text-red-600">{fmtCurrency(opp.unrealized_loss)}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500">Tax Savings:</span>
+                          <span className="text-slate-500">Tax Benefit:</span>
                           <span className="ml-1 font-mono text-emerald-600">{fmtCurrency(opp.estimated_tax_savings)}</span>
                         </div>
                         <div>
@@ -471,7 +471,7 @@ export default function TaxHarvest() {
                 <p className="text-2xl font-bold text-red-600">{fmtCurrency(selected.unrealized_loss)}</p>
               </div>
               <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                <p className="text-sm text-slate-500">Est. Tax Savings</p>
+                <p className="text-sm text-slate-500">Est. Tax Benefit</p>
                 <p className="text-2xl font-bold text-emerald-600">{fmtCurrency(selected.estimated_tax_savings)}</p>
               </div>
               <div className="text-center p-4 bg-slate-50 rounded-lg">

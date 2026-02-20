@@ -51,7 +51,7 @@ const BLOG_POSTS = [
       'Why explainable AI isn\'t just a technical feature — it\'s the foundation of client trust in an increasingly automated world.',
   },
   {
-    title: 'The Rise of AI-Native Wealth Platforms',
+    title: 'The Rise of Efficiency-Driven Wealth Platforms',
     date: 'November 18, 2025',
     category: 'Industry Insights',
     excerpt:

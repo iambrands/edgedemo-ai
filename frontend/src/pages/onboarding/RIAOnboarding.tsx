@@ -12,6 +12,7 @@ import {
   CreditCard,
   Sparkles,
   HelpCircle,
+  ClipboardList,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -38,6 +39,7 @@ const STEPS: StepDef[] = [
   { id: 'welcome', title: 'Welcome', description: 'Get started with Edge', icon: Sparkles },
   { id: 'profile', title: 'Your Profile', description: 'Personal & professional info', icon: User },
   { id: 'firm', title: 'Firm Details', description: 'Your practice information', icon: Building2 },
+  { id: 'clientTypes', title: 'Client Types', description: 'Account & rollover types you handle', icon: ClipboardList },
   { id: 'compliance', title: 'Compliance Setup', description: 'Regulatory requirements', icon: Shield },
   { id: 'custodians', title: 'Connect Custodians', description: 'Link your custodial accounts', icon: Link2 },
   { id: 'branding', title: 'Branding', description: 'Customize your client portal', icon: Palette },
@@ -259,6 +261,104 @@ function FirmStep({ formData, setFormData }: StepProps) {
           <option value="over_100">100+</option>
         </select>
       </div>
+    </div>
+  );
+}
+
+const PLAN_TYPES = [
+  { id: '401k', label: '401(k)', desc: 'Traditional employer-sponsored plans' },
+  { id: '403b', label: '403(b)', desc: 'Teachers, non-profit employees, clergy' },
+  { id: '457b', label: '457(b)', desc: 'State & local government employees' },
+  { id: 'tsp', label: 'TSP', desc: 'Federal employees & military (Thrift Savings Plan)' },
+  { id: 'pension_rollover', label: 'Pension Rollover', desc: 'Traditional pension plan rollovers' },
+  { id: 'traditional_ira', label: 'Traditional IRA', desc: 'Individual retirement accounts' },
+  { id: 'roth_ira', label: 'Roth IRA', desc: 'After-tax retirement accounts' },
+  { id: 'sep_ira', label: 'SEP IRA', desc: 'Self-employed & small business' },
+  { id: 'simple_ira', label: 'SIMPLE IRA', desc: 'Small employer plans (< 100 employees)' },
+  { id: 'inherited_ira', label: 'Inherited IRA', desc: 'Beneficiary inherited accounts' },
+  { id: 'brokerage', label: 'Taxable Brokerage', desc: 'Individual & joint investment accounts' },
+  { id: 'trust', label: 'Trust Accounts', desc: 'Revocable & irrevocable trusts' },
+];
+
+function ClientTypesStep({ formData, setFormData }: StepProps) {
+  const selected: string[] = formData.clientPlanTypes || [];
+  const toggle = (id: string) => {
+    const next = selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id];
+    setFormData({ ...formData, clientPlanTypes: next });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <p className="text-sm text-blue-800">
+          Select the account and plan types your firm commonly handles. Edge supports
+          automated rollovers and onboarding for all of these plan types, including
+          specialized support for teachers, government employees, and public-sector workers.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-3">Account & Plan Types You Handle</label>
+        <div className="grid grid-cols-2 gap-3">
+          {PLAN_TYPES.map((pt) => (
+            <label
+              key={pt.id}
+              className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition ${
+                selected.includes(pt.id)
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(pt.id)}
+                onChange={() => toggle(pt.id)}
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <p className="font-medium text-slate-900 text-sm">{pt.label}</p>
+                <p className="text-xs text-slate-500">{pt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Estimated Monthly Rollover Volume
+        </label>
+        <select
+          value={formData.rolloverVolume || ''}
+          onChange={(e) => setFormData({ ...formData, rolloverVolume: e.target.value })}
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select range...</option>
+          <option value="0_5">0 - 5 per month</option>
+          <option value="5_15">5 - 15 per month</option>
+          <option value="15_30">15 - 30 per month</option>
+          <option value="over_30">30+ per month</option>
+        </select>
+      </div>
+
+      {selected.length > 0 && (
+        <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+          <p className="text-sm font-medium text-emerald-800 mb-2">
+            Edge Rollover Workflow for Selected Plans
+          </p>
+          <ol className="text-xs text-emerald-700 space-y-1 list-decimal list-inside">
+            <li>Client initiates rollover request via portal</li>
+            <li>Edge extracts account details from uploaded statement</li>
+            <li>Auto-generates transfer paperwork for the plan type</li>
+            <li>Compliance pre-check for suitability</li>
+            <li>Advisor review and approval</li>
+            <li>Electronic submission to receiving custodian</li>
+          </ol>
+          <p className="text-xs text-emerald-600 mt-2">
+            Estimated processing: same-day vs. industry average of 5-7 business days.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -534,10 +634,11 @@ export default function RIAOnboarding() {
       case 0: return <WelcomeStep />;
       case 1: return <ProfileStep formData={formData} setFormData={setFormData} />;
       case 2: return <FirmStep formData={formData} setFormData={setFormData} />;
-      case 3: return <ComplianceStep formData={formData} setFormData={setFormData} />;
-      case 4: return <CustodiansStep formData={formData} setFormData={setFormData} />;
-      case 5: return <BrandingStep formData={formData} setFormData={setFormData} />;
-      case 6: return <BillingStep formData={formData} setFormData={setFormData} />;
+      case 3: return <ClientTypesStep formData={formData} setFormData={setFormData} />;
+      case 4: return <ComplianceStep formData={formData} setFormData={setFormData} />;
+      case 5: return <CustodiansStep formData={formData} setFormData={setFormData} />;
+      case 6: return <BrandingStep formData={formData} setFormData={setFormData} />;
+      case 7: return <BillingStep formData={formData} setFormData={setFormData} />;
       default: return null;
     }
   };

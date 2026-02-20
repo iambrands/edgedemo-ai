@@ -707,7 +707,7 @@ function TaxIntelligent() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard icon={TrendingDown} label="Total Unrealized Losses" value={fmtCurrency(Math.abs(totalUnrealizedLosses))} sublabel={`${MOCK_TAX_OPPORTUNITIES.length} opportunities`} color="red" />
-        <SummaryCard icon={DollarSign} label="Estimated Tax Savings" value={fmtCurrency(totalEstimatedSavings)} sublabel="At 35% marginal rate" color="emerald" />
+        <SummaryCard icon={DollarSign} label="Est. Tax Efficiency Gain" value={fmtCurrency(totalEstimatedSavings)} sublabel="At 35% marginal rate" color="emerald" />
         <SummaryCard icon={ShieldAlert} label="Wash Sale Risks" value={String(washSaleRisks)} sublabel="Requires 30-day wait" color="amber" />
         <SummaryCard icon={BarChart3} label="Tax Lots Available" value={String(lotsAvailable)} sublabel="For specific lot selection" color="purple" />
       </div>
@@ -728,7 +728,7 @@ function TaxIntelligent() {
                 <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Unrealized Loss</th>
                 <th className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Wash Sale Risk</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Tax Savings</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Tax Benefit</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Substitute</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Holding</th>
               </tr>

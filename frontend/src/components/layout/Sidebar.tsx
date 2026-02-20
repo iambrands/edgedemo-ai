@@ -25,6 +25,10 @@ import {
   ChevronLeft,
   ChevronRight,
   HelpCircle,
+  Search,
+  Upload,
+  MessageCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { clsx } from 'clsx';
@@ -58,6 +62,10 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/report-builder', icon: FileBarChart, label: 'Reports' },
     { to: '/dashboard/trading', icon: ArrowUpDown, label: 'Trading' },
     { to: '/dashboard/billing', icon: Receipt, label: 'Billing' },
+    { to: '/dashboard/screener', icon: Search, label: 'Stock Screener' },
+    { to: '/dashboard/bulk-import', icon: Upload, label: 'Bulk Import' },
+    { to: '/dashboard/messages', icon: MessageCircle, label: 'Messages' },
+    { to: '/dashboard/best-execution', icon: ShieldCheck, label: 'Best Execution' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
