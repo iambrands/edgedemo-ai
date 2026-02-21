@@ -100,7 +100,7 @@ export default function Technology() {
             Our Technology
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Edge is an AI-native wealth management platform built from the ground up with proprietary
+            Edge is a wealth management platform designed to enhance efficiency, built from the ground up with proprietary
             models purpose-designed for financial advisory. Here's how it works, why you can trust it,
             and how we protect your data.
           </p>

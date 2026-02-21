@@ -17,7 +17,7 @@ const FEATURED_POST = {
   date: 'February 10, 2026',
   author: 'Dr. Priya Patel',
   excerpt:
-    "Artificial intelligence is no longer a novelty in financial services -- it is becoming the foundation. In this deep dive, we explore how AI-native platforms are reshaping portfolio analysis, client communication, and regulatory compliance for the next generation of advisors.",
+    "Artificial intelligence is no longer a novelty in financial services -- it is becoming the foundation. In this deep dive, we explore how efficiency-driven platforms are reshaping portfolio analysis, client communication, and regulatory compliance for the next generation of advisors.",
   category: 'Industry Insights',
 };
 

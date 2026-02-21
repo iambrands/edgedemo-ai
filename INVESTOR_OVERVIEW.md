@@ -18,7 +18,7 @@ Edge Portfolio Analyzer is a production-ready, AI-powered portfolio analysis pla
 - **Client-Customized Insights:** Tailored recommendations based on age, risk tolerance, and investment goals
 
 ### 2. **Tax Optimization Engine**
-- **Annual Savings Estimates:** Projects potential tax savings ($X,XXX - $X,XXX range)
+- **Annual Efficiency Estimates:** Projects potential enhanced tax efficiency ($X,XXX - $X,XXX range)
 - **Opportunity Identification:** Specific tax optimization strategies (municipal bonds, asset location, etc.)
 - **Tax-Loss Harvesting:** Identifies candidate positions for TLH opportunities
 
