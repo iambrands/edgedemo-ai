@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Plus, Target, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { 
   getGoals, createGoal, deleteGoal, 
   Goal, GoalCreateRequest, PortalApiError 
@@ -111,7 +110,7 @@ export default function PortalGoals() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-slate-500">Loading your goals...</p>
@@ -121,10 +120,7 @@ export default function PortalGoals() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-4xl mx-auto px-4 py-6">
+    <div>
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -241,7 +237,6 @@ export default function PortalGoals() {
             ))}
           </div>
         )}
-      </main>
 
       {/* Create Goal Modal */}
       {showModal && (

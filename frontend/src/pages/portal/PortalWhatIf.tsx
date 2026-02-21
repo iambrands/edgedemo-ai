@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calculator, TrendingUp, Loader2, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import PortalNav from '../../components/portal/PortalNav';
 import { calculateWhatIf, getDashboard } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -99,9 +98,8 @@ export default function PortalWhatIf() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -113,10 +111,7 @@ export default function PortalWhatIf() {
   })) || [];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">What-If Scenarios</h1>
           <p className="text-slate-500 text-sm">Explore how different choices affect your retirement outlook</p>
@@ -258,7 +253,6 @@ export default function PortalWhatIf() {
             )}
           </div>
         </div>
-      </main>
     </div>
   );
 }

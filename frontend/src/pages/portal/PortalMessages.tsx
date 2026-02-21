@@ -5,7 +5,6 @@
 
 import { useState } from 'react';
 import { MessageCircle, Send, Clock, ArrowLeft } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 
 // ============================================================================
 // TYPES
@@ -186,9 +185,7 @@ export default function PortalMessages() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-      <main className="max-w-6xl mx-auto px-4 py-8">
+    <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
           <MessageCircle className="h-6 w-6 text-slate-600" />
           <h1 className="text-xl font-semibold text-slate-900">Messages</h1>
@@ -334,7 +331,6 @@ export default function PortalMessages() {
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 }

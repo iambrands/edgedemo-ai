@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, Send, User, Loader2 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getChatHistory, sendChatMessage } from '../../services/portalApi';
 
 interface Message {
@@ -76,19 +75,14 @@ export default function PortalAssistant() {
 
   if (initialLoad) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <PortalNav />
-
+    <div className="flex flex-col">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-4">
         {/* Header */}

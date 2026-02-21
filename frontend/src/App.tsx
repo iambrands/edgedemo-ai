@@ -57,8 +57,8 @@ import { Terms, Privacy, Disclosures } from './pages/legal';
 import { About, Careers, Blog, Contact } from './pages/company';
 import { Investors, Professionals } from './pages/audience';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import PortalLayout from './components/portal/PortalLayout';
 import ErrorBoundary from './components/ErrorBoundary';
-import AIChatWidget from './components/chat/AIChatWidget';
 
 /**
  * Auth guard for client portal routes.
@@ -69,12 +69,7 @@ const PortalGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   if (!hasToken) {
     return <Navigate to="/portal/login" replace />;
   }
-  return (
-    <>
-      {children}
-      <AIChatWidget variant="client" />
-    </>
-  );
+  return <>{children}</>;
 };
 
 function ScrollToTop() {
@@ -148,147 +143,32 @@ export default function App() {
       <Route path="/investors" element={<Investors />} />
       <Route path="/professionals" element={<Professionals />} />
 
-      {/* Client Portal Routes */}
+      {/* Client Portal Routes (standalone — no sidebar) */}
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal/onboarding" element={<ClientOnboarding />} />
       <Route path="/portal/help" element={<ClientHelpCenter />} />
-      <Route
-        path="/portal/dashboard"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalDashboard /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/goals"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalGoals /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/documents"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalDocuments /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/updates"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalNarratives /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/risk-profile"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalRiskProfile /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/performance"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalPerformance /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/meetings"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalMeetings /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/requests"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalRequests /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/notifications"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalNotifications /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/assistant"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalAssistant /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/what-if"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalWhatIf /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/tax"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalTaxCenter /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/beneficiaries"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalBeneficiaries /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/family"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalFamily /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/settings"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalSettings /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/messages"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalMessages /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route
-        path="/portal/learn"
-        element={
-          <PortalGuard>
-            <ErrorBoundary><PortalLearningCenter /></ErrorBoundary>
-          </PortalGuard>
-        }
-      />
-      <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
+
+      {/* Client Portal Routes (with sidebar layout) */}
+      <Route path="/portal" element={<PortalGuard><PortalLayout /></PortalGuard>}>
+        <Route index element={<Navigate to="/portal/dashboard" replace />} />
+        <Route path="dashboard" element={<ErrorBoundary><PortalDashboard /></ErrorBoundary>} />
+        <Route path="performance" element={<ErrorBoundary><PortalPerformance /></ErrorBoundary>} />
+        <Route path="goals" element={<ErrorBoundary><PortalGoals /></ErrorBoundary>} />
+        <Route path="what-if" element={<ErrorBoundary><PortalWhatIf /></ErrorBoundary>} />
+        <Route path="tax" element={<ErrorBoundary><PortalTaxCenter /></ErrorBoundary>} />
+        <Route path="beneficiaries" element={<ErrorBoundary><PortalBeneficiaries /></ErrorBoundary>} />
+        <Route path="family" element={<ErrorBoundary><PortalFamily /></ErrorBoundary>} />
+        <Route path="documents" element={<ErrorBoundary><PortalDocuments /></ErrorBoundary>} />
+        <Route path="updates" element={<ErrorBoundary><PortalNarratives /></ErrorBoundary>} />
+        <Route path="meetings" element={<ErrorBoundary><PortalMeetings /></ErrorBoundary>} />
+        <Route path="messages" element={<ErrorBoundary><PortalMessages /></ErrorBoundary>} />
+        <Route path="requests" element={<ErrorBoundary><PortalRequests /></ErrorBoundary>} />
+        <Route path="learn" element={<ErrorBoundary><PortalLearningCenter /></ErrorBoundary>} />
+        <Route path="notifications" element={<ErrorBoundary><PortalNotifications /></ErrorBoundary>} />
+        <Route path="settings" element={<ErrorBoundary><PortalSettings /></ErrorBoundary>} />
+        <Route path="risk-profile" element={<ErrorBoundary><PortalRiskProfile /></ErrorBoundary>} />
+        <Route path="assistant" element={<ErrorBoundary><PortalAssistant /></ErrorBoundary>} />
+      </Route>
 
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />

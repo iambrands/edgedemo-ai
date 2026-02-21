@@ -4,7 +4,6 @@ import {
   Receipt, TrendingUp, TrendingDown, DollarSign,
   Loader2, FileText, Download, Scissors,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getTaxSummary, getTaxLots } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -73,9 +72,8 @@ export default function PortalTaxCenter() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -86,10 +84,7 @@ export default function PortalTaxCenter() {
   const harvestLots = lots.filter((l) => l.unrealized < 0);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Tax Center</h1>
           <p className="text-slate-500 text-sm">Tax year 2025 — Estimates for informational purposes</p>
@@ -350,7 +345,6 @@ export default function PortalTaxCenter() {
         <div className="p-3 bg-slate-100 rounded-lg text-xs text-slate-500 text-center">
           Tax estimates are for informational purposes only and may not reflect your actual tax liability. Consult a qualified tax professional for advice. Edge does not provide tax, legal, or accounting advice.
         </div>
-      </main>
     </div>
   );
 }

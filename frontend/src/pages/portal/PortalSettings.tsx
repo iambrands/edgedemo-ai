@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Check, Bell, Mail, Shield, User } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import {
   getPreferences,
   updatePreferences,
@@ -52,20 +51,14 @@ export default function PortalSettings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center py-32">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
@@ -218,7 +211,6 @@ export default function PortalSettings() {
             </a>
           </p>
         </div>
-      </main>
     </div>
   );
 }

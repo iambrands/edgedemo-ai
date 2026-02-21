@@ -8,7 +8,6 @@ import {
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
   PieChart, Pie,
 } from 'recharts';
-import PortalNav from '../../components/portal/PortalNav';
 import { getPerformance } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -91,30 +90,24 @@ export default function PortalPerformance() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Performance</h1>
-            <p className="text-slate-500 text-sm">Track your portfolio performance over time</p>
-          </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
-            <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-medium text-slate-900">{error || 'No performance data available'}</h3>
-            <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
-          </div>
-        </main>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Performance</h1>
+          <p className="text-slate-500 text-sm">Track your portfolio performance over time</p>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+          <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="font-medium text-slate-900">{error || 'No performance data available'}</h3>
+          <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
+        </div>
       </div>
     );
   }
@@ -124,10 +117,7 @@ export default function PortalPerformance() {
   const chartData = (data.time_series?.[period] ?? []).map((p) => ({ ...p, date: fmtDate(p.date) }));
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Performance</h1>
@@ -295,7 +285,6 @@ export default function PortalPerformance() {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }

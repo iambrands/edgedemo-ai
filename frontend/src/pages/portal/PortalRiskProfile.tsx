@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Shield, CheckCircle, RefreshCw, PieChart, AlertTriangle } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 
 interface RiskProfile {
   risk_score: number;
@@ -156,11 +155,8 @@ export default function PortalRiskProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center py-32">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
       </div>
     );
   }
@@ -168,10 +164,7 @@ export default function PortalRiskProfile() {
   const levelColor = profile ? LEVEL_COLORS[profile.risk_level] || LEVEL_COLORS['Moderate'] : LEVEL_COLORS['Moderate'];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Risk Profile</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -423,7 +416,6 @@ export default function PortalRiskProfile() {
             </div>
           </>
         )}
-      </main>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import {
   Calendar, Clock, Video, ChevronLeft, ChevronRight,
   Check, X, Loader2, MessageSquare, Phone, Mail,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getMeetings, getMeetingAvailability, scheduleMeeting, cancelMeeting } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -135,18 +134,12 @@ export default function PortalMeetings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
-      </div>
+      <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Meetings</h1>
@@ -326,7 +319,6 @@ export default function PortalMeetings() {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }

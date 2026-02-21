@@ -10,7 +10,6 @@ import {
   ClipboardList,
   ScrollText,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getDocuments, markDocumentRead, PortalDocument } from '../../services/portalApi';
 
 const TYPE_META: Record<string, { label: string; icon: typeof FileText; color: string; bg: string }> = {
@@ -84,20 +83,14 @@ export default function PortalDocuments() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center py-32">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -209,7 +202,6 @@ export default function PortalDocuments() {
             })}
           </div>
         )}
-      </main>
     </div>
   );
 }

@@ -18,7 +18,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import {
   getDashboard,
   getNudges,
@@ -153,12 +152,10 @@ export default function PortalDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="flex items-center justify-center py-32">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-slate-500">Loading your portfolio...</p>
-          </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-4 text-slate-500">Loading your portfolio...</p>
         </div>
       </div>
     );
@@ -172,10 +169,7 @@ export default function PortalDashboard() {
   const accountCount = data?.accounts.length || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav nudgeCount={nudges.length} firmName={branding?.portal_title || data?.firm_name} />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="space-y-6">
         {/* Welcome + Advisor */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -520,7 +514,6 @@ export default function PortalDashboard() {
             {branding.disclaimer_text}
           </p>
         )}
-      </main>
     </div>
   );
 }

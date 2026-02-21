@@ -3,7 +3,6 @@ import {
   Users, AlertTriangle, CheckCircle, Info, ChevronDown,
   ChevronUp, Loader2, Send, X, Clock, User,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getBeneficiaries, submitBeneficiaryUpdateRequest } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -115,9 +114,8 @@ export default function PortalBeneficiaries() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -126,10 +124,7 @@ export default function PortalBeneficiaries() {
   const upToDate = accounts.filter((a) => !a.needs_review);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -238,7 +233,6 @@ export default function PortalBeneficiaries() {
             </div>
           </div>
         )}
-      </main>
 
       {/* Request Update Modal */}
       {showModal && (

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import PortalNav from '../../components/portal/PortalNav';
 import type { LucideIcon } from 'lucide-react';
 import {
   GraduationCap,
@@ -419,15 +418,12 @@ export default function PortalLearningCenter() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {activeCourse && activeLesson
-          ? renderLessonPlayer()
-          : activeCourse
-          ? renderCourseDetail()
-          : renderCatalog()}
-      </main>
+    <div className="space-y-6">
+      {activeCourse && activeLesson
+        ? renderLessonPlayer()
+        : activeCourse
+        ? renderCourseDetail()
+        : renderCatalog()}
     </div>
   );
 }

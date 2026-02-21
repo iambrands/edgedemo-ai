@@ -3,7 +3,6 @@ import {
   Home, Users, ChevronRight, Loader2, X,
   TrendingUp, Briefcase, GraduationCap, Eye, Lock, Shield,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { getFamilyData, getFamilyMemberDetails } from '../../services/portalApi';
 
 /* ------------------------------------------------------------------ */
@@ -104,28 +103,22 @@ export default function PortalFamily() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
-      </div>
+      <div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <PortalNav />
-        <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
-            <p className="text-slate-500 text-sm">Household overview and linked family members</p>
-          </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
-            <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-medium text-slate-900">{error || 'No family data available'}</h3>
-            <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
-          </div>
-        </main>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
+          <p className="text-slate-500 text-sm">Household overview and linked family members</p>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
+          <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="font-medium text-slate-900">{error || 'No family data available'}</h3>
+          <p className="text-sm text-slate-500 mt-1">Check back later or contact your advisor.</p>
+        </div>
       </div>
     );
   }
@@ -138,10 +131,8 @@ export default function PortalFamily() {
   const jointAccounts = (Array.isArray(data.joint_accounts) ? data.joint_accounts : []).filter((j) => j.value > 0);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav />
-
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
@@ -318,7 +309,7 @@ export default function PortalFamily() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/* Member Detail Modal */}
       {(selectedMember || loadingMember) && (
@@ -388,6 +379,6 @@ export default function PortalFamily() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

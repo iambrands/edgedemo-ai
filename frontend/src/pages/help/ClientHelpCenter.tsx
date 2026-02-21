@@ -12,7 +12,6 @@ import {
   HelpCircle,
   ArrowLeft,
 } from 'lucide-react';
-import PortalNav from '../../components/portal/PortalNav';
 import { Footer } from '../../components/layout/Footer';
 
 /* ------------------------------------------------------------------ */
@@ -138,8 +137,15 @@ export default function ClientHelpCenter() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
-      {/* Portal Nav if authenticated */}
-      {isAuthenticated && <PortalNav />}
+      {/* Simple header for authenticated users */}
+      {isAuthenticated && (
+        <div className="bg-gradient-to-r from-blue-800 to-blue-700 px-6 py-3 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-md bg-white/15 flex items-center justify-center">
+            <span className="text-sm font-bold text-white">E</span>
+          </div>
+          <span className="text-lg font-bold text-white">Edge</span>
+        </div>
+      )}
 
       {/* Header */}
       <div className={isAuthenticated ? '' : 'bg-white border-b border-slate-200'}>
