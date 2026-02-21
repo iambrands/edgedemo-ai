@@ -5,22 +5,21 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { ALERTS } from '../../data/mockData';
 import { clsx } from 'clsx';
+import AIChatWidget from '../chat/AIChatWidget';
 
 export function DashboardLayout() {
   const { user, isLoading } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const alertCount = ALERTS.filter((a) => a.severity === 'high' || a.severity === 'medium').length;
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -32,21 +31,17 @@ export function DashboardLayout() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-blue-50/30">
+    <div className="min-h-screen bg-slate-50">
       <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
 
-      {/* Main Content */}
       <div
         className={clsx(
           'transition-all duration-200',
-          isSidebarCollapsed ? 'ml-16' : 'ml-60'
+          isSidebarCollapsed ? 'ml-16' : 'ml-64'
         )}
       >
-        {/* Brand accent line */}
-        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 sticky top-0 z-40" />
-
         {/* Top Bar */}
-        <header className="h-14 bg-white/80 backdrop-blur-sm border-b border-slate-200/80 flex items-center justify-between px-6 sticky top-1 z-30">
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -54,9 +49,12 @@ export function DashboardLayout() {
             >
               <Menu size={20} />
             </button>
+            <span className="text-sm font-medium text-slate-500 hidden sm:block">
+              {currentDate}
+            </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-500">
               <Bell size={20} />
               {alertCount > 0 && (
@@ -65,7 +63,16 @@ export function DashboardLayout() {
                 </span>
               )}
             </button>
-            <span className="text-sm text-slate-500">{currentDate}</span>
+            <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-200">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-xs font-semibold text-white">
+                  {user.firstName[0]}{user.lastName[0]}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-slate-700">
+                {user.firstName} {user.lastName}
+              </span>
+            </div>
           </div>
         </header>
 
@@ -74,6 +81,9 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating AI Chat Widget */}
+      <AIChatWidget variant="ria" />
     </div>
   );
 }

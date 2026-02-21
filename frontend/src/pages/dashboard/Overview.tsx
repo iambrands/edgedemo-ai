@@ -84,43 +84,43 @@ export function Overview() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-emerald-600 rounded-xl p-6 text-white">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-blue-100 text-sm mt-1">Welcome back. Here's your practice at a glance.</p>
+      </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-blue-400" />
-          <div className="absolute top-5 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <Card className="relative overflow-hidden border-l-4 border-l-blue-600">
+          <div className="absolute top-4 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
             <DollarSign className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-sm text-slate-500 mb-1 pt-1">Total AUM</p>
+          <p className="text-sm text-slate-500 mb-1">Total AUM</p>
           <p className="text-2xl font-bold text-slate-900">{formatCurrency(data.kpis.totalAUM)}</p>
         </Card>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-teal-400" />
-          <div className="absolute top-5 right-4 w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
-            <Users className="w-5 h-5 text-teal-600" />
+        <Card className="relative overflow-hidden border-l-4 border-l-emerald-500">
+          <div className="absolute top-4 right-4 w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+            <Users className="w-5 h-5 text-emerald-600" />
           </div>
-          <p className="text-sm text-slate-500 mb-1 pt-1">Households</p>
+          <p className="text-sm text-slate-500 mb-1">Households</p>
           <p className="text-2xl font-bold text-slate-900">{data.kpis.householdCount}</p>
         </Card>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-indigo-400" />
-          <div className="absolute top-5 right-4 w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-indigo-600" />
+        <Card className="relative overflow-hidden border-l-4 border-l-blue-400">
+          <div className="absolute top-4 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-blue-500" />
           </div>
-          <p className="text-sm text-slate-500 mb-1 pt-1">Accounts</p>
+          <p className="text-sm text-slate-500 mb-1">Accounts</p>
           <p className="text-2xl font-bold text-slate-900">{data.kpis.accountCount}</p>
         </Card>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-400" />
-          <div className="absolute top-5 right-4 w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+        <Card className="relative overflow-hidden border-l-4 border-l-amber-400">
+          <div className="absolute top-4 right-4 w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
           </div>
-          <p className="text-sm text-slate-500 mb-1 pt-1">Active Alerts</p>
+          <p className="text-sm text-slate-500 mb-1">Active Alerts</p>
           <p className="text-2xl font-bold text-slate-900">{data.kpis.alertCount}</p>
         </Card>
       </div>

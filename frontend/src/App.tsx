@@ -58,6 +58,7 @@ import { About, Careers, Blog, Contact } from './pages/company';
 import { Investors, Professionals } from './pages/audience';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import AIChatWidget from './components/chat/AIChatWidget';
 
 /**
  * Auth guard for client portal routes.
@@ -68,7 +69,12 @@ const PortalGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   if (!hasToken) {
     return <Navigate to="/portal/login" replace />;
   }
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <AIChatWidget variant="client" />
+    </>
+  );
 };
 
 function ScrollToTop() {
