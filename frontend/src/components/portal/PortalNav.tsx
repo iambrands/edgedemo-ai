@@ -16,6 +16,7 @@ import {
   Users,
   Home,
   MessageCircle,
+  GraduationCap,
 } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { to: '/portal/beneficiaries', label: 'Beneficiaries', icon: Users },
   { to: '/portal/family', label: 'Family', icon: Home },
   { to: '/portal/messages', label: 'Messages', icon: MessageCircle },
+  { to: '/portal/learn', label: 'Learn', icon: GraduationCap },
   { to: '/portal/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -29,6 +29,7 @@ import {
   Upload,
   MessageCircle,
   ShieldCheck,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { clsx } from 'clsx';
@@ -67,6 +68,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     { to: '/dashboard/messages', icon: MessageCircle, label: 'Messages' },
     { to: '/dashboard/best-execution', icon: ShieldCheck, label: 'Best Execution' },
     { to: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
+    { to: '/dashboard/learn', icon: GraduationCap, label: 'Learning Center' },
     { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 

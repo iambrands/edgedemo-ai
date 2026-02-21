@@ -32,6 +32,7 @@ export const RIA_PAGES: PageEntry[] = [
   { path: '/dashboard/bulk-import',    title: 'Bulk',                   kind: 'form' },
   { path: '/dashboard/messages',       title: 'Message',                kind: 'mixed' },
   { path: '/dashboard/best-execution', title: 'Execution',              kind: 'mixed' },
+  { path: '/dashboard/learn',          title: 'Learning',               kind: 'mixed' },
   { path: '/dashboard/chat',             title: 'Chat',                  kind: 'chat' },
   { path: '/dashboard/settings',         title: 'Settings',              kind: 'form' },
 ];
@@ -53,6 +54,7 @@ export const PORTAL_PAGES: PageEntry[] = [
   { path: '/portal/family',          title: 'Family',         kind: 'mixed' },
   { path: '/portal/settings',        title: 'Settings',       kind: 'form' },
   { path: '/portal/messages',        title: 'Message',        kind: 'mixed' },
+  { path: '/portal/learn',           title: 'Learn',          kind: 'mixed' },
 ];
 
 export const PUBLIC_PAGES = [

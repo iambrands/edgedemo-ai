@@ -16,3 +16,4 @@ export { default as PortalFamily } from './PortalFamily';
 export { default as PortalSettings } from './PortalSettings';
 export { default as PortalMessages } from './PortalMessages';
 export { default as ClientOnboarding } from './ClientOnboarding';
+export { default as PortalLearningCenter } from './PortalLearningCenter';

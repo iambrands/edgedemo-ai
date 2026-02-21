@@ -27,6 +27,7 @@ import {
   BulkImport,
   Messages,
   BestExecution,
+  LearningCenter,
 } from './pages/dashboard';
 import {
   PortalLogin,
@@ -46,6 +47,7 @@ import {
   PortalFamily,
   PortalSettings,
   PortalMessages,
+  PortalLearningCenter,
   ClientOnboarding,
 } from './pages/portal';
 import { RIAOnboarding } from './pages/onboarding';
@@ -112,6 +114,7 @@ export default function App() {
         <Route path="bulk-import" element={<ErrorBoundary><BulkImport /></ErrorBoundary>} />
         <Route path="messages" element={<ErrorBoundary><Messages /></ErrorBoundary>} />
         <Route path="best-execution" element={<ErrorBoundary><BestExecution /></ErrorBoundary>} />
+        <Route path="learn" element={<ErrorBoundary><LearningCenter /></ErrorBoundary>} />
         <Route path="chat" element={<ErrorBoundary><Chat /></ErrorBoundary>} />
         <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
       </Route>
@@ -268,6 +271,14 @@ export default function App() {
         element={
           <PortalGuard>
             <ErrorBoundary><PortalMessages /></ErrorBoundary>
+          </PortalGuard>
+        }
+      />
+      <Route
+        path="/portal/learn"
+        element={
+          <PortalGuard>
+            <ErrorBoundary><PortalLearningCenter /></ErrorBoundary>
           </PortalGuard>
         }
       />
