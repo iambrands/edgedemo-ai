@@ -148,15 +148,15 @@ export function Login() {
         </Link>
       </p>
 
-      {/* Demo credentials hint */}
-      <div className="mt-4 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
-        <p className="text-xs text-slate-500 text-center">
-          <span className="font-medium text-slate-700">Demo Credentials:</span>{' '}
-          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">leslie@iabadvisors.com</code>{' '}
-          /{' '}
-          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">CreateWealth2026$</code>
-        </p>
-      </div>
+      {/* Demo hint */}
+      {import.meta.env.DEV && (
+        <div className="mt-4 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
+          <p className="text-xs text-slate-500 text-center">
+            <span className="font-medium text-slate-700">Demo mode:</span>{' '}
+            Use any valid email to sign in during development.
+          </p>
+        </div>
+      )}
     </div>
     <Footer />
     </>

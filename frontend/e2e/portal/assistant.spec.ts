@@ -28,12 +28,10 @@ test.describe('AI Assistant Page', () => {
     await input.fill('What is my balance?');
     await page.waitForTimeout(200);
 
-    // Click send button (the button with Send icon, next to input)
-    const sendBtn = page.locator('button').filter({ has: page.locator('svg') }).last();
+    const sendBtn = page.locator('button[aria-label="Send message"]');
     await sendBtn.click();
     await page.waitForTimeout(2000);
 
-    // Should see the mock response containing portfolio value
     await expect(page.locator('text=$54,905').first()).toBeVisible({ timeout: 5000 });
   });
 
@@ -42,11 +40,10 @@ test.describe('AI Assistant Page', () => {
     await input.fill('What is my balance?');
     await page.waitForTimeout(200);
 
-    const sendBtn = page.locator('button').filter({ has: page.locator('svg') }).last();
+    const sendBtn = page.locator('button[aria-label="Send message"]');
     await sendBtn.click();
     await page.waitForTimeout(2000);
 
-    // Mock returns suggested_follow_ups: ['Show my accounts', 'View performance chart', 'What about taxes?']
     const chip = page.locator('button:has-text("Show my accounts"), button:has-text("View performance chart")').first();
     await expect(chip).toBeVisible({ timeout: 5000 });
   });

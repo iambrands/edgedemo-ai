@@ -177,6 +177,7 @@ export default function PortalAssistant() {
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
+              aria-label="Send message"
               className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="h-5 w-5" />

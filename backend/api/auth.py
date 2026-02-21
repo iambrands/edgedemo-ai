@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from jose import jwt, JWTError
@@ -19,7 +19,11 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 security = HTTPBearer(auto_error=False)
 
 # Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "edgeai-jwt-secret-change-in-production")
+_default_secret = "edgeai-jwt-secret-change-in-production"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", _default_secret)
+if SECRET_KEY == _default_secret and os.getenv("RAILWAY_ENVIRONMENT"):
+    logger.critical("JWT_SECRET_KEY is using the default value in production — set a strong secret!")
+    raise RuntimeError("JWT_SECRET_KEY must be set in production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
@@ -158,7 +162,7 @@ def user_to_response(user: dict) -> UserResponse:
 # --- Endpoints ---
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, req: Request = None):
     """
     Login with email and password.
     Returns JWT access token and user data.

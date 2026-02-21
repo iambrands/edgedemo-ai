@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { portalLogin, isPortalAuthenticated, getBranding, BrandingConfig, PortalApiError } from '../../services/portalApi';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Footer } from '../../components/layout/Footer';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export default function PortalLogin() {
   const navigate = useNavigate();
@@ -10,107 +11,95 @@ export default function PortalLogin() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [branding, setBranding] = useState<BrandingConfig | null>(null);
-
-  useEffect(() => {
-    // Redirect if already logged in
-    if (isPortalAuthenticated()) {
-      navigate('/portal/dashboard');
-    }
-    // Load branding configuration
-    getBranding()
-      .then((data) => setBranding(data))
-      .catch(() => {}); // Ignore branding errors
-  }, [navigate]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
     }
-    
-    setLoading(true);
-    
+
+    setIsLoading(true);
     try {
-      await portalLogin(email, password);
+      const res = await fetch(`${API_BASE}/api/v1/portal/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.detail || 'Invalid email or password');
+      }
+
+      const data = await res.json();
+      localStorage.setItem('portal_token', data.access_token || 'demo_token');
+      localStorage.setItem('portal_user', JSON.stringify(data.user || { email }));
       navigate('/portal/dashboard');
-    } catch (err) {
-      if (err instanceof PortalApiError) {
-        if (err.status === 401) {
-          setError('Invalid email or password. Please try again.');
-        } else {
-          setError(err.message || 'Login failed');
-        }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      if (message.includes('fetch') || message.includes('Network')) {
+        setError('Unable to connect to server. Please try again later.');
       } else {
-        setError('Unable to connect. Please check your internet connection.');
+        setError(message);
       }
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const primaryColor = branding?.primary_color || '#1a56db';
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="max-w-md w-full">
-        {/* Logo/Branding */}
-        <div className="text-center mb-8">
-          {branding?.logo_url ? (
-            <img src={branding.logo_url} alt="Logo" className="h-12 mx-auto" />
-          ) : (
-            <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
-              {branding?.portal_title || 'Client Portal'}
-            </h1>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">Welcome Back</h2>
-            <p className="text-slate-500 text-sm mt-1">Sign in to access your portfolio</p>
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex flex-col items-center justify-center px-4">
+        <Link to="/" className="mb-8 flex items-center gap-2">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+            <span className="text-white font-bold text-lg">E</span>
           </div>
-          
+          <span className="text-2xl font-bold text-slate-900">Edge</span>
+        </Link>
+
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
+              <ShieldCheck className="w-6 h-6 text-blue-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Client Portal</h1>
+            <p className="text-slate-500 text-sm">Sign in to view your accounts and reports</p>
+          </div>
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Email Address
-              </label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Email</label>
               <input
                 type="email"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="you@example.com"
                 autoComplete="email"
-                required
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Password
-              </label>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
                   autoComplete="current-password"
-                  required
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
                 />
                 <button
                   type="button"
@@ -122,45 +111,24 @@ export default function PortalLogin() {
                 </button>
               </div>
             </div>
-            
+
             <button
               type="submit"
-              disabled={loading}
-              className="w-full text-white py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
+              disabled={isLoading}
+              className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all disabled:opacity-60"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign In'
-              )}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 text-center space-y-3">
-            <button
-              type="button"
-              onClick={() => alert('Password reset is not available in demo mode. Please contact your advisor.')}
-              className="text-sm text-blue-600 hover:underline block mx-auto"
-            >
-              Forgot your password?
-            </button>
-            <p className="text-sm text-slate-500">
-              First time?{' '}
-              <Link to="/portal/onboarding" className="text-blue-600 font-medium hover:underline">
-                Set up your account
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            New client?{' '}
+            <Link to="/portal/onboarding" className="text-blue-600 font-medium hover:text-blue-700">
+              Complete Onboarding
+            </Link>
+          </p>
         </div>
 
-        {/* Footer */}
         <p className="text-sm text-slate-500 text-center mt-6">
           Are you an advisor?{' '}
           <Link to="/login" className="text-blue-600 hover:underline font-medium">
@@ -168,13 +136,16 @@ export default function PortalLogin() {
           </Link>
         </p>
 
-        {branding?.disclaimer_text && (
-          <p className="mt-4 text-xs text-slate-400 text-center">
-            {branding.disclaimer_text}
+        <div className="mt-4 p-4 bg-white border border-slate-200 rounded-lg max-w-md w-full shadow-sm">
+          <p className="text-xs text-slate-500 text-center">
+            <span className="font-medium text-slate-700">Demo:</span>{' '}
+            <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">client@demo.com</code>{' '}
+            /{' '}
+            <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">demo123</code>
           </p>
-        )}
+        </div>
       </div>
       <Footer />
-    </div>
+    </>
   );
 }

@@ -165,11 +165,10 @@ railway_frontend = os.getenv("RAILWAY_FRONTEND_URL")
 if railway_frontend:
     ALLOWED_ORIGINS.append(railway_frontend)
 
-# Add Railway wildcard domains for preview deployments
-ALLOWED_ORIGINS.extend([
-    "https://*.up.railway.app",
-    "https://*.railway.app",
-])
+# Add Railway app URL if available (the deployed service's own URL)
+railway_public_url = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_public_url:
+    ALLOWED_ORIGINS.append(f"https://{railway_public_url}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -178,6 +177,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
 
 # Initialize Anthropic client (optional - mock responses if not configured)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")  # Fallback for compatibility

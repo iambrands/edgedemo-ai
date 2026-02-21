@@ -14,7 +14,7 @@ export function Settings() {
   const [complianceAlerts, setComplianceAlerts] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const mockApiKey = 'edge_sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxx';
+  const mockApiKey = 'edge_sk_live_••••••••••••••••••••••••••';
 
   const handleCopyApiKey = () => {
     navigator.clipboard.writeText(mockApiKey);

@@ -1,10 +1,9 @@
 import type { User, Household, Account, Alert, ComplianceLog, Activity } from '../types';
 
-export const USERS: (User & { password: string })[] = [
+export const USERS: Omit<User, 'password'>[] = [
   {
     id: 'a0000000-0000-4000-8000-000000000001',
     email: 'leslie@iabadvisors.com',
-    password: 'CreateWealth2026$',
     firstName: 'Leslie',
     lastName: 'Wilson',
     role: 'ria',

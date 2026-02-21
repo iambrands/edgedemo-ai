@@ -22,6 +22,8 @@ import {
   DollarSign,
   FolderOpen,
   Phone,
+  Shield,
+  Bot,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
@@ -50,6 +52,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/portal/performance', icon: TrendingUp, label: 'Performance' },
       { to: '/portal/goals', icon: Target, label: 'Goals' },
       { to: '/portal/what-if', icon: Calculator, label: 'What-If Scenarios' },
+      { to: '/portal/risk-profile', icon: Shield, label: 'Risk Profile' },
     ],
   },
   {
@@ -79,6 +82,14 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/portal/meetings', icon: Calendar, label: 'Meetings' },
       { to: '/portal/messages', icon: MessageCircle, label: 'Messages' },
       { to: '/portal/requests', icon: Send, label: 'Requests' },
+    ],
+  },
+  {
+    id: 'ai',
+    label: 'AI Tools',
+    icon: Bot,
+    items: [
+      { to: '/portal/assistant', icon: Bot, label: 'AI Assistant' },
     ],
   },
 ];
