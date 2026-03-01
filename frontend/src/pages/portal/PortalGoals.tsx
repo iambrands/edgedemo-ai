@@ -199,7 +199,7 @@ export default function PortalGoals() {
                     <span className="text-lg font-semibold" style={{ 
                       color: goal.on_track ? '#16a34a' : '#ca8a04' 
                     }}>
-                      {(goal.progress_pct * 100).toFixed(0)}%
+                      {goal.progress_pct.toFixed(0)}%
                     </span>
                   </div>
                   <div className="bg-slate-200 rounded-full h-3 overflow-hidden">
@@ -207,7 +207,7 @@ export default function PortalGoals() {
                       className={`h-full rounded-full transition-all duration-500 ${
                         goal.on_track ? 'bg-emerald-500' : 'bg-yellow-500'
                       }`}
-                      style={{ width: `${Math.min(goal.progress_pct * 100, 100)}%` }}
+                      style={{ width: `${Math.min(goal.progress_pct, 100)}%` }}
                     />
                   </div>
                 </div>

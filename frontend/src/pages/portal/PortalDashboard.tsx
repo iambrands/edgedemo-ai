@@ -194,7 +194,7 @@ export default function PortalDashboard() {
           />
           <MetricCard
             label="YTD Return"
-            value={formatPercent((data?.ytd_return || 0) * 100, { decimals: 1 })}
+            value={formatPercent(data?.ytd_return || 0, { decimals: 1 })}
             sublabel={`${formatCurrency(totalGain)} gain`}
             icon={(data?.ytd_return || 0) >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
             color={(data?.ytd_return || 0) >= 0 ? 'emerald' : 'red'}

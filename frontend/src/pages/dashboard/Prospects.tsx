@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, DollarSign, TrendingUp, Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, DollarSign, TrendingUp, Trophy, FileBarChart } from 'lucide-react';
 import {
   listProspects,
   getPipelineSummary,
@@ -376,6 +377,7 @@ function LogActivityModal({
 
 export default function Prospects() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'pipeline' | 'list' | 'detail'>('pipeline');
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary | null>(null);
@@ -548,6 +550,12 @@ export default function Prospects() {
                         {prospect.lead_score}
                       </span>
                     </div>
+                    {prospect.tags?.includes('portfolio-review') && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full mt-1">
+                        <FileBarChart className="w-3 h-3" />
+                        Portfolio Reviewed
+                      </span>
+                    )}
                     {prospect.company && (
                       <p className="text-xs text-slate-500 mt-0.5">{prospect.company}</p>
                     )}
@@ -615,12 +623,20 @@ export default function Prospects() {
           {prospects.map((prospect) => (
             <TableRow key={prospect.id}>
               <TableCell>
-                <button
-                  onClick={() => loadProspectDetail(prospect)}
-                  className="font-medium text-blue-600 hover:underline text-sm"
-                >
-                  {prospect.first_name} {prospect.last_name}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => loadProspectDetail(prospect)}
+                    className="font-medium text-blue-600 hover:underline text-sm"
+                  >
+                    {prospect.first_name} {prospect.last_name}
+                  </button>
+                  {prospect.tags?.includes('portfolio-review') && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                      <FileBarChart className="w-3 h-3" />
+                      Portfolio Reviewed
+                    </span>
+                  )}
+                </div>
                 {prospect.email && <p className="text-xs text-slate-500">{prospect.email}</p>}
               </TableCell>
               <TableCell>{prospect.company || '-'}</TableCell>
@@ -690,9 +706,17 @@ export default function Prospects() {
         <Card size="md">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
-              <h2 className="text-2xl font-bold">
-                {selectedProspect.first_name} {selectedProspect.last_name}
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold">
+                  {selectedProspect.first_name} {selectedProspect.last_name}
+                </h2>
+                {selectedProspect.tags?.includes('portfolio-review') && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                    <FileBarChart className="w-3 h-3" />
+                    Portfolio Reviewed
+                  </span>
+                )}
+              </div>
               {(selectedProspect.title || selectedProspect.company) && (
                 <p className="text-slate-500">
                   {[selectedProspect.title, selectedProspect.company].filter(Boolean).join(' at ')}
@@ -814,6 +838,34 @@ export default function Prospects() {
             </div>
           )}
         </Card>
+
+        {/* Portfolio Review Section */}
+        {selectedProspect.tags?.includes('portfolio-review') && (
+          <Card size="md">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FileBarChart className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-lg">Portfolio Review</h3>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate('/dashboard/portfolio-review')}
+              >
+                Run New Analysis
+              </Button>
+            </div>
+            {selectedProspect.notes ? (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedProspect.notes}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">
+                This prospect was created from a portfolio review upload. No additional portfolio details are available.
+              </p>
+            )}
+          </Card>
+        )}
 
         {/* Activities & Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

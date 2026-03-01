@@ -13,6 +13,7 @@ import {
   Sparkles,
   HelpCircle,
   ClipboardList,
+  Users,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -589,6 +590,13 @@ function BillingStep({ formData, setFormData }: StepProps) {
             </ul>
           </div>
         ))}
+      </div>
+
+      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg p-4 mt-4">
+        <Users className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+        <p className="text-sm text-emerald-700">
+          <span className="font-semibold">Client Portal included FREE</span> — your clients get a branded portal to view accounts, track goals, and message you at no extra cost.
+        </p>
       </div>
 
       <div className="p-4 bg-slate-50 rounded-lg">

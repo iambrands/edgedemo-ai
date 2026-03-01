@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Footer } from '../../components/layout/Footer';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { portalLogin } from '../../services/portalApi';
 
 export default function PortalLogin() {
   const navigate = useNavigate();
@@ -24,20 +23,7 @@ export default function PortalLogin() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/portal/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.detail || 'Invalid email or password');
-      }
-
-      const data = await res.json();
-      localStorage.setItem('portal_token', data.access_token || 'demo_token');
-      localStorage.setItem('portal_user', JSON.stringify(data.user || { email }));
+      await portalLogin(email, password);
       navigate('/portal/dashboard');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Login failed';

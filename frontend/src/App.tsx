@@ -56,7 +56,7 @@ import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { Technology, Methodology } from './pages/about';
 import { Terms, Privacy, Disclosures } from './pages/legal';
 import { About, Careers, Blog, Contact } from './pages/company';
-import { Investors, Professionals } from './pages/audience';
+
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import PortalLayout from './components/portal/PortalLayout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -141,10 +141,6 @@ export default function App() {
       <Route path="/company/careers" element={<Careers />} />
       <Route path="/company/blog" element={<Blog />} />
       <Route path="/company/contact" element={<Contact />} />
-
-      {/* Audience */}
-      <Route path="/investors" element={<Investors />} />
-      <Route path="/professionals" element={<Professionals />} />
 
       {/* Client Portal Routes (standalone — no sidebar) */}
       <Route path="/portal/login" element={<PortalLogin />} />

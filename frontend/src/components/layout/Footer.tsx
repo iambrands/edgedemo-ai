@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 export function Footer() {
   const footerLinks = {
     product: [
-      { label: 'For Investors', href: '/investors', isRoute: true },
-      { label: 'For Professionals', href: '/professionals', isRoute: true },
+      { label: 'Features', href: '/#features', isRoute: true },
+      { label: 'Pricing', href: '/#pricing', isRoute: true },
       { label: 'Our Technology', href: '/about/technology', isRoute: true },
       { label: 'Methodology', href: '/about/methodology', isRoute: true },
     ],
@@ -32,8 +32,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-slate-400 text-sm">
-              AI-powered investment intelligence for individual investors and financial
-              professionals.
+              The AI-powered platform built for Registered Investment Advisors.
             </p>
           </div>
 
@@ -95,8 +94,8 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t border-slate-800">
           <p className="text-slate-500 text-xs leading-relaxed">
-            Edge provides market alerts based on sophisticated algorithmic analysis, not
-            investment advice. Securities offered through IAB Advisors, Inc. Member FINRA/SIPC.
+            Edge is an AI-powered practice management platform for registered investment advisors.
+            Securities offered through IAB Advisors, Inc. Member FINRA/SIPC.
           </p>
           <p className="text-slate-500 text-xs mt-4">
             © 2026 Edge by IAB Advisors, Inc. All rights reserved.

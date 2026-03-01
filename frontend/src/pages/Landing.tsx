@@ -2,20 +2,117 @@ import { useNavigate } from 'react-router-dom';
 import {
   Check,
   Brain,
+  Users,
+  Shield,
+  UserPlus,
+  ArrowUpDown,
+  Receipt,
   Target,
   ClipboardCheck,
-  TrendingUp,
-  DollarSign,
-  Globe,
-  BarChart2,
-  User,
-  Building2,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+
+const PLATFORM_FEATURES = [
+  {
+    icon: Brain,
+    title: 'Portfolio Intelligence',
+    description:
+      'AI-powered portfolio analysis, model portfolios, automated rebalancing, and tax-loss harvesting — all from one dashboard.',
+    color: 'bg-blue-50 text-blue-600',
+  },
+  {
+    icon: Users,
+    title: 'Client Portal',
+    description:
+      'White-label portal your clients love — goals tracking, performance views, messaging, and document sharing. FREE for all your clients.',
+    color: 'bg-emerald-50 text-emerald-600',
+    badge: 'FREE',
+  },
+  {
+    icon: Shield,
+    title: 'Compliance & Reporting',
+    description:
+      'Automated compliance monitoring, audit trails, regulatory reporting, and document management built for fiduciary advisors.',
+    color: 'bg-purple-50 text-purple-600',
+  },
+  {
+    icon: UserPlus,
+    title: 'CRM & Prospects',
+    description:
+      'AI lead scoring, pipeline management, automated proposal generation, and activity tracking to grow your practice.',
+    color: 'bg-amber-50 text-amber-600',
+  },
+  {
+    icon: ArrowUpDown,
+    title: 'Trading & Execution',
+    description:
+      'Best execution analysis, multi-custodian support, trade blotter, and rebalancing across all client accounts.',
+    color: 'bg-rose-50 text-rose-600',
+  },
+  {
+    icon: Receipt,
+    title: 'Billing & Operations',
+    description:
+      'AUM-based fee schedules, automated billing, custodian integrations, and comprehensive reporting for your practice.',
+    color: 'bg-teal-50 text-teal-600',
+  },
+];
+
+const PRICING_TIERS = [
+  {
+    name: 'Starter',
+    price: '$499',
+    aum: 'Up to $10M AUM',
+    clients: '25 clients',
+    features: [
+      'Portfolio management & analysis',
+      'AI-powered insights',
+      'Compliance dashboard',
+      'Client reports & statements',
+      'Email & chat support',
+    ],
+    cta: 'Start Free Trial',
+    featured: false,
+  },
+  {
+    name: 'Professional',
+    price: '$999',
+    aum: 'Up to $50M AUM',
+    clients: '100 clients',
+    features: [
+      'Everything in Starter',
+      'Automated rebalancing',
+      'Tax-loss harvesting',
+      'White-label client portal',
+      'CRM & prospect pipeline',
+      'Priority support',
+    ],
+    cta: 'Start Free Trial',
+    featured: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'Custom',
+    aum: '$50M+ AUM',
+    clients: 'Unlimited clients',
+    features: [
+      'Everything in Professional',
+      'Custom integrations & API',
+      'Multi-custodian trading',
+      'Advanced compliance suite',
+      'Dedicated account manager',
+      'Custom onboarding & training',
+    ],
+    cta: 'Contact Sales',
+    featured: false,
+  },
+];
 
 export function Landing() {
   const navigate = useNavigate();
@@ -24,193 +121,146 @@ export function Landing() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      {/* Hero Section */}
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl lg:text-[48px] font-bold text-slate-900 leading-tight mb-6">
-              Smarter Investing Starts at the{' '}
-              <span className="text-primary-500">Edge</span>
+            <Badge variant="blue" className="mb-6">
+              Built for Registered Investment Advisors
+            </Badge>
+            <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold text-slate-900 leading-tight mb-6">
+              The AI-Powered Platform That Runs Your{' '}
+              <span className="text-primary-500">Entire Advisory Practice</span>
             </h1>
-            <p className="text-lg sm:text-body-lg text-slate-500 mb-8 max-w-2xl mx-auto">
-              Powered by AI. Built for everyone from individual investors to registered
-              advisors. Get institutional-grade investment intelligence in one powerful
-              platform.
+            <p className="text-lg sm:text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
+              From portfolio intelligence to client engagement — Edge gives RIAs
+              institutional-grade tools to grow AUM, delight clients, and stay compliant.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button size="lg" onClick={() => navigate('/signup')}>
-                Start Free Trial →
+              <Button size="lg" onClick={() => navigate('/onboarding/ria')}>
+                Start 14-Day Free Trial <ArrowRight className="w-4 h-4 ml-1 inline" />
               </Button>
-              <Button variant="secondary" size="lg">
-                Watch Demo
+              <Button variant="secondary" size="lg" onClick={() => navigate('/company/contact')}>
+                Schedule Demo
               </Button>
             </div>
 
-            {/* Stats */}
+            {/* Trust Stats */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
               <div className="text-center">
-                <p className="text-3xl font-bold text-primary-500">+127.5K</p>
-                <p className="text-sm text-slate-500">Active Users</p>
+                <p className="text-3xl font-bold text-primary-500">$2.4B+</p>
+                <p className="text-sm text-slate-500">AUM Managed</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-primary-500">$2.4B+</p>
-                <p className="text-sm text-slate-500">Assets Analyzed</p>
+                <p className="text-3xl font-bold text-primary-500">500+</p>
+                <p className="text-sm text-slate-500">Advisory Firms</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-primary-500">99.9%</p>
+                <p className="text-sm text-slate-500">Uptime</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Choose Your Journey Section */}
-      <section id="investors" className="py-20 bg-slate-50">
+      {/* ── Platform Features ─────────────────────────────────────────── */}
+      <section id="features" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
-              Choose Your Investment Journey
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Built for Every Part of Your Practice
             </h2>
-            <p className="text-slate-500 text-lg">
-              Select the path that matches your investment needs
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              One platform to manage portfolios, serve clients, stay compliant, and grow your firm
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Individual Investors Card */}
-            <Card variant="feature" className="relative">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  For Individual Investors
-                </h3>
-              </div>
-              <p className="text-slate-500 mb-6">
-                Smart tools for everyday investors looking to grow their wealth with
-                AI-powered insights and guidance.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'AI-powered portfolio analysis',
-                  'Real-time market alerts',
-                  'Personalized investment recommendations',
-                  'Tax optimization suggestions',
-                  'Educational resources & community',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-slate-700 text-[15px]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="bg-slate-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-slate-500">Starting at</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  $29<span className="text-base font-normal text-slate-500">/month</span>
-                </p>
-                <p className="text-sm text-primary-600">Free 14-day trial</p>
-              </div>
-              <Button className="w-full" onClick={() => navigate('/signup')}>
-                Start Investing Smarter →
-              </Button>
-            </Card>
-
-            {/* Financial Professionals Card */}
-            <Card variant="feature" className="relative" id="professionals">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-primary-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  For Financial Professionals
-                </h3>
-              </div>
-              <p className="text-slate-500 mb-6">
-                Comprehensive platform for RIAs and financial advisors to manage
-                clients, compliance, and portfolios at scale.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Multi-client portfolio management',
-                  'Automated rebalancing & tax harvesting',
-                  'Compliance & regulatory reporting',
-                  'White-label client portals',
-                  'Institutional-grade analytics',
-                ].map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-slate-700 text-[15px]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="bg-slate-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-slate-500">Starting at</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  $499<span className="text-base font-normal text-slate-500">/month</span>
-                </p>
-                <p className="text-sm text-primary-600">Up to $5M AUM</p>
-              </div>
-              <Button className="w-full" onClick={() => navigate('/signup')}>
-                Schedule Demo →
-              </Button>
-            </Card>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {PLATFORM_FEATURES.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={feature.title} variant="feature" className="relative">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${feature.color}`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-base font-semibold text-slate-900">{feature.title}</h3>
+                        {feature.badge && (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                            {feature.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Powered by Advanced AI Section */}
-      <section id="features" className="py-20 bg-white">
+      {/* ── AI Engines ────────────────────────────────────────────────── */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
+            <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
+              <Sparkles className="w-4 h-4" />
               Powered by Advanced AI
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Three AI Engines Working for Your Practice
             </h2>
-            <p className="text-slate-500 text-lg">
-              Three specialized AI engines working together for your success
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              Purpose-built AI that understands wealth management, not generic chatbots
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Investment Intelligence Engine */}
             <Card variant="feature">
-              <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center mb-4">
-                <Brain className="w-6 h-6 text-primary-600" />
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+                <Brain className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Investment Intelligence Engine
+                Portfolio Intelligence Engine
               </h3>
               <p className="text-slate-500 text-sm mb-4">
-                Deep learning model trained on millions of portfolio configurations to
-                identify optimal asset allocations and investment opportunities.
+                Analyzes client portfolios for concentration risk, fee drag, and tax
+                inefficiency. Generates actionable recommendations you can share with clients.
               </p>
               <Badge variant="green">In Production</Badge>
             </Card>
 
-            {/* Behavioral Finance Advisor */}
             <Card variant="feature">
               <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
                 <Target className="w-6 h-6 text-purple-500" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Behavioral Finance Advisor
+                Client Insight Engine
               </h3>
               <p className="text-slate-500 text-sm mb-4">
-                Combines behavioral economics, psychology, and portfolio theory to
-                provide personalized guidance that accounts for investor biases.
+                Understands client goals, risk tolerance, and behavioral patterns to generate
+                personalized nudges and conversation starters for every meeting.
               </p>
               <Badge variant="green">In Production</Badge>
             </Card>
 
-            {/* Compliance Investment Model */}
             <Card variant="feature">
               <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
                 <ClipboardCheck className="w-6 h-6 text-teal-500" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Compliance Investment Model
+                Compliance & Risk Monitor
               </h3>
               <p className="text-slate-500 text-sm mb-4">
-                Identifies compliance requirements, flags potential issues, and generates
-                timestamped audit trails for documentation and review.
+                Continuously monitors portfolios for regulatory compliance, drift alerts,
+                and suitability issues. Auto-generates audit documentation.
               </p>
               <Badge variant="green">In Production</Badge>
             </Card>
@@ -218,254 +268,105 @@ export function Landing() {
         </div>
       </section>
 
-      {/* One Platform, Multiple Asset Classes */}
-      <section className="py-20 bg-white">
+      {/* ── Pricing ───────────────────────────────────────────────────── */}
+      <section id="pricing" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
-              One Platform, Multiple Asset Classes
+          <div className="text-center mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Simple, Transparent Pricing
             </h2>
             <p className="text-slate-500 text-lg">
-              Trade and analyze every market from one interface
+              Plans that scale with your practice. No hidden fees.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {/* OptionsEdge */}
-            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <BarChart2 className="w-5 h-5" />
-              </div>
-              <h4 className="font-semibold mb-1">OptionsEdge</h4>
-              <p className="text-sm text-white/80">Options trading & analysis</p>
-            </div>
-
-            {/* StocksEdge */}
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <h4 className="font-semibold mb-1">StocksEdge</h4>
-              <p className="text-sm text-white/80">Equity research & trading</p>
-            </div>
-
-            {/* ForexEdge */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <Globe className="w-5 h-5" />
-              </div>
-              <h4 className="font-semibold mb-1">ForexEdge</h4>
-              <p className="text-sm text-white/80">Currency trading & analysis</p>
-            </div>
-
-            {/* FuturesEdge */}
-            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <DollarSign className="w-5 h-5" />
-              </div>
-              <h4 className="font-semibold mb-1">FuturesEdge</h4>
-              <p className="text-sm text-white/80">Futures & commodities</p>
+          {/* Client Portal FREE callout */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-5 py-2">
+              <Users className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700">
+                Client Portal included FREE with every plan — your clients pay nothing
+              </span>
             </div>
           </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {PRICING_TIERS.map((tier) => (
+              <Card
+                key={tier.name}
+                variant={tier.featured ? 'pricing-featured' : 'default'}
+                className="relative"
+              >
+                {tier.featured && (
+                  <Badge variant="blue" className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    Most Popular
+                  </Badge>
+                )}
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{tier.name}</h3>
+                <p className="text-3xl font-bold text-slate-900 mb-1">
+                  {tier.price}
+                  {tier.price !== 'Custom' && (
+                    <span className="text-base font-normal text-slate-500">/mo</span>
+                  )}
+                </p>
+                <p className="text-sm text-slate-500 mb-1">{tier.aum}</p>
+                <p className="text-sm text-primary-600 mb-6">{tier.clients}</p>
+
+                <ul className="space-y-3 mb-6">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
+                      <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* FREE portal badge */}
+                <div className="flex items-center gap-2 bg-emerald-50 rounded-lg px-3 py-2 mb-6">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-medium text-emerald-700">FREE Client Portal</span>
+                </div>
+
+                <Button
+                  variant={tier.featured ? 'primary' : 'secondary'}
+                  className="w-full"
+                  onClick={() =>
+                    tier.cta === 'Contact Sales'
+                      ? navigate('/company/contact')
+                      : navigate('/onboarding/ria')
+                  }
+                >
+                  {tier.cta}
+                </Button>
+              </Card>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-slate-400 mt-8">
+            All plans include a 14-day free trial. No credit card required. Cancel anytime.
+          </p>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-h2 font-bold text-slate-900 mb-4">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-slate-500 text-lg">Choose the plan that fits your needs</p>
-          </div>
-
-          {/* Individual Investors Pricing */}
-          <div className="mb-16">
-            <div className="text-center mb-8">
-              <Badge variant="blue">For Individual Investors</Badge>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* Starter */}
-              <Card className="relative">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Starter</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-6">
-                  $29<span className="text-base font-normal text-slate-500">/mo</span>
-                </p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    '1 module access',
-                    'Basic AI insights',
-                    'Portfolio tracking',
-                    'Email alerts',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/signup')}>
-                  Get Started
-                </Button>
-              </Card>
-
-              {/* Pro */}
-              <Card variant="pricing-featured" className="relative">
-                <Badge variant="blue" className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  Most Popular
-                </Badge>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Pro</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-6">
-                  $79<span className="text-base font-normal text-slate-500">/mo</span>
-                </p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    '2 module access',
-                    'Advanced AI insights',
-                    'Real-time alerts',
-                    'Tax optimization',
-                    'Priority support',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button className="w-full" onClick={() => navigate('/signup')}>
-                  Get Started
-                </Button>
-              </Card>
-
-              {/* Elite */}
-              <Card className="relative">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Elite</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-6">
-                  $199<span className="text-base font-normal text-slate-500">/mo</span>
-                </p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    'All modules',
-                    'Unlimited AI queries',
-                    'Custom strategies',
-                    'API access',
-                    '1-on-1 coaching',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/signup')}>
-                  Get Started
-                </Button>
-              </Card>
-            </div>
-          </div>
-
-          {/* RIA Pricing */}
-          <div>
-            <div className="text-center mb-8">
-              <Badge variant="blue">For Financial Professionals (RIA)</Badge>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* RIA Starter */}
-              <Card className="relative">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Starter</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-1">
-                  $499<span className="text-base font-normal text-slate-500">/mo</span>
-                </p>
-                <p className="text-sm text-slate-500 mb-6">Up to $5M AUM</p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    '10 clients',
-                    'Portfolio management',
-                    'Compliance tools',
-                    'Client reports',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/signup')}>
-                  Schedule Demo
-                </Button>
-              </Card>
-
-              {/* RIA Professional */}
-              <Card variant="pricing-featured" className="relative">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Professional</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-1">
-                  $999<span className="text-base font-normal text-slate-500">/mo</span>
-                </p>
-                <p className="text-sm text-slate-500 mb-6">Up to $25M AUM</p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    '50 clients',
-                    'Auto-rebalancing',
-                    'Tax harvesting',
-                    'White-label portal',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button className="w-full" onClick={() => navigate('/signup')}>
-                  Schedule Demo
-                </Button>
-              </Card>
-
-              {/* RIA Enterprise */}
-              <Card className="relative">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">RIA Enterprise</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-1">Custom</p>
-                <p className="text-sm text-slate-500 mb-6">$100M+ AUM</p>
-                <ul className="space-y-3 mb-8">
-                  {[
-                    'Unlimited clients',
-                    'Custom features',
-                    'API access',
-                    'Dedicated support',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="secondary" className="w-full">
-                  Contact Sales
-                </Button>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
+      {/* ── CTA ───────────────────────────────────────────────────────── */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Ready to Invest Smarter?
+            Ready to Modernize Your Practice?
           </h2>
           <p className="text-lg text-primary-100 mb-8">
-            Join 127,500+ investors using Edge to make better investment decisions
+            Join 500+ advisory firms using Edge to deliver better outcomes for their clients.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
+              variant="secondary"
               size="lg"
-              className="bg-white text-primary-600 hover:bg-slate-100"
-              onClick={() => navigate('/signup')}
+              className="!bg-white !text-primary-600 !border-white hover:!bg-slate-100"
+              onClick={() => navigate('/onboarding/ria')}
             >
-              Start Free Trial
+              Start 14-Day Free Trial
             </Button>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={() => navigate('/company/contact')}>
               Schedule Demo
             </Button>
           </div>

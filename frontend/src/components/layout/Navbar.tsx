@@ -20,10 +20,8 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { to: '/about/technology', label: 'Features' },
-    { to: '/investors', label: 'For Investors' },
-    { to: '/professionals', label: 'For Professionals' },
-    { to: '/company/contact', label: 'Contact' },
+    { to: '#features', label: 'Features' },
+    { to: '#pricing', label: 'Pricing' },
   ];
 
   return (
@@ -58,16 +56,10 @@ export function Navbar() {
               <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
             ) : (
               <>
-                <Link
-                  to="/portal/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-                >
-                  Client Login
-                </Link>
                 <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Advisor Login
+                  Login
                 </Button>
-                <Button onClick={() => navigate('/signup')}>Get Started →</Button>
+                <Button onClick={() => navigate('/onboarding')}>Get Started →</Button>
               </>
             )}
           </div>
@@ -104,19 +96,12 @@ export function Navbar() {
                   <>
                     <Button
                       variant="secondary"
-                      onClick={() => navigate('/portal/login')}
-                      className="w-full"
-                    >
-                      Client Login
-                    </Button>
-                    <Button
-                      variant="secondary"
                       onClick={() => navigate('/login')}
                       className="w-full"
                     >
-                      Advisor Login
+                      Login
                     </Button>
-                    <Button onClick={() => navigate('/signup')} className="w-full">
+                    <Button onClick={() => navigate('/onboarding')} className="w-full">
                       Get Started →
                     </Button>
                   </>

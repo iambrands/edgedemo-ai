@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Upload,
   FileSpreadsheet,
@@ -15,6 +15,8 @@ import {
   ArrowUpDown,
   Download,
   Sparkles,
+  ArrowRight,
+  Pencil,
 } from 'lucide-react';
 import {
   PieChart,
@@ -28,10 +30,13 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { portfolioReviewApi } from '../../services/api';
 import { exportToPDF } from '../../utils/export';
+import { createProspect } from '../../services/prospectApi';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -216,6 +221,29 @@ const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 /* ------------------------------------------------------------------ */
 
 export default function PortfolioReview() {
+  const toast = useToast();
+  const navigate = useNavigate();
+
+  // Prospect capture
+  const [prospectInfo, setProspectInfo] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    leadSource: string;
+    notes: string;
+  } | null>(null);
+  const [prospectCreated, setProspectCreated] = useState(false);
+  const [createdProspectId, setCreatedProspectId] = useState<string | null>(null);
+
+  // Prospect form fields
+  const [prospectFirstName, setProspectFirstName] = useState('');
+  const [prospectLastName, setProspectLastName] = useState('');
+  const [prospectEmail, setProspectEmail] = useState('');
+  const [prospectPhone, setProspectPhone] = useState('');
+  const [prospectLeadSource, setProspectLeadSource] = useState('website');
+  const [prospectNotes, setProspectNotes] = useState('');
+
   // Phase 1: Upload
   const [holdings, setHoldings] = useState<ParsedHolding[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -339,6 +367,57 @@ export default function PortfolioReview() {
     setAnalysis(null);
     setAnalysisError(null);
   };
+
+  /* ── Prospect handlers ─────────────────────────────────────── */
+
+  const handleProspectSubmit = () => {
+    if (!prospectFirstName.trim() || !prospectLastName.trim()) return;
+    setProspectInfo({
+      firstName: prospectFirstName.trim(),
+      lastName: prospectLastName.trim(),
+      email: prospectEmail.trim(),
+      phone: prospectPhone.trim(),
+      leadSource: prospectLeadSource,
+      notes: prospectNotes.trim(),
+    });
+  };
+
+  const saveProspect = async () => {
+    if (!prospectInfo || prospectCreated) return;
+    try {
+      const result = await createProspect({
+        first_name: prospectInfo.firstName,
+        last_name: prospectInfo.lastName,
+        email: prospectInfo.email || undefined,
+        phone: prospectInfo.phone || undefined,
+        lead_source: prospectInfo.leadSource,
+        source_detail: 'Portfolio Review Upload',
+        estimated_aum: totalValue,
+        notes: prospectInfo.notes || `Portfolio review: ${fileName} (${holdings.length} holdings, ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue)})`,
+        tags: ['portfolio-review'],
+      });
+      setProspectCreated(true);
+      setCreatedProspectId(result.id);
+      toast.success(`Prospect created — ${prospectInfo.firstName} ${prospectInfo.lastName} added to your pipeline`);
+    } catch {
+      toast.error('Failed to create prospect. You can add them manually from the Prospects page.');
+    }
+  };
+
+  // Auto-create prospect when analysis completes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (analysis && prospectInfo && !prospectCreated) {
+      saveProspect();
+    }
+  }, [analysis]);
+
+  // Pre-fill client name for PDF from prospect info
+  useEffect(() => {
+    if (prospectInfo) {
+      setClientName(`${prospectInfo.firstName} ${prospectInfo.lastName}`);
+    }
+  }, [prospectInfo]);
 
   const generateReport = () => {
     if (!analysis) return;
@@ -483,6 +562,124 @@ export default function PortfolioReview() {
     exportToPDF('Portfolio Review Report', html, `portfolio-review-${name.replace(/\s+/g, '-').toLowerCase()}`);
   };
 
+  /* ── Render: Prospect Capture Phase ───────────────────────────── */
+
+  if (!prospectInfo) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Portfolio Review</h1>
+          <p className="text-sm text-slate-500 mt-1">Upload a client portfolio CSV to analyze holdings, assess risk, and generate recommendations.</p>
+        </div>
+
+        <Card>
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-slate-800 mb-1">Prospect Information</h2>
+            <p className="text-sm text-slate-500 mb-6">Enter the prospect&apos;s details before uploading their portfolio for analysis.</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">First Name *</label>
+                <input
+                  type="text"
+                  value={prospectFirstName}
+                  onChange={e => setProspectFirstName(e.target.value)}
+                  placeholder="e.g., John"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  value={prospectLastName}
+                  onChange={e => setProspectLastName(e.target.value)}
+                  placeholder="e.g., Smith"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={prospectEmail}
+                  onChange={e => setProspectEmail(e.target.value)}
+                  placeholder="e.g., john.smith@example.com"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={prospectPhone}
+                  onChange={e => setProspectPhone(e.target.value)}
+                  placeholder="e.g., (555) 123-4567"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Lead Source</label>
+                <select
+                  value={prospectLeadSource}
+                  onChange={e => setProspectLeadSource(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                >
+                  <option value="website">Website</option>
+                  <option value="referral">Referral</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="cold_outreach">Cold Outreach</option>
+                  <option value="advertising">Advertising</option>
+                  <option value="partnership">Partnership</option>
+                  <option value="existing_client">Existing Client</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-slate-500 mb-1">Notes</label>
+                <textarea
+                  value={prospectNotes}
+                  onChange={e => setProspectNotes(e.target.value)}
+                  placeholder="Optional notes about this prospect..."
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleProspectSubmit}
+              disabled={!prospectFirstName.trim() || !prospectLastName.trim()}
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Continue to Upload
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </Card>
+
+        {/* How It Works */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            { icon: FileText, title: '1. Prospect Info', desc: 'Enter the prospect details to start the review' },
+            { icon: Upload, title: '2. Upload CSV', desc: 'Upload a portfolio export from any major custodian' },
+            { icon: Sparkles, title: '3. AI Analysis', desc: 'Claude analyzes risk, concentration, fees, and allocation' },
+            { icon: Download, title: '4. Generate Report', desc: 'Download a professional PDF and auto-save the prospect' },
+          ].map(step => (
+            <Card key={step.title}>
+              <div className="p-5 text-center">
+                <step.icon className="mx-auto mb-3 text-blue-600" size={28} />
+                <h3 className="font-semibold text-slate-800 text-sm">{step.title}</h3>
+                <p className="text-xs text-slate-500 mt-1">{step.desc}</p>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   /* ── Render: Upload Phase ─────────────────────────────────────── */
 
   if (holdings.length === 0) {
@@ -491,6 +688,21 @@ export default function PortfolioReview() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Portfolio Review</h1>
           <p className="text-sm text-slate-500 mt-1">Upload a client portfolio CSV to analyze holdings, assess risk, and generate recommendations.</p>
+        </div>
+
+        {/* Prospect info bar */}
+        <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <span className="font-medium">Prospect:</span> {prospectInfo.firstName} {prospectInfo.lastName}
+            {prospectInfo.email && <span className="text-blue-600 ml-2">({prospectInfo.email})</span>}
+          </p>
+          <button
+            onClick={() => setProspectInfo(null)}
+            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <Pencil size={12} />
+            Edit
+          </button>
         </div>
 
         <Card>
@@ -535,11 +747,12 @@ export default function PortfolioReview() {
         </Card>
 
         {/* How It Works */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { icon: Upload, title: '1. Upload CSV', desc: 'Upload a portfolio export from any major custodian' },
-            { icon: Sparkles, title: '2. AI Analysis', desc: 'Claude analyzes risk, concentration, fees, and allocation' },
-            { icon: FileText, title: '3. Generate Report', desc: 'Download a professional PDF report for your client' },
+            { icon: FileText, title: '1. Prospect Info', desc: 'Enter the prospect details to start the review' },
+            { icon: Upload, title: '2. Upload CSV', desc: 'Upload a portfolio export from any major custodian' },
+            { icon: Sparkles, title: '3. AI Analysis', desc: 'Claude analyzes risk, concentration, fees, and allocation' },
+            { icon: Download, title: '4. Generate Report', desc: 'Download a professional PDF and auto-save the prospect' },
           ].map(step => (
             <Card key={step.title}>
               <div className="p-5 text-center">
@@ -558,6 +771,21 @@ export default function PortfolioReview() {
 
   return (
     <div className="space-y-6">
+      {/* Prospect info bar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800">
+          <span className="font-medium">Prospect:</span> {prospectInfo.firstName} {prospectInfo.lastName}
+          {prospectInfo.email && <span className="text-blue-600 ml-2">({prospectInfo.email})</span>}
+        </p>
+        <button
+          onClick={() => setProspectInfo(null)}
+          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <Pencil size={12} />
+          Edit
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -999,6 +1227,14 @@ export default function PortfolioReview() {
                 <Download size={16} />
                 Generate PDF Report
               </button>
+              {createdProspectId && (
+                <button
+                  onClick={() => navigate('/dashboard/prospects')}
+                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-4"
+                >
+                  View in Prospects <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </Card>
         </>
