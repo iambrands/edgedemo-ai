@@ -4,6 +4,8 @@ import {
   HelpCircle, Loader2, ChevronRight, Check,
 } from 'lucide-react';
 import { getRequestTypes, getRequests, submitRequest } from '../../services/portalApi';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -50,6 +52,7 @@ export default function PortalRequests() {
   const [docType, setDocType] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     Promise.all([getRequestTypes(), getRequests()])
@@ -83,8 +86,10 @@ export default function PortalRequests() {
       if (res.request) setRequests((prev) => [res.request, ...prev]);
       setView('list');
       resetForm();
+      toast.success('Request submitted successfully');
     } catch (e) {
       console.error('submit failed', e);
+      toast.error('Failed to submit request');
     } finally {
       setSubmitting(false);
     }
@@ -101,20 +106,19 @@ export default function PortalRequests() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Requests</h1>
-            <p className="text-slate-500 text-sm">Submit and track service requests</p>
-          </div>
-          {view === 'list' && (
-            <button onClick={() => setView('new')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-              <PlusCircle className="h-4 w-4" /> New Request
-            </button>
-          )}
-          {view !== 'list' && (
-            <button onClick={() => { setView('list'); resetForm(); setSelReq(null); }} className="text-sm text-slate-500 hover:text-slate-700">← Back to requests</button>
-          )}
-        </div>
+        <PageHeader
+          title="Requests"
+          subtitle="Submit and track service requests"
+          actions={
+            view === 'list' ? (
+              <button onClick={() => setView('new')} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                <PlusCircle className="h-4 w-4" /> New Request
+              </button>
+            ) : (
+              <button onClick={() => { setView('list'); resetForm(); setSelReq(null); }} className="text-sm text-slate-500 hover:text-slate-700">← Back to requests</button>
+            )
+          }
+        />
 
         {/* ── LIST ────────────────────────────────────── */}
         {view === 'list' && (

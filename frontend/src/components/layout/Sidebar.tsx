@@ -229,11 +229,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                       toggleGroup(group.id);
                     }
                   }}
+                  aria-expanded={isOpen}
                   className={clsx(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
                     hasActiveSub && !isOpen
                       ? 'bg-white/15 text-white'
-                      : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                      : 'text-blue-100 hover:bg-white/10 hover:text-white'
                   )}
                 >
                   <GroupIcon size={18} className="flex-shrink-0" />
@@ -262,8 +263,8 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                           clsx(
                             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
                             isActive
-                              ? 'bg-emerald-500/20 text-emerald-300 font-medium'
-                              : 'text-blue-200/80 hover:bg-white/5 hover:text-white'
+                              ? 'bg-white/20 text-white font-medium'
+                              : 'text-blue-100/80 hover:bg-white/5 hover:text-white'
                           )
                         }
                       >

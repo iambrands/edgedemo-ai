@@ -4,6 +4,9 @@ import {
   TrendingUp, Briefcase, GraduationCap, Eye, Lock, Shield,
 } from 'lucide-react';
 import { getFamilyData, getFamilyMemberDetails } from '../../services/portalApi';
+import { formatCurrency } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Badge } from '../../components/ui/Badge';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -46,8 +49,7 @@ interface FamilyData {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const fmtCur = (v: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+const fmtCur = (v: number) => formatCurrency(v);
 
 const ALLOC_COLORS = [
   { key: 'equity', label: 'Equity', color: 'bg-blue-500' },
@@ -110,10 +112,7 @@ export default function PortalFamily() {
   if (!data) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
-          <p className="text-slate-500 text-sm">Household overview and linked family members</p>
-        </div>
+        <PageHeader title="Family Dashboard" subtitle="Household overview and linked family members" />
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
           <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
           <h3 className="font-medium text-slate-900">{error || 'No family data available'}</h3>
@@ -134,10 +133,7 @@ export default function PortalFamily() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Family Dashboard</h1>
-          <p className="text-slate-500 text-sm">Household overview and linked family members</p>
-        </div>
+        <PageHeader title="Family Dashboard" subtitle="Household overview and linked family members" />
 
         {/* Privacy notice */}
         <div className="flex items-start gap-3 p-3 bg-slate-100 rounded-lg">
@@ -210,7 +206,7 @@ export default function PortalFamily() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-slate-900">{m.name}</p>
-                          {m.is_self && <span className="px-2 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 rounded-full">You</span>}
+                          {m.is_self && <Badge variant="blue">You</Badge>}
                         </div>
                         <p className="text-sm text-slate-500">{m.relationship}</p>
                       </div>
@@ -275,7 +271,7 @@ export default function PortalFamily() {
                         <p className="text-xs text-slate-500">529 Education Plan</p>
                         <p className="text-lg font-bold text-slate-900">{fmtCur(dep.plan_value)}</p>
                       </div>
-                      <span className="px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">Active</span>
+                      <Badge variant="green">Active</Badge>
                     </div>
                   ) : (
                     <div className="p-3 bg-slate-50 rounded-lg text-center">

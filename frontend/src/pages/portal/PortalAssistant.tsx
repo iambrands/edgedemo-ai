@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { getChatHistory, sendChatMessage } from '../../services/portalApi';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -85,16 +86,15 @@ export default function PortalAssistant() {
     <div className="flex flex-col">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-4">
-        {/* Header */}
-        <div className="py-4 flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-blue-600 to-teal-500 rounded-xl">
-            <Bot className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">AI Financial Assistant</h1>
-            <p className="text-xs text-slate-500">Ask about your accounts, performance, goals & more</p>
-          </div>
-        </div>
+        <PageHeader
+          title="AI Financial Assistant"
+          subtitle="Ask about your accounts, performance, goals & more"
+          badge={
+            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-teal-500 rounded-xl">
+              <Bot className="h-5 w-5 text-white" />
+            </div>
+          }
+        />
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(100vh - 280px)' }}>

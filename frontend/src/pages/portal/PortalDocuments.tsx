@@ -3,14 +3,17 @@ import {
   FileText,
   Download,
   Eye,
-  Filter,
-  Search,
   File,
   Receipt,
   ClipboardList,
   ScrollText,
 } from 'lucide-react';
 import { getDocuments, markDocumentRead, PortalDocument } from '../../services/portalApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 
 const TYPE_META: Record<string, { label: string; icon: typeof FileText; color: string; bg: string }> = {
   report: { label: 'Report', icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -32,6 +35,7 @@ export default function PortalDocuments() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [search, setSearch] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     loadDocuments();
@@ -58,15 +62,8 @@ export default function PortalDocuments() {
       } catch {}
     }
     // In production, this would open or download the document
-    alert(`Opening "${doc.title}"...\n\n(Demo: document viewer would open here)`);
+    toast.info(`Opening "${doc.title}"...`);
   };
-
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
 
   const formatSize = (bytes?: number) => {
     if (!bytes) return '';
@@ -91,43 +88,29 @@ export default function PortalDocuments() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
-            <p className="text-slate-500 text-sm mt-1">
-              {documents.length} document{documents.length !== 1 ? 's' : ''}
-              {unreadCount > 0 && ` · ${unreadCount} unread`}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Documents"
+          subtitle={`${documents.length} document${documents.length !== 1 ? 's' : ''}${unreadCount > 0 ? ` · ${unreadCount} unread` : ''}`}
+        />
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-            >
-              {FILTER_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <SearchInput
+            placeholder="Search documents..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+          />
+          <Select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            {FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {/* Documents List */}
@@ -189,7 +172,7 @@ export default function PortalDocuments() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        alert(`Downloading "${doc.title}"...`);
+                        toast.success(`Downloading "${doc.title}"...`);
                       }}
                       className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Download"

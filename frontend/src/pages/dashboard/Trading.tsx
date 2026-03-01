@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowUpDown,
   TrendingUp,
@@ -8,8 +8,6 @@ import {
   Clock,
   DollarSign,
   Percent,
-  Filter,
-  Search,
   RefreshCw,
   ArrowUp,
   ArrowDown,
@@ -22,6 +20,16 @@ import {
   Leaf,
   CalendarDays,
 } from 'lucide-react';
+import { formatCurrency, formatNumber, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // TYPES
@@ -101,28 +109,6 @@ interface HistoricalTrade {
   venue: string;
   status: 'Filled' | 'Partially Filled' | 'Cancelled';
 }
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-const fmtCurrency = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(v);
-
-const fmtCurrencyDecimal = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(v);
-
-const fmtNumber = (v: number) =>
-  new Intl.NumberFormat('en-US').format(v);
 
 // ============================================================================
 // MOCK DATA
@@ -287,30 +273,22 @@ const MOCK_HISTORICAL_TRADES: HistoricalTrade[] = [
 ];
 
 // ============================================================================
-// STATUS BADGE
+// HELPERS
 // ============================================================================
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Filled: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Approved: 'bg-sky-50 text-sky-700 border-sky-200',
-    Executing: 'bg-blue-50 text-blue-700 border-blue-200',
-    Rejected: 'bg-red-50 text-red-700 border-red-200',
-    Cancelled: 'bg-red-50 text-red-700 border-red-200',
-    'Partially Filled': 'bg-amber-50 text-amber-700 border-amber-200',
-    'On Target': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Drifted: 'bg-amber-50 text-amber-700 border-amber-200',
-    Critical: 'bg-red-50 text-red-700 border-red-200',
-  };
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] ?? 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-      {status}
-    </span>
-  );
-}
+const statusBadgeVariant: Record<string, 'green' | 'amber' | 'red' | 'blue' | 'gray'> = {
+  Completed: 'green',
+  Filled: 'green',
+  Pending: 'amber',
+  Approved: 'blue',
+  Executing: 'blue',
+  Rejected: 'red',
+  Cancelled: 'red',
+  'Partially Filled': 'amber',
+  'On Target': 'green',
+  Drifted: 'amber',
+  Critical: 'red',
+};
 
 function SideBadge({ side }: { side: TradeSide }) {
   return side === 'Buy' ? (
@@ -325,53 +303,13 @@ function SideBadge({ side }: { side: TradeSide }) {
 }
 
 // ============================================================================
-// SUMMARY CARD
-// ============================================================================
-
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  sublabel,
-  color = 'blue',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  sublabel?: string;
-  color?: 'blue' | 'emerald' | 'amber' | 'red' | 'purple';
-}) {
-  const iconColors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    red: 'bg-red-50 text-red-600',
-    purple: 'bg-purple-50 text-purple-600',
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          {sublabel && <p className="text-xs text-slate-400">{sublabel}</p>}
-        </div>
-        <div className={`p-2.5 rounded-lg ${iconColors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // TAB 1: TRADE BLOTTER
 // ============================================================================
 
 function TradeBlotter() {
   const [trades, setTrades] = useState<Trade[]>(MOCK_TRADES);
   const [showNewTrade, setShowNewTrade] = useState(false);
+  const toast = useToast();
   const [newTrade, setNewTrade] = useState({
     account: ACCOUNTS[0],
     symbol: '',
@@ -389,7 +327,10 @@ function TradeBlotter() {
   const failedRejected = trades.filter((t) => t.status === 'Rejected').length;
 
   const handleSubmitTrade = () => {
-    if (!newTrade.symbol || !newTrade.quantity) return;
+    if (!newTrade.symbol || !newTrade.quantity) {
+      toast.warning('Please fill in symbol and quantity');
+      return;
+    }
     const trade: Trade = {
       id: `T${String(trades.length + 1).padStart(3, '0')}`,
       symbol: newTrade.symbol.toUpperCase(),
@@ -404,18 +345,19 @@ function TradeBlotter() {
     setTrades([trade, ...trades]);
     setShowNewTrade(false);
     setNewTrade({ account: ACCOUNTS[0], symbol: '', side: 'Buy', quantity: '', orderType: 'Market', price: '' });
+    toast.success(`Trade submitted: ${trade.side} ${formatNumber(trade.quantity)} ${trade.symbol}`);
   };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={BarChart3} label="Total Orders Today" value={String(totalOrders)} sublabel="Across all accounts" color="blue" />
-        <SummaryCard icon={Clock} label="Pending Approval" value={String(pendingApproval)} sublabel="Awaiting review" color="amber" />
-        <SummaryCard icon={DollarSign} label="Executed Value" value={fmtCurrency(executedValue)} sublabel="Completed trades" color="emerald" />
-        <SummaryCard icon={AlertTriangle} label="Failed / Rejected" value={String(failedRejected)} sublabel="Requires attention" color="red" />
+        <MetricCard icon={<BarChart3 size={18} />} label="Total Orders Today" value={String(totalOrders)} sublabel="Across all accounts" color="blue" />
+        <MetricCard icon={<Clock size={18} />} label="Pending Approval" value={String(pendingApproval)} sublabel="Awaiting review" color="amber" />
+        <MetricCard icon={<DollarSign size={18} />} label="Executed Value" value={formatCurrency(executedValue)} sublabel="Completed trades" color="emerald" />
+        <MetricCard icon={<AlertTriangle size={18} />} label="Failed / Rejected" value={String(failedRejected)} sublabel="Requires attention" color="red" />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="flex items-center justify-between p-5 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900">Trade Blotter</h3>
           <button
@@ -430,20 +372,17 @@ function TradeBlotter() {
         {showNewTrade && (
           <div className="p-5 bg-slate-50 border-b border-slate-200">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              <Select
+                label="Account"
+                value={newTrade.account}
+                onChange={(e) => setNewTrade({ ...newTrade, account: e.target.value })}
+              >
+                {ACCOUNTS.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </Select>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Account</label>
-                <select
-                  value={newTrade.account}
-                  onChange={(e) => setNewTrade({ ...newTrade, account: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {ACCOUNTS.map((a) => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Symbol</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Symbol</label>
                 <input
                   type="text"
                   value={newTrade.symbol}
@@ -452,19 +391,16 @@ function TradeBlotter() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+              <Select
+                label="Side"
+                value={newTrade.side}
+                onChange={(e) => setNewTrade({ ...newTrade, side: e.target.value as TradeSide })}
+              >
+                <option value="Buy">Buy</option>
+                <option value="Sell">Sell</option>
+              </Select>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Side</label>
-                <select
-                  value={newTrade.side}
-                  onChange={(e) => setNewTrade({ ...newTrade, side: e.target.value as TradeSide })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Buy">Buy</option>
-                  <option value="Sell">Sell</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Quantity</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Quantity</label>
                 <input
                   type="number"
                   value={newTrade.quantity}
@@ -473,18 +409,15 @@ function TradeBlotter() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Order Type</label>
-                <select
-                  value={newTrade.orderType}
-                  onChange={(e) => setNewTrade({ ...newTrade, orderType: e.target.value as OrderType })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Market">Market</option>
-                  <option value="Limit">Limit</option>
-                  <option value="Stop">Stop</option>
-                </select>
-              </div>
+              <Select
+                label="Order Type"
+                value={newTrade.orderType}
+                onChange={(e) => setNewTrade({ ...newTrade, orderType: e.target.value as OrderType })}
+              >
+                <option value="Market">Market</option>
+                <option value="Limit">Limit</option>
+                <option value="Stop">Stop</option>
+              </Select>
               <div className="flex items-end">
                 <button
                   onClick={handleSubmitTrade}
@@ -497,39 +430,37 @@ function TradeBlotter() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Order ID</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Symbol</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Side</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Account</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {trades.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-mono text-slate-600">{t.id}</td>
-                  <td className="px-5 py-3 text-sm font-semibold text-slate-900">{t.symbol}</td>
-                  <td className="px-5 py-3"><SideBadge side={t.side} /></td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtNumber(t.quantity)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtCurrencyDecimal(t.price)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 max-w-[160px] truncate">{t.account}</td>
-                  <td className="px-5 py-3 text-sm text-slate-500">{t.orderType}</td>
-                  <td className="px-5 py-3"><StatusBadge status={t.status} /></td>
-                  <td className="px-5 py-3 text-sm text-slate-400 font-mono whitespace-nowrap">{t.timestamp}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order ID</TableHead>
+              <TableHead>Symbol</TableHead>
+              <TableHead>Side</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead>Account</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Timestamp</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {trades.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="font-mono text-slate-600">{t.id}</TableCell>
+                <TableCell className="font-semibold text-slate-900">{t.symbol}</TableCell>
+                <TableCell><SideBadge side={t.side} /></TableCell>
+                <TableCell className="text-right font-mono">{formatNumber(t.quantity)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(t.price, { decimals: 2 })}</TableCell>
+                <TableCell className="max-w-[160px] truncate">{t.account}</TableCell>
+                <TableCell className="text-slate-500">{t.orderType}</TableCell>
+                <TableCell><Badge variant={statusBadgeVariant[t.status] ?? 'gray'}>{t.status}</Badge></TableCell>
+                <TableCell className="text-slate-400 font-mono whitespace-nowrap">{t.timestamp}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -541,6 +472,7 @@ function TradeBlotter() {
 function Rebalancing() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const toast = useToast();
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -559,6 +491,12 @@ function Rebalancing() {
     }
   };
 
+  const handleRebalance = () => {
+    if (selected.size === 0) return;
+    toast.success(`Rebalancing initiated for ${selected.size} account(s)`);
+    setSelected(new Set());
+  };
+
   const driftedCount = MOCK_REBALANCE_ACCOUNTS.filter((a) => a.status === 'Drifted' || a.status === 'Critical').length;
   const criticalCount = MOCK_REBALANCE_ACCOUNTS.filter((a) => a.status === 'Critical').length;
   const totalAum = MOCK_REBALANCE_ACCOUNTS.reduce((s, a) => s + a.aum, 0);
@@ -573,16 +511,17 @@ function Rebalancing() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={BarChart3} label="Total Accounts" value={String(MOCK_REBALANCE_ACCOUNTS.length)} sublabel={`${fmtCurrency(totalAum)} total AUM`} color="blue" />
-        <SummaryCard icon={Percent} label="Average Drift" value={`${avgDrift.toFixed(1)}%`} sublabel="Across all accounts" color="amber" />
-        <SummaryCard icon={AlertTriangle} label="Accounts Drifted" value={String(driftedCount)} sublabel={`${criticalCount} critical`} color="red" />
-        <SummaryCard icon={CheckCircle} label="On Target" value={String(MOCK_REBALANCE_ACCOUNTS.length - driftedCount)} sublabel="Within tolerance" color="emerald" />
+        <MetricCard icon={<BarChart3 size={18} />} label="Total Accounts" value={String(MOCK_REBALANCE_ACCOUNTS.length)} sublabel={`${formatCurrency(totalAum)} total AUM`} color="blue" />
+        <MetricCard icon={<Percent size={18} />} label="Average Drift" value={`${avgDrift.toFixed(1)}%`} sublabel="Across all accounts" color="amber" />
+        <MetricCard icon={<AlertTriangle size={18} />} label="Accounts Drifted" value={String(driftedCount)} sublabel={`${criticalCount} critical`} color="red" />
+        <MetricCard icon={<CheckCircle size={18} />} label="On Target" value={String(MOCK_REBALANCE_ACCOUNTS.length - driftedCount)} sublabel="Within tolerance" color="emerald" />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="flex items-center justify-between p-5 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900">Portfolio Rebalancing</h3>
           <button
+            onClick={handleRebalance}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               selected.size > 0
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -595,95 +534,93 @@ function Rebalancing() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="px-5 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selected.size === MOCK_REBALANCE_ACCOUNTS.length}
-                    onChange={toggleAll}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Account</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Model</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">AUM</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-48">Drift</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Rebalanced</th>
-                <th className="px-5 py-3 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_REBALANCE_ACCOUNTS.map((acct) => (
-                <React.Fragment key={acct.id}>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(acct.id)}
-                        onChange={() => toggleSelect(acct.id)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                    <td className="px-5 py-3 text-sm font-semibold text-slate-900">{acct.accountName}</td>
-                    <td className="px-5 py-3 text-sm text-slate-600">{acct.modelPortfolio}</td>
-                    <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtCurrency(acct.aum)}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${driftBarColor(acct.driftPct)}`}
-                            style={{ width: `${Math.min(acct.driftPct * 10, 100)}%` }}
-                          />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  checked={selected.size === MOCK_REBALANCE_ACCOUNTS.length}
+                  onChange={toggleAll}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+              </TableHead>
+              <TableHead>Account</TableHead>
+              <TableHead>Model</TableHead>
+              <TableHead className="text-right">AUM</TableHead>
+              <TableHead className="w-48">Drift</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Rebalanced</TableHead>
+              <TableHead className="w-10">{' '}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {MOCK_REBALANCE_ACCOUNTS.map((acct) => (
+              <React.Fragment key={acct.id}>
+                <TableRow>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(acct.id)}
+                      onChange={() => toggleSelect(acct.id)}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </TableCell>
+                  <TableCell className="font-semibold text-slate-900">{acct.accountName}</TableCell>
+                  <TableCell className="text-slate-600">{acct.modelPortfolio}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(acct.aum)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${driftBarColor(acct.driftPct)}`}
+                          style={{ width: `${Math.min(acct.driftPct * 10, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-mono text-slate-700 w-12 text-right">{acct.driftPct.toFixed(1)}%</span>
+                    </div>
+                  </TableCell>
+                  <TableCell><Badge variant={statusBadgeVariant[acct.status] ?? 'gray'}>{acct.status}</Badge></TableCell>
+                  <TableCell className="text-slate-500">{formatDate(acct.lastRebalanced)}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => setExpandedRow(expandedRow === acct.id ? null : acct.id)}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {expandedRow === acct.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </TableCell>
+                </TableRow>
+                {expandedRow === acct.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-6 py-4">
+                      <div className="ml-10">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Per-Asset-Class Drift Detail</p>
+                        <div className="grid gap-2">
+                          {acct.assetDrifts.map((ad) => {
+                            const diff = ad.actualPct - ad.targetPct;
+                            return (
+                              <div key={ad.assetClass} className="flex items-center gap-4 text-sm">
+                                <span className="w-28 text-slate-700 font-medium">{ad.assetClass}</span>
+                                <span className="w-20 text-slate-500 text-right">Target: {ad.targetPct}%</span>
+                                <span className="w-20 text-slate-500 text-right">Actual: {ad.actualPct}%</span>
+                                <span className={`w-16 text-right font-mono ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                  {diff > 0 ? '+' : ''}{diff.toFixed(1)}%
+                                </span>
+                                <span className="text-slate-500">{ad.tradeNeeded}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <span className="text-sm font-mono text-slate-700 w-12 text-right">{acct.driftPct.toFixed(1)}%</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3"><StatusBadge status={acct.status} /></td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{acct.lastRebalanced}</td>
-                    <td className="px-5 py-3">
-                      <button
-                        onClick={() => setExpandedRow(expandedRow === acct.id ? null : acct.id)}
-                        className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        {expandedRow === acct.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </button>
-                    </td>
                   </tr>
-                  {expandedRow === acct.id && (
-                    <tr>
-                      <td colSpan={8} className="bg-slate-50 px-5 py-4">
-                        <div className="ml-10">
-                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Per-Asset-Class Drift Detail</p>
-                          <div className="grid gap-2">
-                            {acct.assetDrifts.map((ad) => {
-                              const diff = ad.actualPct - ad.targetPct;
-                              return (
-                                <div key={ad.assetClass} className="flex items-center gap-4 text-sm">
-                                  <span className="w-28 text-slate-700 font-medium">{ad.assetClass}</span>
-                                  <span className="w-20 text-slate-500 text-right">Target: {ad.targetPct}%</span>
-                                  <span className="w-20 text-slate-500 text-right">Actual: {ad.actualPct}%</span>
-                                  <span className={`w-16 text-right font-mono ${diff > 0 ? 'text-red-600' : diff < 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                                    {diff > 0 ? '+' : ''}{diff.toFixed(1)}%
-                                  </span>
-                                  <span className="text-slate-500">{ad.tradeNeeded}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                )}
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -706,64 +643,58 @@ function TaxIntelligent() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={TrendingDown} label="Total Unrealized Losses" value={fmtCurrency(Math.abs(totalUnrealizedLosses))} sublabel={`${MOCK_TAX_OPPORTUNITIES.length} opportunities`} color="red" />
-        <SummaryCard icon={DollarSign} label="Est. Tax Efficiency Gain" value={fmtCurrency(totalEstimatedSavings)} sublabel="At 35% marginal rate" color="emerald" />
-        <SummaryCard icon={ShieldAlert} label="Wash Sale Risks" value={String(washSaleRisks)} sublabel="Requires 30-day wait" color="amber" />
-        <SummaryCard icon={BarChart3} label="Tax Lots Available" value={String(lotsAvailable)} sublabel="For specific lot selection" color="purple" />
+        <MetricCard icon={<TrendingDown size={18} />} label="Total Unrealized Losses" value={formatCurrency(Math.abs(totalUnrealizedLosses))} sublabel={`${MOCK_TAX_OPPORTUNITIES.length} opportunities`} color="red" />
+        <MetricCard icon={<DollarSign size={18} />} label="Est. Tax Efficiency Gain" value={formatCurrency(totalEstimatedSavings)} sublabel="At 35% marginal rate" color="emerald" />
+        <MetricCard icon={<ShieldAlert size={18} />} label="Wash Sale Risks" value={String(washSaleRisks)} sublabel="Requires 30-day wait" color="amber" />
+        <MetricCard icon={<BarChart3 size={18} />} label="Tax Lots Available" value={String(lotsAvailable)} sublabel="For specific lot selection" color="purple" />
       </div>
 
       {/* Tax-Loss Harvesting Opportunities */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="flex items-center gap-3 p-5 border-b border-slate-200">
           <Leaf className="w-5 h-5 text-emerald-600" />
           <h3 className="text-lg font-semibold text-slate-900">Tax-Loss Harvesting Opportunities</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Security</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Shares</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cost Basis</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Unrealized Loss</th>
-                <th className="text-center px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Wash Sale Risk</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Est. Tax Benefit</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Substitute</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Holding</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_TAX_OPPORTUNITIES.map((opp) => (
-                <tr key={opp.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-semibold text-slate-900">{opp.security}</td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtNumber(opp.shares)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{fmtCurrencyDecimal(opp.costBasis)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{fmtCurrencyDecimal(opp.currentPrice)}</td>
-                  <td className="px-5 py-3 text-sm text-red-600 text-right font-mono font-medium">{fmtCurrency(opp.unrealizedLoss)}</td>
-                  <td className="px-5 py-3 text-center">
-                    {opp.washSaleRisk ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                        <AlertTriangle className="w-3 h-3" /> Yes
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                        <CheckCircle className="w-3 h-3" /> No
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-sm text-emerald-600 text-right font-mono font-medium">{fmtCurrency(opp.estimatedTaxSavings)}</td>
-                  <td className="px-5 py-3 text-sm text-blue-600 font-medium">{opp.substituteSecurity}</td>
-                  <td className="px-5 py-3 text-sm text-slate-500">{opp.holdingPeriod}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Security</TableHead>
+              <TableHead className="text-right">Shares</TableHead>
+              <TableHead className="text-right">Cost Basis</TableHead>
+              <TableHead className="text-right">Current</TableHead>
+              <TableHead className="text-right">Unrealized Loss</TableHead>
+              <TableHead className="text-center">Wash Sale Risk</TableHead>
+              <TableHead className="text-right">Est. Tax Benefit</TableHead>
+              <TableHead>Substitute</TableHead>
+              <TableHead>Holding</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {MOCK_TAX_OPPORTUNITIES.map((opp) => (
+              <TableRow key={opp.id}>
+                <TableCell className="font-semibold text-slate-900">{opp.security}</TableCell>
+                <TableCell className="text-right font-mono">{formatNumber(opp.shares)}</TableCell>
+                <TableCell className="text-right font-mono text-slate-600">{formatCurrency(opp.costBasis, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right font-mono text-slate-600">{formatCurrency(opp.currentPrice, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right font-mono font-medium text-red-600">{formatCurrency(opp.unrealizedLoss)}</TableCell>
+                <TableCell className="text-center">
+                  {opp.washSaleRisk ? (
+                    <Badge variant="amber"><AlertTriangle className="w-3 h-3 mr-1" /> Yes</Badge>
+                  ) : (
+                    <Badge variant="green"><CheckCircle className="w-3 h-3 mr-1" /> No</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-mono font-medium text-emerald-600">{formatCurrency(opp.estimatedTaxSavings)}</TableCell>
+                <TableCell className="text-blue-600 font-medium">{opp.substituteSecurity}</TableCell>
+                <TableCell className="text-slate-500">{opp.holdingPeriod}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Tax Lot Optimization */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="flex items-center gap-3 p-5 border-b border-slate-200">
           <ArrowUpDown className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-slate-900">Tax Lot Optimization</h3>
@@ -772,61 +703,53 @@ function TaxIntelligent() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-5 border-b border-slate-200 bg-slate-50">
           <div className="text-center">
             <p className="text-xs text-slate-500 mb-1">Long-Term Gains</p>
-            <p className="text-lg font-bold text-emerald-600">{fmtCurrency(longTermGains)}</p>
+            <p className="text-lg font-bold text-emerald-600">{formatCurrency(longTermGains)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-slate-500 mb-1">Short-Term Gains</p>
-            <p className="text-lg font-bold text-amber-600">{fmtCurrency(shortTermGains)}</p>
+            <p className="text-lg font-bold text-amber-600">{formatCurrency(shortTermGains)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-slate-500 mb-1">Long-Term Losses</p>
-            <p className="text-lg font-bold text-red-600">{fmtCurrency(longTermLosses)}</p>
+            <p className="text-lg font-bold text-red-600">{formatCurrency(longTermLosses)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-slate-500 mb-1">Short-Term Losses</p>
-            <p className="text-lg font-bold text-red-500">{fmtCurrency(shortTermLosses)}</p>
+            <p className="text-lg font-bold text-red-500">{formatCurrency(shortTermLosses)}</p>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Security</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Purchase Date</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Shares</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cost Basis</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Value</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Gain / Loss</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Term</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_TAX_LOTS.map((lot) => (
-                <tr key={lot.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-semibold text-slate-900">{lot.security}</td>
-                  <td className="px-5 py-3 text-sm text-slate-500">{lot.purchaseDate}</td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtNumber(lot.shares)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{fmtCurrency(lot.costBasis)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{fmtCurrency(lot.currentValue)}</td>
-                  <td className={`px-5 py-3 text-sm text-right font-mono font-medium ${lot.gainLoss >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {lot.gainLoss >= 0 ? '+' : ''}{fmtCurrency(lot.gainLoss)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                      lot.term === 'Long-Term'
-                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                        : 'bg-purple-50 text-purple-700 border-purple-200'
-                    }`}>
-                      {lot.term}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Security</TableHead>
+              <TableHead>Purchase Date</TableHead>
+              <TableHead className="text-right">Shares</TableHead>
+              <TableHead className="text-right">Cost Basis</TableHead>
+              <TableHead className="text-right">Current Value</TableHead>
+              <TableHead className="text-right">Gain / Loss</TableHead>
+              <TableHead>Term</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {MOCK_TAX_LOTS.map((lot) => (
+              <TableRow key={lot.id}>
+                <TableCell className="font-semibold text-slate-900">{lot.security}</TableCell>
+                <TableCell className="text-slate-500">{formatDate(lot.purchaseDate)}</TableCell>
+                <TableCell className="text-right font-mono">{formatNumber(lot.shares)}</TableCell>
+                <TableCell className="text-right font-mono text-slate-600">{formatCurrency(lot.costBasis)}</TableCell>
+                <TableCell className="text-right font-mono text-slate-600">{formatCurrency(lot.currentValue)}</TableCell>
+                <TableCell className={`text-right font-mono font-medium ${lot.gainLoss >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {formatCurrency(lot.gainLoss, { showSign: true })}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={lot.term === 'Long-Term' ? 'blue' : 'gray'}>{lot.term}</Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -873,38 +796,32 @@ function ExecutionHistory() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryCard icon={DollarSign} label="Total Traded Volume" value={fmtCurrency(totalVolume)} sublabel={`${totalTrades} trades`} color="blue" />
-        <SummaryCard icon={BarChart3} label="Number of Trades" value={String(totalTrades)} sublabel="In selected period" color="emerald" />
-        <SummaryCard icon={TrendingUp} label="Average Fill Price" value={fmtCurrencyDecimal(avgFill)} sublabel="Across all symbols" color="purple" />
+        <MetricCard icon={<DollarSign size={18} />} label="Total Traded Volume" value={formatCurrency(totalVolume)} sublabel={`${totalTrades} trades`} color="blue" />
+        <MetricCard icon={<BarChart3 size={18} />} label="Number of Trades" value={String(totalTrades)} sublabel="In selected period" color="emerald" />
+        <MetricCard icon={<TrendingUp size={18} />} label="Average Fill Price" value={formatCurrency(avgFill, { decimals: 2 })} sublabel="Across all symbols" color="purple" />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900">Execution History</h3>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search symbol..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-44"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <select
-                value={accountFilter}
-                onChange={(e) => setAccountFilter(e.target.value)}
-                className="pl-9 pr-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-              >
-                <option value="All">All Accounts</option>
-                {uniqueAccounts.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
-            </div>
+            <SearchInput
+              placeholder="Search symbol..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              inputSize="sm"
+              className="w-44"
+            />
+            <Select
+              value={accountFilter}
+              onChange={(e) => setAccountFilter(e.target.value)}
+              className="!w-auto"
+            >
+              <option value="All">All Accounts</option>
+              {uniqueAccounts.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </Select>
             <div className="inline-flex rounded-lg border border-slate-300 overflow-hidden">
               {(['7d', '14d', '30d', 'all'] as const).map((range) => (
                 <button
@@ -923,47 +840,45 @@ function ExecutionHistory() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Account</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Symbol</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Side</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Account</TableHead>
+              <TableHead>Symbol</TableHead>
+              <TableHead>Side</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Venue</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTrades.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
+                  No trades match the current filters.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredTrades.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-5 py-10 text-center text-slate-400">
-                    No trades match the current filters.
-                  </td>
-                </tr>
-              ) : (
-                filteredTrades.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 text-sm text-slate-500 font-mono">{t.date}</td>
-                    <td className="px-5 py-3 text-sm text-slate-600 max-w-[160px] truncate">{t.account}</td>
-                    <td className="px-5 py-3 text-sm font-semibold text-slate-900">{t.symbol}</td>
-                    <td className="px-5 py-3"><SideBadge side={t.side} /></td>
-                    <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtNumber(t.quantity)}</td>
-                    <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtCurrencyDecimal(t.price)}</td>
-                    <td className="px-5 py-3 text-sm text-slate-900 text-right font-mono font-medium">{fmtCurrency(t.total)}</td>
-                    <td className="px-5 py-3 text-sm text-slate-500">{t.venue}</td>
-                    <td className="px-5 py-3"><StatusBadge status={t.status} /></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            ) : (
+              filteredTrades.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="text-slate-500 font-mono">{formatDate(t.date)}</TableCell>
+                  <TableCell className="max-w-[160px] truncate text-slate-600">{t.account}</TableCell>
+                  <TableCell className="font-semibold text-slate-900">{t.symbol}</TableCell>
+                  <TableCell><SideBadge side={t.side} /></TableCell>
+                  <TableCell className="text-right font-mono">{formatNumber(t.quantity)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(t.price, { decimals: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono font-medium text-slate-900">{formatCurrency(t.total)}</TableCell>
+                  <TableCell className="text-slate-500">{t.venue}</TableCell>
+                  <TableCell><Badge variant={statusBadgeVariant[t.status] ?? 'gray'}>{t.status}</Badge></TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -972,50 +887,29 @@ function ExecutionHistory() {
 // MAIN COMPONENT
 // ============================================================================
 
-import React from 'react';
-
-const TABS: { key: TradeTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: 'blotter', label: 'Trade Blotter', icon: ArrowUpDown },
-  { key: 'rebalancing', label: 'Rebalancing', icon: RefreshCw },
-  { key: 'tax', label: 'Tax-Intelligent Trading', icon: Leaf },
-  { key: 'history', label: 'Execution History', icon: CalendarDays },
-];
-
 export default function Trading() {
   const [activeTab, setActiveTab] = useState<TradeTab>('blotter');
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Trading & Rebalancing</h1>
-        <p className="text-slate-500">Manage trades, rebalance portfolios, and optimize for taxes</p>
-      </div>
+      <PageHeader
+        title="Trading & Rebalancing"
+        subtitle="Manage trades, rebalance portfolios, and optimize for taxes"
+      />
 
-      {/* Tab Navigation */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label="Tabs">
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
-                activeTab === key
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TradeTab)}>
+        <TabList>
+          <Tab value="blotter" icon={<ArrowUpDown className="w-4 h-4" />}>Trade Blotter</Tab>
+          <Tab value="rebalancing" icon={<RefreshCw className="w-4 h-4" />}>Rebalancing</Tab>
+          <Tab value="tax" icon={<Leaf className="w-4 h-4" />}>Tax-Intelligent Trading</Tab>
+          <Tab value="history" icon={<CalendarDays className="w-4 h-4" />}>Execution History</Tab>
+        </TabList>
 
-      {/* Tab Content */}
-      {activeTab === 'blotter' && <TradeBlotter />}
-      {activeTab === 'rebalancing' && <Rebalancing />}
-      {activeTab === 'tax' && <TaxIntelligent />}
-      {activeTab === 'history' && <ExecutionHistory />}
+        <TabPanel value="blotter"><TradeBlotter /></TabPanel>
+        <TabPanel value="rebalancing"><Rebalancing /></TabPanel>
+        <TabPanel value="tax"><TaxIntelligent /></TabPanel>
+        <TabPanel value="history"><ExecutionHistory /></TabPanel>
+      </Tabs>
     </div>
   );
 }

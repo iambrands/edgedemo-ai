@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { BarChart3, Clock, BookOpen, FileText, CheckCircle, Edit3, X, Save, Bot, User } from 'lucide-react';
 import { getNarratives, markNarrativeRead, updateNarrative, Narrative } from '../../services/portalApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 const TYPE_META: Record<string, { label: string; icon: typeof BarChart3; color: string; bg: string }> = {
   quarterly: { label: 'Quarterly Review', icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -17,6 +20,7 @@ export default function PortalNarratives() {
   const [editTitle, setEditTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadNarratives();
@@ -85,25 +89,20 @@ export default function PortalNarratives() {
         )
       );
       setEditingId(null);
+      toast.success('Narrative saved successfully');
     } catch (err) {
       console.error('Failed to save narrative', err);
+      toast.error('Failed to save narrative');
     } finally {
       setSaving(false);
     }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
   const formatPeriod = (start: string, end: string) => {
     const s = new Date(start);
     const e = new Date(end);
     if (s.toDateString() === e.toDateString()) {
-      return formatDate(start);
+      return formatDate(start, 'long');
     }
     return `${s.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
   };
@@ -120,14 +119,10 @@ export default function PortalNarratives() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900">Updates & Reports</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Portfolio narratives and meeting summaries from your advisor
-            {unreadCount > 0 && ` · ${unreadCount} unread`}
-          </p>
-        </div>
+        <PageHeader
+          title="Updates & Reports"
+          subtitle={`Portfolio narratives and meeting summaries from your advisor${unreadCount > 0 ? ` · ${unreadCount} unread` : ''}`}
+        />
 
         {/* Narratives List */}
         {narratives.length === 0 ? (
@@ -275,10 +270,10 @@ export default function PortalNarratives() {
                           </div>
                           <div className="flex items-center justify-between mt-4">
                             <div className="text-xs text-slate-400">
-                              Published {formatDate(narrative.created_at)}
+                              Published {formatDate(narrative.created_at, 'long')}
                               {narrative.edited_at && (
                                 <span className="ml-2">
-                                  · Edited by {narrative.edited_by} on {formatDate(narrative.edited_at)}
+                                  · Edited by {narrative.edited_by} on {formatDate(narrative.edited_at, 'long')}
                                 </span>
                               )}
                             </div>

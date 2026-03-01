@@ -18,6 +18,10 @@ import {
   type WithdrawalPlan,
   type WithdrawalRequestCreate,
 } from '../../services/liquidityApi';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-700',
@@ -37,6 +41,7 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export default function Liquidity() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<WithdrawalPlan | null>(null);
@@ -114,10 +119,11 @@ export default function Liquidity() {
         priority: 'normal',
         lot_selection: 'tax_opt',
       });
+      toastSuccess('Withdrawal request created');
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to create request';
-      alert(message);
+      toastError(message);
     } finally {
       setCreating(false);
     }
@@ -129,8 +135,10 @@ export default function Liquidity() {
       await loadRequests();
       setSelectedRequest(null);
       setSelectedPlan(null);
+      toastSuccess('Withdrawal approved');
     } catch (err) {
       console.error('Failed to approve', err);
+      toastError('Failed to approve withdrawal');
     }
   };
 
@@ -141,23 +149,13 @@ export default function Liquidity() {
       await loadRequests();
       setSelectedRequest(null);
       setSelectedPlan(null);
+      toastSuccess('Withdrawal cancelled');
     } catch (err) {
       console.error('Failed to cancel', err);
+      toastError('Failed to cancel withdrawal');
     }
   };
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(val);
-
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
 
   if (loading) {
     return (
@@ -170,32 +168,22 @@ export default function Liquidity() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Liquidity Optimization
-          </h1>
-          <p className="text-slate-500">
-            Tax-efficient withdrawal planning and execution
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={loadRequests}
-            className="flex items-center gap-2 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            <DollarSign size={20} />
-            New Withdrawal
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Liquidity Optimization"
+        subtitle="Tax-efficient withdrawal planning and execution"
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={loadRequests}>
+              <RefreshCw size={16} className="mr-2" />
+              Refresh
+            </Button>
+            <Button size="sm" onClick={() => setShowCreateModal(true)}>
+              <DollarSign size={16} className="mr-2" />
+              New Withdrawal
+            </Button>
+          </>
+        }
+      />
 
       {/* Error Banner */}
       {error && (

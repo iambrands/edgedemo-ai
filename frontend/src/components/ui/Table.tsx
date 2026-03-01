@@ -54,15 +54,22 @@ export function TableRow({ children, className, onClick }: TableRowProps) {
 
 interface TableHeadProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children: ReactNode;
+  /** Sortable header support — current sort direction */
+  sortDirection?: 'ascending' | 'descending' | 'none';
+  /** Click handler for sortable headers */
+  onSort?: () => void;
 }
 
-export function TableHead({ children, className, ...props }: TableHeadProps) {
+export function TableHead({ children, className, sortDirection, onSort, ...props }: TableHeadProps) {
   return (
     <th
       className={clsx(
         'px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider',
+        onSort && 'cursor-pointer select-none hover:text-slate-900',
         className
       )}
+      aria-sort={sortDirection}
+      onClick={onSort}
       {...props}
     >
       {children}

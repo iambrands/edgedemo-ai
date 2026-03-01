@@ -7,12 +7,14 @@ import {
   Layers,
   FileText,
   Play,
-  Loader2,
   Clock,
   CheckCircle,
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 import { AnalysisModal } from '../../components/features/AnalysisModal';
 import { analysisApi } from '../../services/api';
 
@@ -127,6 +129,7 @@ function timeAgo(date: Date): string {
 /* ------------------------------------------------------------------ */
 
 export function Analysis() {
+  const toast = useToast();
   const [toolStates, setToolStates] = useState<Record<string, ToolState>>(() => {
     const init: Record<string, ToolState> = {};
     ANALYSIS_TOOLS.forEach((t) => {
@@ -150,15 +153,18 @@ export function Analysis() {
         ...prev,
         [toolId]: { isRunning: false, results: data, error: null, lastRunAt: new Date() },
       }));
+      toast.success('Analysis completed successfully');
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Analysis failed — please try again.';
       setToolStates((prev) => ({
         ...prev,
         [toolId]: {
           ...prev[toolId],
           isRunning: false,
-          error: err instanceof Error ? err.message : 'Analysis failed — please try again.',
+          error: errorMsg,
         },
       }));
+      toast.error(errorMsg);
     }
   };
 
@@ -175,12 +181,10 @@ export function Analysis() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Analysis Tools</h1>
-        <p className="text-slate-500">
-          AI-powered analysis tools for comprehensive portfolio insights
-        </p>
-      </div>
+      <PageHeader
+        title="Analysis Tools"
+        subtitle="AI-powered analysis tools for comprehensive portfolio insights"
+      />
 
       {/* Tool Cards Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -237,39 +241,26 @@ export function Analysis() {
 
               {/* Buttons */}
               <div className="flex gap-2 mt-auto">
-                <button
+                <Button
                   onClick={() => runAnalysis(tool.id)}
                   disabled={state.isRunning}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    state.isRunning
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
+                  isLoading={state.isRunning}
+                  className="flex-1 flex items-center justify-center gap-2"
+                  size="sm"
                 >
-                  {state.isRunning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4" />
-                      {state.results ? 'Re-run' : 'Run Analysis'}
-                    </>
-                  )}
-                </button>
-                <button
+                  {!state.isRunning && <Play className="h-4 w-4" />}
+                  {state.isRunning ? 'Analyzing...' : state.results ? 'Re-run' : 'Run Analysis'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => viewReport(tool)}
                   disabled={state.isRunning}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                    state.isRunning
-                      ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className="flex items-center gap-2"
                 >
                   <FileText className="h-4 w-4" />
                   Report
-                </button>
+                </Button>
               </div>
             </div>
           );

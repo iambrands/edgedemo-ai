@@ -5,6 +5,8 @@
 
 import { useState } from 'react';
 import { MessageCircle, Send, Clock, ArrowLeft } from 'lucide-react';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // TYPES
@@ -148,6 +150,7 @@ export default function PortalMessages() {
   );
   const [activeThreadId, setActiveThreadId] = useState<string | null>('1');
   const [newMessageText, setNewMessageText] = useState('');
+  const toast = useToast();
 
   const activeThread = threads.find((t) => t.id === activeThreadId);
 
@@ -175,6 +178,7 @@ export default function PortalMessages() {
       })
     );
     setNewMessageText('');
+    toast.success('Message sent');
   };
 
   const handleThreadSelect = (id: string) => {
@@ -186,10 +190,7 @@ export default function PortalMessages() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageCircle className="h-6 w-6 text-slate-600" />
-          <h1 className="text-xl font-semibold text-slate-900">Messages</h1>
-        </div>
+        <PageHeader title="Messages" subtitle="Secure messaging with your advisor" />
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex min-h-[560px]">

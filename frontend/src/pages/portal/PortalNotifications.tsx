@@ -5,6 +5,9 @@ import {
   ArrowRightLeft, TrendingUp, CheckCircle, Loader2,
 } from 'lucide-react';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/portalApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -38,6 +41,7 @@ export default function PortalNotifications() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const toast = useToast();
 
   useEffect(() => {
     getNotifications()
@@ -62,23 +66,15 @@ export default function PortalNotifications() {
     try {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      toast.success('All notifications marked as read');
     } catch (e) {
       console.error('mark all read failed', e);
+      toast.error('Failed to mark notifications as read');
     }
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const filtered = filter === 'unread' ? notifications.filter((n) => !n.is_read) : notifications;
-
-  const timeAgo = (iso: string) => {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
 
   if (loading) {
     return (
@@ -90,23 +86,21 @@ export default function PortalNotifications() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Notifications</h1>
-            <p className="text-slate-500 text-sm">
-              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
-            </p>
-          </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Mark all read
-            </button>
-          )}
-        </div>
+        <PageHeader
+          title="Notifications"
+          subtitle={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+          actions={
+            unreadCount > 0 ? (
+              <button
+                onClick={handleMarkAllRead}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Mark all read
+              </button>
+            ) : undefined
+          }
+        />
 
         {/* Filter tabs */}
         <div className="flex gap-2">
@@ -151,7 +145,7 @@ export default function PortalNotifications() {
                       {!n.is_read && <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />}
                     </div>
                     <p className="text-sm text-slate-500 mt-0.5">{n.message}</p>
-                    <p className="text-xs text-slate-400 mt-1">{timeAgo(n.created_at)}</p>
+                    <p className="text-xs text-slate-400 mt-1">{formatDate(n.created_at, 'relative')}</p>
                   </div>
                 </button>
               );

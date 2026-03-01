@@ -5,8 +5,6 @@ import {
   Mail,
   Calendar,
   MessageSquare,
-  Filter,
-  Search,
   Plus,
   Link2,
   RefreshCw,
@@ -20,6 +18,17 @@ import {
   Briefcase,
   X,
 } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // TYPES
@@ -283,13 +292,6 @@ const MOCK_INTEGRATIONS: CRMIntegration[] = [
 // CONSTANTS
 // ============================================================================
 
-const STATUS_COLORS: Record<ContactStatus, string> = {
-  Active: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  Lead: 'bg-blue-50 text-blue-700 border border-blue-200',
-  Client: 'bg-purple-50 text-purple-700 border border-purple-200',
-  Inactive: 'bg-slate-100 text-slate-600 border border-slate-200',
-};
-
 const ACTIVITY_ICONS: Record<ActivityType, typeof Phone> = {
   call: Phone,
   email: Mail,
@@ -335,34 +337,9 @@ const STAGE_HEADER_COLORS: Record<PipelineStage, string> = {
 // HELPERS
 // ============================================================================
 
-const fmtCurrency = (value: number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
+const fmtCurrencyShort = (value: number): string => formatCurrency(value, { abbreviated: true });
 
-const fmtCurrencyShort = (value: number): string => {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-  return fmtCurrency(value);
-};
-
-const fmtTimestamp = (iso: string): string => {
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return 'Just now';
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const fmtDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const fmtTimestamp = (iso: string): string => formatDate(iso, 'relative');
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -378,34 +355,32 @@ function SummaryCards({ contacts, deals }: { contacts: Contact[]; deals: Pipelin
     .filter((d) => d.stage !== 'Won' && d.stage !== 'Lost')
     .reduce((sum, d) => sum + d.estimatedAum, 0);
 
-  const cards = [
-    { label: 'Total Contacts', value: totalContacts.toString(), icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-    { label: 'Active Clients', value: activeClients.toString(), icon: CheckCircle, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-    { label: 'Open Deals', value: openDeals.toString(), icon: Briefcase, iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
-    { label: 'Pipeline Value', value: fmtCurrencyShort(pipelineValue), icon: DollarSign, iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
-  ];
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <div
-            key={card.label}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">{card.label}</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{card.value}</p>
-              </div>
-              <div className={`p-3 rounded-xl ${card.iconBg}`}>
-                <Icon className={`h-6 w-6 ${card.iconColor}`} />
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      <MetricCard
+        label="Total Contacts"
+        value={totalContacts.toString()}
+        icon={<Users className="h-5 w-5" />}
+        color="blue"
+      />
+      <MetricCard
+        label="Active Clients"
+        value={activeClients.toString()}
+        icon={<CheckCircle className="h-5 w-5" />}
+        color="emerald"
+      />
+      <MetricCard
+        label="Open Deals"
+        value={openDeals.toString()}
+        icon={<Briefcase className="h-5 w-5" />}
+        color="purple"
+      />
+      <MetricCard
+        label="Pipeline Value"
+        value={fmtCurrencyShort(pipelineValue)}
+        icon={<DollarSign className="h-5 w-5" />}
+        color="amber"
+      />
     </div>
   );
 }
@@ -432,69 +407,60 @@ function ContactsTab({ contacts }: { contacts: Contact[] }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search contacts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as ContactStatus | 'All')}
-            className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Lead">Lead</option>
-            <option value="Client">Client</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
+        <SearchInput
+          placeholder="Search contacts..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1"
+        />
+        <Select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as ContactStatus | 'All')}
+          className="!w-auto"
+        >
+          <option value="All">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Lead">Lead</option>
+          <option value="Client">Client</option>
+          <option value="Inactive">Inactive</option>
+        </Select>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden md:table-cell">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden md:table-cell">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider hidden lg:table-cell">Last Activity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {filtered.map((contact) => {
-                const isExpanded = expandedId === contact.id;
-                return (
-                  <ContactRow
-                    key={contact.id}
-                    contact={contact}
-                    isExpanded={isExpanded}
-                    onToggle={() => setExpandedId(isExpanded ? null : contact.id)}
-                  />
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                    No contacts found matching your criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card size="sm" className="!p-0 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
+              <TableHead className="hidden lg:table-cell">Phone</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="hidden md:table-cell">Company</TableHead>
+              <TableHead className="hidden lg:table-cell">Last Activity</TableHead>
+              <TableHead className="w-10">{''}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((contact) => {
+              const isExpanded = expandedId === contact.id;
+              return (
+                <ContactRow
+                  key={contact.id}
+                  contact={contact}
+                  isExpanded={isExpanded}
+                  onToggle={() => setExpandedId(isExpanded ? null : contact.id)}
+                />
+              );
+            })}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  No contacts found matching your criteria.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -510,31 +476,33 @@ function ContactRow({
 }) {
   return (
     <>
-      <tr
-        onClick={onToggle}
-        className="hover:bg-slate-50 cursor-pointer transition-colors"
-      >
-        <td className="px-6 py-4">
+      <TableRow onClick={onToggle}>
+        <TableCell>
           <p className="font-medium text-slate-900 text-sm">{contact.name}</p>
           <p className="text-xs text-slate-500 md:hidden">{contact.email}</p>
-        </td>
-        <td className="px-6 py-4 text-sm text-slate-600 hidden md:table-cell">{contact.email}</td>
-        <td className="px-6 py-4 text-sm text-slate-600 hidden lg:table-cell">{contact.phone}</td>
-        <td className="px-6 py-4">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[contact.status]}`}>
+        </TableCell>
+        <TableCell className="hidden md:table-cell">{contact.email}</TableCell>
+        <TableCell className="hidden lg:table-cell">{contact.phone}</TableCell>
+        <TableCell>
+          <Badge variant={
+            contact.status === 'Active' ? 'green' :
+            contact.status === 'Lead' ? 'blue' :
+            contact.status === 'Client' ? 'blue' :
+            'gray'
+          }>
             {contact.status}
-          </span>
-        </td>
-        <td className="px-6 py-4 text-sm text-slate-600 hidden md:table-cell">{contact.company}</td>
-        <td className="px-6 py-4 text-sm text-slate-500 hidden lg:table-cell">{fmtTimestamp(contact.lastActivity)}</td>
-        <td className="px-6 py-4">
+          </Badge>
+        </TableCell>
+        <TableCell className="hidden md:table-cell">{contact.company}</TableCell>
+        <TableCell className="hidden lg:table-cell">{fmtTimestamp(contact.lastActivity)}</TableCell>
+        <TableCell>
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 text-slate-400" />
           ) : (
             <ChevronDown className="h-4 w-4 text-slate-400" />
           )}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {isExpanded && (
         <tr>
           <td colSpan={7} className="px-6 py-5 bg-slate-50 border-t border-slate-100">
@@ -555,14 +523,14 @@ function ContactRow({
                     {contact.company}
                   </p>
                   <p className="text-slate-500 text-xs mt-2">
-                    AUM: <span className="font-semibold text-slate-700">{fmtCurrency(contact.aum)}</span>
+                    AUM: <span className="font-semibold text-slate-700">{formatCurrency(contact.aum)}</span>
                   </p>
                   <p className="text-slate-500 text-xs">
                     Risk Profile: <span className="font-medium text-slate-700">{contact.riskProfile}</span>
                     {' · '}Account: <span className="font-medium text-slate-700">{contact.accountType}</span>
                   </p>
                   <p className="text-slate-500 text-xs">
-                    Client since: <span className="font-medium text-slate-700">{fmtDate(contact.joinDate)}</span>
+                    Client since: <span className="font-medium text-slate-700">{formatDate(contact.joinDate)}</span>
                   </p>
                 </div>
               </div>
@@ -639,51 +607,42 @@ function ActivitiesTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-400" />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as ActivityType | 'all')}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Types</option>
-            <option value="call">Calls</option>
-            <option value="email">Emails</option>
-            <option value="meeting">Meetings</option>
-            <option value="note">Notes</option>
-          </select>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+        <Select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as ActivityType | 'all')}
+          className="!w-auto"
         >
-          <Plus className="h-4 w-4" />
+          <option value="all">All Types</option>
+          <option value="call">Calls</option>
+          <option value="email">Emails</option>
+          <option value="meeting">Meetings</option>
+          <option value="note">Notes</option>
+        </Select>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}>
+          <Plus className="h-4 w-4 mr-2" />
           Log Activity
-        </button>
+        </Button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <Card size="md">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-900">Log New Activity</h3>
-            <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as ActivityType })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="call">Call</option>
-                <option value="email">Email</option>
-                <option value="meeting">Meeting</option>
-                <option value="note">Note</option>
-              </select>
-            </div>
+            <Select
+              label="Type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as ActivityType })}
+            >
+              <option value="call">Call</option>
+              <option value="email">Email</option>
+              <option value="meeting">Meeting</option>
+              <option value="note">Note</option>
+            </Select>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Contact Name</label>
               <input
@@ -695,13 +654,14 @@ function ActivitiesTab({
               />
             </div>
             <div className="flex items-end">
-              <button
+              <Button
+                size="sm"
                 onClick={handleSubmit}
                 disabled={!formData.description.trim() || !formData.contactName.trim()}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full"
               >
                 Save
-              </button>
+              </Button>
             </div>
           </div>
           <div className="mt-3">
@@ -714,10 +674,10 @@ function ActivitiesTab({
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <Card size="sm" className="!p-0 overflow-hidden">
         <div className="divide-y divide-slate-100">
           {filtered.map((activity) => {
             const Icon = ACTIVITY_ICONS[activity.type];
@@ -745,7 +705,7 @@ function ActivitiesTab({
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -820,10 +780,7 @@ function IntegrationsTab({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {integrations.map((integration) => (
-        <div
-          key={integration.id}
-          className="bg-white rounded-xl border border-slate-200 shadow-sm p-6"
-        >
+        <Card key={integration.id} size="md">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold ${
@@ -893,37 +850,36 @@ function IntegrationsTab({
           )}
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant={integration.connected ? 'secondary' : 'primary'}
+              size="sm"
               onClick={() => onToggle(integration.id)}
-              className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                integration.connected
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+              className="flex-1"
             >
               {integration.connected ? (
                 <>
-                  <Link2 className="h-4 w-4" />
+                  <Link2 className="h-4 w-4 mr-2" />
                   Disconnect
                 </>
               ) : (
                 <>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 mr-2" />
                   Connect
                 </>
               )}
-            </button>
+            </Button>
             {integration.connected && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => onSync(integration.id)}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Sync
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -934,15 +890,18 @@ function IntegrationsTab({
 // ============================================================================
 
 export default function CRM() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('contacts');
   const [activities, setActivities] = useState<ActivityEntry[]>(MOCK_ACTIVITIES);
   const [integrations, setIntegrations] = useState<CRMIntegration[]>(MOCK_INTEGRATIONS);
 
   const handleAddActivity = (entry: ActivityEntry) => {
     setActivities((prev) => [entry, ...prev]);
+    toast.success('Activity logged successfully');
   };
 
   const handleToggleIntegration = (id: string) => {
+    const integration = integrations.find((i) => i.id === id);
     setIntegrations((prev) =>
       prev.map((int) =>
         int.id === id
@@ -956,9 +915,12 @@ export default function CRM() {
           : int,
       ),
     );
+    toast.success(integration?.connected ? `${integration.name} disconnected` : `${integration?.name} connected`);
   };
 
   const handleSyncIntegration = (id: string) => {
+    const integration = integrations.find((i) => i.id === id);
+    toast.info(`Syncing ${integration?.name}...`);
     setIntegrations((prev) =>
       prev.map((int) =>
         int.id === id ? { ...int, syncStatus: 'syncing' as const } : int,
@@ -972,60 +934,44 @@ export default function CRM() {
             : int,
         ),
       );
+      toast.success(`${integration?.name} synced successfully`);
     }, 2000);
   };
 
-  const tabs: { id: TabId; label: string; icon: typeof Users }[] = [
-    { id: 'contacts', label: 'Contacts', icon: Users },
-    { id: 'activities', label: 'Activities', icon: Clock },
-    { id: 'pipeline', label: 'Pipeline', icon: Briefcase },
-    { id: 'integrations', label: 'Integrations', icon: Link2 },
-  ];
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">CRM</h1>
-        <p className="text-slate-500">Manage contacts, track activities, and monitor your deal pipeline</p>
-      </div>
+      <PageHeader
+        title="CRM"
+        subtitle="Manage contacts, track activities, and monitor your deal pipeline"
+      />
 
       <SummaryCards contacts={MOCK_CONTACTS} deals={MOCK_DEALS} />
 
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-1" aria-label="CRM Tabs">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TabId)}>
+        <TabList>
+          <Tab value="contacts" icon={<Users className="h-4 w-4" />}>Contacts</Tab>
+          <Tab value="activities" icon={<Clock className="h-4 w-4" />}>Activities</Tab>
+          <Tab value="pipeline" icon={<Briefcase className="h-4 w-4" />}>Pipeline</Tab>
+          <Tab value="integrations" icon={<Link2 className="h-4 w-4" />}>Integrations</Tab>
+        </TabList>
 
-      {activeTab === 'contacts' && <ContactsTab contacts={MOCK_CONTACTS} />}
-      {activeTab === 'activities' && (
-        <ActivitiesTab activities={activities} onAddActivity={handleAddActivity} />
-      )}
-      {activeTab === 'pipeline' && <PipelineTab deals={MOCK_DEALS} />}
-      {activeTab === 'integrations' && (
-        <IntegrationsTab
-          integrations={integrations}
-          onToggle={handleToggleIntegration}
-          onSync={handleSyncIntegration}
-        />
-      )}
+        <TabPanel value="contacts">
+          <ContactsTab contacts={MOCK_CONTACTS} />
+        </TabPanel>
+        <TabPanel value="activities">
+          <ActivitiesTab activities={activities} onAddActivity={handleAddActivity} />
+        </TabPanel>
+        <TabPanel value="pipeline">
+          <PipelineTab deals={MOCK_DEALS} />
+        </TabPanel>
+        <TabPanel value="integrations">
+          <IntegrationsTab
+            integrations={integrations}
+            onToggle={handleToggleIntegration}
+            onSync={handleSyncIntegration}
+          />
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }

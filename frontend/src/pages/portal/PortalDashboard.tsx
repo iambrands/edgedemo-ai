@@ -28,6 +28,11 @@ import {
   Nudge,
   BrandingConfig,
 } from '../../services/portalApi';
+import { formatCurrency, formatPercent } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Position {
   symbol: string;
@@ -42,6 +47,7 @@ interface Position {
 }
 
 export default function PortalDashboard() {
+  const toast = useToast();
   const [data, setData] = useState<DashboardData | null>(null);
   const [nudges, setNudges] = useState<Nudge[]>([]);
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
@@ -82,8 +88,10 @@ export default function PortalDashboard() {
     try {
       await dismissNudge(id);
       setNudges(nudges.filter((n) => n.id !== id));
+      toast.success('Action item dismissed');
     } catch (err) {
       console.error('Failed to dismiss nudge', err);
+      toast.error('Failed to dismiss action item');
     }
   };
 
@@ -112,16 +120,6 @@ export default function PortalDashboard() {
       }
     }
   };
-
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: val >= 1000 ? 0 : 2,
-    }).format(val);
-
-  const formatPercent = (val: number) =>
-    `${val >= 0 ? '+' : ''}${(val * 100).toFixed(1)}%`;
 
   const formatGainPct = (val: number) =>
     `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
@@ -171,84 +169,53 @@ export default function PortalDashboard() {
   return (
     <div className="space-y-6">
         {/* Welcome + Advisor */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Dashboard — Welcome back, {clientName}
-            </h1>
-            <p className="text-slate-500">Wilson Household Overview</p>
-          </div>
-          {data?.advisor_name && (
-            <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-lg px-4 py-2 border border-slate-200">
-              <Building2 className="w-4 h-4" />
-              <span>
-                Your Advisor: <strong className="text-slate-700">{data.advisor_name}</strong>
-              </span>
-            </div>
-          )}
-        </div>
+        <PageHeader
+          title={`Dashboard — Welcome back, ${clientName}`}
+          subtitle="Wilson Household Overview"
+          actions={
+            data?.advisor_name ? (
+              <div className="flex items-center gap-2 text-sm text-slate-500 bg-white rounded-lg px-4 py-2 border border-slate-200">
+                <Building2 className="w-4 h-4" />
+                <span>
+                  Your Advisor: <strong className="text-slate-700">{data.advisor_name}</strong>
+                </span>
+              </div>
+            ) : undefined
+          }
+        />
 
         {/* Portfolio Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">Total Portfolio</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">
-                  {formatCurrency(data?.total_value || 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <PieChart className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
+          <MetricCard
+            label="Total Portfolio"
+            value={formatCurrency(data?.total_value || 0)}
+            icon={<PieChart className="w-5 h-5" />}
+            color="blue"
+          />
+          <MetricCard
+            label="YTD Return"
+            value={formatPercent((data?.ytd_return || 0) * 100, { decimals: 1 })}
+            sublabel={`${formatCurrency(totalGain)} gain`}
+            icon={(data?.ytd_return || 0) >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+            color={(data?.ytd_return || 0) >= 0 ? 'emerald' : 'red'}
+          />
+          <MetricCard
+            label="Accounts"
+            value={String(accountCount)}
+            sublabel={`across ${new Set(data?.accounts.map(a => a.custodian)).size} custodians`}
+            icon={<DollarSign className="w-5 h-5" />}
+            color="indigo"
+          />
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">YTD Return</p>
-                <p className={`text-2xl font-bold mt-1 ${(data?.ytd_return || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {formatPercent(data?.ytd_return || 0)}
-                </p>
-              </div>
-              <div className={`p-3 rounded-xl ${(data?.ytd_return || 0) >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                {(data?.ytd_return || 0) >= 0 ? (
-                  <TrendingUp className="w-6 h-6 text-emerald-600" />
-                ) : (
-                  <TrendingDown className="w-6 h-6 text-red-600" />
-                )}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Goals</span>
+              <div className="p-2 rounded-lg bg-purple-50">
+                <div className="text-purple-600"><Target className="w-5 h-5" /></div>
               </div>
             </div>
-            <p className="text-sm text-slate-400 mt-2">
-              {formatCurrency(totalGain)} gain
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">Accounts</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{accountCount}</p>
-              </div>
-              <div className="p-3 bg-indigo-50 rounded-xl">
-                <DollarSign className="w-6 h-6 text-indigo-600" />
-              </div>
-            </div>
-            <p className="text-sm text-slate-400 mt-2">across {new Set(data?.accounts.map(a => a.custodian)).size} custodians</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500">Active Goals</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{data?.active_goals || 0}</p>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <Target className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-            <Link to="/portal/goals" className="text-sm text-blue-600 hover:underline mt-2 inline-block">
+            <p className="mt-2 text-2xl font-bold text-slate-900">{data?.active_goals || 0}</p>
+            <Link to="/portal/goals" className="text-sm text-blue-600 hover:underline mt-1 inline-block">
               View goals →
             </Link>
           </div>
@@ -319,9 +286,7 @@ export default function PortalDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3">
                         <p className="font-semibold text-slate-900">{account.account_name}</p>
-                        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
-                          {account.tax_type}
-                        </span>
+                        <Badge variant="gray">{account.tax_type}</Badge>
                       </div>
                       <p className="text-sm text-slate-500 mt-0.5">
                         {account.account_type} · {account.custodian}
@@ -414,9 +379,7 @@ export default function PortalDashboard() {
                                     </div>
                                   </td>
                                   <td className="px-5 py-3">
-                                    <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
-                                      {pos.asset_class}
-                                    </span>
+                                    <Badge variant="gray">{pos.asset_class}</Badge>
                                   </td>
                                 </tr>
                               ))}

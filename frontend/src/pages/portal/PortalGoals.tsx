@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Plus, Target, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
-import { 
-  getGoals, createGoal, deleteGoal, 
-  Goal, GoalCreateRequest, PortalApiError 
+import {
+  getGoals, createGoal, deleteGoal,
+  Goal, GoalCreateRequest, PortalApiError
 } from '../../services/portalApi';
+import { formatCurrency } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Badge } from '../../components/ui/Badge';
+import { useToast } from '../../contexts/ToastContext';
 
 const GOAL_TYPES = [
   { value: 'retirement', label: 'Retirement', emoji: '🏖️' },
@@ -15,6 +19,7 @@ const GOAL_TYPES = [
 ];
 
 export default function PortalGoals() {
+  const toast = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -67,6 +72,7 @@ export default function PortalGoals() {
         target_date: '',
         monthly_contribution: undefined,
       });
+      toast.success('Goal created successfully');
       loadGoals();
     } catch (err) {
       if (err instanceof PortalApiError) {
@@ -85,19 +91,14 @@ export default function PortalGoals() {
     try {
       await deleteGoal(id);
       setGoals(goals.filter((g) => g.id !== id));
+      toast.success('Goal deleted');
     } catch (err) {
       console.error('Failed to delete goal', err);
+      toast.error('Failed to delete goal');
     }
   };
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(val);
-
-  const formatDate = (dateStr: string) =>
+  const fmtGoalDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -122,19 +123,20 @@ export default function PortalGoals() {
   return (
     <div>
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Your Goals</h1>
-            <p className="text-slate-500 text-sm mt-1">Track progress toward your financial objectives</p>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Add Goal</span>
-          </button>
-        </div>
+        <PageHeader
+          title="Your Goals"
+          subtitle="Track progress toward your financial objectives"
+          actions={
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add Goal</span>
+            </button>
+          }
+          className="mb-6"
+        />
         {goals.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
             <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
@@ -162,28 +164,16 @@ export default function PortalGoals() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold text-slate-900 text-lg">{goal.name}</h3>
-                        <span
-                          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
-                            goal.on_track
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
-                        >
+                        <Badge variant={goal.on_track ? 'green' : 'amber'}>
                           {goal.on_track ? (
-                            <>
-                              <CheckCircle className="w-3 h-3" />
-                              On Track
-                            </>
+                            <><CheckCircle className="w-3 h-3 mr-1" />On Track</>
                           ) : (
-                            <>
-                              <AlertCircle className="w-3 h-3" />
-                              Behind
-                            </>
+                            <><AlertCircle className="w-3 h-3 mr-1" />Behind</>
                           )}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-sm text-slate-500 capitalize">
-                        {goal.goal_type.replace('_', ' ')} • Target: {formatDate(goal.target_date)}
+                        {goal.goal_type.replace('_', ' ')} • Target: {fmtGoalDate(goal.target_date)}
                       </p>
                     </div>
                   </div>

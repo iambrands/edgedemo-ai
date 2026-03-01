@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { DollarSign, Users, Briefcase, AlertTriangle, Activity, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
 import {
   Table,
   TableHeader,
@@ -11,6 +13,7 @@ import {
   TableCell,
 } from '../../components/ui/Table';
 import { dashboardApi, type DashboardSummary } from '../../services/api';
+import { formatCurrency } from '../../utils/format';
 import { clsx } from 'clsx';
 
 export function Overview() {
@@ -34,16 +37,6 @@ export function Overview() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -84,45 +77,37 @@ export function Overview() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-emerald-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-blue-100 text-sm mt-1">Welcome back. Here's your practice at a glance.</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Welcome back. Here's your practice at a glance."
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="relative overflow-hidden border-l-4 border-l-blue-600">
-          <div className="absolute top-4 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-blue-600" />
-          </div>
-          <p className="text-sm text-slate-500 mb-1">Total AUM</p>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(data.kpis.totalAUM)}</p>
-        </Card>
-
-        <Card className="relative overflow-hidden border-l-4 border-l-emerald-500">
-          <div className="absolute top-4 right-4 w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
-            <Users className="w-5 h-5 text-emerald-600" />
-          </div>
-          <p className="text-sm text-slate-500 mb-1">Households</p>
-          <p className="text-2xl font-bold text-slate-900">{data.kpis.householdCount}</p>
-        </Card>
-
-        <Card className="relative overflow-hidden border-l-4 border-l-blue-400">
-          <div className="absolute top-4 right-4 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-            <Briefcase className="w-5 h-5 text-blue-500" />
-          </div>
-          <p className="text-sm text-slate-500 mb-1">Accounts</p>
-          <p className="text-2xl font-bold text-slate-900">{data.kpis.accountCount}</p>
-        </Card>
-
-        <Card className="relative overflow-hidden border-l-4 border-l-amber-400">
-          <div className="absolute top-4 right-4 w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
-          </div>
-          <p className="text-sm text-slate-500 mb-1">Active Alerts</p>
-          <p className="text-2xl font-bold text-slate-900">{data.kpis.alertCount}</p>
-        </Card>
+        <MetricCard
+          label="Total AUM"
+          value={formatCurrency(data.kpis.totalAUM, { abbreviated: true })}
+          icon={<DollarSign size={18} />}
+          color="blue"
+        />
+        <MetricCard
+          label="Households"
+          value={String(data.kpis.householdCount)}
+          icon={<Users size={18} />}
+          color="emerald"
+        />
+        <MetricCard
+          label="Accounts"
+          value={String(data.kpis.accountCount)}
+          icon={<Briefcase size={18} />}
+          color="blue"
+        />
+        <MetricCard
+          label="Active Alerts"
+          value={String(data.kpis.alertCount)}
+          icon={<AlertTriangle size={18} />}
+          color="amber"
+        />
       </div>
 
       {/* Two Column Layout */}

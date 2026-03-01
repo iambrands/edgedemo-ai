@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import {
   Table,
   TableHeader,
@@ -11,6 +13,8 @@ import {
   TableCell,
 } from '../../components/ui/Table';
 import { accountsApi, householdsApi, type Account, type Household } from '../../services/api';
+import { formatCurrency } from '../../utils/format';
+import { useToast } from '../../contexts/ToastContext';
 import { clsx } from 'clsx';
 
 type SortKey = 'name' | 'custodian' | 'balance' | 'fees';
@@ -23,6 +27,7 @@ export function Accounts() {
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const toast = useToast();
 
   const fetchData = async () => {
     setLoading(true);
@@ -35,7 +40,9 @@ export function Accounts() {
       setAccounts(accountsData);
       setHouseholds(householdsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load accounts');
+      const msg = err instanceof Error ? err.message : 'Failed to load accounts';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -44,14 +51,6 @@ export function Accounts() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(value);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -137,22 +136,19 @@ export function Accounts() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-red-500">{error}</p>
-        <button
-          onClick={fetchData}
-          className="px-4 py-2 text-sm text-primary-600 hover:text-primary-700"
-        >
+        <Button variant="ghost" size="sm" onClick={fetchData}>
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Accounts</h1>
-        <p className="text-slate-500">{accounts.length} accounts across all households</p>
-      </div>
+      <PageHeader
+        title="Accounts"
+        subtitle={`${accounts.length} accounts across all households`}
+      />
 
       <Card className="overflow-hidden p-0">
         <Table>
@@ -194,7 +190,7 @@ export function Accounts() {
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">
-                  {formatCurrency(account.balance)}
+                  {formatCurrency(account.balance, { decimals: 2 })}
                 </TableCell>
                 <TableCell
                   className={clsx(

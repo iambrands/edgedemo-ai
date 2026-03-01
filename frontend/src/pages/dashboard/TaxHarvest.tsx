@@ -37,27 +37,17 @@ import {
   type WashSaleWindow,
   type HarvestStatus,
 } from '../../services/taxHarvestApi';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function fmtCurrency(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
-}
-
-function fmtDate(iso?: string): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
   identified: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Identified' },
@@ -90,6 +80,7 @@ type TabKey = 'opportunities' | 'wash_sales';
 // ============================================================================
 
 export default function TaxHarvest() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [tab, setTab] = useState<TabKey>('opportunities');
   const [error, setError] = useState<string | null>(null);
 
@@ -180,9 +171,11 @@ export default function TaxHarvest() {
       if (Array.isArray(newOpps) && newOpps.length > 0) {
         await loadOpportunities();
         await loadSummary();
+        toastSuccess(`Found ${newOpps.length} opportunities`);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Scan failed');
+      toastError('Scan failed');
     } finally {
       setScanning(false);
     }
@@ -211,8 +204,10 @@ export default function TaxHarvest() {
       setSelected(null);
       await loadOpportunities();
       await loadSummary();
+      toastSuccess('Opportunity approved');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Approval failed');
+      toastError('Approval failed');
     } finally {
       setActionLoading(false);
     }
@@ -226,8 +221,10 @@ export default function TaxHarvest() {
       setSelected(null);
       await loadOpportunities();
       await loadSummary();
+      toastSuccess('Opportunity rejected');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Rejection failed');
+      toastError('Rejection failed');
     } finally {
       setActionLoading(false);
     }
@@ -242,10 +239,10 @@ export default function TaxHarvest() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Tax-Loss Harvesting</h1>
-        <p className="text-slate-500 mt-1">Identify and execute tax-saving opportunities</p>
-      </div>
+      <PageHeader
+        title="Tax-Loss Harvesting"
+        subtitle="Identify and execute tax-saving opportunities"
+      />
 
       {/* Error banner */}
       {error && (
@@ -260,45 +257,24 @@ export default function TaxHarvest() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Opportunities</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {loadingSummary ? '—' : summary?.total_opportunities ?? 0}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <TrendingDown className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Harvestable Loss</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
-                {loadingSummary ? '—' : fmtCurrency(summary?.total_harvestable_loss ?? 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-xl">
-              <DollarSign className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Est. Tax Efficiency</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">
-                {loadingSummary ? '—' : fmtCurrency(summary?.total_estimated_savings ?? 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <Percent className="h-6 w-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Opportunities"
+          value={loadingSummary ? '—' : String(summary?.total_opportunities ?? 0)}
+          icon={<TrendingDown size={18} />}
+          color="blue"
+        />
+        <MetricCard
+          label="Harvestable Loss"
+          value={loadingSummary ? '—' : formatCurrency(summary?.total_harvestable_loss ?? 0)}
+          icon={<DollarSign size={18} />}
+          color="red"
+        />
+        <MetricCard
+          label="Est. Tax Efficiency"
+          value={loadingSummary ? '—' : formatCurrency(summary?.total_estimated_savings ?? 0)}
+          icon={<Percent size={18} />}
+          color="emerald"
+        />
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-center">
           <button
             onClick={handleScan}
@@ -306,7 +282,7 @@ export default function TaxHarvest() {
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
           >
             <RefreshCw className={`h-4 w-4 ${scanning ? 'animate-spin' : ''}`} />
-            {scanning ? 'Scanning…' : 'Scan Portfolio'}
+            {scanning ? 'Scanning...' : 'Scan Portfolio'}
           </button>
         </div>
       </div>
@@ -337,10 +313,10 @@ export default function TaxHarvest() {
         <div className="space-y-4">
           {/* Filter bar */}
           <div className="flex items-center gap-3">
-            <select
+            <Select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as HarvestStatus | '')}
-              className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white"
+              className="w-48"
             >
               <option value="">All Statuses</option>
               <option value="identified">Identified</option>
@@ -351,7 +327,7 @@ export default function TaxHarvest() {
               <option value="wash_sale_risk">Wash Sale Risk</option>
               <option value="rejected">Rejected</option>
               <option value="expired">Expired</option>
-            </select>
+            </Select>
             <button
               onClick={loadOpportunities}
               disabled={loadingOpps}
@@ -397,16 +373,16 @@ export default function TaxHarvest() {
                       <div className="flex items-center gap-6 mt-3 text-sm flex-wrap">
                         <div>
                           <span className="text-slate-500">Loss:</span>
-                          <span className="ml-1 font-mono text-red-600">{fmtCurrency(opp.unrealized_loss)}</span>
+                          <span className="ml-1 font-mono text-red-600">{formatCurrency(opp.unrealized_loss)}</span>
                         </div>
                         <div>
                           <span className="text-slate-500">Tax Benefit:</span>
-                          <span className="ml-1 font-mono text-emerald-600">{fmtCurrency(opp.estimated_tax_savings)}</span>
+                          <span className="ml-1 font-mono text-emerald-600">{formatCurrency(opp.estimated_tax_savings)}</span>
                         </div>
                         <div>
                           <span className="text-slate-500">ST / LT:</span>
                           <span className="ml-1 font-mono">
-                            {opp.short_term_loss != null ? fmtCurrency(opp.short_term_loss) : '—'} / {opp.long_term_loss != null ? fmtCurrency(opp.long_term_loss) : '—'}
+                            {opp.short_term_loss != null ? formatCurrency(opp.short_term_loss) : '—'} / {opp.long_term_loss != null ? formatCurrency(opp.long_term_loss) : '—'}
                           </span>
                         </div>
                       </div>
@@ -468,11 +444,11 @@ export default function TaxHarvest() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <div className="text-center p-4 bg-red-50 rounded-lg">
                 <p className="text-sm text-slate-500">Unrealized Loss</p>
-                <p className="text-2xl font-bold text-red-600">{fmtCurrency(selected.unrealized_loss)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(selected.unrealized_loss)}</p>
               </div>
               <div className="text-center p-4 bg-emerald-50 rounded-lg">
                 <p className="text-sm text-slate-500">Est. Tax Benefit</p>
-                <p className="text-2xl font-bold text-emerald-600">{fmtCurrency(selected.estimated_tax_savings)}</p>
+                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(selected.estimated_tax_savings)}</p>
               </div>
               <div className="text-center p-4 bg-slate-50 rounded-lg">
                 <p className="text-sm text-slate-500">Quantity</p>
@@ -482,12 +458,12 @@ export default function TaxHarvest() {
 
             {/* Details grid */}
             <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-              <div><span className="text-slate-500">Cost Basis:</span> <span className="font-mono">{fmtCurrency(selected.cost_basis)}</span></div>
-              <div><span className="text-slate-500">Market Value:</span> <span className="font-mono">{fmtCurrency(selected.market_value)}</span></div>
-              <div><span className="text-slate-500">Short-Term Loss:</span> <span className="font-mono">{selected.short_term_loss != null ? fmtCurrency(selected.short_term_loss) : '—'}</span></div>
-              <div><span className="text-slate-500">Long-Term Loss:</span> <span className="font-mono">{selected.long_term_loss != null ? fmtCurrency(selected.long_term_loss) : '—'}</span></div>
-              <div><span className="text-slate-500">Identified:</span> {fmtDate(selected.identified_at)}</div>
-              <div><span className="text-slate-500">Expires:</span> {fmtDate(selected.expires_at)}</div>
+              <div><span className="text-slate-500">Cost Basis:</span> <span className="font-mono">{formatCurrency(selected.cost_basis)}</span></div>
+              <div><span className="text-slate-500">Market Value:</span> <span className="font-mono">{formatCurrency(selected.market_value)}</span></div>
+              <div><span className="text-slate-500">Short-Term Loss:</span> <span className="font-mono">{selected.short_term_loss != null ? formatCurrency(selected.short_term_loss) : '—'}</span></div>
+              <div><span className="text-slate-500">Long-Term Loss:</span> <span className="font-mono">{selected.long_term_loss != null ? formatCurrency(selected.long_term_loss) : '—'}</span></div>
+              <div><span className="text-slate-500">Identified:</span> {formatDate(selected.identified_at)}</div>
+              <div><span className="text-slate-500">Expires:</span> {formatDate(selected.expires_at)}</div>
             </div>
 
             {/* Wash sale warning */}
@@ -497,10 +473,10 @@ export default function TaxHarvest() {
                 <div>
                   <p className="font-medium text-orange-800">Wash Sale Risk</p>
                   <p className="text-sm text-orange-600">
-                    Recent purchases detected. Window: {fmtDate(selected.wash_sale_window_start)} –{' '}
-                    {fmtDate(selected.wash_sale_window_end)}
+                    Recent purchases detected. Window: {formatDate(selected.wash_sale_window_start)} –{' '}
+                    {formatDate(selected.wash_sale_window_end)}
                     {selected.wash_sale_risk_amount
-                      ? ` (${fmtCurrency(selected.wash_sale_risk_amount)} at risk)`
+                      ? ` (${formatCurrency(selected.wash_sale_risk_amount)} at risk)`
                       : ''}
                   </p>
                 </div>
@@ -601,60 +577,49 @@ export default function TaxHarvest() {
             </div>
           ) : (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Symbol</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Sale Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Window</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Loss</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Watch</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Symbol</TableHead>
+                    <TableHead>Sale Date</TableHead>
+                    <TableHead>Window</TableHead>
+                    <TableHead className="text-right">Loss</TableHead>
+                    <TableHead>Watch</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {washSales.map(ws => (
-                    <tr key={ws.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{ws.symbol}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{fmtDate(ws.sale_date)}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        {fmtDate(ws.window_start)} – {fmtDate(ws.window_end)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-mono text-red-600">
-                        {fmtCurrency(ws.loss_amount)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
+                    <TableRow key={ws.id}>
+                      <TableCell className="font-medium text-slate-900">{ws.symbol}</TableCell>
+                      <TableCell>{formatDate(ws.sale_date)}</TableCell>
+                      <TableCell>
+                        {formatDate(ws.window_start)} – {formatDate(ws.window_end)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-red-600">
+                        {formatCurrency(ws.loss_amount)}
+                      </TableCell>
+                      <TableCell>
                         {(ws.watch_symbols || []).join(', ') || '—'}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell>
                         {ws.status === 'in_window' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                            <Clock className="h-3 w-3" />
-                            Active
-                          </span>
+                          <Badge variant="amber"><Clock className="h-3 w-3 mr-1" />Active</Badge>
                         )}
                         {ws.status === 'clear' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                            <Check className="h-3 w-3" />
-                            Clear
-                          </span>
+                          <Badge variant="green"><Check className="h-3 w-3 mr-1" />Clear</Badge>
                         )}
                         {ws.status === 'violated' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                            <AlertTriangle className="h-3 w-3" />
-                            Violated
-                          </span>
+                          <Badge variant="red"><AlertTriangle className="h-3 w-3 mr-1" />Violated</Badge>
                         )}
                         {ws.status === 'adjusted' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                            Adjusted
-                          </span>
+                          <Badge variant="blue">Adjusted</Badge>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

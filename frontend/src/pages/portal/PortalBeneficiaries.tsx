@@ -4,6 +4,9 @@ import {
   ChevronUp, Loader2, Send, X, Clock, User,
 } from 'lucide-react';
 import { getBeneficiaries, submitBeneficiaryUpdateRequest } from '../../services/portalApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -40,9 +43,6 @@ interface PendingRequest {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
 const CHANGE_TYPES = [
   { value: 'add', label: 'Add Beneficiary' },
   { value: 'remove', label: 'Remove Beneficiary' },
@@ -61,7 +61,7 @@ export default function PortalBeneficiaries() {
   const [showModal, setShowModal] = useState(false);
   const [expandedInfo, setExpandedInfo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const toast = useToast();
 
   // Modal form state
   const [formAccountId, setFormAccountId] = useState('');
@@ -96,7 +96,7 @@ export default function PortalBeneficiaries() {
         change_type: formChangeType,
         description: formDescription,
       });
-      setSuccessMsg(res.message || 'Request submitted successfully.');
+      toast.success(res.message || 'Request submitted successfully');
       setPendingRequests((prev) => [
         { id: res.request_id, account_id: formAccountId, change_type: formChangeType, description: formDescription, status: 'submitted', submitted_at: new Date().toISOString() },
         ...prev,
@@ -106,7 +106,7 @@ export default function PortalBeneficiaries() {
       setFormChangeType('review');
       setFormDescription('');
     } catch {
-      setSuccessMsg(null);
+      toast.error('Failed to submit request');
     } finally {
       setSubmitting(false);
     }
@@ -125,35 +125,18 @@ export default function PortalBeneficiaries() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Beneficiaries</h1>
-            <p className="text-slate-500 text-sm">Manage designated beneficiaries for your accounts</p>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
-          >
-            <Send className="h-4 w-4" /> Request Update
-          </button>
-        </div>
-
-        {/* Success toast */}
-        {successMsg && (
-          <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-            <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-emerald-800">{successMsg}</p>
-              <ul className="mt-2 space-y-1 text-xs text-emerald-700 list-disc list-inside">
-                <li>Advisor review within 2 business days</li>
-                <li>You may need to sign updated forms</li>
-                <li>Changes effective after processing</li>
-              </ul>
-            </div>
-            <button onClick={() => setSuccessMsg(null)} className="text-emerald-400 hover:text-emerald-600"><X className="h-4 w-4" /></button>
-          </div>
-        )}
+        <PageHeader
+          title="Beneficiaries"
+          subtitle="Manage designated beneficiaries for your accounts"
+          actions={
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+            >
+              <Send className="h-4 w-4" /> Request Update
+            </button>
+          }
+        />
 
         {/* Info Banner */}
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
@@ -227,7 +210,7 @@ export default function PortalBeneficiaries() {
                     <p className="text-xs text-slate-500 truncate">{r.description}</p>
                   </div>
                   <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full capitalize">{r.status}</span>
-                  <span className="text-xs text-slate-400">{fmtDate(r.submitted_at)}</span>
+                  <span className="text-xs text-slate-400">{formatDate(r.submitted_at)}</span>
                 </div>
               ))}
             </div>
@@ -314,7 +297,7 @@ function AccountCard({ account, onRequestUpdate }: { account: Account; onRequest
               <p className="font-semibold text-slate-900">{account.account_name}</p>
               <span className="px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">{account.account_type}</span>
             </div>
-            <p className="text-xs text-slate-500">Last updated: {fmtDate(account.last_updated)}</p>
+            <p className="text-xs text-slate-500">Last updated: {formatDate(account.last_updated)}</p>
           </div>
         </div>
         <button
@@ -387,7 +370,7 @@ function BeneficiaryRow({ beneficiary }: { beneficiary: Beneficiary }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-900">{beneficiary.name}</p>
-        <p className="text-xs text-slate-500">{beneficiary.relationship}{beneficiary.dob ? ` \u00b7 DOB: ${fmtDate(beneficiary.dob)}` : ''}</p>
+        <p className="text-xs text-slate-500">{beneficiary.relationship}{beneficiary.dob ? ` \u00b7 DOB: ${formatDate(beneficiary.dob)}` : ''}</p>
       </div>
       <span className="text-sm font-semibold text-slate-900">{beneficiary.percentage}%</span>
     </div>

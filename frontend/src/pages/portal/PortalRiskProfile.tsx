@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Shield, CheckCircle, RefreshCw, PieChart, AlertTriangle } from 'lucide-react';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 interface RiskProfile {
   risk_score: number;
@@ -85,6 +88,7 @@ export default function PortalRiskProfile() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [currentQ, setCurrentQ] = useState(0);
+  const toast = useToast();
 
   const apiBase = import.meta.env.VITE_API_URL || '';
   const token = localStorage.getItem('portal_token');
@@ -128,10 +132,12 @@ export default function PortalRiskProfile() {
         if (data.risk_profile) {
           setProfile(data.risk_profile);
           setMode('view');
+          toast.success('Risk profile updated');
         }
       }
     } catch (err) {
       console.error('Failed to save risk profile', err);
+      toast.error('Failed to save risk profile');
     } finally {
       setSubmitting(false);
     }
@@ -165,14 +171,12 @@ export default function PortalRiskProfile() {
 
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Risk Profile</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {mode === 'view'
-              ? 'Your investment risk tolerance and recommended allocation'
-              : 'Answer each question to determine your risk profile'}
-          </p>
-        </div>
+        <PageHeader
+          title="Risk Profile"
+          subtitle={mode === 'view'
+            ? 'Your investment risk tolerance and recommended allocation'
+            : 'Answer each question to determine your risk profile'}
+        />
 
         {/* ── VIEW MODE ─────────────────────────────────────── */}
         {mode === 'view' && profile && (
@@ -224,7 +228,7 @@ export default function PortalRiskProfile() {
                   </div>
                   <p className="text-slate-600 text-sm">{profile.description}</p>
                   <p className="text-xs text-slate-400 mt-3">
-                    Last assessed: {new Date(profile.completed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    Last assessed: {formatDate(profile.completed_at, 'long')}
                   </p>
                 </div>
               </div>

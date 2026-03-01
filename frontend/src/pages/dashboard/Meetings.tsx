@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar, Clock, Users, Upload, FileText, 
+import {
+  Calendar, Clock, Users, Upload, FileText,
   CheckCircle, AlertTriangle, Video, BarChart2, Mail, Plus
 } from 'lucide-react';
+import { formatDate as sharedFormatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Participant {
   name: string;
@@ -68,14 +75,6 @@ interface Transcript {
   word_count: number;
 }
 
-const statusColors: Record<string, string> = {
-  scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-  in_progress: 'bg-amber-50 text-amber-700 border-amber-200',
-  processing: 'bg-purple-50 text-purple-700 border-purple-200',
-  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  failed: 'bg-red-50 text-red-700 border-red-200',
-};
-
 const priorityColors: Record<string, string> = {
   urgent: 'text-red-600',
   high: 'text-orange-600',
@@ -101,6 +100,7 @@ const API_BASE = (() => {
 })();
 
 const MeetingsPage: React.FC = () => {
+  const toast = useToast();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [analysis, setAnalysis] = useState<MeetingAnalysis | null>(null);
@@ -211,10 +211,14 @@ const MeetingsPage: React.FC = () => {
       });
       
       if (response.ok) {
+        toast.success('Recording uploaded — processing started');
         await loadMeetings();
+      } else {
+        toast.error('Upload failed');
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error('Upload failed');
     } finally {
       setIsUploading(false);
     }
@@ -230,13 +234,15 @@ const MeetingsPage: React.FC = () => {
       
       if (response.ok && analysis) {
         // Update local state
-        const updatedItems = analysis.action_items.map(item => 
+        const updatedItems = analysis.action_items.map(item =>
           item.id === itemId ? { ...item, status } : item
         );
         setAnalysis({ ...analysis, action_items: updatedItems });
+        toast.success(status === 'completed' ? 'Action item completed' : 'Action item reopened');
       }
     } catch (error) {
       console.error('Failed to update action item:', error);
+      toast.error('Failed to update action item');
     }
   };
 
@@ -244,11 +250,6 @@ const MeetingsPage: React.FC = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const formatTime = (dateStr: string) => {
@@ -297,74 +298,43 @@ const MeetingsPage: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Meeting Intelligence</h1>
-          <p className="text-slate-500 mt-1">
-            AI-powered meeting transcription, analysis, and action tracking
-          </p>
-        </div>
-        <button
-          onClick={() => setShowNewMeetingModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Meeting
-        </button>
-      </div>
+      <PageHeader
+        title="Meeting Intelligence"
+        subtitle="AI-powered meeting transcription, analysis, and action tracking"
+        actions={
+          <Button onClick={() => setShowNewMeetingModal(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            New Meeting
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Meetings</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{meetings.length}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Video className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Analyzed</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {meetings.filter(m => m.status === 'completed').length}
-              </p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <CheckCircle className="h-6 w-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pending Actions</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {analysis?.action_items?.filter(a => a.status === 'pending').length || 0}
-              </p>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-xl">
-              <AlertTriangle className="h-6 w-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Time</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {Math.round(meetings.reduce((acc, m) => acc + (m.duration_seconds || 0), 0) / 60)}m
-              </p>
-            </div>
-            <div className="p-3 bg-cyan-50 rounded-xl">
-              <Clock className="h-6 w-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Total Meetings"
+          value={String(meetings.length)}
+          icon={<Video className="h-5 w-5" />}
+          color="blue"
+        />
+        <MetricCard
+          label="Analyzed"
+          value={String(meetings.filter(m => m.status === 'completed').length)}
+          icon={<CheckCircle className="h-5 w-5" />}
+          color="emerald"
+        />
+        <MetricCard
+          label="Pending Actions"
+          value={String(analysis?.action_items?.filter(a => a.status === 'pending').length || 0)}
+          icon={<AlertTriangle className="h-5 w-5" />}
+          color="amber"
+        />
+        <MetricCard
+          label="Total Time"
+          value={`${Math.round(meetings.reduce((acc, m) => acc + (m.duration_seconds || 0), 0) / 60)}m`}
+          icon={<Clock className="h-5 w-5" />}
+          color="teal"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -395,15 +365,19 @@ const MeetingsPage: React.FC = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium text-slate-900 truncate pr-2">{meeting.title}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs border whitespace-nowrap ${statusColors[meeting.status]}`}>
+                    <Badge variant={
+                      meeting.status === 'completed' ? 'green' :
+                      meeting.status === 'scheduled' ? 'blue' :
+                      meeting.status === 'failed' ? 'red' : 'amber'
+                    }>
                       {meeting.status.replace('_', ' ')}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-slate-500">
                     {meeting.scheduled_at && (
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {formatDate(meeting.scheduled_at)}
+                        {sharedFormatDate(meeting.scheduled_at)}
                       </span>
                     )}
                     {meeting.duration_seconds && (
@@ -442,12 +416,16 @@ const MeetingsPage: React.FC = () => {
                     <h2 className="text-xl font-semibold text-slate-900">{selectedMeeting.title}</h2>
                     <p className="text-slate-500 mt-1">
                       {selectedMeeting.meeting_type.replace('_', ' ')} • {selectedMeeting.platform || 'In Person'}
-                      {selectedMeeting.scheduled_at && ` • ${formatDate(selectedMeeting.scheduled_at)} at ${formatTime(selectedMeeting.scheduled_at)}`}
+                      {selectedMeeting.scheduled_at && ` • ${sharedFormatDate(selectedMeeting.scheduled_at)} at ${formatTime(selectedMeeting.scheduled_at)}`}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm border ${statusColors[selectedMeeting.status]}`}>
+                  <Badge variant={
+                    selectedMeeting.status === 'completed' ? 'green' :
+                    selectedMeeting.status === 'scheduled' ? 'blue' :
+                    selectedMeeting.status === 'failed' ? 'red' : 'amber'
+                  }>
                     {selectedMeeting.status.replace('_', ' ')}
-                  </span>
+                  </Badge>
                 </div>
 
                 {/* Participants */}
@@ -504,45 +482,15 @@ const MeetingsPage: React.FC = () => {
 
               {/* Tabs */}
               {selectedMeeting.status === 'completed' && analysis && (
-                <>
-                  <div className="flex gap-6 border-b border-slate-200 px-1">
-                    <button
-                      onClick={() => setActiveTab('analysis')}
-                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === 'analysis'
-                          ? 'text-blue-600 border-blue-600'
-                          : 'text-slate-500 border-transparent hover:text-slate-700'
-                      }`}
-                    >
-                      <BarChart2 className="w-4 h-4 inline mr-2" />
-                      Analysis
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('transcript')}
-                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === 'transcript'
-                          ? 'text-blue-600 border-blue-600'
-                          : 'text-slate-500 border-transparent hover:text-slate-700'
-                      }`}
-                    >
-                      <FileText className="w-4 h-4 inline mr-2" />
-                      Transcript
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('actions')}
-                      className={`px-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === 'actions'
-                          ? 'text-blue-600 border-blue-600'
-                          : 'text-slate-500 border-transparent hover:text-slate-700'
-                      }`}
-                    >
-                      <CheckCircle className="w-4 h-4 inline mr-2" />
-                      Actions ({analysis.action_items?.length || 0})
-                    </button>
-                  </div>
+                <Tabs value={activeTab} onChange={(v) => setActiveTab(v as 'analysis' | 'transcript' | 'actions')}>
+                  <TabList>
+                    <Tab value="analysis" icon={<BarChart2 className="w-4 h-4" />}>Analysis</Tab>
+                    <Tab value="transcript" icon={<FileText className="w-4 h-4" />}>Transcript</Tab>
+                    <Tab value="actions" icon={<CheckCircle className="w-4 h-4" />}>Actions ({analysis.action_items?.length || 0})</Tab>
+                  </TabList>
 
                   {/* Analysis Tab */}
-                  {activeTab === 'analysis' && (
+                  <TabPanel value="analysis">{(
                     <div className="space-y-4">
                       {/* Executive Summary */}
                       <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
@@ -672,23 +620,25 @@ const MeetingsPage: React.FC = () => {
                           <pre className="text-slate-700 text-sm whitespace-pre-wrap font-sans bg-slate-50 p-4 rounded-lg border border-slate-100">
                             {analysis.suggested_followup_email}
                           </pre>
-                          <button
-                            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                          <Button
+                            size="sm"
                             onClick={() => {
                               if (analysis?.suggested_followup_email) {
                                 navigator.clipboard.writeText(analysis.suggested_followup_email);
+                                toast.success('Email copied to clipboard');
                               }
                             }}
                           >
                             Copy to Clipboard
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
-                  )}
+                  )}</TabPanel>
 
                   {/* Transcript Tab */}
-                  {activeTab === 'transcript' && transcript && (
+                  <TabPanel value="transcript">
+                    {transcript && (
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium text-slate-900">Meeting Transcript</h3>
@@ -708,10 +658,11 @@ const MeetingsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                  )}
+                    )}
+                  </TabPanel>
 
                   {/* Actions Tab */}
-                  {activeTab === 'actions' && (
+                  <TabPanel value="actions">
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                       <h3 className="text-lg font-medium text-slate-900 mb-4 flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -743,7 +694,7 @@ const MeetingsPage: React.FC = () => {
                                 </span>
                                 {item.due_date && (
                                   <span className="text-slate-500">
-                                    Due: {formatDate(item.due_date)}
+                                    Due: {sharedFormatDate(item.due_date)}
                                   </span>
                                 )}
                               </div>
@@ -757,8 +708,8 @@ const MeetingsPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                  )}
-                </>
+                  </TabPanel>
+                </Tabs>
               )}
             </div>
           ) : (

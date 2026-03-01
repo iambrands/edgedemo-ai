@@ -29,6 +29,10 @@ import {
   DocumentVersion,
   ComplianceApiError,
 } from '../../services/complianceApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-700',
@@ -55,6 +59,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ComplianceDocs() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [documents, setDocuments] = useState<ComplianceDocument[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<ComplianceDocument | null>(null);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
@@ -126,12 +131,14 @@ export default function ComplianceDocs() {
       }
       await loadDocuments();
       setShowGenerateModal(false);
+      toastSuccess('Document generated successfully');
     } catch (err) {
       if (err instanceof ComplianceApiError) {
         setError(err.message);
       } else {
         setError('Document generation failed');
       }
+      toastError('Document generation failed');
     } finally {
       setGenerating(false);
     }
@@ -144,9 +151,11 @@ export default function ComplianceDocs() {
       if (selectedDoc) {
         await loadVersions(selectedDoc);
       }
+      toastSuccess('Version approved');
     } catch (err) {
       console.error('Failed to approve', err);
       setError('Failed to approve version');
+      toastError('Failed to approve version');
     }
   };
 
@@ -158,12 +167,14 @@ export default function ComplianceDocs() {
         await loadVersions(selectedDoc);
       }
       await loadDocuments();
+      toastSuccess('Version published');
     } catch (err) {
       if (err instanceof ComplianceApiError) {
         setError(err.message);
       } else {
         setError('Failed to publish version');
       }
+      toastError('Failed to publish version');
     }
   };
 
@@ -179,9 +190,11 @@ export default function ComplianceDocs() {
       setVersions([]);
       setPreviewHtml('');
       await loadDocuments();
+      toastSuccess('Document archived');
     } catch (err) {
       console.error('Failed to archive', err);
       setError('Failed to archive document');
+      toastError('Failed to archive document');
     }
   };
 
@@ -226,14 +239,6 @@ export default function ComplianceDocs() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('en-US', {
       year: 'numeric',
@@ -258,21 +263,16 @@ export default function ComplianceDocs() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Compliance Documents</h1>
-          <p className="text-slate-500">
-            Generate and manage ADV Part 2B, Form CRS, and other regulatory documents
-          </p>
-        </div>
-        <button
-          onClick={() => setShowGenerateModal(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          Generate Document
-        </button>
-      </div>
+      <PageHeader
+        title="Compliance Documents"
+        subtitle="Generate and manage ADV Part 2B, Form CRS, and other regulatory documents"
+        actions={
+          <Button onClick={() => setShowGenerateModal(true)} size="sm">
+            <Plus size={16} className="mr-2" />
+            Generate Document
+          </Button>
+        }
+      />
 
       {/* Error Banner */}
       {error && (

@@ -16,7 +16,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
-  Search,
   TrendingUp,
   TrendingDown,
   Briefcase,
@@ -43,33 +42,18 @@ import {
   type AssetAllocation,
   type CustodianTransaction,
 } from '../../services/custodianApi';
+import { formatCurrency, formatNumber, formatPercent, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { useToast } from '../../contexts/ToastContext';
+import { CHART_COLORS } from '../../constants/chartTheme';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function fmtCurrency(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
-}
-
-function fmtNumber(n: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
-}
-
-function fmtPct(n: number): string {
-  return `${n.toFixed(1)}%`;
-}
-
-function timeAgo(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return 'just now';
-  const mins = Math.floor(seconds / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 const STATUS_CFG: Record<string, { bg: string; text: string; icon: typeof CheckCircle }> = {
   connected: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
@@ -79,11 +63,6 @@ const STATUS_CFG: Record<string, { bg: string; text: string; icon: typeof CheckC
   error:     { bg: 'bg-red-100', text: 'text-red-700', icon: AlertTriangle },
 };
 
-const ALLOC_COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
-  '#EC4899', '#6366F1', '#14B8A6', '#F97316',
-  '#06B6D4', '#EF4444', '#84CC16', '#A855F7',
-];
 
 type TabKey = 'connections' | 'portfolio' | 'accounts' | 'transactions';
 
@@ -92,6 +71,7 @@ type TabKey = 'connections' | 'portfolio' | 'accounts' | 'transactions';
 // ============================================================================
 
 export default function Custodians() {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [tab, setTab] = useState<TabKey>('connections');
   const [error, setError] = useState<string | null>(null);
 
@@ -220,8 +200,10 @@ export default function Custodians() {
     try {
       await disconnectCustodian(id);
       await loadConnections();
+      toastSuccess('Custodian disconnected');
     } catch (err) {
       console.error(err);
+      toastError('Failed to disconnect custodian');
     }
   };
 
@@ -230,8 +212,10 @@ export default function Custodians() {
     try {
       await triggerSync(id);
       await loadConnections();
+      toastSuccess('Sync completed');
     } catch (err) {
       console.error(err);
+      toastError('Sync failed');
     } finally {
       setSyncing(null);
     }
@@ -264,21 +248,17 @@ export default function Custodians() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Multi-Custodian Aggregation
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Connect custodians, sync data, and view unified portfolio
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <span>{connections.filter(c => c.status === 'connected').length} connected</span>
-          <span className="text-slate-400">|</span>
-          <span>{accounts.length || '—'} accounts</span>
-        </div>
-      </div>
+      <PageHeader
+        title="Multi-Custodian Aggregation"
+        subtitle="Connect custodians, sync data, and view unified portfolio"
+        actions={
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span>{connections.filter(c => c.status === 'connected').length} connected</span>
+            <span className="text-slate-400">|</span>
+            <span>{accounts.length || '—'} accounts</span>
+          </div>
+        }
+      />
 
       {/* Error Banner */}
       {error && (
@@ -345,7 +325,7 @@ export default function Custodians() {
                             </span>
                             {conn.last_sync_at && (
                               <span className="text-xs text-slate-500">
-                                Synced {timeAgo(conn.last_sync_at)}
+                                Synced {formatDate(conn.last_sync_at, 'relative')}
                               </span>
                             )}
                           </div>
@@ -467,45 +447,24 @@ export default function Custodians() {
             <>
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Total Market Value</p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
-                        {fmtCurrency(posTotal)}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-amber-50 rounded-xl">
-                      <TrendingUp className="h-6 w-6 text-amber-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Positions</p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
-                        {positions.length}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-blue-50 rounded-xl">
-                      <Briefcase className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Asset Classes</p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
-                        {allocation?.allocation.length || 0}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 rounded-xl">
-                      <PieChart className="h-6 w-6 text-indigo-600" />
-                    </div>
-                  </div>
-                </div>
+                <MetricCard
+                  label="Total Market Value"
+                  value={formatCurrency(posTotal)}
+                  icon={<TrendingUp size={18} />}
+                  color="amber"
+                />
+                <MetricCard
+                  label="Positions"
+                  value={String(positions.length)}
+                  icon={<Briefcase size={18} />}
+                  color="blue"
+                />
+                <MetricCard
+                  label="Asset Classes"
+                  value={String(allocation?.allocation.length || 0)}
+                  icon={<PieChart size={18} />}
+                  color="indigo"
+                />
               </div>
 
               {/* Asset Allocation */}
@@ -521,9 +480,9 @@ export default function Custodians() {
                         key={a.asset_class}
                         style={{
                           width: `${a.percentage}%`,
-                          backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length],
+                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
                         }}
-                        title={`${a.asset_class.replace(/_/g, ' ')} — ${fmtPct(a.percentage)}`}
+                        title={`${a.asset_class.replace(/_/g, ' ')} — ${formatPercent(a.percentage, { decimals: 1, showSign: false })}`}
                       />
                     ))}
                   </div>
@@ -533,14 +492,14 @@ export default function Custodians() {
                         <span
                           className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{
-                            backgroundColor: ALLOC_COLORS[i % ALLOC_COLORS.length],
+                            backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
                           }}
                         />
                         <span className="text-sm text-slate-700 capitalize truncate">
                           {a.asset_class.replace(/_/g, ' ')}
                         </span>
                         <span className="text-sm font-mono text-slate-500 ml-auto">
-                          {fmtPct(a.percentage)}
+                          {formatPercent(a.percentage, { decimals: 1, showSign: false })}
                         </span>
                       </div>
                     ))}
@@ -556,22 +515,16 @@ export default function Custodians() {
                       Unified Holdings
                     </h2>
                     <p className="text-sm text-slate-500">
-                      {positions.length} positions &middot; {fmtCurrency(posTotal)}
+                      {positions.length} positions &middot; {formatCurrency(posTotal)}
                     </p>
                   </div>
-                  <div className="relative">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={posSearch}
-                      onChange={e => setPosSearch(e.target.value)}
-                      className="pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
+                  <SearchInput
+                    placeholder="Search..."
+                    value={posSearch}
+                    onChange={e => setPosSearch(e.target.value)}
+                    className="w-48"
+                    inputSize="sm"
+                  />
                 </div>
                 {filteredPositions.length === 0 ? (
                   <p className="text-center py-8 text-slate-500 text-sm">
@@ -580,61 +533,59 @@ export default function Custodians() {
                       : 'No positions match your search.'}
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200 text-sm">
-                      <thead>
-                        <tr className="text-left text-xs font-medium text-slate-500 uppercase">
-                          <th className="px-4 py-3">Symbol</th>
-                          <th className="px-4 py-3">Name</th>
-                          <th className="px-4 py-3">Asset Class</th>
-                          <th className="px-4 py-3 text-right">Qty</th>
-                          <th className="px-4 py-3 text-right">Market Value</th>
-                          <th className="px-4 py-3 text-right">Gain/Loss</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredPositions.map(pos => {
-                          const gl = pos.unrealized_gain_loss ?? 0;
-                          const isGain = gl >= 0;
-                          return (
-                            <tr key={pos.symbol} className="hover:bg-slate-50">
-                              <td className="px-4 py-3 font-medium text-slate-900">
-                                {pos.symbol}
-                              </td>
-                              <td className="px-4 py-3 text-slate-600 truncate max-w-[200px]">
-                                {pos.security_name}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs capitalize">
-                                  {pos.asset_class.replace(/_/g, ' ')}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono">
-                                {fmtNumber(pos.total_quantity)}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono">
-                                {fmtCurrency(pos.total_market_value)}
-                              </td>
-                              <td
-                                className={`px-4 py-3 text-right font-mono ${
-                                  isGain ? 'text-emerald-600' : 'text-red-600'
-                                }`}
-                              >
-                                <span className="inline-flex items-center gap-1">
-                                  {isGain ? (
-                                    <TrendingUp size={14} />
-                                  ) : (
-                                    <TrendingDown size={14} />
-                                  )}
-                                  {fmtCurrency(Math.abs(gl))}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Symbol</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Asset Class</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Market Value</TableHead>
+                        <TableHead className="text-right">Gain/Loss</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPositions.map(pos => {
+                        const gl = pos.unrealized_gain_loss ?? 0;
+                        const isGain = gl >= 0;
+                        return (
+                          <TableRow key={pos.symbol}>
+                            <TableCell className="font-medium text-slate-900">
+                              {pos.symbol}
+                            </TableCell>
+                            <TableCell className="text-slate-600 truncate max-w-[200px]">
+                              {pos.security_name}
+                            </TableCell>
+                            <TableCell>
+                              <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs capitalize">
+                                {pos.asset_class.replace(/_/g, ' ')}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatNumber(pos.total_quantity, 2)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(pos.total_market_value)}
+                            </TableCell>
+                            <TableCell
+                              className={`text-right font-mono ${
+                                isGain ? 'text-emerald-600' : 'text-red-600'
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                {isGain ? (
+                                  <TrendingUp size={14} />
+                                ) : (
+                                  <TrendingDown size={14} />
+                                )}
+                                {formatCurrency(Math.abs(gl))}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 )}
               </div>
             </>
@@ -653,18 +604,24 @@ export default function Custodians() {
             <>
               {/* KPI */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-slate-200 rounded-xl p-4">
-                  <p className="text-sm text-slate-500">Total Market Value</p>
-                  <p className="text-2xl font-semibold">{fmtCurrency(totalMV)}</p>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl p-4">
-                  <p className="text-sm text-slate-500">Total Cash</p>
-                  <p className="text-2xl font-semibold">{fmtCurrency(totalCash)}</p>
-                </div>
-                <div className="bg-white border border-slate-200 rounded-xl p-4">
-                  <p className="text-sm text-slate-500">Accounts</p>
-                  <p className="text-2xl font-semibold">{accounts.length}</p>
-                </div>
+                <MetricCard
+                  label="Total Market Value"
+                  value={formatCurrency(totalMV)}
+                  icon={<TrendingUp size={18} />}
+                  color="amber"
+                />
+                <MetricCard
+                  label="Total Cash"
+                  value={formatCurrency(totalCash)}
+                  icon={<Briefcase size={18} />}
+                  color="emerald"
+                />
+                <MetricCard
+                  label="Accounts"
+                  value={String(accounts.length)}
+                  icon={<Briefcase size={18} />}
+                  color="blue"
+                />
               </div>
 
               {/* Account List */}
@@ -704,10 +661,10 @@ export default function Custodians() {
                       </div>
                       <div className="text-right">
                         <p className="font-mono font-semibold text-slate-900">
-                          {fmtCurrency(a.market_value)}
+                          {formatCurrency(a.market_value)}
                         </p>
                         <p className="text-sm text-slate-500 font-mono">
-                          {fmtCurrency(a.cash_balance)} cash
+                          {formatCurrency(a.cash_balance)} cash
                         </p>
                       </div>
                     </div>
@@ -736,26 +693,26 @@ export default function Custodians() {
             </div>
           ) : (
             <>
-              <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-                    <tr className="text-left text-xs font-medium text-slate-500 uppercase">
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Symbol</th>
-                      <th className="px-4 py-3">Account</th>
-                      <th className="px-4 py-3">Custodian</th>
-                      <th className="px-4 py-3 text-right">Qty</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+              <Card size="sm" className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Custodian</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {txns.map(t => (
-                      <tr key={t.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                          {new Date(t.trade_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">
+                      <TableRow key={t.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(t.trade_date)}
+                        </TableCell>
+                        <TableCell>
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
                               t.transaction_type === 'buy'
@@ -767,25 +724,25 @@ export default function Custodians() {
                           >
                             {t.transaction_type}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-slate-900">
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-900">
                           {t.symbol || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 truncate max-w-[140px]">
+                        </TableCell>
+                        <TableCell className="text-slate-600 truncate max-w-[140px]">
                           {t.account_name}
-                        </td>
-                        <td className="px-4 py-3 text-slate-500">{t.custodian}</td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {t.quantity != null ? fmtNumber(t.quantity) : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {fmtCurrency(t.net_amount)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="text-slate-500">{t.custodian}</TableCell>
+                        <TableCell className="text-right font-mono">
+                          {t.quantity != null ? formatNumber(t.quantity, 2) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(t.net_amount)}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </Card>
 
               {/* Pagination */}
               {txnPages > 1 && (

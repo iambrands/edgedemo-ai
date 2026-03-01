@@ -77,7 +77,7 @@ export function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-6 max-w-[1600px] mx-auto">
           <Outlet />
         </main>
       </div>

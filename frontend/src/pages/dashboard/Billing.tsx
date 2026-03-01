@@ -9,7 +9,6 @@ import {
   Send,
   Download,
   Filter,
-  Search,
   Plus,
   CheckCircle,
   Clock,
@@ -19,8 +18,6 @@ import {
   ToggleRight,
   Users,
   Percent,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -33,6 +30,13 @@ import {
   TableHead,
   TableCell,
 } from '../../components/ui/Table';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { useToast } from '../../contexts/ToastContext';
+import { formatCurrency, formatPercent, formatDate } from '../../utils/format';
+import { CHART_COLORS, getChartColor } from '../../constants/chartTheme';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -90,28 +94,6 @@ interface FeeCompressionYear {
 }
 
 type TabId = 'schedules' | 'clients' | 'invoices' | 'analytics';
-
-/* ------------------------------------------------------------------ */
-/*  Formatting helpers                                                 */
-/* ------------------------------------------------------------------ */
-
-const fmtCurrency = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(v);
-
-const fmtCurrencyFull = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(v);
-
-const fmtPct = (v: number) => `${v.toFixed(2)}%`;
 
 /* ------------------------------------------------------------------ */
 /*  Mock data                                                          */
@@ -256,40 +238,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  trend,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: typeof DollarSign;
-  trend?: { value: string; positive: boolean };
-}) {
-  return (
-    <Card className="!p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
-          {trend && (
-            <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${trend.positive ? 'text-emerald-600' : 'text-red-500'}`}>
-              {trend.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {trend.value}
-            </div>
-          )}
-        </div>
-        <div className="p-2.5 rounded-lg bg-blue-50">
-          <Icon className="w-5 h-5 text-blue-600" />
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Tab: Fee Schedules                                                 */
@@ -297,10 +245,16 @@ function SummaryCard({
 
 function FeeSchedulesTab() {
   const [schedules, setSchedules] = useState<FeeSchedule[]>(MOCK_SCHEDULES);
+  const toast = useToast();
 
   const toggleActive = (id: string) => {
     setSchedules((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s)),
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        const next = !s.active;
+        toast[next ? 'success' : 'info'](`${s.name} schedule ${next ? 'activated' : 'deactivated'}`);
+        return { ...s, active: next };
+      }),
     );
   };
 
@@ -343,7 +297,7 @@ function FeeSchedulesTab() {
                   {sch.tiers.map((t, i) => (
                     <tr key={i}>
                       <td className="px-3 py-2 text-slate-700">{t.rangeLabel}</td>
-                      <td className="px-3 py-2 text-right font-medium text-slate-900">{fmtPct(t.rate)}</td>
+                      <td className="px-3 py-2 text-right font-medium text-slate-900">{formatPercent(t.rate, { showSign: false })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -354,7 +308,7 @@ function FeeSchedulesTab() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
               <span className="flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5" />
-                Min: {fmtCurrency(sch.minimumAccount)}
+                Min: {formatCurrency(sch.minimumAccount)}
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
@@ -380,6 +334,7 @@ function FeeSchedulesTab() {
 function ClientBillingTab() {
   const [search, setSearch] = useState('');
   const [scheduleFilter, setScheduleFilter] = useState<string>('all');
+  const toast = useToast();
 
   const filteredClients = useMemo(() => {
     let list = MOCK_CLIENTS;
@@ -402,24 +357,20 @@ function ClientBillingTab() {
     <div className="space-y-6">
       {/* Summary row */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={DollarSign} label="Total AUM Under Fee" value={fmtCurrency(totalAum)} />
-        <SummaryCard icon={TrendingUp} label="Annual Revenue" value={fmtCurrency(annualRev)} trend={{ value: '+8.3% YoY', positive: true }} />
-        <SummaryCard icon={Receipt} label="Quarterly Revenue" value={fmtCurrency(quarterlyRev)} />
-        <SummaryCard icon={Users} label="Clients Billed This Quarter" value={`${billedThisQ} / ${MOCK_CLIENTS.length}`} />
+        <MetricCard icon={<DollarSign size={18} />} label="Total AUM Under Fee" value={formatCurrency(totalAum)} />
+        <MetricCard icon={<TrendingUp size={18} />} label="Annual Revenue" value={formatCurrency(annualRev)} sublabel="+8.3% YoY" color="emerald" />
+        <MetricCard icon={<Receipt size={18} />} label="Quarterly Revenue" value={formatCurrency(quarterlyRev)} />
+        <MetricCard icon={<Users size={18} />} label="Clients Billed This Quarter" value={`${billedThisQ} / ${MOCK_CLIENTS.length}`} />
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search clients..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 w-full sm:max-w-xs"
+        />
 
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
@@ -435,7 +386,7 @@ function ClientBillingTab() {
           </select>
         </div>
 
-        <Button size="sm" className="ml-auto">
+        <Button size="sm" className="ml-auto" onClick={() => toast.success('Invoices generated for all pending clients')}>
           <Receipt className="w-4 h-4 mr-1.5" />
           Generate Invoices
         </Button>
@@ -460,14 +411,14 @@ function ClientBillingTab() {
             {filteredClients.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium text-slate-900">{c.name}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtCurrency(c.aum)}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatCurrency(c.aum)}</TableCell>
                 <TableCell>
                   <Badge variant="blue">{c.scheduleName}</Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{fmtCurrencyFull(c.annualFee)}</TableCell>
-                <TableCell className="text-right tabular-nums">{fmtCurrencyFull(c.quarterlyFee)}</TableCell>
-                <TableCell className="text-slate-500">{c.lastBilled}</TableCell>
-                <TableCell className="text-slate-500">{c.nextBillDate}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatCurrency(c.annualFee, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatCurrency(c.quarterlyFee, { decimals: 2 })}</TableCell>
+                <TableCell className="text-slate-500">{formatDate(c.lastBilled)}</TableCell>
+                <TableCell className="text-slate-500">{formatDate(c.nextBillDate)}</TableCell>
                 <TableCell>
                   <StatusBadge status={c.status} />
                 </TableCell>
@@ -494,6 +445,7 @@ function ClientBillingTab() {
 function InvoicesTab() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const toast = useToast();
 
   const filtered = useMemo(() => {
     let list = MOCK_INVOICES;
@@ -513,16 +465,12 @@ function InvoicesTab() {
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search invoices..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search invoices..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 w-full sm:max-w-xs"
+        />
 
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
@@ -561,18 +509,18 @@ function InvoicesTab() {
                 <TableCell className="font-mono text-xs font-medium text-slate-900">{inv.invoiceNumber}</TableCell>
                 <TableCell className="font-medium">{inv.clientName}</TableCell>
                 <TableCell className="text-slate-500">{inv.period}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{fmtCurrencyFull(inv.amount)}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{formatCurrency(inv.amount, { decimals: 2 })}</TableCell>
                 <TableCell>
                   <StatusBadge status={inv.status} />
                 </TableCell>
-                <TableCell className="text-slate-500">{inv.dueDate}</TableCell>
-                <TableCell className="text-slate-500">{inv.paidDate ?? '—'}</TableCell>
+                <TableCell className="text-slate-500">{formatDate(inv.dueDate)}</TableCell>
+                <TableCell className="text-slate-500">{inv.paidDate ? formatDate(inv.paidDate) : '—'}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <button className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Download">
+                    <button className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Download" onClick={() => toast.info(`Downloading ${inv.invoiceNumber}...`)}>
                       <Download className="w-4 h-4" />
                     </button>
-                    <button className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Send">
+                    <button className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Send" onClick={() => toast.success(`Invoice ${inv.invoiceNumber} sent to ${inv.clientName}`)}>
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
@@ -608,10 +556,10 @@ function RevenueAnalyticsTab() {
 
   /* Revenue by schedule */
   const scheduleRevenue = [
-    { name: 'Standard AUM', revenue: 35_563, color: 'bg-blue-500' },
-    { name: 'High Net Worth', revenue: 79_550, color: 'bg-indigo-500' },
-    { name: 'Family Office', revenue: 218_875, color: 'bg-violet-500' },
-    { name: 'Performance + AUM', revenue: 17_000, color: 'bg-emerald-500' },
+    { name: 'Standard AUM', revenue: 35_563, color: getChartColor(0) },
+    { name: 'High Net Worth', revenue: 79_550, color: getChartColor(7) },
+    { name: 'Family Office', revenue: 218_875, color: getChartColor(3) },
+    { name: 'Performance + AUM', revenue: 17_000, color: getChartColor(1) },
   ];
   const maxScheduleRev = Math.max(...scheduleRevenue.map((s) => s.revenue));
 
@@ -624,10 +572,10 @@ function RevenueAnalyticsTab() {
     <div className="space-y-6">
       {/* KPI cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={DollarSign} label="Total Revenue YTD" value={fmtCurrency(totalRevYtd)} trend={{ value: `+${revGrowth.toFixed(1)}%`, positive: revGrowth >= 0 }} />
-        <SummaryCard icon={TrendingUp} label="Revenue Growth" value={`${revGrowth >= 0 ? '+' : ''}${revGrowth.toFixed(1)}%`} sub="vs. prior year period" />
-        <SummaryCard icon={Percent} label="Average Fee Rate" value={fmtPct(avgFeeRate)} trend={{ value: '-3 bps YoY', positive: false }} />
-        <SummaryCard icon={Users} label="Client Retention" value={`${clientRetention}%`} trend={{ value: '+1.2% YoY', positive: true }} />
+        <MetricCard icon={<DollarSign size={18} />} label="Total Revenue YTD" value={formatCurrency(totalRevYtd)} sublabel={`${formatPercent(revGrowth, { decimals: 1 })} YoY`} />
+        <MetricCard icon={<TrendingUp size={18} />} label="Revenue Growth" value={formatPercent(revGrowth, { decimals: 1 })} sublabel="vs. prior year period" color="emerald" />
+        <MetricCard icon={<Percent size={18} />} label="Average Fee Rate" value={formatPercent(avgFeeRate, { showSign: false })} sublabel="-3 bps YoY" color="amber" />
+        <MetricCard icon={<Users size={18} />} label="Client Retention" value={`${clientRetention}%`} sublabel="+1.2% YoY" color="emerald" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -642,12 +590,12 @@ function RevenueAnalyticsTab() {
               <div key={s.name}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-slate-700 font-medium">{s.name}</span>
-                  <span className="text-slate-900 font-semibold tabular-nums">{fmtCurrency(s.revenue)}</span>
+                  <span className="text-slate-900 font-semibold tabular-nums">{formatCurrency(s.revenue)}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-3">
                   <div
-                    className={`${s.color} h-3 rounded-full transition-all`}
-                    style={{ width: `${(s.revenue / maxScheduleRev) * 100}%` }}
+                    className="h-3 rounded-full transition-all"
+                    style={{ width: `${(s.revenue / maxScheduleRev) * 100}%`, backgroundColor: s.color }}
                   />
                 </div>
               </div>
@@ -667,11 +615,11 @@ function RevenueAnalyticsTab() {
                 <span className="text-xs text-slate-500 w-20 shrink-0 text-right">{m.month}</span>
                 <div className="flex-1 bg-slate-100 rounded-full h-5 relative">
                   <div
-                    className="bg-blue-500 h-5 rounded-full transition-all flex items-center justify-end pr-2"
-                    style={{ width: `${(m.revenue / maxMonthlyRev) * 100}%` }}
+                    className="h-5 rounded-full transition-all flex items-center justify-end pr-2"
+                    style={{ width: `${(m.revenue / maxMonthlyRev) * 100}%`, backgroundColor: CHART_COLORS[0] }}
                   >
                     <span className="text-[10px] font-semibold text-white whitespace-nowrap">
-                      {fmtCurrency(m.revenue)}
+                      {formatCurrency(m.revenue)}
                     </span>
                   </div>
                 </div>
@@ -704,8 +652,8 @@ function RevenueAnalyticsTab() {
                 <TableRow key={c.id}>
                   <TableCell className="text-slate-400 font-medium">{i + 1}</TableCell>
                   <TableCell className="font-medium text-slate-900">{c.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtCurrency(c.aum)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">{fmtCurrencyFull(c.annualFee)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatCurrency(c.aum)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{formatCurrency(c.annualFee, { decimals: 2 })}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -726,12 +674,12 @@ function RevenueAnalyticsTab() {
                 <div key={yr.year}>
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-slate-700 font-medium">{yr.year}</span>
-                    <span className="text-slate-900 font-semibold tabular-nums">{fmtPct(yr.avgRate)}</span>
+                    <span className="text-slate-900 font-semibold tabular-nums">{formatPercent(yr.avgRate, { showSign: false })}</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-3">
                     <div
-                      className="bg-gradient-to-r from-indigo-500 to-blue-500 h-3 rounded-full transition-all"
-                      style={{ width: `${(yr.avgRate / maxRate) * 100}%` }}
+                      className="h-3 rounded-full transition-all"
+                      style={{ width: `${(yr.avgRate / maxRate) * 100}%`, background: `linear-gradient(to right, ${CHART_COLORS[7]}, ${CHART_COLORS[0]})` }}
                     />
                   </div>
                 </div>
@@ -752,53 +700,37 @@ function RevenueAnalyticsTab() {
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
-const TABS: { id: TabId; label: string; icon: typeof DollarSign }[] = [
-  { id: 'schedules', label: 'Fee Schedules', icon: Calculator },
-  { id: 'clients', label: 'Client Billing', icon: Users },
-  { id: 'invoices', label: 'Invoices', icon: FileText },
-  { id: 'analytics', label: 'Revenue Analytics', icon: BarChart3 },
-];
-
 export default function Billing() {
   const [activeTab, setActiveTab] = useState<TabId>('schedules');
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billing Automation</h1>
-        <p className="text-slate-500">Manage fee schedules, generate invoices, and track revenue</p>
-      </div>
+      <PageHeader
+        title="Billing Automation"
+        subtitle="Manage fee schedules, generate invoices, and track revenue"
+      />
 
-      {/* Tab bar */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-6" aria-label="Billing tabs">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const selected = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  selected
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TabId)}>
+        <TabList>
+          <Tab value="schedules" icon={<Calculator className="w-4 h-4" />}>Fee Schedules</Tab>
+          <Tab value="clients" icon={<Users className="w-4 h-4" />}>Client Billing</Tab>
+          <Tab value="invoices" icon={<FileText className="w-4 h-4" />}>Invoices</Tab>
+          <Tab value="analytics" icon={<BarChart3 className="w-4 h-4" />}>Revenue Analytics</Tab>
+        </TabList>
 
-      {/* Tab content */}
-      {activeTab === 'schedules' && <FeeSchedulesTab />}
-      {activeTab === 'clients' && <ClientBillingTab />}
-      {activeTab === 'invoices' && <InvoicesTab />}
-      {activeTab === 'analytics' && <RevenueAnalyticsTab />}
+        <TabPanel value="schedules" className="mt-6">
+          <FeeSchedulesTab />
+        </TabPanel>
+        <TabPanel value="clients" className="mt-6">
+          <ClientBillingTab />
+        </TabPanel>
+        <TabPanel value="invoices" className="mt-6">
+          <InvoicesTab />
+        </TabPanel>
+        <TabPanel value="analytics" className="mt-6">
+          <RevenueAnalyticsTab />
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }

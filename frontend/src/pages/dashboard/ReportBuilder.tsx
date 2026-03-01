@@ -9,12 +9,9 @@ import {
   Download,
   Save,
   CheckCircle,
-  X,
   Plus,
   Clock,
   Layers,
-  Users,
-  Calendar,
   Palette,
   FileDown,
   Play,
@@ -25,6 +22,9 @@ import {
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 import {
   Table,
   TableHeader,
@@ -224,12 +224,11 @@ export default function ReportBuilder() {
   const [selectedClient, setSelectedClient] = useState<string>(CLIENTS[0].id);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('last-quarter');
   const [includeBranding, setIncludeBranding] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [schedules, setSchedules] = useState(MOCK_SCHEDULES);
+  const toast = useToast();
 
   const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
+    toast.success(message);
   };
 
   const handleSelectTemplate = (template: ReportTemplate) => {
@@ -274,28 +273,17 @@ export default function ReportBuilder() {
 
   return (
     <div className="space-y-8">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg animate-fade-in">
-          <CheckCircle size={18} />
-          <span className="text-sm font-medium">{toast}</span>
-          <button onClick={() => setToast(null)} className="ml-2 hover:opacity-80">
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Report Builder</h1>
-          <p className="text-slate-500">Create, customize, and export client-ready reports</p>
-        </div>
-        <Button onClick={handleBuildCustom} className="flex items-center gap-2">
-          <Plus size={18} />
-          Build Custom Report
-        </Button>
-      </div>
+      <PageHeader
+        title="Report Builder"
+        subtitle="Create, customize, and export client-ready reports"
+        actions={
+          <Button onClick={handleBuildCustom} className="flex items-center gap-2">
+            <Plus size={18} />
+            Build Custom Report
+          </Button>
+        }
+      />
 
       {/* ------------------------------------------------------------ */}
       {/*  1. Report Templates                                         */}
@@ -468,40 +456,32 @@ export default function ReportBuilder() {
             <div className="flex flex-wrap items-end gap-6">
               {/* Client Selector */}
               <div className="flex-1 min-w-[200px]">
-                <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
-                  <Users size={14} />
-                  Client
-                </label>
-                <select
+                <Select
+                  label="Client"
                   value={selectedClient}
                   onChange={(e) => setSelectedClient(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {CLIENTS.map((client) => (
                     <option key={client.id} value={client.id}>
                       {client.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {/* Period Selector */}
               <div className="flex-1 min-w-[180px]">
-                <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
-                  <Calendar size={14} />
-                  Period
-                </label>
-                <select
+                <Select
+                  label="Period"
                   value={selectedPeriod}
                   onChange={(e) => setSelectedPeriod(e.target.value as Period)}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {/* Branding Toggle */}

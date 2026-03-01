@@ -3,10 +3,13 @@ import { Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Settings() {
   const { user } = useAuth();
+  const toast = useToast();
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [emailNotifs, setEmailNotifs] = useState(true);
@@ -19,15 +22,16 @@ export function Settings() {
   const handleCopyApiKey = () => {
     navigator.clipboard.writeText(mockApiKey);
     setCopied(true);
+    toast.success('API key copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500">Manage your account and API settings</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Manage your account and API settings"
+      />
 
       {/* Profile Section */}
       <Card>

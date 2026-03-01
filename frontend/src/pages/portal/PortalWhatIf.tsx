@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { Calculator, TrendingUp, Loader2, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { calculateWhatIf, getDashboard } from '../../services/portalApi';
+import { formatCurrency } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { CHART_COLORS, TOOLTIP_STYLE, CHART_GRID, CHART_AXIS_TEXT } from '../../constants/chartTheme';
+import { Badge } from '../../components/ui/Badge';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -29,14 +35,14 @@ interface Result {
 /*  Formatters                                                         */
 /* ------------------------------------------------------------------ */
 
-const fmtCur = (v: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+const fmtCur = (v: number) => formatCurrency(v);
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function PortalWhatIf() {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -77,6 +83,7 @@ export default function PortalWhatIf() {
       setResult(res);
     } catch (e) {
       console.error('what-if calc failed', e);
+      toast.error('Calculation failed. Please try again.');
     } finally {
       setCalculating(false);
       setLoading(false);
@@ -112,10 +119,7 @@ export default function PortalWhatIf() {
 
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">What-If Scenarios</h1>
-          <p className="text-slate-500 text-sm">Explore how different choices affect your retirement outlook</p>
-        </div>
+        <PageHeader title="What-If Scenarios" subtitle="Explore how different choices affect your retirement outlook" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ── Input Panel ───────────────────────────── */}
@@ -178,9 +182,9 @@ export default function PortalWhatIf() {
               <>
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <ResultCard label="Balance at Retirement" value={fmtCur(p.balance)} sub={`Age ${p.retirement_age}`} />
-                  <ResultCard label="Monthly Income" value={fmtCur(p.monthly_income)} sub="4% withdrawal rule" />
-                  <ResultCard label="Years of Income" value={`${p.years_of_income}`} sub={`Until age ${retireAge + Math.floor(p.years_of_income)}`} />
+                  <MetricCard label="Balance at Retirement" value={fmtCur(p.balance)} sublabel={`Age ${p.retirement_age}`} />
+                  <MetricCard label="Monthly Income" value={fmtCur(p.monthly_income)} sublabel="4% withdrawal rule" />
+                  <MetricCard label="Years of Income" value={`${p.years_of_income}`} sublabel={`Until age ${retireAge + Math.floor(p.years_of_income)}`} />
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                     <p className="text-xs text-slate-500 mb-1">Success Probability</p>
                     <p className={`text-2xl font-bold ${p.success_probability >= 80 ? 'text-emerald-600' : p.success_probability >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
@@ -204,11 +208,11 @@ export default function PortalWhatIf() {
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                        <XAxis dataKey="age" tick={{ fontSize: 12, fill: '#64748B' }} tickLine={false} label={{ value: 'Age', position: 'insideBottom', offset: -5, fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12, fill: '#64748B' }} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8 }} formatter={(v: any) => [fmtCur(v as number), 'Balance']} />
-                        <Line type="monotone" dataKey="balance" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                        <XAxis dataKey="age" tick={{ fontSize: 12, fill: CHART_AXIS_TEXT }} tickLine={false} label={{ value: 'Age', position: 'insideBottom', offset: -5, fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12, fill: CHART_AXIS_TEXT }} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: any) => [fmtCur(v as number), 'Balance']} />
+                        <Line type="monotone" dataKey="balance" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -225,7 +229,7 @@ export default function PortalWhatIf() {
                           <div key={c.retirement_age} className={`bg-white rounded-xl border shadow-sm p-5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'}`}>
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-sm font-medium text-slate-500">Retire at {c.retirement_age}</span>
-                              {isSelected && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Selected</span>}
+                              {isSelected && <Badge variant="blue">Selected</Badge>}
                             </div>
                             <p className="text-xl font-bold text-slate-900">{fmtCur(c.balance)}</p>
                             <div className="mt-3 space-y-1.5 text-sm">
@@ -281,12 +285,3 @@ function Slider({ label, value, min, max, onChange, unit }: {
   );
 }
 
-function ResultCard({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-400 mt-1">{sub}</p>
-    </div>
-  );
-}

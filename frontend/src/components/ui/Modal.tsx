@@ -49,15 +49,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div 
+        <div
           role="dialog"
           aria-modal="true"
+          aria-labelledby="modal-title"
           className={`relative bg-white rounded-xl shadow-xl w-full ${sizeClasses[size]} transform transition-all`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+            <h3 id="modal-title" className="text-lg font-semibold text-slate-900">{title}</h3>
             <button
               onClick={onClose}
               className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"

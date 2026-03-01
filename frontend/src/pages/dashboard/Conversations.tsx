@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 import { MessageSquareText, TrendingUp, ShieldAlert, CheckSquare, BarChart3 } from 'lucide-react';
+import { formatDate as sharedFormatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
 import {
   listAnalyses,
   getAnalysis,
@@ -61,13 +68,7 @@ function formatTimestamp(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+// Use shared formatDate from utils/format (aliased as sharedFormatDate)
 
 function sentimentFor(s?: SentimentType | string | null) {
   return SENTIMENT_CONFIG[(s as SentimentType) ?? 'neutral'] ?? SENTIMENT_CONFIG.neutral;
@@ -82,6 +83,7 @@ function riskColorFor(r?: ComplianceRiskLevel | string | null) {
 // ============================================================================
 
 export default function Conversations() {
+  const toast = useToast();
   // ── State ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [analyses, setAnalyses] = useState<ConversationAnalysis[]>([]);
@@ -135,18 +137,22 @@ export default function Conversations() {
   const handleReviewFlag = async (flagId: string, status: string) => {
     try {
       await reviewFlag(flagId, status);
+      toast.success(status === 'confirmed' ? 'Flag confirmed' : 'Flag marked as false positive');
       loadData();
     } catch (err) {
       console.error('Failed to review flag:', err);
+      toast.error('Failed to review flag');
     }
   };
 
   const handleUpdateActionItem = async (itemId: string, status: string) => {
     try {
       await updateActionItem(itemId, status);
+      toast.success(status === 'completed' ? 'Action item completed' : 'Action item reopened');
       loadData();
     } catch (err) {
       console.error('Failed to update action item:', err);
+      toast.error('Failed to update action item');
     }
   };
 
@@ -155,65 +161,41 @@ export default function Conversations() {
     <div className="space-y-6">
       {/* Metrics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Conversations</p>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <MessageSquareText className="h-5 w-5 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics?.total_conversations ?? 0}</p>
-          <p className="text-xs text-slate-500">Last 30 days</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Avg Sentiment</p>
-            <div className="p-2 bg-teal-50 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-teal-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">
-            {metrics?.avg_sentiment_score != null
-              ? (metrics.avg_sentiment_score > 0 ? '+' : '') +
-                metrics.avg_sentiment_score.toFixed(2)
-              : '--'}
-          </p>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Avg Engagement</p>
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-indigo-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics?.avg_engagement_score ?? 0}%</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Compliance Flags</p>
-            <div className="p-2 bg-red-50 rounded-lg">
-              <ShieldAlert className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-orange-600">
-            {metrics?.total_compliance_flags ?? 0}
-          </p>
-          {pendingFlags > 0 && (
-            <p className="text-xs text-red-500">{pendingFlags} pending</p>
-          )}
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Action Items</p>
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <CheckSquare className="h-5 w-5 text-purple-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics?.action_items_created ?? 0}</p>
-          <p className="text-xs text-emerald-500">
-            {metrics?.action_items_completed ?? 0} completed
-          </p>
-        </div>
+        <MetricCard
+          label="Conversations"
+          value={String(metrics?.total_conversations ?? 0)}
+          sublabel="Last 30 days"
+          icon={<MessageSquareText className="h-5 w-5" />}
+          color="blue"
+        />
+        <MetricCard
+          label="Avg Sentiment"
+          value={metrics?.avg_sentiment_score != null
+            ? (metrics.avg_sentiment_score > 0 ? '+' : '') + metrics.avg_sentiment_score.toFixed(2)
+            : '--'}
+          icon={<TrendingUp className="h-5 w-5" />}
+          color="teal"
+        />
+        <MetricCard
+          label="Avg Engagement"
+          value={`${metrics?.avg_engagement_score ?? 0}%`}
+          icon={<BarChart3 className="h-5 w-5" />}
+          color="indigo"
+        />
+        <MetricCard
+          label="Compliance Flags"
+          value={String(metrics?.total_compliance_flags ?? 0)}
+          sublabel={pendingFlags > 0 ? `${pendingFlags} pending` : undefined}
+          icon={<ShieldAlert className="h-5 w-5" />}
+          color="red"
+        />
+        <MetricCard
+          label="Action Items"
+          value={String(metrics?.action_items_created ?? 0)}
+          sublabel={`${metrics?.action_items_completed ?? 0} completed`}
+          icon={<CheckSquare className="h-5 w-5" />}
+          color="purple"
+        />
       </div>
 
       {/* Top Topics */}
@@ -222,12 +204,9 @@ export default function Conversations() {
           <h3 className="font-semibold mb-3">Top Discussion Topics</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(metrics.top_topics).map(([topic, count]) => (
-              <span
-                key={topic}
-                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-              >
+              <Badge key={topic} variant="blue">
                 {topic.replace(/_/g, ' ')} ({count})
-              </span>
+              </Badge>
             ))}
           </div>
         </div>
@@ -277,7 +256,7 @@ export default function Conversations() {
                     <p className="text-slate-500">
                       {formatDuration(analysis.total_duration_seconds)}
                     </p>
-                    <p className="text-slate-500">{formatDate(analysis.created_at)}</p>
+                    <p className="text-slate-500">{sharedFormatDate(analysis.created_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-sm">
@@ -350,23 +329,25 @@ export default function Conversations() {
                 <div className="flex-shrink-0">
                   {flag.status === 'pending' ? (
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleReviewFlag(flag.id, 'false_positive')}
-                        className="px-3 py-1 text-sm border border-slate-300 rounded hover:bg-slate-50"
                       >
                         False Positive
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
                         onClick={() => handleReviewFlag(flag.id, 'confirmed')}
-                        className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
                       >
                         Confirm
-                      </button>
+                      </Button>
                     </div>
                   ) : (
-                    <span className="px-2 py-1 bg-slate-100 rounded text-sm capitalize">
+                    <Badge variant="gray" className="capitalize">
                       {flag.status}
-                    </span>
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -446,7 +427,7 @@ export default function Conversations() {
                   <div className="text-right text-sm flex-shrink-0">
                     {item.due_date && (
                       <p className={isOverdue ? 'text-red-600 font-medium' : 'text-slate-500'}>
-                        Due: {formatDate(item.due_date)}
+                        Due: {sharedFormatDate(item.due_date)}
                       </p>
                     )}
                   </div>
@@ -485,7 +466,7 @@ export default function Conversations() {
                   'Conversation Analysis'}
               </h2>
               <p className="text-slate-500">
-                {formatDate(selectedAnalysis.created_at)} &middot;{' '}
+                {sharedFormatDate(selectedAnalysis.created_at)} &middot;{' '}
                 {formatDuration(selectedAnalysis.total_duration_seconds)}
               </p>
             </div>
@@ -597,12 +578,9 @@ export default function Conversations() {
                 <h3 className="font-semibold mb-2">Topics Discussed</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedAnalysis.topics_discussed.map((topic) => (
-                    <span
-                      key={topic}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                    >
+                    <Badge key={topic} variant="blue">
                       {topic.replace(/_/g, ' ')}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -682,7 +660,7 @@ export default function Conversations() {
                     )}
                     {item.due_date && (
                       <p className="text-sm text-slate-500">
-                        Due: {formatDate(item.due_date)}
+                        Due: {sharedFormatDate(item.due_date)}
                       </p>
                     )}
                   </div>
@@ -708,39 +686,11 @@ export default function Conversations() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Conversation Intelligence</h1>
-          <p className="text-slate-500">AI-powered meeting analysis and compliance monitoring</p>
-        </div>
-        {activeTab !== 'detail' && (
-          <div className="flex gap-2">
-            {(['overview', 'compliance', 'actions'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg capitalize text-sm font-medium ${
-                  activeTab === tab
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {tab}
-                {tab === 'compliance' && pendingFlags > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                    {pendingFlags}
-                  </span>
-                )}
-                {tab === 'actions' && overdueItems > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                    {overdueItems}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Conversation Intelligence"
+        subtitle="AI-powered meeting analysis and compliance monitoring"
+        className="mb-6"
+      />
 
       {/* Error Banner */}
       {error && (
@@ -750,10 +700,34 @@ export default function Conversations() {
       )}
 
       {/* Tab Content */}
-      {activeTab === 'overview' && renderOverview()}
-      {activeTab === 'compliance' && renderCompliance()}
-      {activeTab === 'actions' && renderActions()}
-      {activeTab === 'detail' && renderDetail()}
+      {activeTab === 'detail' ? (
+        renderDetail()
+      ) : (
+        <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TabKey)} variant="pills">
+          <TabList className="mb-6">
+            <Tab value="overview">Overview</Tab>
+            <Tab value="compliance">
+              Compliance
+              {pendingFlags > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {pendingFlags}
+                </span>
+              )}
+            </Tab>
+            <Tab value="actions">
+              Actions
+              {overdueItems > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {overdueItems}
+                </span>
+              )}
+            </Tab>
+          </TabList>
+          <TabPanel value="overview">{renderOverview()}</TabPanel>
+          <TabPanel value="compliance">{renderCompliance()}</TabPanel>
+          <TabPanel value="actions">{renderActions()}</TabPanel>
+        </Tabs>
+      )}
     </div>
   );
 }

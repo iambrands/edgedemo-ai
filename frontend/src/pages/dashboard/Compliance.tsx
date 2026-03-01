@@ -30,6 +30,15 @@ import {
   type ComplianceTask,
   type ComplianceAuditLogEntry,
 } from '../../services/complianceApi';
+import { formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
+import { useToast } from '../../contexts/ToastContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,6 +93,7 @@ function scoreBg(score: number) {
 // ---------------------------------------------------------------------------
 
 export default function Compliance() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [metrics, setMetrics] = useState<ComplianceDashboardMetrics | null>(null);
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
@@ -253,18 +263,22 @@ export default function Compliance() {
   const handleUpdateAlertStatus = async (alertId: string, newStatus: string) => {
     try {
       await updateAlertStatus(alertId, { status: newStatus });
+      toast.success(`Alert status updated to ${newStatus.replace(/_/g, ' ')}`);
       loadData();
     } catch (err) {
       console.error('Failed to update alert status:', err);
+      toast.error('Failed to update alert status');
     }
   };
 
   const handleCompleteTask = async (taskId: string) => {
     try {
       await completeTask(taskId);
+      toast.success('Task completed');
       loadData();
     } catch (err) {
       console.error('Failed to complete task:', err);
+      toast.error('Failed to complete task');
     }
   };
 
@@ -279,9 +293,11 @@ export default function Compliance() {
       setNewTaskTitle('');
       setNewTaskDesc('');
       setShowCreateTask(false);
+      toast.success('Task created successfully');
       loadData();
     } catch (err) {
       console.error('Failed to create task:', err);
+      toast.error('Failed to create task');
     }
   };
 
@@ -301,34 +317,22 @@ export default function Compliance() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Compliance</h1>
-          <p className="text-slate-500 mt-1">Monitor alerts, reviews, and compliance tasks</p>
-        </div>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Compliance"
+        subtitle="Monitor alerts, reviews, and compliance tasks"
+        actions={
+          <Button variant="ghost" size="sm" onClick={loadData}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        }
+      />
 
       {/* Tabs */}
-      <div className="border-b border-slate-200">
-        <nav className="flex gap-6">
+      <Tabs value={activeTab} onChange={(v) => setActiveTab(v as TabType)}>
+        <TabList>
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
+            <Tab key={tab.id} value={tab.id} icon={<tab.icon className="h-4 w-4" />}>
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
                 <span
@@ -339,10 +343,9 @@ export default function Compliance() {
                   {tab.count}
                 </span>
               )}
-            </button>
+            </Tab>
           ))}
-        </nav>
-      </div>
+        </TabList>
 
       {/* Error */}
       {error && (
@@ -372,10 +375,10 @@ export default function Compliance() {
       )}
 
       {/* ────────────── OVERVIEW TAB ────────────── */}
-      {activeTab === 'overview' && metrics && (
-        <div className="space-y-6">
+      <TabPanel value="overview">
+        {metrics && <div className="space-y-6">
           {/* Compliance Score */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="md">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Compliance Score</h2>
@@ -396,87 +399,47 @@ export default function Compliance() {
                 style={{ width: `${metrics?.compliance_score ?? 0}%` }}
               />
             </div>
-          </div>
+          </Card>
 
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Open Alerts */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Open Alerts</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.alerts?.open ?? 0}</p>
-                </div>
-                <div className="p-3 bg-red-50 rounded-xl">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-              {(metrics?.alerts?.by_severity?.critical ?? 0) > 0 && (
-                <p className="text-xs text-red-600 mt-2 font-medium">
-                  {metrics?.alerts?.by_severity?.critical} critical
-                </p>
-              )}
-            </div>
-
-            {/* Pending Reviews */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.pending_reviews ?? 0}</p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-xl">
-                  <FileCheck className="h-6 w-6 text-amber-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Open Tasks */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Open Tasks</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">
-                    {(metrics?.tasks?.pending ?? 0) + (metrics?.tasks?.in_progress ?? 0)}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-xl">
-                  <CheckSquare className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-              {(metrics?.tasks?.overdue ?? 0) > 0 && (
-                <p className="text-xs text-red-600 mt-2 font-medium">
-                  {metrics?.tasks?.overdue} overdue
-                </p>
-              )}
-            </div>
-
-            {/* Resolved This Month */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Resolved This Month</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{metrics?.alerts?.resolved ?? 0}</p>
-                </div>
-                <div className="p-3 bg-emerald-50 rounded-xl">
-                  <CheckCircle className="h-6 w-6 text-emerald-600" />
-                </div>
-              </div>
-            </div>
+            <MetricCard
+              label="Open Alerts"
+              value={String(metrics?.alerts?.open ?? 0)}
+              sublabel={(metrics?.alerts?.by_severity?.critical ?? 0) > 0 ? `${metrics?.alerts?.by_severity?.critical} critical` : undefined}
+              icon={<AlertTriangle className="h-5 w-5" />}
+              color="red"
+            />
+            <MetricCard
+              label="Pending Reviews"
+              value={String(metrics?.pending_reviews ?? 0)}
+              icon={<FileCheck className="h-5 w-5" />}
+              color="amber"
+            />
+            <MetricCard
+              label="Open Tasks"
+              value={String((metrics?.tasks?.pending ?? 0) + (metrics?.tasks?.in_progress ?? 0))}
+              sublabel={(metrics?.tasks?.overdue ?? 0) > 0 ? `${metrics?.tasks?.overdue} overdue` : undefined}
+              icon={<CheckSquare className="h-5 w-5" />}
+              color="blue"
+            />
+            <MetricCard
+              label="Resolved This Month"
+              value={String(metrics?.alerts?.resolved ?? 0)}
+              icon={<CheckCircle className="h-5 w-5" />}
+              color="emerald"
+            />
           </div>
 
           {/* Two-column: Recent Alerts + Upcoming Tasks */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Alerts */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+            <Card size="sm" className="!p-0">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Recent Alerts</h3>
-                <button
-                  onClick={() => setActiveTab('alerts')}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('alerts')}>
                   View All
-                </button>
+                </Button>
               </div>
               <div className="divide-y divide-slate-100">
                 {alerts.filter((a) => a.status !== 'resolved' && a.status !== 'false_positive').slice(0, 5).map((alert) => (
@@ -504,18 +467,15 @@ export default function Compliance() {
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
 
             {/* Upcoming Tasks */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+            <Card size="sm" className="!p-0">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Upcoming Tasks</h3>
-                <button
-                  onClick={() => setShowCreateTask(true)}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateTask(true)}>
                   + Add Task
-                </button>
+                </Button>
               </div>
               <div className="divide-y divide-slate-100">
                 {tasks.filter((t) => t.status !== 'completed').slice(0, 5).map((task) => (
@@ -536,13 +496,13 @@ export default function Compliance() {
                               new Date(task.due_date) < new Date() ? 'text-red-600 font-medium' : 'text-slate-500'
                             }`}
                           >
-                            Due {new Date(task.due_date).toLocaleDateString()}
+                            Due {formatDate(task.due_date)}
                           </span>
                           {task.priority === 'urgent' && (
-                            <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700">Urgent</span>
+                            <Badge variant="red" className="!px-1.5 !py-0.5 !text-xs">Urgent</Badge>
                           )}
                           {task.priority === 'high' && (
-                            <span className="px-1.5 py-0.5 text-xs rounded bg-orange-100 text-orange-700">High</span>
+                            <Badge variant="amber" className="!px-1.5 !py-0.5 !text-xs">High</Badge>
                           )}
                         </div>
                       </div>
@@ -553,14 +513,14 @@ export default function Compliance() {
                   <div className="p-8 text-center text-slate-500">No pending tasks</div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
-        </div>
-      )}
+        </div>}
+      </TabPanel>
 
       {/* ────────────── ALERTS TAB ────────────── */}
-      {activeTab === 'alerts' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <TabPanel value="alerts">
+        <Card size="sm" className="!p-0">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">
               All Alerts{' '}
@@ -601,7 +561,7 @@ export default function Compliance() {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {new Date(alert.created_at).toLocaleDateString()}
+                        {formatDate(alert.created_at)}
                       </span>
                       {alert.due_date && (
                         <span
@@ -612,7 +572,7 @@ export default function Compliance() {
                           }`}
                         >
                           <Calendar className="h-3 w-3" />
-                          Due {new Date(alert.due_date).toLocaleDateString()}
+                          Due {formatDate(alert.due_date)}
                         </span>
                       )}
                     </div>
@@ -627,21 +587,21 @@ export default function Compliance() {
                   {/* Status dropdown */}
                   <div className="flex-shrink-0">
                     {alert.status !== 'resolved' && alert.status !== 'false_positive' ? (
-                      <select
+                      <Select
                         value={alert.status}
                         onChange={(e) => handleUpdateAlertStatus(alert.id, e.target.value)}
-                        className="text-sm border border-slate-300 rounded-lg px-2 py-1.5 bg-white focus:ring-blue-500 focus:border-blue-500"
+                        className="!w-auto !py-1.5 !text-sm"
                       >
                         <option value="open">Open</option>
                         <option value="under_review">Under Review</option>
                         <option value="escalated">Escalated</option>
                         <option value="resolved">Resolved</option>
                         <option value="false_positive">False Positive</option>
-                      </select>
+                      </Select>
                     ) : (
-                      <span className={`px-2.5 py-1 text-xs rounded-full ${statusColors[alert.status] ?? ''}`}>
+                      <Badge variant={alert.status === 'resolved' ? 'green' : 'gray'}>
                         {alert.status.replace(/_/g, ' ')}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -655,12 +615,12 @@ export default function Compliance() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        </Card>
+      </TabPanel>
 
       {/* ────────────── REVIEWS TAB ────────────── */}
-      {activeTab === 'reviews' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8">
+      <TabPanel value="reviews">
+        <Card>
           <div className="text-center max-w-md mx-auto">
             <div className="p-4 bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <FileCheck className="h-8 w-8 text-blue-600" />
@@ -678,15 +638,15 @@ export default function Compliance() {
               <ExternalLink className="h-4 w-4" />
             </a>
           </div>
-        </div>
-      )}
+        </Card>
+      </TabPanel>
 
       {/* ────────────── TASKS TAB ────────────── */}
-      {activeTab === 'tasks' && (
+      <TabPanel value="tasks">
         <div className="space-y-4">
           {/* Create Task Modal/Inline */}
           {showCreateTask && (
-            <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-5">
+            <Card size="md" className="!border-blue-200">
               <h3 className="font-semibold text-slate-900 mb-4">New Compliance Task</h3>
               <div className="space-y-3">
                 <input
@@ -704,49 +664,39 @@ export default function Compliance() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <div className="flex items-center gap-3">
-                  <select
+                  <Select
                     value={newTaskPriority}
                     onChange={(e) => setNewTaskPriority(e.target.value)}
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                    className="!w-auto"
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
                     <option value="high">High Priority</option>
                     <option value="urgent">Urgent</option>
-                  </select>
+                  </Select>
                   <div className="flex-1" />
-                  <button
-                    onClick={() => setShowCreateTask(false)}
-                    className="px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setShowCreateTask(false)}>
                     Cancel
-                  </button>
-                  <button
-                    onClick={handleCreateTask}
-                    disabled={!newTaskTitle.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  </Button>
+                  <Button size="sm" onClick={handleCreateTask} disabled={!newTaskTitle.trim()}>
                     Create Task
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <Card size="sm" className="!p-0">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900">
                 Compliance Tasks{' '}
                 <span className="text-slate-500 font-normal text-sm">({tasks.length})</span>
               </h3>
               {!showCreateTask && (
-                <button
-                  onClick={() => setShowCreateTask(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  <Plus className="h-4 w-4" />
+                <Button size="sm" onClick={() => setShowCreateTask(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
                   New Task
-                </button>
+                </Button>
               )}
             </div>
             <div className="divide-y divide-slate-100">
@@ -775,14 +725,10 @@ export default function Compliance() {
                           {task.status.replace(/_/g, ' ')}
                         </span>
                         {task.priority === 'urgent' && (
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 font-medium">
-                            Urgent
-                          </span>
+                          <Badge variant="red">Urgent</Badge>
                         )}
                         {task.priority === 'high' && (
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium">
-                            High
-                          </span>
+                          <Badge variant="amber">High</Badge>
                         )}
                       </div>
                       {task.description && (
@@ -797,7 +743,7 @@ export default function Compliance() {
                           }`}
                         >
                           <Calendar className="h-3 w-3" />
-                          Due {new Date(task.due_date).toLocaleDateString()}
+                          Due {formatDate(task.due_date)}
                         </span>
                         {task.assigned_to_name && (
                           <span className="flex items-center gap-1">
@@ -823,13 +769,13 @@ export default function Compliance() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
-      )}
+      </TabPanel>
 
       {/* ────────────── AUDIT LOG TAB ────────────── */}
-      {activeTab === 'audit' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <TabPanel value="audit">
+        <Card size="sm" className="!p-0">
           <div className="p-4 border-b border-slate-100">
             <h3 className="font-semibold text-slate-900">
               Audit Trail{' '}
@@ -880,7 +826,7 @@ export default function Compliance() {
                           .join(' · ')}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
-                        {new Date(entry.created_at).toLocaleString()}
+                        {formatDate(entry.created_at)}
                       </p>
                     </div>
                   </div>
@@ -895,13 +841,13 @@ export default function Compliance() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        </Card>
+      </TabPanel>
       {/* ────────────── WORKFLOWS TAB ────────────── */}
-      {activeTab === 'workflows' && (
+      <TabPanel value="workflows">
         <div className="space-y-6">
           {/* Client Name Input */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <Card size="sm">
             <label className="block text-sm font-medium text-slate-700 mb-2">Client Name (for starting a workflow)</label>
             <input
               type="text"
@@ -910,40 +856,44 @@ export default function Compliance() {
               placeholder="Enter client name..."
               className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
-          </div>
+          </Card>
 
           {/* Workflow Templates */}
           <div>
             <h3 className="text-lg font-medium text-slate-900 mb-3">Workflow Templates</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {WORKFLOW_TEMPLATES.map((tpl) => (
-                <div key={tpl.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col">
+                <Card key={tpl.id} size="md" className="flex flex-col">
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="font-semibold text-slate-900">{tpl.name}</h4>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      tpl.category === 'life-event' ? 'bg-purple-100 text-purple-700' :
-                      tpl.category === 'onboarding' ? 'bg-blue-100 text-blue-700' :
-                      tpl.category === 'transfer' ? 'bg-amber-100 text-amber-700' :
-                      tpl.category === 'review' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-slate-100 text-slate-700'
-                    }`}>
+                    <Badge variant={
+                      tpl.category === 'life-event' ? 'red' :
+                      tpl.category === 'onboarding' ? 'blue' :
+                      tpl.category === 'transfer' ? 'amber' :
+                      tpl.category === 'review' ? 'green' :
+                      'gray'
+                    }>
                       {tpl.category}
-                    </span>
+                    </Badge>
                   </div>
                   <p className="text-sm text-slate-500 mb-3 flex-1">{tpl.description}</p>
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
                     <span>{tpl.taskCount} tasks</span>
                     <span>~{tpl.estimatedDays} days</span>
                   </div>
-                  <button
-                    onClick={() => startWorkflow(tpl)}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      startWorkflow(tpl);
+                      toast.success(`Workflow "${tpl.name}" started`);
+                    }}
                     disabled={!workflowClientName.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    className="w-full"
                   >
-                    <Play className="h-4 w-4" />
+                    <Play className="h-4 w-4 mr-2" />
                     Start Workflow
-                  </button>
-                </div>
+                  </Button>
+                </Card>
               ))}
             </div>
           </div>
@@ -954,11 +904,11 @@ export default function Compliance() {
               <h3 className="text-lg font-medium text-slate-900 mb-3">Active Workflows</h3>
               <div className="space-y-4">
                 {activeWorkflows.map((wf) => (
-                  <div key={wf.id} className="bg-white rounded-xl border border-slate-200 shadow-sm">
+                  <Card key={wf.id} size="sm" className="!p-0">
                     <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                       <div>
                         <h4 className="font-semibold text-slate-900">{wf.templateName}</h4>
-                        <p className="text-sm text-slate-500">{wf.clientName} &middot; Started {new Date(wf.startedAt).toLocaleDateString()}</p>
+                        <p className="text-sm text-slate-500">{wf.clientName} &middot; Started {formatDate(wf.startedAt)}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="w-32 bg-slate-200 rounded-full h-2">
@@ -966,7 +916,7 @@ export default function Compliance() {
                         </div>
                         <span className="text-sm font-medium text-slate-700">{wf.progressPercent}%</span>
                         {wf.status === 'completed' && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Complete</span>
+                          <Badge variant="green">Complete</Badge>
                         )}
                       </div>
                     </div>
@@ -974,7 +924,10 @@ export default function Compliance() {
                       {wf.tasks.map((task) => (
                         <div key={task.id} className={`flex items-center gap-3 p-2 rounded-lg ${task.status === 'completed' ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}>
                           <button
-                            onClick={() => completeWorkflowTask(wf.id, task.id)}
+                            onClick={() => {
+                              completeWorkflowTask(wf.id, task.id);
+                              toast.success('Workflow task completed');
+                            }}
                             disabled={task.status === 'completed'}
                             className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${
                               task.status === 'completed'
@@ -998,13 +951,14 @@ export default function Compliance() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>
           )}
         </div>
-      )}
+      </TabPanel>
+      </Tabs>
     </div>
   );
 }

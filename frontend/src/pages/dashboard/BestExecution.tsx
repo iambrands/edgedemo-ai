@@ -7,6 +7,13 @@ import {
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
+import { formatCurrency, formatNumber } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Card } from '../../components/ui/Card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Badge } from '../../components/ui/Badge';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // TYPES
@@ -43,17 +50,6 @@ interface BrokerStats {
 // HELPERS
 // ============================================================================
 
-const fmtCurrency = (v: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(v);
-
-const fmtNumber = (v: number) =>
-  new Intl.NumberFormat('en-US').format(v);
-
 // ============================================================================
 // MOCK DATA
 // ============================================================================
@@ -78,53 +74,13 @@ const MOCK_BROKERS: BrokerStats[] = [
   { id: '4', name: 'Interactive Brokers', tradeCount: 352, avgImprovementBps: 2.5, avgLatencyMs: 46, nbboMatchRate: 96.4, overallScore: 93.8 },
 ];
 
-// ============================================================================
-// SUMMARY CARD
-// ============================================================================
-
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  color = 'blue',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  color?: 'blue' | 'emerald' | 'slate';
-}) {
-  const iconColors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    slate: 'bg-slate-50 text-slate-600',
-  };
-
-  const valueColors: Record<string, string> = {
-    blue: 'text-blue-600',
-    emerald: 'text-emerald-600',
-    slate: 'text-slate-900',
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className={`text-2xl font-bold ${valueColors[color]}`}>{value}</p>
-        </div>
-        <div className={`p-2.5 rounded-lg ${iconColors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function BestExecution() {
+  const { success: toastSuccess } = useToast();
   const [trades] = useState<ExecutionTrade[]>(MOCK_TRADES);
   const [brokers] = useState<BrokerStats[]>(MOCK_BROKERS);
   const [lastAttestation] = useState('2026-01-15');
@@ -135,80 +91,79 @@ export default function BestExecution() {
 
   const handleAttest = () => {
     setAttesting(true);
-    setTimeout(() => setAttesting(false), 1500);
+    setTimeout(() => {
+      setAttesting(false);
+      toastSuccess('Compliance attested successfully');
+    }, 1500);
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Best Execution Monitoring</h1>
-        <p className="text-slate-500">Monitor trade execution quality and compliance with best execution obligations</p>
-      </div>
+      <PageHeader
+        title="Best Execution Monitoring"
+        subtitle="Monitor trade execution quality and compliance with best execution obligations"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard icon={TrendingUp} label="Avg Price Improvement" value="2.4 bps" color="blue" />
-        <SummaryCard icon={BarChart3} label="Execution Quality Score" value="94.7%" color="emerald" />
-        <SummaryCard icon={Clock} label="Trades Reviewed" value="1,247" color="slate" />
-        <SummaryCard icon={CheckCircle} label="NBBO Match Rate" value="96.7%" color="blue" />
+        <MetricCard label="Avg Price Improvement" value="2.4 bps" icon={<TrendingUp size={18} />} color="blue" />
+        <MetricCard label="Execution Quality Score" value="94.7%" icon={<BarChart3 size={18} />} color="emerald" />
+        <MetricCard label="Trades Reviewed" value="1,247" icon={<Clock size={18} />} color="slate" />
+        <MetricCard label="NBBO Match Rate" value="96.7%" icon={<CheckCircle size={18} />} color="blue" />
       </div>
 
       {/* Trade Execution Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm">
         <div className="flex items-center gap-3 p-5 border-b border-slate-200">
           <BarChart3 className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-slate-900">Trade Execution Detail</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticker</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Side</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Order Price</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Fill Price</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">NBBO Mid</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Improvement (bps)</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Latency (ms)</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Broker</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Venue</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {trades.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-3 text-sm text-slate-600 font-mono">{t.date}</td>
-                  <td className="px-5 py-3 text-sm font-semibold text-slate-900">{t.ticker}</td>
-                  <td className="px-5 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      t.side === 'BUY' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      {t.side}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtNumber(t.qty)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtCurrency(t.orderPrice)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-700 text-right font-mono">{fmtCurrency(t.fillPrice)}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{fmtCurrency(t.nbboMid)}</td>
-                  <td className="px-5 py-3 text-right">
-                    <span className={`text-sm font-mono font-medium ${t.improvementBps > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
-                      {t.improvementBps > 0 ? '+' : ''}{t.improvementBps.toFixed(1)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-slate-600 text-right font-mono">{t.latencyMs}</td>
-                  <td className="px-5 py-3 text-sm text-slate-600">{t.broker}</td>
-                  <td className="px-5 py-3 text-sm text-slate-500">{t.venue}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Ticker</TableHead>
+              <TableHead>Side</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead className="text-right">Order Price</TableHead>
+              <TableHead className="text-right">Fill Price</TableHead>
+              <TableHead className="text-right">NBBO Mid</TableHead>
+              <TableHead className="text-right">Improvement (bps)</TableHead>
+              <TableHead className="text-right">Latency (ms)</TableHead>
+              <TableHead>Broker</TableHead>
+              <TableHead>Venue</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {trades.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="font-mono">{t.date}</TableCell>
+                <TableCell className="font-semibold text-slate-900">{t.ticker}</TableCell>
+                <TableCell>
+                  <Badge variant={t.side === 'BUY' ? 'green' : 'red'}>
+                    {t.side}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right font-mono">{formatNumber(t.qty)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(t.orderPrice, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(t.fillPrice, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(t.nbboMid, { decimals: 2 })}</TableCell>
+                <TableCell className="text-right">
+                  <span className={`font-mono font-medium ${t.improvementBps > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                    {t.improvementBps > 0 ? '+' : ''}{t.improvementBps.toFixed(1)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-mono">{t.latencyMs}</TableCell>
+                <TableCell>{t.broker}</TableCell>
+                <TableCell className="text-slate-500">{t.venue}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Broker Comparison */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm">
         <div className="flex items-center gap-3 p-5 border-b border-slate-200">
           <TrendingUp className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-slate-900">Broker Comparison</h3>
@@ -229,7 +184,7 @@ export default function BestExecution() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Trade Count</span>
-                  <span className="font-mono text-slate-700">{fmtNumber(broker.tradeCount)}</span>
+                  <span className="font-mono text-slate-700">{formatNumber(broker.tradeCount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Avg Improvement</span>
@@ -251,10 +206,10 @@ export default function BestExecution() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Compliance Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm">
         <div className="flex items-center gap-3 p-5 border-b border-slate-200">
           <ShieldCheck className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-slate-900">Quarterly Best Execution Attestation</h3>
@@ -301,7 +256,7 @@ export default function BestExecution() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

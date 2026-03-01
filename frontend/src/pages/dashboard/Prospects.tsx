@@ -18,6 +18,24 @@ import type {
   PipelineSummary,
   ProspectStatus,
 } from '../../services/prospectApi';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
+import { SearchInput } from '../../components/ui/SearchInput';
+import { Select } from '../../components/ui/Select';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/Table';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // CONSTANTS
@@ -74,28 +92,6 @@ const ACTIVITY_OPTIONS = [
 // HELPERS
 // ============================================================================
 
-const fmtCurrency = (v?: number | null): string =>
-  v != null
-    ? new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(v)
-    : '-';
-
-const fmtDate = (iso?: string | null): string => {
-  if (!iso) return '-';
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-};
-
 const scoreColor = (score: number): string => {
   if (score >= 70) return 'text-emerald-600';
   if (score >= 40) return 'text-yellow-600';
@@ -113,6 +109,7 @@ function AddProspectModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const toast = useToast();
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -156,10 +153,13 @@ function AddProspectModal({
       if (form.notes.trim()) data.notes = form.notes.trim();
 
       await createProspect(data);
+      toast.success('Prospect created successfully');
       onSave();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to create prospect');
+      const msg = e instanceof Error ? e.message : 'Failed to create prospect';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -240,10 +240,10 @@ function AddProspectModal({
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
-            <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {saving ? 'Saving...' : 'Add Prospect'}
-            </button>
+            <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+            <Button size="sm" onClick={handleSubmit} isLoading={saving}>
+              Add Prospect
+            </Button>
           </div>
         </div>
       </div>
@@ -264,6 +264,7 @@ function LogActivityModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const toast = useToast();
   const [form, setForm] = useState({
     activity_type: 'call',
     subject: '',
@@ -291,10 +292,13 @@ function LogActivityModal({
       }
 
       await logActivity(prospectId, data);
+      toast.success('Activity logged successfully');
       onSave();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to log activity');
+      const msg = e instanceof Error ? e.message : 'Failed to log activity';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -355,10 +359,10 @@ function LogActivityModal({
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
-            <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
-            <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {saving ? 'Saving...' : 'Log Activity'}
-            </button>
+            <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+            <Button size="sm" onClick={handleSubmit} isLoading={saving}>
+              Log Activity
+            </Button>
           </div>
         </div>
       </div>
@@ -371,6 +375,7 @@ function LogActivityModal({
 // ============================================================================
 
 export default function Prospects() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'pipeline' | 'list' | 'detail'>('pipeline');
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary | null>(null);
@@ -399,10 +404,12 @@ export default function Prospects() {
       setProspects(prospectsRes?.prospects ?? []);
       setPipelineSummary(summaryRes);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load prospects');
+      const msg = e instanceof Error ? e.message : 'Failed to load prospects';
+      setError(msg);
+      toast.error(msg);
     }
     setLoading(false);
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery, toast]);
 
   useEffect(() => {
     loadData();
@@ -438,9 +445,10 @@ export default function Prospects() {
   const handleStatusChange = async (prospectId: string, newStatus: string) => {
     try {
       await updateProspect(prospectId, { status: newStatus });
+      toast.success('Status updated');
       await loadData();
     } catch (e: unknown) {
-      console.error('Failed to update status:', e);
+      toast.error(e instanceof Error ? e.message : 'Failed to update status');
     }
   };
 
@@ -449,8 +457,9 @@ export default function Prospects() {
     try {
       const proposal = await generateProposal(prospectId);
       setProposals((prev) => [proposal, ...prev]);
+      toast.success('Proposal generated');
     } catch (e: unknown) {
-      console.error('Failed to generate proposal:', e);
+      toast.error(e instanceof Error ? e.message : 'Failed to generate proposal');
     }
     setGeneratingProposal(false);
   };
@@ -467,8 +476,9 @@ export default function Prospects() {
           engagement_score: result.engagement_score,
         });
       }
+      toast.success('Prospect rescored');
     } catch (e: unknown) {
-      console.error('Failed to rescore:', e);
+      toast.error(e instanceof Error ? e.message : 'Failed to rescore');
     }
   };
 
@@ -478,56 +488,34 @@ export default function Prospects() {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Prospects</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{pipelineSummary?.total_prospects ?? 0}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pipeline Value</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{fmtCurrency(pipelineSummary?.total_pipeline_value)}</p>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-xl">
-              <DollarSign className="h-6 w-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">In Progress</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
-                {Object.entries(pipelineSummary?.stages ?? {})
-                  .filter(([k]) => !['won', 'lost'].includes(k))
-                  .reduce((sum, [, v]) => sum + v.count, 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-50 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Won</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">
-                {pipelineSummary?.stages?.won?.count ?? 0}
-              </p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <Trophy className="h-6 w-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          label="Total Prospects"
+          value={String(pipelineSummary?.total_prospects ?? 0)}
+          icon={<Users size={18} />}
+          color="blue"
+        />
+        <MetricCard
+          label="Pipeline Value"
+          value={formatCurrency(pipelineSummary?.total_pipeline_value)}
+          icon={<DollarSign size={18} />}
+          color="amber"
+        />
+        <MetricCard
+          label="In Progress"
+          value={String(
+            Object.entries(pipelineSummary?.stages ?? {})
+              .filter(([k]) => !['won', 'lost'].includes(k))
+              .reduce((sum, [, v]) => sum + v.count, 0)
+          )}
+          icon={<TrendingUp size={18} />}
+          color="purple"
+        />
+        <MetricCard
+          label="Won"
+          value={String(pipelineSummary?.stages?.won?.count ?? 0)}
+          icon={<Trophy size={18} />}
+          color="emerald"
+        />
       </div>
 
       {/* Kanban Board */}
@@ -542,7 +530,7 @@ export default function Prospects() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm text-slate-700">{config.label}</h3>
                 <span className="text-xs text-slate-500">
-                  {stageData?.count ?? 0} &middot; {fmtCurrency(stageData?.value)}
+                  {stageData?.count ?? 0} &middot; {formatCurrency(stageData?.value)}
                 </span>
               </div>
               <div className="space-y-2 max-h-[28rem] overflow-y-auto">
@@ -564,12 +552,12 @@ export default function Prospects() {
                       <p className="text-xs text-slate-500 mt-0.5">{prospect.company}</p>
                     )}
                     {prospect.estimated_aum != null && (
-                      <p className="text-xs text-slate-600 mt-1">{fmtCurrency(prospect.estimated_aum)}</p>
+                      <p className="text-xs text-slate-600 mt-1">{formatCurrency(prospect.estimated_aum)}</p>
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-slate-500">{prospect.days_in_stage}d in stage</span>
                       {prospect.next_action_date && (
-                        <span className="text-xs text-blue-600">{fmtDate(prospect.next_action_date)}</span>
+                        <span className="text-xs text-blue-600">{formatDate(prospect.next_action_date)}</span>
                       )}
                     </div>
                   </div>
@@ -588,95 +576,95 @@ export default function Prospects() {
   // ── List View ─────────────────────────────────────────────────
 
   const renderList = () => (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <Card className="overflow-hidden p-0">
       <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <input
-          type="text"
+        <SearchInput
           placeholder="Search prospects..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-lg w-full sm:w-auto"
+          className="flex-1 w-full sm:w-auto"
         />
-        <select
+        <Select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border rounded-lg"
+          className="w-auto"
         >
           <option value="">All Statuses</option>
           {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
             <option key={key} value={key}>{label}</option>
           ))}
-        </select>
-        <button
-          onClick={loadData}
-          className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
-        >
+        </Select>
+        <Button variant="secondary" size="sm" onClick={loadData}>
           Refresh
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Company</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">AUM</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Score</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {prospects.map((prospect) => (
-              <tr key={prospect.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => loadProspectDetail(prospect)}
-                    className="font-medium text-blue-600 hover:underline text-sm"
-                  >
-                    {prospect.first_name} {prospect.last_name}
-                  </button>
-                  {prospect.email && <p className="text-xs text-slate-500">{prospect.email}</p>}
-                </td>
-                <td className="px-6 py-4 text-sm">{prospect.company || '-'}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${STATUS_CONFIG[prospect.status]?.color ?? 'bg-slate-100 text-slate-800'}`}>
-                    {STATUS_CONFIG[prospect.status]?.label ?? prospect.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 font-mono text-sm">{fmtCurrency(prospect.estimated_aum)}</td>
-                <td className="px-6 py-4">
-                  <span className={`font-bold text-sm ${scoreColor(prospect.lead_score)}`}>
-                    {prospect.lead_score}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm capitalize">{(prospect.lead_source || '').replace(/_/g, ' ')}</td>
-                <td className="px-6 py-4">
-                  <select
-                    value={prospect.status}
-                    onChange={(e) => handleStatusChange(prospect.id, e.target.value)}
-                    className="text-xs border rounded px-2 py-1"
-                  >
-                    {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-            {prospects.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                  No prospects found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>AUM</TableHead>
+            <TableHead>Score</TableHead>
+            <TableHead>Source</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {prospects.map((prospect) => (
+            <TableRow key={prospect.id}>
+              <TableCell>
+                <button
+                  onClick={() => loadProspectDetail(prospect)}
+                  className="font-medium text-blue-600 hover:underline text-sm"
+                >
+                  {prospect.first_name} {prospect.last_name}
+                </button>
+                {prospect.email && <p className="text-xs text-slate-500">{prospect.email}</p>}
+              </TableCell>
+              <TableCell>{prospect.company || '-'}</TableCell>
+              <TableCell>
+                <Badge variant={
+                  prospect.status === 'won' ? 'green'
+                    : prospect.status === 'lost' ? 'red'
+                    : prospect.status === 'new' ? 'blue'
+                    : prospect.status === 'nurturing' ? 'gray'
+                    : 'amber'
+                }>
+                  {STATUS_CONFIG[prospect.status]?.label ?? prospect.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono">{formatCurrency(prospect.estimated_aum)}</TableCell>
+              <TableCell>
+                <span className={`font-bold text-sm ${scoreColor(prospect.lead_score)}`}>
+                  {prospect.lead_score}
+                </span>
+              </TableCell>
+              <TableCell className="capitalize">{(prospect.lead_source || '').replace(/_/g, ' ')}</TableCell>
+              <TableCell>
+                <select
+                  value={prospect.status}
+                  onChange={(e) => handleStatusChange(prospect.id, e.target.value)}
+                  className="text-xs border rounded px-2 py-1"
+                >
+                  {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </TableCell>
+            </TableRow>
+          ))}
+          {prospects.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8">
+                No prospects found
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </Card>
   );
 
   // ── Detail View ───────────────────────────────────────────────
@@ -690,15 +678,16 @@ export default function Prospects() {
 
     return (
       <div className="space-y-6">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => { setSelectedProspect(null); setActiveTab('pipeline'); }}
-          className="text-blue-600 hover:underline text-sm"
         >
           &larr; Back to Pipeline
-        </button>
+        </Button>
 
         {/* Header Card */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="md">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
               <h2 className="text-2xl font-bold">
@@ -719,25 +708,15 @@ export default function Prospects() {
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
-              <button
-                onClick={() => handleRescore(selectedProspect.id)}
-                className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
-              >
+              <Button variant="secondary" size="sm" onClick={() => handleRescore(selectedProspect.id)}>
                 Rescore
-              </button>
-              <button
-                onClick={() => setShowActivityModal(true)}
-                className="px-3 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowActivityModal(true)}>
                 Log Activity
-              </button>
-              <button
-                onClick={() => handleGenerateProposal(selectedProspect.id)}
-                disabled={generatingProposal}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {generatingProposal ? 'Generating...' : 'Generate Proposal'}
-              </button>
+              </Button>
+              <Button size="sm" onClick={() => handleGenerateProposal(selectedProspect.id)} isLoading={generatingProposal}>
+                Generate Proposal
+              </Button>
             </div>
           </div>
 
@@ -786,8 +765,8 @@ export default function Prospects() {
             <div>
               <h3 className="font-semibold text-sm mb-2">Financial Profile</h3>
               <div className="space-y-1 text-sm text-slate-600">
-                <p>Est. AUM: {fmtCurrency(selectedProspect.estimated_aum)}</p>
-                <p>Annual Income: {fmtCurrency(selectedProspect.annual_income)}</p>
+                <p>Est. AUM: {formatCurrency(selectedProspect.estimated_aum)}</p>
+                <p>Annual Income: {formatCurrency(selectedProspect.annual_income)}</p>
                 <p>Risk Tolerance: {selectedProspect.risk_tolerance || '-'}</p>
                 <p>Time Horizon: {selectedProspect.time_horizon || '-'}</p>
                 {selectedProspect.investment_goals && selectedProspect.investment_goals.length > 0 && (
@@ -802,7 +781,7 @@ export default function Prospects() {
             <div>
               <h3 className="font-semibold text-sm mb-2">Next Action</h3>
               <div className="text-sm text-slate-600">
-                <p>Date: {fmtDate(selectedProspect.next_action_date)}</p>
+                <p>Date: {formatDate(selectedProspect.next_action_date)}</p>
                 <p>Type: {selectedProspect.next_action_type || '-'}</p>
                 {selectedProspect.next_action_notes && <p className="mt-1">{selectedProspect.next_action_notes}</p>}
               </div>
@@ -834,12 +813,12 @@ export default function Prospects() {
               <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedProspect.notes}</p>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Activities & Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Activities */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="md">
             <h3 className="font-semibold mb-4">Recent Activities</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {activities.map((activity) => (
@@ -848,7 +827,7 @@ export default function Prospects() {
                     <span className="font-medium text-sm capitalize">
                       {(activity.activity_type || '').replace(/_/g, ' ')}
                     </span>
-                    <span className="text-xs text-slate-500">{fmtDate(activity.activity_date)}</span>
+                    <span className="text-xs text-slate-500">{formatDate(activity.activity_date)}</span>
                   </div>
                   {activity.subject && <p className="text-sm text-slate-700">{activity.subject}</p>}
                   {activity.description && <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>}
@@ -864,10 +843,10 @@ export default function Prospects() {
                 <p className="text-slate-500 text-sm text-center py-4">No activities yet</p>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Proposals */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="md">
             <h3 className="font-semibold mb-4">Proposals</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {proposals.map((proposal) => (
@@ -879,7 +858,7 @@ export default function Prospects() {
                   <p className="text-xs text-slate-500 mt-1">{proposal.title}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                     {proposal.estimated_annual_fee != null && (
-                      <span>Fee: {fmtCurrency(proposal.estimated_annual_fee)}/yr</span>
+                      <span>Fee: {formatCurrency(proposal.estimated_annual_fee)}/yr</span>
                     )}
                     {proposal.is_ai_generated && (
                       <span className="text-purple-600">AI Generated</span>
@@ -897,7 +876,7 @@ export default function Prospects() {
                 <p className="text-slate-500 text-sm text-center py-4">No proposals yet</p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     );
@@ -914,53 +893,37 @@ export default function Prospects() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Prospect Pipeline</h1>
-          <p className="text-sm text-slate-500">Manage leads and track conversions</p>
-        </div>
-        <div className="flex gap-2">
-          {activeTab !== 'detail' && (
-            <>
-              <button
-                onClick={() => setActiveTab('pipeline')}
-                className={`px-4 py-2 rounded-lg text-sm ${
-                  activeTab === 'pipeline' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
-                }`}
-              >
-                Pipeline
-              </button>
-              <button
-                onClick={() => setActiveTab('list')}
-                className={`px-4 py-2 rounded-lg text-sm ${
-                  activeTab === 'list' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
-                }`}
-              >
-                List
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm"
-          >
+      <PageHeader
+        title="Prospect Pipeline"
+        subtitle="Manage leads and track conversions"
+        actions={
+          <Button size="sm" onClick={() => setShowAddModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
             + Add Prospect
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      />
 
       {/* Error Banner */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {activeTab === 'pipeline' && renderPipeline()}
-      {activeTab === 'list' && renderList()}
-      {activeTab === 'detail' && renderDetail()}
+      {activeTab === 'detail' ? (
+        renderDetail()
+      ) : (
+        <Tabs value={activeTab} onChange={(v) => setActiveTab(v as 'pipeline' | 'list')} variant="pills">
+          <TabList className="mb-6">
+            <Tab value="pipeline">Pipeline</Tab>
+            <Tab value="list">List</Tab>
+          </TabList>
+          <TabPanel value="pipeline">{renderPipeline()}</TabPanel>
+          <TabPanel value="list">{renderList()}</TabPanel>
+        </Tabs>
+      )}
 
       {/* Modals */}
       {showAddModal && (

@@ -5,6 +5,10 @@ import {
   Loader2, FileText, Download, Scissors,
 } from 'lucide-react';
 import { getTaxSummary, getTaxLots } from '../../services/portalApi';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -37,12 +41,9 @@ interface TaxDoc { name: string; status: string; date: string }
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const fmtCur = (v: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
-const fmtCur2 = (v: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(v);
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const fmtCur = (v: number) => formatCurrency(v);
+const fmtCur2 = (v: number) => formatCurrency(v, { decimals: 2 });
+const fmtDate = (d: string) => formatDate(d, 'medium');
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -85,40 +86,37 @@ export default function PortalTaxCenter() {
 
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tax Center</h1>
-          <p className="text-slate-500 text-sm">Tax year 2025 — Estimates for informational purposes</p>
-        </div>
+        <PageHeader title="Tax Center" subtitle="Tax year 2025 — Estimates for informational purposes" />
 
         {/* ── Summary Cards ──────────────────────────── */}
         {summary && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <SummaryCard
+            <MetricCard
               label="Realized Gains"
               value={fmtCur(summary.realized_gains_st + summary.realized_gains_lt)}
-              sub={`ST: ${fmtCur(summary.realized_gains_st)} · LT: ${fmtCur(summary.realized_gains_lt)}`}
-              Icon={TrendingUp}
+              sublabel={`ST: ${fmtCur(summary.realized_gains_st)} · LT: ${fmtCur(summary.realized_gains_lt)}`}
+              icon={<TrendingUp className="h-4 w-4" />}
               color="emerald"
             />
-            <SummaryCard
+            <MetricCard
               label="Realized Losses"
               value={fmtCur(Math.abs(summary.realized_losses))}
-              sub="Offsets gains"
-              Icon={TrendingDown}
+              sublabel="Offsets gains"
+              icon={<TrendingDown className="h-4 w-4" />}
               color="red"
             />
-            <SummaryCard
+            <MetricCard
               label="Net Realized"
               value={fmtCur(summary.net_realized)}
-              sub={summary.net_realized >= 0 ? 'Net gain' : 'Net loss'}
-              Icon={DollarSign}
+              sublabel={summary.net_realized >= 0 ? 'Net gain' : 'Net loss'}
+              icon={<DollarSign className="h-4 w-4" />}
               color="blue"
             />
-            <SummaryCard
+            <MetricCard
               label="Estimated Tax"
               value={fmtCur(summary.total_estimated_tax)}
-              sub={`ST: ${fmtCur(summary.estimated_tax_st)} · LT: ${fmtCur(summary.estimated_tax_lt)}`}
-              Icon={Receipt}
+              sublabel={`ST: ${fmtCur(summary.estimated_tax_st)} · LT: ${fmtCur(summary.estimated_tax_lt)}`}
+              icon={<Receipt className="h-4 w-4" />}
               color="amber"
             />
           </div>
@@ -144,9 +142,7 @@ export default function PortalTaxCenter() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-slate-900">Tax-Loss Harvesting</h3>
                 {summary.tax_loss_harvest_opportunities > 0 && (
-                  <span className="px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
-                    {summary.tax_loss_harvest_opportunities} opportunities
-                  </span>
+                  <Badge variant="amber">{summary.tax_loss_harvest_opportunities} opportunities</Badge>
                 )}
               </div>
               {harvestLots.length > 0 ? (
@@ -242,11 +238,9 @@ export default function PortalTaxCenter() {
                           {tx.gain >= 0 ? '+' : ''}{fmtCur(tx.gain)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            tx.term === 'long' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
-                          }`}>
+                          <Badge variant={tx.term === 'long' ? 'blue' : 'gray'}>
                             {tx.term === 'long' ? 'LT' : 'ST'}
-                          </span>
+                          </Badge>
                         </td>
                       </tr>
                     ))}
@@ -292,11 +286,9 @@ export default function PortalTaxCenter() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                          lot.term === 'long' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
-                        }`}>
+                        <Badge variant={lot.term === 'long' ? 'blue' : 'gray'}>
                           {lot.term === 'long' ? 'LT' : 'ST'}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs">{fmtDate(lot.purchase_date)}</td>
                     </tr>
@@ -324,13 +316,9 @@ export default function PortalTaxCenter() {
                       <p className="font-medium text-slate-900">{d.name}</p>
                       <p className="text-xs text-slate-500">Available: {fmtDate(d.date)}</p>
                     </div>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${
-                      d.status === 'available'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
+                    <Badge variant={d.status === 'available' ? 'green' : 'amber'}>
                       {d.status}
-                    </span>
+                    </Badge>
                     {d.status === 'available' && (
                       <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download className="h-4 w-4" /></button>
                     )}
@@ -349,26 +337,3 @@ export default function PortalTaxCenter() {
   );
 }
 
-/* ── Summary Card ─────────────────────────────────────────────────── */
-
-function SummaryCard({ label, value, sub, Icon, color }: {
-  label: string; value: string; sub: string;
-  Icon: React.ElementType; color: 'emerald' | 'red' | 'blue' | 'amber';
-}) {
-  const colors = {
-    emerald: 'bg-emerald-50 text-emerald-600',
-    red: 'bg-red-50 text-red-600',
-    blue: 'bg-blue-50 text-blue-600',
-    amber: 'bg-amber-50 text-amber-600',
-  };
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm text-slate-500">{label}</p>
-        <div className={`p-2 rounded-lg ${colors[color]}`}><Icon className="h-4 w-4" /></div>
-      </div>
-      <p className="text-xl font-bold text-slate-900">{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{sub}</p>
-    </div>
-  );
-}

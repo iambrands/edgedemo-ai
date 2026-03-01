@@ -4,13 +4,17 @@ import { Plus, ChevronDown, ChevronRight, Play, FileText, RefreshCw } from 'luci
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Modal } from '../../components/ui/Modal';
 import { AddHouseholdForm, type HouseholdFormData } from '../../components/features/AddHouseholdForm';
 import { householdsApi, type Household } from '../../services/api';
+import { formatCurrency } from '../../utils/format';
+import { useToast } from '../../contexts/ToastContext';
 import { clsx } from 'clsx';
 
 export function Households() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [households, setHouseholds] = useState<Household[]>([]);
   const [expandedHousehold, setExpandedHousehold] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,14 +39,6 @@ export function Households() {
     fetchData();
   }, []);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(value);
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'attention':
@@ -63,9 +59,9 @@ export function Households() {
   const handleRunAnalysis = async (householdId: string) => {
     try {
       await householdsApi.analyze(householdId);
-      // In production, you might want to show a toast or update the UI
+      toast.success('Analysis started successfully');
     } catch (err) {
-      console.error('Failed to start analysis:', err);
+      toast.error('Failed to start analysis');
     }
   };
 
@@ -74,9 +70,10 @@ export function Households() {
     try {
       await householdsApi.create(data);
       setIsModalOpen(false);
+      toast.success('Household created successfully');
       fetchData(); // Refresh list
     } catch (err) {
-      console.error('Failed to create household:', err);
+      toast.error('Failed to create household');
     } finally {
       setIsCreating(false);
     }
@@ -94,28 +91,25 @@ export function Households() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-red-500">{error}</p>
-        <button
-          onClick={fetchData}
-          className="px-4 py-2 text-sm text-primary-600 hover:text-primary-700"
-        >
+        <Button variant="ghost" size="sm" onClick={fetchData}>
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Households</h1>
-          <p className="text-slate-500">{households.length} households under management</p>
-        </div>
-        <Button className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
-          <Plus size={18} />
-          Add Household
-        </Button>
-      </div>
+      <PageHeader
+        title="Households"
+        subtitle={`${households.length} households under management`}
+        actions={
+          <Button className="flex items-center gap-2" onClick={() => setIsModalOpen(true)}>
+            <Plus size={18} />
+            Add Household
+          </Button>
+        }
+      />
 
       <div className="grid md:grid-cols-2 gap-6">
         {households.map((household) => {
@@ -141,7 +135,7 @@ export function Households() {
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wide">Total Value</p>
                   <p className="text-lg font-semibold text-slate-900">
-                    {formatCurrency(household.totalValue)}
+                    {formatCurrency(household.totalValue, { decimals: 2 })}
                   </p>
                 </div>
                 <div>
@@ -201,7 +195,7 @@ export function Households() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-slate-900">
-                            {formatCurrency(account.balance)}
+                            {formatCurrency(account.balance, { decimals: 2 })}
                           </p>
                           <p className="text-xs text-slate-500">{account.taxType}</p>
                         </div>

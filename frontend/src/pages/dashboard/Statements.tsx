@@ -3,6 +3,8 @@ import { Upload, FileText, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 import {
   Table,
   TableHeader,
@@ -34,6 +36,7 @@ const SUPPORTED_BROKERAGES = [
 ];
 
 export function Statements() {
+  const toast = useToast();
   const [statements, setStatements] = useState<ParsedStatement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,10 +95,13 @@ export function Statements() {
       for (const file of files) {
         await statementsApi.upload(file);
       }
+      toast.success(`${files.length} statement${files.length > 1 ? 's' : ''} uploaded successfully`);
       // Refresh the list after upload
       await fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -136,10 +142,10 @@ export function Statements() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Statements</h1>
-        <p className="text-slate-500">Upload and parse investment statements</p>
-      </div>
+      <PageHeader
+        title="Statements"
+        subtitle="Upload and parse investment statements"
+      />
 
       {/* Upload Area */}
       <Card>

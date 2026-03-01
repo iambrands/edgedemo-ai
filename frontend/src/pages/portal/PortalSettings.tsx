@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Bell, Mail, Shield, User } from 'lucide-react';
+import { Bell, Mail, Shield, User } from 'lucide-react';
 import {
   getPreferences,
   updatePreferences,
@@ -7,12 +7,14 @@ import {
   getPortalFirmName,
   Preferences,
 } from '../../services/portalApi';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function PortalSettings() {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
 
   const clientName = getPortalClientName() || 'Nicole Wilson';
   const firmName = getPortalFirmName() || 'IAB Advisors';
@@ -39,10 +41,10 @@ export default function PortalSettings() {
     setSaving(true);
     try {
       await updatePreferences({ [key]: updated[key] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      toast.success('Preferences saved');
     } catch (err) {
       console.error('Failed to update', err);
+      toast.error('Failed to update preferences');
       setPrefs(prefs); // revert
     } finally {
       setSaving(false);
@@ -59,11 +61,10 @@ export default function PortalSettings() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your portal preferences</p>
-        </div>
+        <PageHeader
+          title="Settings"
+          subtitle="Manage your portal preferences"
+        />
 
         {/* Profile Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -111,12 +112,6 @@ export default function PortalSettings() {
             <Bell className="w-5 h-5 text-blue-600" />
             Notification Preferences
           </h2>
-          {saved && (
-            <div className="mb-4 flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 rounded-lg px-4 py-2">
-              <Check className="w-4 h-4" />
-              Preferences saved
-            </div>
-          )}
           <div className="space-y-4">
             {[
               {
@@ -180,7 +175,7 @@ export default function PortalSettings() {
                 <p className="text-sm text-slate-500">Last changed: N/A</p>
               </div>
               <button
-                onClick={() => alert('Password change is not available in demo mode. In production, this would send a password reset email.')}
+                onClick={() => toast.info('Password change is not available in demo mode')}
                 className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
               >
                 Change Password
@@ -192,7 +187,7 @@ export default function PortalSettings() {
                 <p className="text-sm text-slate-500">Not enabled</p>
               </div>
               <button
-                onClick={() => alert('2FA setup is not available in demo mode. In production, this would open an authenticator app setup wizard.')}
+                onClick={() => toast.info('2FA setup is not available in demo mode')}
                 className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
               >
                 Enable 2FA

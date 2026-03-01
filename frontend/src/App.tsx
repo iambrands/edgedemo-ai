@@ -60,6 +60,7 @@ import { Investors, Professionals } from './pages/audience';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import PortalLayout from './components/portal/PortalLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './contexts/ToastContext';
 
 /**
  * Auth guard for client portal routes.
@@ -83,7 +84,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <>
+    <ToastProvider>
     <ScrollToTop />
     <Routes>
       {/* Public Routes */}
@@ -175,6 +176,6 @@ export default function App() {
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
+    </ToastProvider>
   );
 }

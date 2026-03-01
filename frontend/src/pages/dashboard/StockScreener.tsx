@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import { Search, Filter, TrendingUp, TrendingDown, Download, Save, RotateCcw } from 'lucide-react';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { useToast } from '../../contexts/ToastContext';
 
 interface ScreenerCriteria {
   pe_ratio_max?: number;
@@ -81,6 +86,7 @@ function applyFilters(stocks: ScreenerResult[], criteria: ScreenerCriteria): Scr
 }
 
 export default function StockScreener() {
+  const { success: toastSuccess } = useToast();
   const [criteria, setCriteria] = useState<ScreenerCriteria>({
     sort_by: 'market_cap',
     sort_order: 'desc',
@@ -91,8 +97,10 @@ export default function StockScreener() {
   const [hasScreened, setHasScreened] = useState(false);
 
   const runScreen = () => {
-    setResults(applyFilters(MOCK_STOCKS, criteria));
+    const filtered = applyFilters(MOCK_STOCKS, criteria);
+    setResults(filtered);
     setHasScreened(true);
+    toastSuccess(`Found ${filtered.length} stocks`);
   };
 
   const applyPreset = (presetId: string) => {
@@ -130,28 +138,25 @@ export default function StockScreener() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Stock Screener</h1>
-          <p className="text-slate-500">Screen stocks using fundamental analysis criteria</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={resetCriteria}
-            className="px-4 py-2 border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center gap-2 text-sm font-medium text-slate-700"
-          >
-            <RotateCcw size={16} />
-            Reset
-          </button>
-          <button className="px-4 py-2 border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center gap-2 text-sm font-medium text-slate-700">
-            <Save size={16} />
-            Save Screen
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Stock Screener"
+        subtitle="Screen stocks using fundamental analysis criteria"
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={resetCriteria}>
+              <RotateCcw size={16} className="mr-2" />
+              Reset
+            </Button>
+            <Button variant="secondary" size="sm">
+              <Save size={16} className="mr-2" />
+              Save Screen
+            </Button>
+          </>
+        }
+      />
 
       {/* Preset Strategies */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+      <Card size="sm">
         <h3 className="text-sm font-medium text-slate-700 mb-3">Quick Screens</h3>
         <div className="flex gap-2 flex-wrap">
           {PRESETS.map((preset) => (
@@ -169,10 +174,10 @@ export default function StockScreener() {
             </button>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Criteria Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <Card size="md">
         <h3 className="text-sm font-medium text-slate-700 mb-4 flex items-center gap-2">
           <Filter size={16} />
           Screening Criteria
@@ -280,75 +285,70 @@ export default function StockScreener() {
         </div>
 
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={runScreen}
-            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Search size={16} />
+          <Button onClick={runScreen} size="sm">
+            <Search size={16} className="mr-2" />
             Run Screen
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Results Table */}
       {hasScreened && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <Card size="sm" className="overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">{results.length} Stocks Found</h3>
-            <button className="px-4 py-2 text-sm border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center gap-2 text-slate-700">
-              <Download size={14} />
+            <Button variant="secondary" size="sm">
+              <Download size={14} className="mr-2" />
               Export CSV
-            </button>
+            </Button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">Ticker</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">Company</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">Sector</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">Price</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">Chg %</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">Mkt Cap</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">P/E</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">PEG</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">EPS Gr%</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">D/E</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-500">Div %</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {results.map((stock) => (
-                  <tr key={stock.ticker} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-blue-600">{stock.ticker}</td>
-                    <td className="px-4 py-3 text-slate-900">{stock.name}</td>
-                    <td className="px-4 py-3 text-slate-500">{stock.sector}</td>
-                    <td className="px-4 py-3 text-right font-mono">${stock.price.toFixed(2)}</td>
-                    <td className={`px-4 py-3 text-right font-mono ${stock.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <span className="inline-flex items-center gap-1">
-                        {stock.change_percent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                        {stock.change_percent.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">${stock.market_cap}B</td>
-                    <td className="px-4 py-3 text-right font-mono">{stock.pe_ratio?.toFixed(1) ?? '-'}</td>
-                    <td className="px-4 py-3 text-right font-mono">{stock.peg_ratio?.toFixed(1) ?? '-'}</td>
-                    <td className="px-4 py-3 text-right font-mono">{stock.earnings_growth?.toFixed(1) ?? '-'}%</td>
-                    <td className="px-4 py-3 text-right font-mono">{stock.debt_to_equity?.toFixed(1) ?? '-'}</td>
-                    <td className="px-4 py-3 text-right font-mono">{stock.dividend_yield?.toFixed(1) ?? '-'}%</td>
-                  </tr>
-                ))}
-                {results.length === 0 && (
-                  <tr>
-                    <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
-                      No stocks match the current criteria. Try adjusting your filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticker</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Sector</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Chg %</TableHead>
+                <TableHead className="text-right">Mkt Cap</TableHead>
+                <TableHead className="text-right">P/E</TableHead>
+                <TableHead className="text-right">PEG</TableHead>
+                <TableHead className="text-right">EPS Gr%</TableHead>
+                <TableHead className="text-right">D/E</TableHead>
+                <TableHead className="text-right">Div %</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.map((stock) => (
+                <TableRow key={stock.ticker}>
+                  <TableCell className="font-medium text-blue-600">{stock.ticker}</TableCell>
+                  <TableCell className="text-slate-900">{stock.name}</TableCell>
+                  <TableCell className="text-slate-500">{stock.sector}</TableCell>
+                  <TableCell className="text-right font-mono">${stock.price.toFixed(2)}</TableCell>
+                  <TableCell className={`text-right font-mono ${stock.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className="inline-flex items-center gap-1">
+                      {stock.change_percent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {stock.change_percent.toFixed(1)}%
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">${stock.market_cap}B</TableCell>
+                  <TableCell className="text-right font-mono">{stock.pe_ratio?.toFixed(1) ?? '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{stock.peg_ratio?.toFixed(1) ?? '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{stock.earnings_growth?.toFixed(1) ?? '-'}%</TableCell>
+                  <TableCell className="text-right font-mono">{stock.debt_to_equity?.toFixed(1) ?? '-'}</TableCell>
+                  <TableCell className="text-right font-mono">{stock.dividend_yield?.toFixed(1) ?? '-'}%</TableCell>
+                </TableRow>
+              ))}
+              {results.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={11} className="text-center text-slate-400 py-12">
+                    No stocks match the current criteria. Try adjusting your filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

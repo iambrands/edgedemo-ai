@@ -18,7 +18,7 @@ export default function PortalLayout() {
       <div
         className={clsx(
           'transition-all duration-200',
-          isSidebarCollapsed ? 'ml-16' : 'ml-60',
+          isSidebarCollapsed ? 'ml-16' : 'ml-64',
         )}
       >
         {/* Minimal top bar for mobile toggle */}

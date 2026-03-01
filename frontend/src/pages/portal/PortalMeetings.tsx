@@ -4,6 +4,8 @@ import {
   Check, X, Loader2, MessageSquare, Phone, Mail,
 } from 'lucide-react';
 import { getMeetings, getMeetingAvailability, scheduleMeeting, cancelMeeting } from '../../services/portalApi';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useToast } from '../../contexts/ToastContext';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -56,6 +58,7 @@ export default function PortalMeetings() {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const toast = useToast();
 
   useEffect(() => {
     Promise.all([getMeetings(), getMeetingAvailability()])
@@ -110,8 +113,10 @@ export default function PortalMeetings() {
       setSelType(null);
       setSelSlot(null);
       setNotes('');
+      toast.success('Meeting booked successfully');
     } catch (e) {
       console.error('booking failed', e);
+      toast.error('Failed to book meeting');
     } finally {
       setSubmitting(false);
     }
@@ -121,8 +126,10 @@ export default function PortalMeetings() {
     try {
       await cancelMeeting(id);
       setUpcoming((prev) => prev.filter((m) => m.id !== id));
+      toast.success('Meeting cancelled');
     } catch (e) {
       console.error('cancel failed', e);
+      toast.error('Failed to cancel meeting');
     }
   };
 
@@ -140,26 +147,25 @@ export default function PortalMeetings() {
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Meetings</h1>
-            <p className="text-slate-500 text-sm">Schedule and manage meetings with your advisor</p>
-          </div>
-          {step === 'list' && (
-            <button
-              onClick={() => setStep('type')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              <Calendar className="h-4 w-4" />
-              Schedule Meeting
-            </button>
-          )}
-          {step !== 'list' && (
-            <button onClick={() => { setStep('list'); setSelType(null); setSelSlot(null); }} className="text-sm text-slate-500 hover:text-slate-700">
-              ← Back to meetings
-            </button>
-          )}
-        </div>
+        <PageHeader
+          title="Meetings"
+          subtitle="Schedule and manage meetings with your advisor"
+          actions={
+            step === 'list' ? (
+              <button
+                onClick={() => setStep('type')}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <Calendar className="h-4 w-4" />
+                Schedule Meeting
+              </button>
+            ) : (
+              <button onClick={() => { setStep('list'); setSelType(null); setSelSlot(null); }} className="text-sm text-slate-500 hover:text-slate-700">
+                ← Back to meetings
+              </button>
+            )
+          }
+        />
 
         {/* ── LIST VIEW ──────────────────────────────── */}
         {step === 'list' && (

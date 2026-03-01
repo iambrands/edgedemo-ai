@@ -16,6 +16,16 @@ import type {
   AlternativeAssetType,
   InvestmentStatus,
 } from '../../services/alternativeApi';
+import { formatCurrency, formatPercent, formatDate } from '../../utils/format';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { MetricCard } from '../../components/ui/MetricCard';
+import { Badge } from '../../components/ui/Badge';
+import { Tabs, TabList, Tab } from '../../components/ui/Tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { Select } from '../../components/ui/Select';
+import { Button } from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext';
 
 // ============================================================================
 // CONSTANTS
@@ -38,13 +48,13 @@ const ASSET_TYPE_CONFIG: Record<
   other: { label: 'Other', color: 'bg-slate-500', icon: '📁' },
 };
 
-const STATUS_COLORS: Record<InvestmentStatus, string> = {
-  committed: 'bg-blue-100 text-blue-800',
-  active: 'bg-emerald-100 text-emerald-800',
-  harvesting: 'bg-yellow-100 text-yellow-800',
-  fully_realized: 'bg-slate-100 text-slate-800',
-  written_off: 'bg-red-100 text-red-800',
-  pending: 'bg-purple-100 text-purple-800',
+const STATUS_BADGE_VARIANT: Record<InvestmentStatus, 'blue' | 'green' | 'amber' | 'gray' | 'red'> = {
+  committed: 'blue',
+  active: 'green',
+  harvesting: 'amber',
+  fully_realized: 'gray',
+  written_off: 'red',
+  pending: 'blue',
 };
 
 const STATUS_LABELS: Record<InvestmentStatus, string> = {
@@ -60,42 +70,20 @@ const STATUS_LABELS: Record<InvestmentStatus, string> = {
 // HELPERS
 // ============================================================================
 
-function formatCurrency(value?: number | null): string {
-  if (value == null) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
+/** Format currency with 2 decimals (for transaction amounts, K-1 boxes, etc.) */
 function formatCurrencyFull(value?: number | null): string {
-  if (value == null) return '-';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return formatCurrency(value, { decimals: 2 });
 }
 
-function formatPercent(value?: number | null): string {
-  if (value == null) return '-';
-  return `${(value * 100).toFixed(1)}%`;
+/** Format IRR/return values stored as decimals (0.12 -> "12.0%") */
+function formatPercentDecimal(value?: number | null): string {
+  if (value == null) return '--';
+  return formatPercent(value * 100, { decimals: 1, showSign: false });
 }
 
 function formatMultiple(value?: number | null): string {
-  if (value == null) return '-';
+  if (value == null) return '--';
   return `${value.toFixed(2)}x`;
-}
-
-function formatDate(dateStr?: string | null): string {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 }
 
 function getAssetConfig(type: AlternativeAssetType) {
@@ -107,6 +95,7 @@ function getAssetConfig(type: AlternativeAssetType) {
 // ============================================================================
 
 export default function AlternativeAssets() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<
     'overview' | 'investments' | 'calls' | 'detail' | 'analytics' | 'waterfall'
   >('overview');
@@ -160,9 +149,11 @@ export default function AlternativeAssets() {
     const today = new Date().toISOString().split('T')[0];
     try {
       await payCapitalCall(callId, today);
+      toast.success('Capital call marked as paid');
       await loadData();
     } catch (err) {
       console.error('Failed to pay capital call:', err);
+      toast.error('Failed to pay capital call');
     }
   };
 
@@ -173,8 +164,10 @@ export default function AlternativeAssets() {
       // Also refresh list
       const investRes = await listInvestments();
       setInvestments(investRes.investments || []);
+      toast.success('Performance recalculated successfully');
     } catch (err) {
       console.error('Failed to recalculate:', err);
+      toast.error('Failed to recalculate performance');
     }
   };
 
@@ -212,61 +205,44 @@ export default function AlternativeAssets() {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Total NAV</p>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Landmark className="h-5 w-5 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(summaryData.totalNav)}</p>
-          <p className="text-xs text-slate-500 mt-1">{investments.length} investments</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Total Commitment</p>
-            <div className="p-2 bg-amber-50 rounded-lg">
-              <DollarSign className="h-5 w-5 text-amber-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(summaryData.totalCommitment)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Called / Uncalled</p>
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <ArrowDownRight className="h-5 w-5 text-indigo-600" />
-            </div>
-          </div>
-          <p className="text-lg font-bold text-slate-900">{formatCurrency(summaryData.totalCalled)}</p>
-          <p className="text-xs text-slate-500">{formatCurrency(summaryData.totalUncalled)} uncalled</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Distributions</p>
-            <div className="p-2 bg-emerald-50 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-emerald-600">
-            {formatCurrency(summaryData.totalDistributions)}
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-slate-500">Pending Calls</p>
-            <div className="p-2 bg-orange-50 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-orange-600">{pendingCalls.length}</p>
-          <p className="text-xs text-orange-400">{formatCurrency(pendingTotalAmount)}</p>
-        </div>
+        <MetricCard
+          label="Total NAV"
+          value={formatCurrency(summaryData.totalNav)}
+          sublabel={`${investments.length} investments`}
+          icon={<Landmark className="h-5 w-5" />}
+          color="blue"
+        />
+        <MetricCard
+          label="Total Commitment"
+          value={formatCurrency(summaryData.totalCommitment)}
+          icon={<DollarSign className="h-5 w-5" />}
+          color="amber"
+        />
+        <MetricCard
+          label="Called / Uncalled"
+          value={formatCurrency(summaryData.totalCalled)}
+          sublabel={`${formatCurrency(summaryData.totalUncalled)} uncalled`}
+          icon={<ArrowDownRight className="h-5 w-5" />}
+          color="indigo"
+        />
+        <MetricCard
+          label="Distributions"
+          value={formatCurrency(summaryData.totalDistributions)}
+          icon={<TrendingUp className="h-5 w-5" />}
+          color="emerald"
+        />
+        <MetricCard
+          label="Pending Calls"
+          value={String(pendingCalls.length)}
+          sublabel={formatCurrency(pendingTotalAmount)}
+          icon={<AlertCircle className="h-5 w-5" />}
+          color="amber"
+        />
       </div>
 
       {/* Allocation by type */}
       {Object.keys(navByType).length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <h3 className="text-lg font-semibold mb-4">Allocation by Asset Type</h3>
           {/* Bar */}
           <div className="flex h-6 rounded-full overflow-hidden mb-4">
@@ -306,19 +282,16 @@ export default function AlternativeAssets() {
                 );
               })}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Recent investments */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold">Recent Investments</h3>
-          <button
-            onClick={() => setActiveTab('investments')}
-            className="text-sm text-blue-600 hover:underline"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setActiveTab('investments')}>
             View all
-          </button>
+          </Button>
         </div>
         <div className="divide-y divide-slate-100">
           {investments.slice(0, 6).map((inv) => {
@@ -345,12 +318,12 @@ export default function AlternativeAssets() {
                   <div className="text-right shrink-0 ml-4">
                     <p className="font-medium">{formatCurrency(inv.current_nav)}</p>
                     <div className="flex items-center gap-2 justify-end mt-0.5">
-                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-700'}`}>
+                      <Badge variant={STATUS_BADGE_VARIANT[inv.status] || 'gray'}>
                         {STATUS_LABELS[inv.status] || inv.status}
-                      </span>
+                      </Badge>
                       {inv.irr != null && (
                         <span className={`text-xs font-medium ${inv.irr >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          IRR {formatPercent(inv.irr)}
+                          IRR {formatPercentDecimal(inv.irr)}
                         </span>
                       )}
                     </div>
@@ -363,19 +336,16 @@ export default function AlternativeAssets() {
             <p className="p-8 text-center text-slate-500">No investments yet</p>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Upcoming capital calls */}
       {pendingCalls.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <Card size="sm" className="!p-0">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold">Upcoming Capital Calls</h3>
-            <button
-              onClick={() => setActiveTab('calls')}
-              className="text-sm text-blue-600 hover:underline"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setActiveTab('calls')}>
               View all
-            </button>
+            </Button>
           </div>
           <div className="divide-y divide-slate-100">
             {pendingCalls.slice(0, 3).map((call) => {
@@ -395,7 +365,7 @@ export default function AlternativeAssets() {
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -408,10 +378,10 @@ export default function AlternativeAssets() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <select
+        <Select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-48"
         >
           <option value="">All Types</option>
           {Object.entries(ASSET_TYPE_CONFIG).map(([key, cfg]) => (
@@ -419,48 +389,47 @@ export default function AlternativeAssets() {
               {cfg.icon} {cfg.label}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-44"
         >
           <option value="">All Statuses</option>
           {Object.entries(STATUS_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
           ))}
-        </select>
+        </Select>
         <span className="text-sm text-slate-500 ml-2">
           {filteredInvestments.length} investment{filteredInvestments.length !== 1 ? 's' : ''}
         </span>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Investment</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Commitment</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Called</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">NAV</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">IRR</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">TVPI</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">DPI</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <Card size="sm" className="!p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Investment</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Commitment</TableHead>
+              <TableHead className="text-right">Called</TableHead>
+              <TableHead className="text-right">NAV</TableHead>
+              <TableHead className="text-right">IRR</TableHead>
+              <TableHead className="text-right">TVPI</TableHead>
+              <TableHead className="text-right">DPI</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredInvestments.map((inv) => {
               const cfg = getAssetConfig(inv.asset_type);
               return (
-                <tr
+                <TableRow
                   key={inv.id}
                   onClick={() => loadInvestmentDetail(inv)}
-                  className="hover:bg-slate-50 cursor-pointer transition-colors"
                 >
-                  <td className="px-4 py-3">
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{cfg.icon}</span>
                       <div>
@@ -468,40 +437,40 @@ export default function AlternativeAssets() {
                         <p className="text-xs text-slate-500">{inv.vintage_year || ''}</p>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-700">{cfg.label}</td>
-                  <td className="px-4 py-3 text-right font-mono text-sm">{formatCurrency(inv.total_commitment)}</td>
-                  <td className="px-4 py-3 text-right font-mono text-sm">{formatCurrency(inv.called_capital)}</td>
-                  <td className="px-4 py-3 text-right font-mono text-sm font-medium">{formatCurrency(inv.current_nav)}</td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  </TableCell>
+                  <TableCell>{cfg.label}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(inv.total_commitment)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(inv.called_capital)}</TableCell>
+                  <TableCell className="text-right font-mono font-medium">{formatCurrency(inv.current_nav)}</TableCell>
+                  <TableCell className="text-right">
                     {inv.irr != null ? (
                       <span className={inv.irr >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                        {formatPercent(inv.irr)}
+                        {formatPercentDecimal(inv.irr)}
                       </span>
                     ) : (
-                      <span className="text-slate-500">-</span>
+                      <span className="text-slate-500">--</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">{formatMultiple(inv.tvpi)}</td>
-                  <td className="px-4 py-3 text-right text-sm">{formatMultiple(inv.dpi)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-700'}`}>
+                  </TableCell>
+                  <TableCell className="text-right">{formatMultiple(inv.tvpi)}</TableCell>
+                  <TableCell className="text-right">{formatMultiple(inv.dpi)}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={STATUS_BADGE_VARIANT[inv.status] || 'gray'}>
                       {STATUS_LABELS[inv.status] || inv.status}
-                    </span>
-                  </td>
-                </tr>
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               );
             })}
             {filteredInvestments.length === 0 && (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-slate-500">
+              <TableRow>
+                <TableCell colSpan={9} className="py-12 text-center text-slate-500">
                   No investments match the current filters
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 
@@ -522,7 +491,7 @@ export default function AlternativeAssets() {
         </h2>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <Card size="sm" className="!p-0">
         <div className="divide-y divide-slate-100">
           {pendingCalls.map((call) => {
             const inv = investments.find((i) => i.id === call.investment_id);
@@ -559,12 +528,13 @@ export default function AlternativeAssets() {
                       <span>{call.percentage_called.toFixed(1)}% called</span>
                     )}
                   </div>
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => handlePayCall(call.id)}
-                    className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shrink-0 ml-4"
+                    className="shrink-0 ml-4 !bg-emerald-600 hover:!bg-emerald-700"
                   >
                     Mark as Paid
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -576,7 +546,7 @@ export default function AlternativeAssets() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 
@@ -609,7 +579,7 @@ export default function AlternativeAssets() {
         </button>
 
         {/* Header card */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-xl ${cfg.color} flex items-center justify-center text-3xl text-white`}>
@@ -625,15 +595,12 @@ export default function AlternativeAssets() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleRecalculate(inv.id)}
-                className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-              >
+              <Button variant="secondary" size="sm" onClick={() => handleRecalculate(inv.id)}>
                 Recalculate
-              </button>
-              <span className={`px-3 py-1.5 rounded-lg text-sm font-medium ${STATUS_COLORS[inv.status] || 'bg-slate-100 text-slate-700'}`}>
+              </Button>
+              <Badge variant={STATUS_BADGE_VARIANT[inv.status] || 'gray'}>
                 {STATUS_LABELS[inv.status] || inv.status}
-              </span>
+              </Badge>
             </div>
           </div>
 
@@ -662,7 +629,7 @@ export default function AlternativeAssets() {
             <div className="text-center p-3 bg-slate-50 rounded-lg">
               <p className="text-xs text-slate-500 uppercase tracking-wide">IRR</p>
               <p className={`text-xl font-bold mt-1 ${(inv.irr ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {formatPercent(inv.irr)}
+                {formatPercentDecimal(inv.irr)}
               </p>
             </div>
             <div className="text-center p-3 bg-slate-50 rounded-lg">
@@ -711,11 +678,11 @@ export default function AlternativeAssets() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Capital Calls */}
         {calls.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="lg">
             <h3 className="text-lg font-semibold mb-4">Capital Calls</h3>
             <div className="space-y-3">
               {calls.map((call) => (
@@ -726,31 +693,28 @@ export default function AlternativeAssets() {
                   </div>
                   <div className="text-right">
                     {call.status === 'paid' ? (
-                      <span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">
-                        Paid {formatDate(call.paid_date)}
-                      </span>
+                      <Badge variant="green">Paid {formatDate(call.paid_date)}</Badge>
                     ) : call.status === 'pending' ? (
-                      <button
+                      <Button
+                        size="sm"
                         onClick={() => handlePayCall(call.id)}
-                        className="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                        className="!bg-emerald-600 hover:!bg-emerald-700"
                       >
                         Mark Paid
-                      </button>
+                      </Button>
                     ) : (
-                      <span className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium capitalize">
-                        {call.status}
-                      </span>
+                      <Badge variant="gray" className="capitalize">{call.status}</Badge>
                     )}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Transactions */}
         {txns.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="lg">
             <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
             <div className="space-y-2">
               {txns.map((txn) => (
@@ -768,55 +732,53 @@ export default function AlternativeAssets() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Valuation History */}
         {vals.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="lg">
             <h3 className="text-lg font-semibold mb-4">Valuation History</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-500 uppercase tracking-wider">
-                    <th className="pb-2">Date</th>
-                    <th className="pb-2 text-right">NAV</th>
-                    <th className="pb-2 text-right">Period Return</th>
-                    <th className="pb-2 text-right">YTD Return</th>
-                    <th className="pb-2">Source</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {vals.map((v) => (
-                    <tr key={v.id}>
-                      <td className="py-2">{formatDate(v.valuation_date)}</td>
-                      <td className="py-2 text-right font-mono font-medium">{formatCurrency(v.nav)}</td>
-                      <td className="py-2 text-right">
-                        {v.period_return != null ? (
-                          <span className={v.period_return >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                            {formatPercent(v.period_return)}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="py-2 text-right">
-                        {v.ytd_return != null ? (
-                          <span className={v.ytd_return >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                            {formatPercent(v.ytd_return)}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="py-2 capitalize text-slate-500">{v.source.replace(/_/g, ' ')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">NAV</TableHead>
+                  <TableHead className="text-right">Period Return</TableHead>
+                  <TableHead className="text-right">YTD Return</TableHead>
+                  <TableHead>Source</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vals.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell>{formatDate(v.valuation_date)}</TableCell>
+                    <TableCell className="text-right font-mono font-medium">{formatCurrency(v.nav)}</TableCell>
+                    <TableCell className="text-right">
+                      {v.period_return != null ? (
+                        <span className={v.period_return >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                          {formatPercentDecimal(v.period_return)}
+                        </span>
+                      ) : '--'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {v.ytd_return != null ? (
+                        <span className={v.ytd_return >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                          {formatPercentDecimal(v.ytd_return)}
+                        </span>
+                      ) : '--'}
+                    </TableCell>
+                    <TableCell className="capitalize text-slate-500">{v.source.replace(/_/g, ' ')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         )}
 
         {/* K-1 Documents */}
         {k1Docs.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="lg">
             <h3 className="text-lg font-semibold mb-4">K-1 Documents</h3>
             <div className="space-y-3">
               {k1Docs.map((doc) => (
@@ -828,9 +790,7 @@ export default function AlternativeAssets() {
                     </div>
                     <div className="flex items-center gap-3">
                       {doc.is_processed && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">
-                          Processed
-                        </span>
+                        <Badge variant="green">Processed</Badge>
                       )}
                       <a
                         href={doc.file_url}
@@ -874,12 +834,12 @@ export default function AlternativeAssets() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Other Documents */}
         {otherDocs.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <Card size="lg">
             <h3 className="text-lg font-semibold mb-4">Documents</h3>
             <div className="space-y-2">
               {otherDocs.map((doc) => (
@@ -902,7 +862,7 @@ export default function AlternativeAssets() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     );
@@ -963,7 +923,7 @@ export default function AlternativeAssets() {
     return (
       <div className="space-y-6">
         {/* J-Curve Visualization */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-blue-50 rounded-lg"><BarChart3 className="h-5 w-5 text-blue-600" /></div>
             <div>
@@ -1001,61 +961,59 @@ export default function AlternativeAssets() {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /> Capital deployment (negative returns)</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Value creation (positive returns)</span>
           </div>
-        </div>
+        </Card>
 
         {/* Vintage Year Cohort Analysis */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Vintage Year Cohort Analysis</h3>
           {vintages.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Vintage</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Funds</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Commitment</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Current NAV</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Avg IRR</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Avg TVPI</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">NAV Share</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {vintages.map((v) => {
-                    const navPct = summaryData.totalNav > 0 ? (v.nav / summaryData.totalNav) * 100 : 0;
-                    return (
-                      <tr key={v.year} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-900">{v.year}</td>
-                        <td className="px-4 py-3 text-right">{v.count}</td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(v.commitment)}</td>
-                        <td className="px-4 py-3 text-right font-medium">{formatCurrency(v.nav)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={v.avgIrr >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                            {formatPercent(v.avgIrr)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">{formatMultiple(v.avgTvpi)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${navPct}%` }} />
-                            </div>
-                            <span className="text-xs text-slate-500 w-10 text-right">{navPct.toFixed(1)}%</span>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vintage</TableHead>
+                  <TableHead className="text-right">Funds</TableHead>
+                  <TableHead className="text-right">Commitment</TableHead>
+                  <TableHead className="text-right">Current NAV</TableHead>
+                  <TableHead className="text-right">Avg IRR</TableHead>
+                  <TableHead className="text-right">Avg TVPI</TableHead>
+                  <TableHead className="text-right">NAV Share</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vintages.map((v) => {
+                  const navPct = summaryData.totalNav > 0 ? (v.nav / summaryData.totalNav) * 100 : 0;
+                  return (
+                    <TableRow key={v.year}>
+                      <TableCell className="font-medium text-slate-900">{v.year}</TableCell>
+                      <TableCell className="text-right">{v.count}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(v.commitment)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(v.nav)}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={v.avgIrr >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                          {formatPercentDecimal(v.avgIrr)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">{formatMultiple(v.avgTvpi)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${navPct}%` }} />
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <span className="text-xs text-slate-500 w-10 text-right">{navPct.toFixed(1)}%</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           ) : (
             <p className="text-slate-500 text-center py-8">No vintage data available</p>
           )}
-        </div>
+        </Card>
 
         {/* Commitment Pacing */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <h3 className="text-lg font-semibold text-slate-900 mb-2">Commitment Pacing</h3>
           <p className="text-sm text-slate-500 mb-4">
             {formatCurrency(totalCalled)} called of {formatCurrency(totalCommitment)} total commitment ({calledPct.toFixed(1)}%)
@@ -1065,31 +1023,29 @@ export default function AlternativeAssets() {
             <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${calledPct}%` }} />
           </div>
           {/* Pacing schedule */}
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Period</th>
-                <th className="px-4 py-3 text-right font-semibold text-slate-600">Expected Calls</th>
-                <th className="px-4 py-3 text-right font-semibold text-slate-600">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Period</TableHead>
+                <TableHead className="text-right">Expected Calls</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pacingSchedule.map((p) => (
-                <tr key={p.period} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{p.period}</td>
-                  <td className="px-4 py-3 text-right">{formatCurrency(p.expected)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      p.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
-                    }`}>
+                <TableRow key={p.period}>
+                  <TableCell className="font-medium text-slate-900">{p.period}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(p.expected)}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={p.status === 'upcoming' ? 'blue' : 'gray'}>
                       {p.status === 'upcoming' ? 'Upcoming' : 'Projected'}
-                    </span>
-                  </td>
-                </tr>
+                    </Badge>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       </div>
     );
   };
@@ -1132,26 +1088,14 @@ export default function AlternativeAssets() {
       <div className="space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <p className="text-sm text-slate-500">Total Distributions</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(totalDistributed)}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <p className="text-sm text-slate-500">LP Share</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{formatCurrency(lpShare)}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <p className="text-sm text-slate-500">GP Share (Carry)</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(gpShare)}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <p className="text-sm text-slate-500">Overall DPI</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{totalCalled2 > 0 ? formatMultiple(totalDistributed / totalCalled2) : '-'}</p>
-          </div>
+          <MetricCard label="Total Distributions" value={formatCurrency(totalDistributed)} color="blue" />
+          <MetricCard label="LP Share" value={formatCurrency(lpShare)} color="emerald" />
+          <MetricCard label="GP Share (Carry)" value={formatCurrency(gpShare)} color="indigo" />
+          <MetricCard label="Overall DPI" value={totalCalled2 > 0 ? formatMultiple(totalDistributed / totalCalled2) : '--'} color="slate" />
         </div>
 
         {/* Waterfall Tiers */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-purple-50 rounded-lg"><Layers className="h-5 w-5 text-purple-600" /></div>
             <div>
@@ -1185,45 +1129,43 @@ export default function AlternativeAssets() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Per-Fund Performance */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Card size="lg">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Fund-Level Distribution Metrics</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Fund</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Commitment</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Called</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Distributed</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">NAV</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">TVPI</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">DPI</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">RVPI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {fundWaterfalls.map((f) => (
-                  <tr key={f.name} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{f.name}</p>
-                      <p className="text-xs text-slate-500">{getAssetConfig(f.type as AlternativeAssetType).label}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(f.commitment)}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(f.called)}</td>
-                    <td className="px-4 py-3 text-right text-emerald-600 font-medium">{formatCurrency(f.distributed)}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(f.nav)}</td>
-                    <td className="px-4 py-3 text-right font-bold">{formatMultiple(f.tvpi)}</td>
-                    <td className="px-4 py-3 text-right">{formatMultiple(f.dpi)}</td>
-                    <td className="px-4 py-3 text-right">{formatMultiple(f.rvpi)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fund</TableHead>
+                <TableHead className="text-right">Commitment</TableHead>
+                <TableHead className="text-right">Called</TableHead>
+                <TableHead className="text-right">Distributed</TableHead>
+                <TableHead className="text-right">NAV</TableHead>
+                <TableHead className="text-right">TVPI</TableHead>
+                <TableHead className="text-right">DPI</TableHead>
+                <TableHead className="text-right">RVPI</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fundWaterfalls.map((f) => (
+                <TableRow key={f.name}>
+                  <TableCell>
+                    <p className="font-medium text-slate-900">{f.name}</p>
+                    <p className="text-xs text-slate-500">{getAssetConfig(f.type as AlternativeAssetType).label}</p>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(f.commitment)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(f.called)}</TableCell>
+                  <TableCell className="text-right text-emerald-600 font-medium">{formatCurrency(f.distributed)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(f.nav)}</TableCell>
+                  <TableCell className="text-right font-bold">{formatMultiple(f.tvpi)}</TableCell>
+                  <TableCell className="text-right">{formatMultiple(f.dpi)}</TableCell>
+                  <TableCell className="text-right">{formatMultiple(f.rvpi)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       </div>
     );
   };
@@ -1245,12 +1187,13 @@ export default function AlternativeAssets() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="text-red-700 font-medium">Failed to load data</p>
           <p className="text-red-500 text-sm mt-1">{error}</p>
-          <button
+          <Button
             onClick={loadData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+            size="sm"
+            className="mt-4 !bg-red-600 hover:!bg-red-700"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -1258,45 +1201,30 @@ export default function AlternativeAssets() {
 
   return (
     <div className="p-6">
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Alternative Assets</h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Track private equity, real estate, hedge funds, venture capital, and more
-          </p>
-        </div>
-        {activeTab !== 'detail' && (
-          <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
-            {(
-              [
-                { key: 'overview', label: 'Overview' },
-                { key: 'investments', label: 'Investments' },
-                { key: 'calls', label: 'Capital Calls' },
-                { key: 'analytics', label: 'Analytics' },
-                { key: 'waterfall', label: 'Waterfall' },
-              ] as const
-            ).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === key
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {label}
-                {key === 'calls' && pendingCalls.length > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                    {pendingCalls.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Alternative Assets"
+        subtitle="Track private equity, real estate, hedge funds, venture capital, and more"
+        className="mb-6"
+      />
+
+      {activeTab !== 'detail' && (
+        <Tabs value={activeTab} onChange={(v) => setActiveTab(v as typeof activeTab)} variant="pills">
+          <TabList className="mb-6">
+            <Tab value="overview">Overview</Tab>
+            <Tab value="investments">Investments</Tab>
+            <Tab value="calls">
+              Capital Calls
+              {pendingCalls.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {pendingCalls.length}
+                </span>
+              )}
+            </Tab>
+            <Tab value="analytics">Analytics</Tab>
+            <Tab value="waterfall">Waterfall</Tab>
+          </TabList>
+        </Tabs>
+      )}
 
       {/* Tab content */}
       {activeTab === 'overview' && renderOverview()}
