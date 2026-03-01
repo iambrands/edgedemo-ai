@@ -439,6 +439,15 @@ except Exception as e:
     _ria_router_errors.append(f"best_execution: {type(e).__name__}: {e}")
     logger.error("Failed to mount best_execution router: %s", e, exc_info=True)
 
+# Mount Portfolio Review router
+try:
+    from backend.api.portfolio_review import router as portfolio_review_router
+    app.include_router(portfolio_review_router)
+    _ria_routers_mounted.append("portfolio_review")
+except Exception as e:
+    _ria_router_errors.append(f"portfolio_review: {type(e).__name__}: {e}")
+    logger.error("Failed to mount portfolio_review router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 

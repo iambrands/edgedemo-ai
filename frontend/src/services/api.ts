@@ -293,6 +293,18 @@ export const analysisApi = {
     fetchApi<T>(`/api/v1/analysis/${toolType}/${householdId}`, { method: 'POST' }),
 };
 
+// --- Portfolio Review API ---
+
+export const portfolioReviewApi = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  analyze: (holdings: any[], clientProfile?: string) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchApi<any>('/api/v1/portfolio-review/analyze', {
+      method: 'POST',
+      body: { holdings, clientProfile },
+    }),
+};
+
 // --- Health API ---
 
 export const healthApi = {

@@ -96,6 +96,11 @@ def create_app() -> FastAPI:
         from api.ria_analysis import router as ria_analysis_router
         from api.ria_chat import router as ria_chat_router
         from api.ria_compliance import router as ria_compliance_router
+
+    try:
+        from backend.api.portfolio_review import router as portfolio_review_router
+    except ImportError:
+        from api.portfolio_review import router as portfolio_review_router
     
     # Mount routers
     app.include_router(auth_router)
@@ -106,7 +111,8 @@ def create_app() -> FastAPI:
     app.include_router(ria_analysis_router)
     app.include_router(ria_chat_router)
     app.include_router(ria_compliance_router)
-    
+    app.include_router(portfolio_review_router)
+
     logger.info("All API routes mounted successfully")
     
     # Health check endpoint

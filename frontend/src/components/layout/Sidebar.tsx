@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Investing',
     icon: BarChart3,
     items: [
+      { to: '/dashboard/portfolio-review', icon: FileBarChart, label: 'Portfolio Review' },
       { to: '/dashboard/analysis', icon: BarChart3, label: 'Analysis' },
       { to: '/dashboard/screener', icon: Search, label: 'Stock Screener' },
       { to: '/dashboard/model-portfolios', icon: PieChart, label: 'Model Portfolios' },

@@ -24,3 +24,4 @@ export { default as BulkImport } from './BulkImport';
 export { default as Messages } from './Messages';
 export { default as BestExecution } from './BestExecution';
 export { default as LearningCenter } from './LearningCenter';
+export { default as PortfolioReview } from './PortfolioReview';
