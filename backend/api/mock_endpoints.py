@@ -7,9 +7,11 @@ environment).  These serve realistic demo data from mock_data_store.py.
 """
 
 import logging
-from typing import Optional
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +135,135 @@ async def get_prospect(prospect_id: str):
         if p["id"] == prospect_id:
             return p
     return {"detail": "Prospect not found"}, 404
+
+
+@prospects_router.post("")
+async def create_prospect(request: Request):
+    """Create a new prospect (mock — returns a realistic fake record)."""
+    body: Dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    now = datetime.now(timezone.utc).isoformat()
+    prospect = {
+        "id": str(uuid.uuid4()),
+        "advisor_id": "demo-advisor-001",
+        "first_name": body.get("first_name", "New"),
+        "last_name": body.get("last_name", "Prospect"),
+        "email": body.get("email", ""),
+        "phone": body.get("phone", ""),
+        "company": body.get("company", ""),
+        "title": body.get("title", ""),
+        "industry": body.get("industry", ""),
+        "linkedin_url": body.get("linkedin_url", ""),
+        "city": body.get("city", ""),
+        "state": body.get("state", ""),
+        "zip_code": body.get("zip_code", ""),
+        "status": body.get("status", "new"),
+        "stage": "discovery",
+        "lead_source": body.get("lead_source", "website"),
+        "source_detail": body.get("source_detail", ""),
+        "estimated_aum": body.get("estimated_aum"),
+        "estimated_assets": body.get("estimated_aum"),
+        "annual_income": body.get("annual_income"),
+        "net_worth": body.get("net_worth"),
+        "risk_tolerance": body.get("risk_tolerance", "moderate"),
+        "investment_goals": body.get("investment_goals", []),
+        "time_horizon": body.get("time_horizon", ""),
+        "interested_services": body.get("interested_services", []),
+        "lead_score": body.get("lead_score", 50),
+        "fit_score": body.get("fit_score", 50),
+        "intent_score": body.get("intent_score", 40),
+        "engagement_score": body.get("engagement_score", 30),
+        "score": body.get("lead_score", 50),
+        "next_action": "Initial outreach",
+        "next_action_date": now,
+        "next_action_type": body.get("next_action_type", "call"),
+        "next_action_notes": body.get("next_action_notes", ""),
+        "days_in_stage": 0,
+        "total_days_in_pipeline": 0,
+        "tags": body.get("tags", []),
+        "notes": body.get("notes", ""),
+        "ai_summary": "",
+        "custom_fields": body.get("custom_fields", {}),
+        "created_at": now,
+        "updated_at": now,
+    }
+    logger.info("Mock prospect created: %s %s (id=%s)", prospect["first_name"], prospect["last_name"], prospect["id"])
+    return prospect
+
+
+@prospects_router.patch("/{prospect_id}")
+async def update_prospect(prospect_id: str, request: Request):
+    """Update a prospect (mock — returns the prospect with updated fields)."""
+    body: Dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    data = _store().prospect_list_response()
+    for p in data["prospects"]:
+        if p["id"] == prospect_id:
+            p.update(body)
+            return p
+    # Return a synthetic updated prospect if not found in mock data
+    now = datetime.now(timezone.utc).isoformat()
+    return {"id": prospect_id, "updated_at": now, **body}
+
+
+@prospects_router.post("/{prospect_id}/activities")
+async def log_prospect_activity(prospect_id: str, request: Request):
+    """Log an activity for a prospect (mock)."""
+    body: Dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "id": str(uuid.uuid4()),
+        "prospect_id": prospect_id,
+        "type": body.get("type", "note"),
+        "subject": body.get("subject", "Activity logged"),
+        "description": body.get("description", ""),
+        "outcome": body.get("outcome", ""),
+        "duration_minutes": body.get("duration_minutes", 0),
+        "created_at": now,
+        "created_by": "demo-advisor-001",
+    }
+
+
+@prospects_router.get("/{prospect_id}/activities")
+async def get_prospect_activities(prospect_id: str):
+    """Get activities for a prospect (mock — returns empty list)."""
+    return {"activities": [], "total": 0}
+
+
+@prospects_router.get("/{prospect_id}/proposals")
+async def get_prospect_proposals(prospect_id: str):
+    """Get proposals for a prospect (mock — returns empty list)."""
+    return {"proposals": [], "total": 0}
+
+
+@prospects_router.post("/{prospect_id}/proposals/generate")
+async def generate_proposal(prospect_id: str):
+    """Generate a proposal for a prospect (mock)."""
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "id": str(uuid.uuid4()),
+        "prospect_id": prospect_id,
+        "title": "Investment Management Proposal",
+        "status": "draft",
+        "content": "Mock proposal content — customize this for the prospect.",
+        "created_at": now,
+    }
+
+
+@prospects_router.post("/{prospect_id}/score")
+async def rescore_prospect(prospect_id: str):
+    """Re-score a prospect (mock)."""
+    return {"id": prospect_id, "lead_score": 65, "fit_score": 70, "intent_score": 55, "engagement_score": 45}
 
 
 # ════════════════════════════════════════════════════════════════════════════

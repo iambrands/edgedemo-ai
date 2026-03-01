@@ -812,18 +812,27 @@ def parse_openai_response(response_text: str) -> Dict[str, Any]:
 
 def _find_frontend_dir() -> tuple[Path, Path]:
     """Find frontend dist and dev index.html, trying multiple root locations."""
+    resolved = Path(__file__).resolve()
+    logger.info("_find_frontend_dir: __file__ resolved to %s", resolved)
+
     candidates = [
         Path(__file__).resolve().parent.parent,   # /app/backend/app.py → /app
         Path(__file__).resolve().parent,           # /app/app.py → /app
         Path("/app"),                              # Direct Docker path
+        Path.cwd(),                                # Current working directory
     ]
     for root in candidates:
         dist = root / "frontend" / "dist"
         dev = root / "frontend" / "index.html"
+        logger.debug("Checking frontend dist at %s → exists=%s", dist, dist.is_dir())
         if dist.is_dir():
             logger.info("Found frontend dist at %s", dist)
             return dist, dev
     # Fallback — frontend is likely a separate service
+    logger.warning(
+        "Frontend dist not found. Tried: %s",
+        ", ".join(str(c / "frontend" / "dist") for c in candidates),
+    )
     root = candidates[0]
     return root / "frontend" / "dist", root / "frontend" / "index.html"
 
