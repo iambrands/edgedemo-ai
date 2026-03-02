@@ -39,9 +39,6 @@ RUN touch ./backend/__init__.py
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Copy nginx config (if exists)
-COPY frontend/nginx.conf /etc/nginx/nginx.conf.template 2>/dev/null || true
-
 # Expose port
 EXPOSE ${PORT:-8000}
 
