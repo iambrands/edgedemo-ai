@@ -103,6 +103,8 @@ def _store():
 
 prospects_router = APIRouter(prefix="/api/v1/prospects", tags=["prospects-mock"])
 
+_created_prospects: list = []
+
 
 @prospects_router.get("")
 async def list_prospects(
@@ -110,7 +112,14 @@ async def list_prospects(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ):
-    return _store().prospect_list_response(status=status, page=page, page_size=page_size)
+    data = _store().prospect_list_response(status=status, page=page, page_size=page_size)
+    if _created_prospects:
+        all_prospects = _created_prospects[:] + data.get("prospects", [])
+        if status:
+            all_prospects = [p for p in all_prospects if p.get("status") == status]
+        data["prospects"] = all_prospects
+        data["total"] = len(all_prospects)
+    return data
 
 
 @prospects_router.get("/pipeline/summary")
@@ -130,6 +139,9 @@ async def pending_tasks():
 
 @prospects_router.get("/{prospect_id}")
 async def get_prospect(prospect_id: str):
+    for p in _created_prospects:
+        if p["id"] == prospect_id:
+            return p
     data = _store().prospect_list_response()
     for p in data["prospects"]:
         if p["id"] == prospect_id:
@@ -190,6 +202,7 @@ async def create_prospect(request: Request):
         "created_at": now,
         "updated_at": now,
     }
+    _created_prospects.insert(0, prospect)
     logger.info("Mock prospect created: %s %s (id=%s)", prospect["first_name"], prospect["last_name"], prospect["id"])
     return prospect
 
