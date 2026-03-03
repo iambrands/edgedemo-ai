@@ -303,6 +303,24 @@ export const portfolioReviewApi = {
       method: 'POST',
       body: { holdings, clientProfile },
     }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  save: (data: { prospect_id?: string; client_name: string; advisor_name?: string; holdings: any[]; analysis: any; file_name?: string }) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchApi<any>('/api/v1/portfolio-review/save', {
+      method: 'POST',
+      body: data,
+    }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  listSaved: () => fetchApi<{ portfolios: any[]; total: number }>('/api/v1/portfolio-review/saved'),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getSaved: (id: string) => fetchApi<any>(`/api/v1/portfolio-review/saved/${id}`),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getQuotes: (symbols: string[], portfolioId?: string) => {
+    const params = new URLSearchParams({ symbols: symbols.join(',') });
+    if (portfolioId) params.set('portfolio_id', portfolioId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return fetchApi<any>(`/api/v1/portfolio-review/quotes?${params}`);
+  },
 };
 
 // --- Health API ---

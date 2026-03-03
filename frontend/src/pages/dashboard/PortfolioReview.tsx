@@ -411,13 +411,35 @@ export default function PortfolioReview() {
     }
   };
 
-  // Auto-create prospect when analysis completes
+  const [savedPortfolioId, setSavedPortfolioId] = useState<string | null>(null);
+
+  const savePortfolioToBackend = async (prospectId?: string) => {
+    if (!analysis || !prospectInfo || savedPortfolioId) return;
+    try {
+      const result = await portfolioReviewApi.save({
+        prospect_id: prospectId,
+        client_name: `${prospectInfo.firstName} ${prospectInfo.lastName}`,
+        advisor_name: advisorName,
+        holdings: holdings,
+        analysis: analysis,
+        file_name: fileName ?? '',
+      });
+      setSavedPortfolioId(result.id);
+    } catch (err) {
+      console.error('Portfolio save failed:', err);
+    }
+  };
+
+  // Auto-create prospect + save portfolio when analysis completes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (analysis && prospectInfo && !prospectCreated && !prospectSaving) {
       saveProspect();
     }
-  }, [analysis]);
+    if (analysis && prospectInfo && !savedPortfolioId) {
+      savePortfolioToBackend(createdProspectId ?? undefined);
+    }
+  }, [analysis, createdProspectId]);
 
   // Pre-fill client name for PDF from prospect info
   useEffect(() => {

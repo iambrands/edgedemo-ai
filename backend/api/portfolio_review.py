@@ -1,12 +1,16 @@
 """
 Portfolio Review API — AI-powered analysis for uploaded CSV positions.
 Uses Anthropic Claude for analysis with intelligent mock fallback.
+Includes portfolio persistence and Alpha Vantage market data for live quotes.
 """
 import os
 import json
+import uuid
 import logging
+import random
+import httpx
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -364,3 +368,180 @@ async def analyze_portfolio(
         logger.error(f"AI analysis error: {e}", exc_info=True)
         logger.info("Falling back to mock analysis")
         return _generate_mock_analysis(payload.holdings, payload.clientProfile or "conservative but wants a bit of growth")
+
+
+# ---------------------------------------------------------------------------
+# In-memory portfolio store (replaced by DB in production)
+# ---------------------------------------------------------------------------
+
+_saved_portfolios: List[Dict[str, Any]] = []
+
+
+class SavePortfolioRequest(BaseModel):
+    prospect_id: Optional[str] = None
+    client_name: str
+    advisor_name: str = ""
+    holdings: List[PortfolioPosition]
+    analysis: Dict[str, Any]
+    file_name: str = ""
+
+
+@router.post("/save")
+async def save_portfolio(
+    payload: SavePortfolioRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Persist an analyzed portfolio so it can be viewed later."""
+    now = datetime.now(timezone.utc).isoformat()
+    total_value = sum(h.marketValue for h in payload.holdings)
+    total_cost = sum(h.costBasis for h in payload.holdings)
+    total_gain = total_value - total_cost
+
+    portfolio = {
+        "id": str(uuid.uuid4()),
+        "prospect_id": payload.prospect_id,
+        "client_name": payload.client_name,
+        "advisor_name": payload.advisor_name,
+        "file_name": payload.file_name,
+        "holdings": [h.model_dump() for h in payload.holdings],
+        "analysis": payload.analysis,
+        "total_value": total_value,
+        "total_cost": total_cost,
+        "total_gain": total_gain,
+        "holdings_count": len(payload.holdings),
+        "created_at": now,
+        "updated_at": now,
+    }
+    _saved_portfolios.insert(0, portfolio)
+    logger.info("Portfolio saved: %s (%d holdings, $%,.0f)", payload.client_name, len(payload.holdings), total_value)
+    return portfolio
+
+
+@router.get("/saved")
+async def list_saved_portfolios(
+    current_user: dict = Depends(get_current_user),
+):
+    """List all saved portfolios."""
+    return {"portfolios": _saved_portfolios, "total": len(_saved_portfolios)}
+
+
+@router.get("/saved/{portfolio_id}")
+async def get_saved_portfolio(
+    portfolio_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Get a specific saved portfolio with full holdings and analysis."""
+    for p in _saved_portfolios:
+        if p["id"] == portfolio_id:
+            return p
+    raise HTTPException(status_code=404, detail="Portfolio not found")
+
+
+# ---------------------------------------------------------------------------
+# Alpha Vantage live quotes with mock fallback
+# ---------------------------------------------------------------------------
+
+_AV_BASE = "https://www.alphavantage.co/query"
+_quote_cache: Dict[str, Dict[str, Any]] = {}
+
+
+def _get_alpha_vantage_key() -> Optional[str]:
+    return os.getenv("ALPHA_VANTAGE_API_KEY")
+
+
+async def _fetch_av_batch_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
+    """Fetch quotes from Alpha Vantage GLOBAL_QUOTE endpoint."""
+    api_key = _get_alpha_vantage_key()
+    if not api_key:
+        return {}
+
+    results: Dict[str, Dict[str, Any]] = {}
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for symbol in symbols[:25]:
+            if symbol in _quote_cache:
+                results[symbol] = _quote_cache[symbol]
+                continue
+            try:
+                resp = await client.get(_AV_BASE, params={
+                    "function": "GLOBAL_QUOTE",
+                    "symbol": symbol,
+                    "apikey": api_key,
+                })
+                data = resp.json()
+                gq = data.get("Global Quote", {})
+                if gq and gq.get("05. price"):
+                    quote = {
+                        "symbol": symbol,
+                        "price": float(gq.get("05. price", 0)),
+                        "change": float(gq.get("09. change", 0)),
+                        "change_pct": float(gq.get("10. change percent", "0").replace("%", "")),
+                        "volume": int(gq.get("06. volume", 0)),
+                        "previous_close": float(gq.get("08. previous close", 0)),
+                        "latest_day": gq.get("07. latest trading day", ""),
+                        "source": "alpha_vantage",
+                    }
+                    _quote_cache[symbol] = quote
+                    results[symbol] = quote
+            except Exception as e:
+                logger.warning("Alpha Vantage quote failed for %s: %s", symbol, e)
+    return results
+
+
+def _generate_mock_quotes(symbols: List[str], holdings: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """Generate realistic mock quotes based on original upload prices with small drift."""
+    results: Dict[str, Dict[str, Any]] = {}
+    price_map = {h["symbol"]: h.get("price", 100) for h in holdings}
+
+    for symbol in symbols:
+        base_price = price_map.get(symbol, 100.0)
+        drift = random.uniform(-0.04, 0.06)
+        current_price = round(base_price * (1 + drift), 2)
+        change = round(current_price - base_price, 2)
+        change_pct = round((change / base_price) * 100, 2) if base_price else 0.0
+        results[symbol] = {
+            "symbol": symbol,
+            "price": current_price,
+            "change": change,
+            "change_pct": change_pct,
+            "volume": random.randint(500000, 15000000),
+            "previous_close": base_price,
+            "latest_day": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "source": "mock",
+        }
+    return results
+
+
+@router.get("/quotes")
+async def get_position_quotes(
+    symbols: str,
+    portfolio_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get live quotes for a comma-separated list of symbols.
+    Uses Alpha Vantage when ALPHA_VANTAGE_API_KEY is set, otherwise mock data.
+    If portfolio_id is provided, uses original prices for realistic mock drift.
+    """
+    symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+    if not symbol_list:
+        raise HTTPException(status_code=400, detail="No symbols provided")
+
+    holdings: List[Dict[str, Any]] = []
+    if portfolio_id:
+        for p in _saved_portfolios:
+            if p["id"] == portfolio_id:
+                holdings = p.get("holdings", [])
+                break
+
+    live_quotes = await _fetch_av_batch_quotes(symbol_list)
+
+    missing = [s for s in symbol_list if s not in live_quotes]
+    if missing:
+        mock = _generate_mock_quotes(missing, holdings)
+        live_quotes.update(mock)
+
+    return {
+        "quotes": live_quotes,
+        "source": "alpha_vantage" if _get_alpha_vantage_key() else "mock",
+        "count": len(live_quotes),
+    }

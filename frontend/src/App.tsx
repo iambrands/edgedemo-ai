@@ -29,6 +29,7 @@ import {
   BestExecution,
   LearningCenter,
   PortfolioReview,
+  ClientPortfolios,
 } from './pages/dashboard';
 import {
   PortalLogin,
@@ -118,6 +119,7 @@ export default function App() {
         <Route path="messages" element={<ErrorBoundary><Messages /></ErrorBoundary>} />
         <Route path="best-execution" element={<ErrorBoundary><BestExecution /></ErrorBoundary>} />
         <Route path="portfolio-review" element={<ErrorBoundary><PortfolioReview /></ErrorBoundary>} />
+        <Route path="client-portfolios" element={<ErrorBoundary><ClientPortfolios /></ErrorBoundary>} />
         <Route path="learn" element={<ErrorBoundary><LearningCenter /></ErrorBoundary>} />
         <Route path="chat" element={<ErrorBoundary><Chat /></ErrorBoundary>} />
         <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
