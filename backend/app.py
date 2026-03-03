@@ -543,21 +543,24 @@ if "compliance_docs" not in [n for n in _ria_routers_mounted] and "compliance_do
         except Exception:
             pass
 
-# Mount B2C self-service routes
-try:
-    from backend.api.b2c.auth import router as b2c_auth_router
-    from backend.api.b2c.onboarding import router as b2c_onboarding_router
-    from backend.api.b2c.dashboard import router as b2c_dashboard_router
-    from backend.api.b2c.chat import router as b2c_chat_router
-    from backend.api.b2c.subscription import router as b2c_subscription_router
-    app.include_router(b2c_auth_router)
-    app.include_router(b2c_onboarding_router)
-    app.include_router(b2c_dashboard_router)
-    app.include_router(b2c_chat_router)
-    app.include_router(b2c_subscription_router)
-    logger.info("B2C API routes mounted")
-except Exception as e:
-    logger.warning("Could not mount B2C routes: %s", e)
+# Mount B2C self-service routes (DB required)
+if _db_available:
+    try:
+        from backend.api.b2c.auth import router as b2c_auth_router
+        from backend.api.b2c.onboarding import router as b2c_onboarding_router
+        from backend.api.b2c.dashboard import router as b2c_dashboard_router
+        from backend.api.b2c.chat import router as b2c_chat_router
+        from backend.api.b2c.subscription import router as b2c_subscription_router
+        app.include_router(b2c_auth_router)
+        app.include_router(b2c_onboarding_router)
+        app.include_router(b2c_dashboard_router)
+        app.include_router(b2c_chat_router)
+        app.include_router(b2c_subscription_router)
+        logger.info("B2C API routes mounted")
+    except Exception as e:
+        logger.warning("Could not mount B2C routes: %s", e)
+else:
+    logger.info("Skipping B2C routes (no DATABASE_URL)")
 
 
 # Pydantic models for request/response validation
