@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Eye,
   ArrowRight,
+  ArrowUpDown,
   ChevronDown,
   ChevronUp,
   DollarSign,
@@ -52,6 +53,8 @@ export function ClientPortfolios() {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesSource, setQuotesSource] = useState<string>('');
+  const [sortCol, setSortCol] = useState<string>('value');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     loadPortfolios();
@@ -126,6 +129,44 @@ export function ClientPortfolios() {
     const changePct = originalTotal > 0 ? (changeDollar / originalTotal) * 100 : 0;
     return { currentTotal, changeDollar, changePct };
   };
+
+  const handleSort = (col: string) => {
+    if (sortCol === col) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(col);
+      setSortDir(col === 'symbol' || col === 'description' || col === 'type' ? 'asc' : 'desc');
+    }
+  };
+
+  const getSortedHoldings = useCallback((holdings: any[]) => {
+    const sorted = [...holdings].sort((a: any, b: any) => {
+      const perfA = getPerformance(a);
+      const perfB = getPerformance(b);
+      let valA: number | string = 0;
+      let valB: number | string = 0;
+
+      switch (sortCol) {
+        case 'symbol': valA = a.symbol || ''; valB = b.symbol || ''; break;
+        case 'description': valA = a.description || ''; valB = b.description || ''; break;
+        case 'qty': valA = a.quantity || 0; valB = b.quantity || 0; break;
+        case 'upload': valA = a.price || 0; valB = b.price || 0; break;
+        case 'current': valA = perfA?.currentPrice ?? a.price ?? 0; valB = perfB?.currentPrice ?? b.price ?? 0; break;
+        case 'value': valA = perfA?.currentValue ?? a.marketValue ?? 0; valB = perfB?.currentValue ?? b.marketValue ?? 0; break;
+        case 'change': valA = perfA?.performancePct ?? 0; valB = perfB?.performancePct ?? 0; break;
+        case 'type': valA = a.securityType || ''; valB = b.securityType || ''; break;
+        default: valA = a.marketValue || 0; valB = b.marketValue || 0;
+      }
+
+      if (typeof valA === 'string') {
+        const cmp = valA.localeCompare(valB as string);
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      return sortDir === 'asc' ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
+    });
+    return sorted;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortCol, sortDir, quotes]);
 
   const generatePDFForPortfolio = (portfolio: any) => {
     const analysis = portfolio.analysis;
@@ -386,19 +427,35 @@ export function ClientPortfolios() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-slate-50 text-left">
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Symbol</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Description</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide text-right">Qty</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide text-right">Upload Price</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide text-right">Current</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide text-right">Value</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide text-right">Change</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">Type</th>
+                            {([
+                              { key: 'symbol', label: 'Symbol', align: 'left' },
+                              { key: 'description', label: 'Description', align: 'left' },
+                              { key: 'qty', label: 'Qty', align: 'right' },
+                              { key: 'upload', label: 'Upload Price', align: 'right' },
+                              { key: 'current', label: 'Current', align: 'right' },
+                              { key: 'value', label: 'Value', align: 'right' },
+                              { key: 'change', label: 'Change', align: 'right' },
+                              { key: 'type', label: 'Type', align: 'left' },
+                            ] as const).map(col => (
+                              <th
+                                key={col.key}
+                                className={`px-3 py-2.5 font-semibold text-xs uppercase tracking-wide cursor-pointer select-none hover:text-blue-600 transition-colors ${col.align === 'right' ? 'text-right' : ''} ${sortCol === col.key ? 'text-blue-600' : 'text-slate-600'}`}
+                                onClick={() => handleSort(col.key)}
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  {col.label}
+                                  {sortCol === col.key ? (
+                                    sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                  ) : (
+                                    <ArrowUpDown className="w-3 h-3 opacity-30" />
+                                  )}
+                                </span>
+                              </th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {(portfolio.holdings || [])
-                            .sort((a: any, b: any) => b.marketValue - a.marketValue)
+                          {getSortedHoldings(portfolio.holdings || [])
                             .map((h: any, idx: number) => {
                               const perf = getPerformance(h);
                               return (
