@@ -204,6 +204,14 @@ else:
 _ria_routers_mounted = []
 _ria_router_errors = []
 
+# Check if a real database is available — if not, DB-dependent routers will fail
+# at runtime even though they import successfully. We pre-detect this and force
+# mock fallbacks for DB routers.
+_db_url = os.getenv("DATABASE_URL", "")
+_db_available = bool(_db_url) and "localhost" not in _db_url and "user:pass@" not in _db_url
+if not _db_available:
+    logger.info("No production DATABASE_URL configured — DB-dependent routers will use mock fallbacks")
+
 # Health check for frontend connectivity and Railway
 @app.get("/api/health")
 async def api_health_check():
@@ -304,68 +312,33 @@ except Exception as e:
 # compliance.py (document reviews) take priority over compliance_docs.py's
 # generic list handler.  See registration below the RIA Platform API block.
 
-# Mount Liquidity Optimizer router
-try:
-    from backend.api.liquidity import router as liquidity_router
-    app.include_router(liquidity_router)
-    _ria_routers_mounted.append("liquidity")
-except Exception as e:
-    _ria_router_errors.append(f"liquidity: {type(e).__name__}: {e}")
-    logger.error("Failed to mount liquidity router: %s", e, exc_info=True)
+# DB-dependent routers — only mount if a real database is configured.
+# Without a database, these import fine but fail at runtime (500 errors).
+# Mock fallbacks are mounted later for any skipped routers.
+_db_routers = [
+    ("liquidity", "backend.api.liquidity"),
+    ("custodians", "backend.api.custodians"),
+    ("tax_harvest", "backend.api.tax_harvest"),
+    ("prospects", "backend.api.prospects"),
+    ("conversations", "backend.api.conversations"),
+    ("model_portfolios", "backend.api.model_portfolios"),
+    ("alternative_assets", "backend.api.alternative_assets"),
+]
 
-# Mount Multi-Custodian Aggregation router
-try:
-    from backend.api.custodians import router as custodians_router
-    app.include_router(custodians_router)
-    _ria_routers_mounted.append("custodians")
-except Exception as e:
-    _ria_router_errors.append(f"custodians: {type(e).__name__}: {e}")
-    logger.error("Failed to mount custodians router: %s", e, exc_info=True)
-
-# Mount Tax-Loss Harvesting router
-try:
-    from backend.api.tax_harvest import router as tax_harvest_router
-    app.include_router(tax_harvest_router)
-    _ria_routers_mounted.append("tax_harvest")
-except Exception as e:
-    _ria_router_errors.append(f"tax_harvest: {type(e).__name__}: {e}")
-    logger.error("Failed to mount tax_harvest router: %s", e, exc_info=True)
-
-# Mount Prospect Pipeline router
-try:
-    from backend.api.prospects import router as prospects_router
-    app.include_router(prospects_router)
-    _ria_routers_mounted.append("prospects")
-except Exception as e:
-    _ria_router_errors.append(f"prospects: {type(e).__name__}: {e}")
-    logger.error("Failed to mount prospects router: %s", e, exc_info=True)
-
-# Mount Conversation Intelligence router
-try:
-    from backend.api.conversations import router as conversations_router
-    app.include_router(conversations_router)
-    _ria_routers_mounted.append("conversations")
-except Exception as e:
-    _ria_router_errors.append(f"conversations: {type(e).__name__}: {e}")
-    logger.error("Failed to mount conversations router: %s", e, exc_info=True)
-
-# Mount Model Portfolio Marketplace router
-try:
-    from backend.api.model_portfolios import router as model_portfolios_router
-    app.include_router(model_portfolios_router)
-    _ria_routers_mounted.append("model_portfolios")
-except Exception as e:
-    _ria_router_errors.append(f"model_portfolios: {type(e).__name__}: {e}")
-    logger.error("Failed to mount model_portfolios router: %s", e, exc_info=True)
-
-# Mount Alternative Asset Tracking router
-try:
-    from backend.api.alternative_assets import router as alternative_assets_router
-    app.include_router(alternative_assets_router)
-    _ria_routers_mounted.append("alternative_assets")
-except Exception as e:
-    _ria_router_errors.append(f"alternative_assets: {type(e).__name__}: {e}")
-    logger.error("Failed to mount alternative_assets router: %s", e, exc_info=True)
+if _db_available:
+    for _name, _module in _db_routers:
+        try:
+            import importlib
+            _mod = importlib.import_module(_module)
+            app.include_router(_mod.router)
+            _ria_routers_mounted.append(_name)
+        except Exception as e:
+            _ria_router_errors.append(f"{_name}: {type(e).__name__}: {e}")
+            logger.error("Failed to mount %s router: %s", _name, e, exc_info=True)
+else:
+    for _name, _ in _db_routers:
+        _ria_router_errors.append(f"{_name}: no database configured")
+    logger.info("Skipping DB-dependent routers (no DATABASE_URL): %s", ", ".join(n for n, _ in _db_routers))
 
 # Mount RIA Onboarding Wizard router
 try:
@@ -478,34 +451,38 @@ if not _ria_routers_mounted and not _mock_mounted:
     logger.warning("No RIA demo routes could be mounted!")
 
 # Mount RIA Platform API v1 routers (DB required for analysis/chat/compliance)
-try:
-    from backend.api.dashboard import router as dashboard_router
-    from backend.api.households import router as households_router
-    from backend.api.accounts import router as accounts_router
-    from backend.api.analysis_extended import router as analysis_extended_router
-    from backend.api.compliance_dashboard import router as compliance_dashboard_router
-    app.include_router(dashboard_router)
-    app.include_router(households_router)
-    app.include_router(accounts_router)
-    app.include_router(analysis_extended_router)
-    app.include_router(compliance_dashboard_router)
-except Exception as e:
-    logger.warning("Could not mount dashboard/households/accounts: %s", e)
+if _db_available:
+    try:
+        from backend.api.dashboard import router as dashboard_router
+        from backend.api.households import router as households_router
+        from backend.api.accounts import router as accounts_router
+        from backend.api.analysis_extended import router as analysis_extended_router
+        from backend.api.compliance_dashboard import router as compliance_dashboard_router
+        app.include_router(dashboard_router)
+        app.include_router(households_router)
+        app.include_router(accounts_router)
+        app.include_router(analysis_extended_router)
+        app.include_router(compliance_dashboard_router)
+    except Exception as e:
+        logger.warning("Could not mount dashboard/households/accounts: %s", e)
+else:
+    logger.info("Skipping dashboard/households/accounts routers (no DATABASE_URL)")
 _portal_mounted = False
-try:
-    from backend.api.reports import router as reports_router
-    from backend.api.client_portal import router as client_portal_router
-    from backend.api.financial_planning import router as financial_planning_router
-    from backend.api.onboarding import router as onboarding_router
-    from backend.api.billing import router as billing_router
-    app.include_router(reports_router)
-    app.include_router(client_portal_router)
-    app.include_router(financial_planning_router)
-    app.include_router(onboarding_router)
-    app.include_router(billing_router)
-    _portal_mounted = True
-except Exception as e:
-    logger.warning("Could not mount reports/portal/planning/onboarding/billing: %s", e)
+if _db_available:
+    try:
+        from backend.api.reports import router as reports_router
+        from backend.api.client_portal import router as client_portal_router
+        from backend.api.financial_planning import router as financial_planning_router
+        from backend.api.onboarding import router as onboarding_router
+        from backend.api.billing import router as billing_router
+        app.include_router(reports_router)
+        app.include_router(client_portal_router)
+        app.include_router(financial_planning_router)
+        app.include_router(onboarding_router)
+        app.include_router(billing_router)
+        _portal_mounted = True
+    except Exception as e:
+        logger.warning("Could not mount reports/portal/planning/onboarding/billing: %s", e)
 
 # Mount mock portal API if the real DB-backed portal could not be loaded
 if not _portal_mounted:
@@ -515,49 +492,56 @@ if not _portal_mounted:
         logger.info("Mock portal API mounted (no DB available)")
     except Exception as e2:
         logger.warning("Could not mount mock portal API: %s", e2)
-try:
-    from backend.api.statements import router as statements_router
-    from backend.api.analysis import router as analysis_router
-    from backend.api.chat import router as chat_router
-    from backend.api.compliance import router as compliance_router
-    from backend.api.portfolio_builder import router as portfolio_builder_router
-    from backend.api.ips_generator import router as ips_router
-    app.include_router(statements_router)
-    app.include_router(analysis_router)
-    app.include_router(chat_router)
-    app.include_router(compliance_router)
-    app.include_router(portfolio_builder_router)
-    app.include_router(ips_router)
-    logger.info("RIA Platform API v1 routes mounted")
-except Exception as e:
-    logger.warning("Could not mount RIA API routes (DB/config): %s", e)
+if _db_available:
+    try:
+        from backend.api.statements import router as statements_router
+        from backend.api.analysis import router as analysis_router
+        from backend.api.chat import router as chat_router
+        from backend.api.compliance import router as compliance_router
+        from backend.api.portfolio_builder import router as portfolio_builder_router
+        from backend.api.ips_generator import router as ips_router
+        app.include_router(statements_router)
+        app.include_router(analysis_router)
+        app.include_router(chat_router)
+        app.include_router(compliance_router)
+        app.include_router(portfolio_builder_router)
+        app.include_router(ips_router)
+        logger.info("RIA Platform API v1 routes mounted")
+    except Exception as e:
+        logger.warning("Could not mount RIA API routes (DB/config): %s", e)
+        _ria_router_errors.append(f"analysis: {type(e).__name__}: {e}")
+else:
+    logger.info("Skipping statements/analysis/chat/compliance routers (no DATABASE_URL)")
+    _ria_router_errors.append("analysis: no database configured")
 
 # Mount Compliance Documents router (ADV Part 2B, Form CRS)
-# Registered AFTER the compliance router so /api/v1/compliance/documents
-# review endpoints take priority for the base GET path.
-try:
-    from backend.api.compliance_docs import router as compliance_docs_router
-    app.include_router(compliance_docs_router)
-    _ria_routers_mounted.append("compliance_docs")
-except Exception as e:
-    _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
-    logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
-    # Mount mock compliance docs as fallback
-    if "compliance_docs" not in _mock_mounted:
+if _db_available:
+    try:
+        from backend.api.compliance_docs import router as compliance_docs_router
+        app.include_router(compliance_docs_router)
+        _ria_routers_mounted.append("compliance_docs")
+    except Exception as e:
+        _ria_router_errors.append(f"compliance_docs: {type(e).__name__}: {e}")
+        logger.error("Failed to mount compliance_docs router: %s", e, exc_info=True)
+else:
+    _ria_router_errors.append("compliance_docs: no database configured")
+
+# Mount mock compliance docs if the real one wasn't loaded
+if "compliance_docs" not in [n for n in _ria_routers_mounted] and "compliance_docs" not in _mock_mounted:
+    try:
+        from backend.api.mock_endpoints import compliance_docs_router as mock_cdocs
+    except ImportError:
         try:
-            from backend.api.mock_endpoints import compliance_docs_router as mock_cdocs
+            from api.mock_endpoints import compliance_docs_router as mock_cdocs
         except ImportError:
-            try:
-                from api.mock_endpoints import compliance_docs_router as mock_cdocs
-            except ImportError:
-                mock_cdocs = None
-        if mock_cdocs:
-            try:
-                app.include_router(mock_cdocs)
-                _mock_mounted.append("compliance_docs")
-                logger.info("Mock compliance_docs router mounted")
-            except Exception:
-                pass
+            mock_cdocs = None
+    if mock_cdocs:
+        try:
+            app.include_router(mock_cdocs)
+            _mock_mounted.append("compliance_docs")
+            logger.info("Mock compliance_docs router mounted")
+        except Exception:
+            pass
 
 # Mount B2C self-service routes
 try:
