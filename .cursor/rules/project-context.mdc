@@ -1,0 +1,37 @@
+---
+description: Core project context for the Edge RIA platform — tech stack, architecture, auth, branding, and deployment
+alwaysApply: true
+---
+
+# Edge Platform Context
+
+## Tech Stack
+- **Frontend**: React 18 + TypeScript, Vite, Tailwind CSS, Playwright E2E tests
+- **Backend**: FastAPI (Python 3.11), SQLAlchemy async models, Pydantic v2
+- **Deployment**: Railway (Dockerfile builder), GitHub repo `iambrands/edgedemo-ai`
+- **Production URL**: `https://edgedemo-ai-production.up.railway.app`
+
+## Architecture
+- No production database yet — all DB-dependent routers use **mock data fallbacks**
+- `backend/app.py` checks `_db_available` at startup; if false, skips real routers and mounts mock versions from `backend/api/mock_endpoints.py`
+- Mock portal API at `backend/api/mock_portal.py` serves client portal data
+- Frontend SPA served by FastAPI's `StaticFiles` mount from `frontend/dist/`
+
+## Auth
+- **RIA Login**: `backend/api/auth.py` — standalone JWT (bcrypt + python-jose), no DB needed
+- **Client Portal**: `backend/services/portal_auth_service.py` — separate JWT for portal users
+- **Demo credential**: `leslie@iabadvisors.com` / `CreateWealth2026$`
+
+## Branding
+- Product name is **Edge** (not "EdgeAI")
+- Colors: blue (`#2563EB`), white, green (`#10B981`)
+- Left sidebar nav has blue background with collapsible menu groups
+- AI chat widget floats bottom-right on every dashboard page
+
+## Key Directories
+- `frontend/src/pages/dashboard/` — RIA advisor pages
+- `frontend/src/pages/portal/` — Client portal pages
+- `frontend/src/components/ui/` — Shared UI primitives (Card, Button, Badge, etc.)
+- `backend/api/` — FastAPI routers
+- `backend/api/mock_endpoints.py` — Mock data for all DB-dependent features
+- `frontend/e2e/` — Playwright E2E tests

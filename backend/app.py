@@ -421,6 +421,96 @@ except Exception as e:
     _ria_router_errors.append(f"portfolio_review: {type(e).__name__}: {e}")
     logger.error("Failed to mount portfolio_review router: %s", e, exc_info=True)
 
+# Mount Custodian Data Integration router
+try:
+    from backend.api.custodian_integration import router as custodian_integration_router
+    app.include_router(custodian_integration_router)
+    _ria_routers_mounted.append("custodian_integration")
+except Exception as e:
+    _ria_router_errors.append(f"custodian_integration: {type(e).__name__}: {e}")
+    logger.error("Failed to mount custodian_integration router: %s", e, exc_info=True)
+
+# Mount Portfolio Accounting / Performance router
+try:
+    from backend.api.portfolio_accounting import router as portfolio_accounting_router
+    app.include_router(portfolio_accounting_router)
+    _ria_routers_mounted.append("portfolio_accounting")
+except Exception as e:
+    _ria_router_errors.append(f"portfolio_accounting: {type(e).__name__}: {e}")
+    logger.error("Failed to mount portfolio_accounting router: %s", e, exc_info=True)
+
+# Mount Document Vault router
+try:
+    from backend.api.document_vault import router as document_vault_router
+    app.include_router(document_vault_router)
+    _ria_routers_mounted.append("document_vault")
+except Exception as e:
+    _ria_router_errors.append(f"document_vault: {type(e).__name__}: {e}")
+    logger.error("Failed to mount document_vault router: %s", e, exc_info=True)
+
+# Mount Firm Management (Multi-Advisor RBAC) router
+try:
+    from backend.api.firm_management import router as firm_management_router
+    app.include_router(firm_management_router)
+    _ria_routers_mounted.append("firm_management")
+except Exception as e:
+    _ria_router_errors.append(f"firm_management: {type(e).__name__}: {e}")
+    logger.error("Failed to mount firm_management router: %s", e, exc_info=True)
+
+# Mount Rebalancing Engine router
+try:
+    from backend.api.rebalancing_engine import router as rebalancing_engine_router
+    app.include_router(rebalancing_engine_router)
+    _ria_routers_mounted.append("rebalancing_engine")
+except Exception as e:
+    _ria_router_errors.append(f"rebalancing_engine: {type(e).__name__}: {e}")
+    logger.error("Failed to mount rebalancing_engine router: %s", e, exc_info=True)
+
+# Mount Financial Planning router
+try:
+    from backend.api.financial_planning import router as fin_planning_router
+    app.include_router(fin_planning_router)
+    _ria_routers_mounted.append("financial_planning")
+except Exception as e:
+    _ria_router_errors.append(f"financial_planning: {type(e).__name__}: {e}")
+    logger.error("Failed to mount financial_planning router: %s", e, exc_info=True)
+
+# Mount Communication Archiving router
+try:
+    from backend.api.comm_archiving import router as comm_archiving_router
+    app.include_router(comm_archiving_router)
+    _ria_routers_mounted.append("comm_archiving")
+except Exception as e:
+    _ria_router_errors.append(f"comm_archiving: {type(e).__name__}: {e}")
+    logger.error("Failed to mount comm_archiving router: %s", e, exc_info=True)
+
+# Mount Engagement Analytics router
+try:
+    from backend.api.engagement_analytics import router as engagement_analytics_router
+    app.include_router(engagement_analytics_router)
+    _ria_routers_mounted.append("engagement_analytics")
+except Exception as e:
+    _ria_router_errors.append(f"engagement_analytics: {type(e).__name__}: {e}")
+    logger.error("Failed to mount engagement_analytics router: %s", e, exc_info=True)
+
+# Mount CRM Integrations router
+try:
+    from backend.api.crm_integrations import router as crm_integrations_router
+    app.include_router(crm_integrations_router)
+    _ria_routers_mounted.append("crm_integrations")
+except Exception as e:
+    _ria_router_errors.append(f"crm_integrations: {type(e).__name__}: {e}")
+    logger.error("Failed to mount crm_integrations router: %s", e, exc_info=True)
+
+# Mount Direct Indexing router
+try:
+    from backend.api.direct_indexing import router as direct_indexing_router
+    app.include_router(direct_indexing_router)
+    _ria_routers_mounted.append("direct_indexing")
+except Exception as e:
+    _ria_router_errors.append(f"direct_indexing: {type(e).__name__}: {e}")
+    logger.error("Failed to mount direct_indexing router: %s", e, exc_info=True)
+
 if _ria_routers_mounted:
     logger.info("RIA demo routes mounted: %s", ", ".join(_ria_routers_mounted))
 
@@ -472,12 +562,10 @@ if _db_available:
     try:
         from backend.api.reports import router as reports_router
         from backend.api.client_portal import router as client_portal_router
-        from backend.api.financial_planning import router as financial_planning_router
         from backend.api.onboarding import router as onboarding_router
         from backend.api.billing import router as billing_router
         app.include_router(reports_router)
         app.include_router(client_portal_router)
-        app.include_router(financial_planning_router)
         app.include_router(onboarding_router)
         app.include_router(billing_router)
         _portal_mounted = True

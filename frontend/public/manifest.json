@@ -1,0 +1,19 @@
+{
+  "name": "Edge Wealth Platform",
+  "short_name": "Edge",
+  "description": "AI-powered wealth management platform for independent RIAs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f2744",
+  "theme_color": "#0f2744",
+  "orientation": "any",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

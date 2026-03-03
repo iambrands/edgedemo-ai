@@ -1,0 +1,30 @@
+---
+description: Security standards — secrets, headers, auth, credential handling
+alwaysApply: true
+---
+
+# Security Standards
+
+## Secrets
+- NEVER hardcode API keys, passwords, or tokens in source code
+- NEVER commit `.env`, `.env.backup`, `.env.bak`, or `credentials.json`
+- All secrets must be environment variables set in Railway dashboard
+- JWT secrets warn (not crash) if default values are used in production
+
+## Auth
+- RIA auth: bcrypt password hashing via `backend/api/auth.py`
+- Demo credentials hint: only show in `import.meta.env.DEV` mode
+- Mock API keys displayed in UI must be masked: `edge_sk_live_••••••••`
+
+## HTTP Security Headers
+`backend/app.py` middleware adds these to all responses:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: SAMEORIGIN`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+## CORS
+- Explicit origin list — no `*` wildcards
+- `RAILWAY_PUBLIC_DOMAIN` appended automatically if set
+- Dev origins: `localhost:5173`, `localhost:3000`

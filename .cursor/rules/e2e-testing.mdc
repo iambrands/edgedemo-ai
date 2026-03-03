@@ -1,0 +1,43 @@
+---
+description: Playwright E2E test conventions — selectors, auth helpers, common pitfalls
+globs: frontend/e2e/**/*.ts
+alwaysApply: false
+---
+
+# E2E Testing (Playwright)
+
+## Auth Helpers
+```typescript
+import { loginAsRIA } from '../helpers/auth';      // RIA dashboard
+import { loginAsClient } from '../helpers/auth';    // Client portal
+import { navigateAndVerify } from '../helpers/navigation';
+```
+
+## Selector Rules
+- Use `getByRole('tab', { name: /.../ })` for tab elements, NOT `getByRole('button')`
+- Use `getByRole('button', { name: /.../ })` with specific names to avoid strict violations
+- When text matches multiple elements, use `.first()` or narrow with role
+- Prefer `aria-label` selectors for icon buttons: `page.locator('button[aria-label="Send message"]')`
+
+## Strict Mode
+Playwright strict mode fails when a locator matches multiple elements:
+```typescript
+// BAD — matches button text AND toast text
+await expect(page.getByText(/copied/i)).toBeVisible();
+
+// GOOD — scoped to specific role
+await expect(page.getByRole('button', { name: /copied/i })).toBeVisible();
+```
+
+## API Mocking
+Tests mock API responses via route interception in `e2e/fixtures/` or inline:
+```typescript
+await page.route('**/api/v1/prospects', route =>
+  route.fulfill({ json: mockProspects })
+);
+```
+
+## Config
+- Base URL: `http://localhost:5173` (Vite dev server, auto-started by Playwright)
+- `webServer.reuseExistingServer: true` — won't restart if already running
+- Retries: 2, timeout: 10s per action

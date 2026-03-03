@@ -30,6 +30,16 @@ import {
   LearningCenter,
   PortfolioReview,
   ClientPortfolios,
+  CustodianFeeds,
+  PerformanceAccounting,
+  DocumentVault,
+  FirmManagement,
+  RebalancingEngine,
+  FinancialPlanning,
+  CommArchive,
+  EngagementAnalytics,
+  CRMIntegrations,
+  DirectIndexing,
 } from './pages/dashboard';
 import {
   PortalLogin,
@@ -120,6 +130,16 @@ export default function App() {
         <Route path="best-execution" element={<ErrorBoundary><BestExecution /></ErrorBoundary>} />
         <Route path="portfolio-review" element={<ErrorBoundary><PortfolioReview /></ErrorBoundary>} />
         <Route path="client-portfolios" element={<ErrorBoundary><ClientPortfolios /></ErrorBoundary>} />
+        <Route path="custodian-feeds" element={<ErrorBoundary><CustodianFeeds /></ErrorBoundary>} />
+        <Route path="performance" element={<ErrorBoundary><PerformanceAccounting /></ErrorBoundary>} />
+        <Route path="document-vault" element={<ErrorBoundary><DocumentVault /></ErrorBoundary>} />
+        <Route path="firm-management" element={<ErrorBoundary><FirmManagement /></ErrorBoundary>} />
+        <Route path="rebalancing" element={<ErrorBoundary><RebalancingEngine /></ErrorBoundary>} />
+        <Route path="financial-planning" element={<ErrorBoundary><FinancialPlanning /></ErrorBoundary>} />
+        <Route path="comm-archive" element={<ErrorBoundary><CommArchive /></ErrorBoundary>} />
+        <Route path="engagement" element={<ErrorBoundary><EngagementAnalytics /></ErrorBoundary>} />
+        <Route path="crm-integrations" element={<ErrorBoundary><CRMIntegrations /></ErrorBoundary>} />
+        <Route path="direct-indexing" element={<ErrorBoundary><DirectIndexing /></ErrorBoundary>} />
         <Route path="learn" element={<ErrorBoundary><LearningCenter /></ErrorBoundary>} />
         <Route path="chat" element={<ErrorBoundary><Chat /></ErrorBoundary>} />
         <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />

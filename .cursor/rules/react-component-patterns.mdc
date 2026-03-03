@@ -1,0 +1,32 @@
+---
+description: React/TypeScript component conventions — UI library, navigation, accessibility
+globs: frontend/src/**/*.tsx
+alwaysApply: false
+---
+
+# React Component Patterns
+
+## UI Primitives
+Use shared components from `frontend/src/components/ui/`:
+- `Card` (sizes: sm, md, lg), `Button` (variants: primary, secondary, danger)
+- `Badge`, `Tabs`/`TabPanel`, `Modal`
+- `useToast()` hook for notifications: `toast.success()`, `toast.error()`
+
+## Navigation
+- RIA sidebar: `frontend/src/components/dashboard/Sidebar.tsx` — collapsible menu groups
+- Client portal sidebar: `frontend/src/components/portal/PortalNav.tsx`
+- Add new pages to groups in sidebar config, not as top-level items
+
+## Styling
+- Tailwind CSS only — no CSS modules or styled-components
+- Blue/white/green brand palette: `blue-600`, `emerald-500`, `slate-*` for neutrals
+- Sidebar background: `bg-gradient-to-b from-[#1e3a5f] to-[#0f2744]`
+
+## Accessibility
+- Add `aria-label` to all icon-only buttons (required for E2E test selectors)
+- Use semantic HTML: `role="tab"` for tabs, `role="tabpanel"` for content
+- Buttons that change text (e.g., "Copy" → "Copied!") need stable `aria-label`
+
+## Error Handling
+- Wrap async clipboard/API calls in try/catch for headless browser compatibility
+- Use error boundaries for page-level crash protection

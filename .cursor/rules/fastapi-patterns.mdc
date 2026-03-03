@@ -1,0 +1,42 @@
+---
+description: FastAPI backend patterns — router registration, mock fallback, DB guards
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# FastAPI Patterns
+
+## Router Registration
+Every router in `backend/app.py` uses try/except with `_ria_router_errors` tracking:
+
+```python
+try:
+    from backend.api.my_feature import router as my_feature_router
+    app.include_router(my_feature_router)
+    _ria_routers_mounted.append("my_feature")
+except Exception as e:
+    _ria_router_errors.append(f"my_feature: {type(e).__name__}: {e}")
+```
+
+## DB-Dependent Routers
+If a router uses `get_db_session` or `get_db`, it MUST be guarded by `_db_available`:
+
+```python
+if _db_available:
+    # mount real router
+else:
+    _ria_router_errors.append("my_feature: no database configured")
+```
+
+Failed features automatically get mock fallbacks from `ALL_MOCK_ROUTERS` in `mock_endpoints.py`.
+
+## Adding Mock Data
+When creating a new DB-dependent feature, also add mock data:
+1. Add a mock router in `backend/api/mock_endpoints.py` with the same prefix/routes
+2. Register it in the `ALL_MOCK_ROUTERS` list at the bottom of that file
+3. Add the feature name to `_db_routers` list in `backend/app.py`
+
+## Router Prefix Convention
+- RIA features: `/api/v1/{feature-name}` (kebab-case)
+- Portal: `/api/v1/portal/{feature}`
+- B2C: `/api/v1/b2c/{feature}`

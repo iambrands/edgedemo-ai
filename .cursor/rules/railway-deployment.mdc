@@ -1,0 +1,31 @@
+---
+description: Railway deployment configuration — Dockerfile, env vars, troubleshooting
+globs: Dockerfile,railway.toml,backend/app.py
+alwaysApply: false
+---
+
+# Railway Deployment
+
+## Build
+- Uses **Dockerfile** (multi-stage): Node.js builds frontend → Python serves everything
+- Builder is set to `NIXPACKS` with `dockerfilePath: "Dockerfile"` via Railway service config
+- Do NOT create `nixpacks.toml` — it conflicts with Dockerfile builds
+
+## Environment Variables (set in Railway dashboard)
+- `ANTHROPIC_API_KEY` — AI features
+- `JWT_SECRET_KEY` — RIA auth (warns if default in production)
+- `PORTAL_JWT_SECRET` — Client portal auth
+- `TRADIER_API_KEY` — Stock screener data
+- No `DATABASE_URL` — all features use mock data fallbacks
+
+## Deployment Flow
+1. Push to `main` branch on GitHub
+2. Railway auto-deploys from `iambrands/edgedemo-ai`
+3. Health check: `GET /api/health` must return 200
+4. Frontend SPA served from `/` catch-all route
+
+## Common Issues
+- **500 on DB-dependent routes**: Router imported fine but crashes at runtime. Fix: add to `_db_routers` list in `app.py` so mock fallback is used
+- **Frontend not served**: Check that Dockerfile is being used (not Railpack). Verify via `railway logs`
+- **405 Method Not Allowed**: Router failed to mount — check `_ria_router_errors` in startup logs
+- **CORS errors**: `RAILWAY_PUBLIC_DOMAIN` env var auto-added to allowed origins

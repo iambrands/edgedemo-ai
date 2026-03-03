@@ -31,6 +31,17 @@ import {
   MessageCircle,
   ShieldCheck,
   GraduationCap,
+  Database,
+  TrendingUp,
+  FileSignature,
+  Building2,
+  RefreshCw,
+  Calculator,
+  Archive,
+  Activity,
+  Plug,
+  Layers,
+  Target,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -68,6 +79,8 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/dashboard/bulk-import', icon: Upload, label: 'Bulk Import' },
       { to: '/dashboard/prospects', icon: UserPlus, label: 'Prospects' },
       { to: '/dashboard/crm', icon: Contact, label: 'CRM' },
+      { to: '/dashboard/crm-integrations', icon: Plug, label: 'CRM Integrations' },
+      { to: '/dashboard/engagement', icon: Activity, label: 'Engagement' },
     ],
   },
   {
@@ -77,13 +90,24 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard/portfolio-review', icon: FileBarChart, label: 'Portfolio Review' },
       { to: '/dashboard/client-portfolios', icon: Briefcase, label: 'Client Portfolios' },
+      { to: '/dashboard/performance', icon: TrendingUp, label: 'Performance' },
       { to: '/dashboard/analysis', icon: BarChart3, label: 'Analysis' },
+      { to: '/dashboard/rebalancing', icon: RefreshCw, label: 'Rebalancing' },
+      { to: '/dashboard/direct-indexing', icon: Layers, label: 'Direct Indexing' },
       { to: '/dashboard/screener', icon: Search, label: 'Stock Screener' },
       { to: '/dashboard/model-portfolios', icon: PieChart, label: 'Model Portfolios' },
       { to: '/dashboard/trading', icon: ArrowUpDown, label: 'Trading' },
       { to: '/dashboard/tax-harvest', icon: Scissors, label: 'Tax Harvest' },
       { to: '/dashboard/alternative-assets', icon: Landmark, label: 'Alt Assets' },
       { to: '/dashboard/best-execution', icon: ShieldCheck, label: 'Best Execution' },
+    ],
+  },
+  {
+    id: 'planning',
+    label: 'Financial Planning',
+    icon: Target,
+    items: [
+      { to: '/dashboard/financial-planning', icon: Calculator, label: 'Planning' },
     ],
   },
   {
@@ -97,6 +121,8 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/dashboard/meetings', icon: Video, label: 'Meetings' },
       { to: '/dashboard/liquidity', icon: DollarSign, label: 'Liquidity' },
       { to: '/dashboard/custodians', icon: Link2, label: 'Custodians' },
+      { to: '/dashboard/custodian-feeds', icon: Database, label: 'Data Feeds' },
+      { to: '/dashboard/document-vault', icon: FileSignature, label: 'Document Vault' },
     ],
   },
   {
@@ -106,6 +132,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard/compliance', icon: Shield, label: 'Dashboard' },
       { to: '/dashboard/compliance-docs', icon: FileText, label: 'Documents' },
+      { to: '/dashboard/comm-archive', icon: Archive, label: 'Comm. Archive' },
     ],
   },
   {
@@ -115,6 +142,14 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/dashboard/messages', icon: MessageCircle, label: 'Messages' },
       { to: '/dashboard/conversations', icon: MessageSquareText, label: 'Conversations' },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'Administration',
+    icon: Building2,
+    items: [
+      { to: '/dashboard/firm-management', icon: Building2, label: 'Firm Management' },
     ],
   },
 ];

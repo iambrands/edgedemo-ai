@@ -1,0 +1,35 @@
+---
+description: API endpoint conventions — routing, models, responses, error handling
+globs: backend/api/**/*.py
+alwaysApply: false
+---
+
+# API Conventions
+
+## Routing
+- All routes prefixed with `/api/v1/`
+- Use kebab-case for multi-word paths: `/api/v1/tax-harvest`, `/api/v1/best-execution`
+- Every router must set `tags=["feature-name"]` for OpenAPI docs grouping
+
+## Request/Response Models
+- Use Pydantic `BaseModel` for all request bodies and responses
+- Use `response_model=` parameter on route decorators
+- Use `Field(description="...")` for OpenAPI documentation
+
+## Error Handling
+```python
+from fastapi import HTTPException
+
+# Validation errors → 422 (automatic via Pydantic)
+# Auth failures → 401
+# Not found → 404
+# Business logic errors → 400
+raise HTTPException(status_code=400, detail="Descriptive error message")
+```
+
+## Mock Data Pattern
+Mock endpoints return realistic data with consistent IDs (UUID format):
+```python
+"id": "c1000000-0000-4000-8000-000000000001"
+```
+Use `datetime.now()` for relative dates to keep demo data fresh.
