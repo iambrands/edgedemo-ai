@@ -382,10 +382,13 @@ export default function PortfolioReview() {
     });
   };
 
+  const [prospectSaving, setProspectSaving] = useState(false);
+
   const saveProspect = async () => {
-    if (!prospectInfo || prospectCreated) return;
+    if (!prospectInfo || prospectCreated || prospectSaving) return;
+    setProspectSaving(true);
     try {
-      const result = await createProspect({
+      const payload = {
         first_name: prospectInfo.firstName,
         last_name: prospectInfo.lastName,
         email: prospectInfo.email || undefined,
@@ -395,19 +398,23 @@ export default function PortfolioReview() {
         estimated_aum: totalValue,
         notes: prospectInfo.notes || `Portfolio review: ${fileName} (${holdings.length} holdings, ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue)})`,
         tags: ['portfolio-review'],
-      });
+      };
+      const result = await createProspect(payload);
       setProspectCreated(true);
       setCreatedProspectId(result.id);
       toast.success(`Prospect created — ${prospectInfo.firstName} ${prospectInfo.lastName} added to your pipeline`);
-    } catch {
+    } catch (err) {
+      console.error('Prospect creation failed:', err);
       toast.error('Failed to create prospect. You can add them manually from the Prospects page.');
+    } finally {
+      setProspectSaving(false);
     }
   };
 
   // Auto-create prospect when analysis completes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (analysis && prospectInfo && !prospectCreated) {
+    if (analysis && prospectInfo && !prospectCreated && !prospectSaving) {
       saveProspect();
     }
   }, [analysis]);
@@ -435,7 +442,7 @@ export default function PortfolioReview() {
           <td style="text-align:right">${h.quantity.toLocaleString()}</td>
           <td style="text-align:right">${fmt(h.marketValue)}</td>
           <td style="text-align:right">${fmt(h.costBasis)}</td>
-          <td style="text-align:right; color:${h.gainLossDollar >= 0 ? '#16a34a' : '#dc2626'}">${fmt(h.gainLossDollar)}</td>
+          <td style="text-align:right" class="${h.gainLossDollar >= 0 ? 'gain' : 'loss'}">${fmt(h.gainLossDollar)}</td>
           <td>${h.securityType}</td>
         </tr>
       `).join('');
@@ -445,7 +452,7 @@ export default function PortfolioReview() {
         <td>${r.name}</td>
         <td style="text-align:right">${r.percentage.toFixed(1)}%</td>
         <td style="text-align:right">${r.threshold}%</td>
-        <td class="${r.severity === 'high' ? 'fail' : r.severity === 'moderate' ? 'warning' : 'pass'}">${r.severity.toUpperCase()}</td>
+        <td class="severity-${r.severity}">${r.severity.toUpperCase()}</td>
         <td>${r.recommendation}</td>
       </tr>
     `).join('');
@@ -466,96 +473,121 @@ export default function PortfolioReview() {
 
     const recRows = analysis.recommendations.map(r => `
       <tr>
-        <td class="${r.priority === 'high' ? 'fail' : r.priority === 'medium' ? 'warning' : 'pass'}">${r.priority.toUpperCase()}</td>
+        <td class="severity-${r.priority === 'medium' ? 'moderate' : r.priority}">${r.priority.toUpperCase()}</td>
         <td><strong>${r.action}</strong></td>
         <td>${r.ticker}</td>
         <td>${r.rationale}</td>
       </tr>
     `).join('');
 
-    const riskColor = analysis.riskScore <= 35 ? '#16a34a' : analysis.riskScore <= 65 ? '#d97706' : '#dc2626';
+    const riskLevel = analysis.riskScore <= 35 ? 'low' : analysis.riskScore <= 65 ? 'moderate' : 'high';
 
     const html = `
-      <div style="text-align:center; padding:60px 0 40px; border-bottom:3px solid #1e3a5f;">
-        <h1 style="font-size:32px; color:#1e3a5f; margin:0;">Portfolio Review Report</h1>
-        <p style="font-size:18px; color:#6b7280; margin:12px 0 4px;">Prepared for <strong>${name}</strong></p>
-        <p style="font-size:14px; color:#9ca3af;">Prepared by ${advisor} &mdash; ${date}</p>
+      <div class="report-header">
+        <div class="logo-row">
+          <div class="logo-mark">E</div>
+          <div class="logo-text">Edge</div>
+        </div>
+        <h1>Portfolio Review Report</h1>
+        <div class="subtitle">Comprehensive AI-Powered Portfolio Analysis</div>
+        <div class="meta-row">
+          <span><strong>Prepared for:</strong> ${name}</span>
+          <span><strong>Advisor:</strong> ${advisor}</span>
+          <span><strong>Date:</strong> ${date}</span>
+        </div>
+      </div>
+
+      <div class="metrics-bar">
+        <div class="metric">
+          <div class="metric-value">${fmt(totalValue)}</div>
+          <div class="metric-label">Portfolio Value</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value" style="color:${totalGain >= 0 ? '#16a34a' : '#dc2626'}">
+            ${totalGain >= 0 ? '+' : ''}${gainPct.toFixed(1)}%
+          </div>
+          <div class="metric-label">Total Return</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">${holdings.length}</div>
+          <div class="metric-label">Holdings</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value"><span class="risk-badge risk-${riskLevel}">${analysis.riskScore}</span></div>
+          <div class="metric-label">Risk Score</div>
+        </div>
       </div>
 
       <h2>Executive Summary</h2>
-      <div class="summary-box"><p>${analysis.executiveSummary}</p></div>
-
-      <h2>Portfolio Overview</h2>
-      <div class="summary-grid">
-        <div class="summary-item">
-          <div class="summary-value" style="color:#1e3a5f;">${fmt(totalValue)}</div>
-          <div class="summary-label">Total Value</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-value" style="color:${totalGain >= 0 ? '#16a34a' : '#dc2626'};">
-            ${fmt(totalGain)} (${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(1)}%)
-          </div>
-          <div class="summary-label">Total Gain / Loss</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-value">${holdings.length}</div>
-          <div class="summary-label">Total Holdings</div>
-        </div>
-      </div>
+      <div class="info-box"><p>${analysis.executiveSummary}</p></div>
 
       <h2>Risk Assessment</h2>
-      <div class="summary-box">
-        <p style="font-size:20px; font-weight:700; color:${riskColor};">Risk Score: ${analysis.riskScore} / 100</p>
+      <div class="info-box">
+        <p style="margin-bottom:8px"><strong>Overall Risk Score:</strong>
+          <span class="risk-badge risk-${riskLevel}" style="margin-left:8px">${analysis.riskScore} / 100 &mdash; ${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} Risk</span>
+        </p>
         <p>${analysis.riskExplanation}</p>
       </div>
 
-      <h2>Concentration Analysis</h2>
       ${analysis.concentrationRisks.length > 0 ? `
+      <h3>Concentration Risks</h3>
       <table>
-        <thead><tr><th>Position</th><th>Weight</th><th>Threshold</th><th>Severity</th><th>Recommendation</th></tr></thead>
+        <thead><tr><th>Position</th><th style="text-align:right">Weight</th><th style="text-align:right">Threshold</th><th>Severity</th><th>Recommendation</th></tr></thead>
         <tbody>${concRows}</tbody>
-      </table>` : '<p>No significant concentration risks identified.</p>'}
+      </table>` : ''}
 
-      <h2>Asset Allocation: Current vs. Recommended</h2>
-      <p>${analysis.allocationAssessment.commentary}</p>
+      <h2>Asset Allocation</h2>
+      <div class="info-box"><p>${analysis.allocationAssessment.commentary}</p></div>
       <table>
-        <thead><tr><th>Asset Class</th><th>Current</th><th>Recommended</th><th>Difference</th></tr></thead>
+        <thead><tr><th>Asset Class</th><th style="text-align:right">Current</th><th style="text-align:right">Recommended</th><th style="text-align:right">Difference</th></tr></thead>
         <tbody>${allocRows}</tbody>
       </table>
 
-      <h2>Reallocation Recommendations</h2>
+      <h2>Recommendations</h2>
       <table>
         <thead><tr><th>Priority</th><th>Action</th><th>Ticker</th><th>Rationale</th></tr></thead>
         <tbody>${recRows}</tbody>
       </table>
 
-      <h2>Fee Analysis</h2>
-      <div class="summary-box">
-        <p><strong>Estimated Annual Fees:</strong> ${fmt(analysis.feeAnalysis.totalEstimatedFees)}</p>
-        <p>${analysis.feeAnalysis.commentary}</p>
+      <div class="two-col">
+        <div>
+          <h2>Fee Analysis</h2>
+          <div class="info-box">
+            <p style="font-size:14pt; font-weight:700; color:#0f2744; margin-bottom:6px">${fmt(analysis.feeAnalysis.totalEstimatedFees)} <span style="font-size:9pt; font-weight:400; color:#6b7280">est. annual</span></p>
+            <p>${analysis.feeAnalysis.commentary}</p>
+          </div>
+        </div>
+        <div>
+          <h2>Tax Efficiency</h2>
+          <div class="info-box"><p>${analysis.taxEfficiency}</p></div>
+        </div>
       </div>
 
-      <h2>Tax Efficiency</h2>
-      <div class="summary-box"><p>${analysis.taxEfficiency}</p></div>
-
       <h2>Income Assessment</h2>
-      <div class="summary-box"><p>${analysis.incomeAssessment}</p></div>
+      <div class="info-box"><p>${analysis.incomeAssessment}</p></div>
 
-      <h2 style="page-break-before:always;">Complete Holdings</h2>
+      <div class="page-break"></div>
+      <h2>Complete Holdings Detail</h2>
       <table>
-        <thead><tr><th>Symbol</th><th>Description</th><th>Qty</th><th>Market Value</th><th>Cost Basis</th><th>Gain/Loss</th><th>Type</th></tr></thead>
+        <thead><tr><th>Symbol</th><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Market Value</th><th style="text-align:right">Cost Basis</th><th style="text-align:right">Gain/Loss</th><th>Type</th></tr></thead>
         <tbody>${holdingsRows}</tbody>
       </table>
 
-      <div style="page-break-before:always; font-size:11px; color:#6b7280; margin-top:40px; border-top:1px solid #e5e7eb; padding-top:20px;">
-        <h2 style="font-size:14px;">Important Disclosures</h2>
+      <div class="report-footer">
+        <p class="brand">Edge &mdash; AI-Powered Wealth Management Platform</p>
+        <p>IAB Advisors, Inc. &bull; Report generated ${date} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p>Confidential &mdash; Prepared exclusively for ${name}</p>
+      </div>
+
+      <div class="disclosures">
+        <h3 style="font-size:8pt; color:#9ca3af; margin-bottom:6px;">IMPORTANT DISCLOSURES</h3>
         <p>This report is generated by the Edge Platform using AI-powered analysis and is intended for informational purposes only.
         It does not constitute investment advice, a solicitation, or a recommendation to buy, sell, or hold any security.</p>
         <p>Past performance is not indicative of future results. All investments carry risk, including the potential loss of principal.
         The AI analysis is based on the portfolio positions provided and may not account for all factors relevant to investment decisions.
         Investors should consult with a qualified financial advisor before making investment decisions.</p>
         <p>Securities and investment advisory services may be offered through a registered broker-dealer and/or registered investment adviser.
-        Insurance products are offered through licensed insurance agencies.</p>
+        Member FINRA/SIPC. Insurance products are offered through licensed insurance agencies.</p>
       </div>
     `;
 
@@ -1016,6 +1048,27 @@ export default function PortfolioReview() {
       {/* ── AI Analysis Results ──────────────────────────────────── */}
       {analysis && !isAnalyzing && (
         <>
+          {/* Prospect Creation Banner */}
+          {prospectCreated && prospectInfo && (
+            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3.5">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div className="flex-1">
+                <span className="text-sm font-semibold text-emerald-800">
+                  {prospectInfo.firstName} {prospectInfo.lastName} added to your prospect pipeline
+                </span>
+                <span className="text-sm text-emerald-600 ml-1">
+                  — {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue)} AUM
+                </span>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/prospects')}
+                className="flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg"
+              >
+                View Prospects <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Risk Score + Executive Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, FileText, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, Clock, RefreshCw, ArrowRight, UserPlus, Lightbulb } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -37,6 +38,7 @@ const SUPPORTED_BROKERAGES = [
 
 export function Statements() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [statements, setStatements] = useState<ParsedStatement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,6 +209,30 @@ export function Statements() {
         </div>
       </Card>
 
+      {/* Workflow Tip */}
+      <Card size="sm">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-blue-50">
+            <Lightbulb className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-900">Want to create a prospect from an uploaded file?</p>
+            <p className="text-sm text-slate-600 mt-1">
+              Use <strong>Portfolio Review</strong> to upload a portfolio CSV, run AI analysis, and automatically add the client as a prospect in your pipeline.
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/dashboard/portfolio-review')}
+            className="shrink-0"
+          >
+            <UserPlus className="w-4 h-4 mr-1" />
+            Portfolio Review
+          </Button>
+        </div>
+      </Card>
+
       {/* Recently Parsed Statements */}
       <Card>
         <div className="flex items-center justify-between mb-4">
@@ -225,6 +251,7 @@ export function Statements() {
               <TableHead>Date</TableHead>
               <TableHead>Confidence</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -255,6 +282,14 @@ export function Statements() {
                     {getStatusIcon(statement.status)}
                     <span className="capitalize text-sm">{statement.status}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => navigate('/dashboard/portfolio-review')}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Run Analysis <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </TableCell>
               </TableRow>
             ))}
