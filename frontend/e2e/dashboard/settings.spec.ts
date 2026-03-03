@@ -27,7 +27,7 @@ test.describe('Settings Page', () => {
     await expect(copyBtn).toBeVisible();
     await copyBtn.click();
     await page.waitForTimeout(500);
-    await expect(page.getByText(/copied/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /copied/i })).toBeVisible();
   });
 
   test('preference toggles are interactive', async ({ page }) => {

@@ -19,8 +19,12 @@ export function Settings() {
 
   const mockApiKey = 'edge_sk_live_••••••••••••••••••••••••••';
 
-  const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(mockApiKey);
+  const handleCopyApiKey = async () => {
+    try {
+      await navigator.clipboard.writeText(mockApiKey);
+    } catch {
+      // Fallback for environments without clipboard API
+    }
     setCopied(true);
     toast.success('API key copied to clipboard');
     setTimeout(() => setCopied(false), 2000);

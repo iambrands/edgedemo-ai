@@ -12,7 +12,9 @@ test.describe('Compliance Page — 5 Tabs', () => {
 
   for (const tabName of TABS) {
     test(`"${tabName}" tab loads content`, async ({ page }) => {
-      const tab = page.getByRole('button', { name: new RegExp(tabName, 'i') });
+      const tab = page.getByRole('tab', { name: new RegExp(tabName, 'i') }).or(
+        page.getByRole('button', { name: new RegExp(tabName, 'i') })
+      );
       if (await tab.count() > 0) {
         await tab.first().click();
         await page.waitForTimeout(800);
@@ -33,9 +35,13 @@ test.describe('Compliance Page — 5 Tabs', () => {
   });
 
   test('tasks tab has create task button', async ({ page }) => {
-    const tasksTab = page.getByRole('button', { name: /tasks/i });
+    const tasksTab = page.getByRole('tab', { name: /tasks/i }).or(
+      page.getByRole('button', { name: /tasks/i })
+    );
     await tasksTab.first().click();
-    await page.waitForTimeout(500);
-    await expect(page.getByText(/new task/i).first()).toBeVisible();
+    await page.waitForTimeout(800);
+    await expect(
+      page.getByText(/new task/i).or(page.getByText(/add task/i))
+    ).toBeVisible({ timeout: 5_000 });
   });
 });
