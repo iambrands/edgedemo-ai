@@ -22,6 +22,8 @@ try:
 except ImportError:
     from api.auth import get_current_user
 
+_now = datetime.now(timezone.utc)
+
 
 # ---------------------------------------------------------------------------
 # Monte Carlo Engine

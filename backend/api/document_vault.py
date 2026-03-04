@@ -138,6 +138,19 @@ async def list_documents(
     return {"documents": docs, "summary": summary}
 
 
+@router.get("/categories")
+async def list_categories(current_user: dict = Depends(get_current_user)):
+    return {
+        "categories": [
+            {"id": "agreements", "label": "Agreements & IPS", "icon": "FileSignature"},
+            {"id": "compliance", "label": "Compliance (ADV, CRS)", "icon": "Shield"},
+            {"id": "statements", "label": "Statements & Reports", "icon": "FileText"},
+            {"id": "tax", "label": "Tax Documents", "icon": "Receipt"},
+            {"id": "account_forms", "label": "Account Forms", "icon": "ClipboardList"},
+        ]
+    }
+
+
 @router.get("/{document_id}")
 async def get_document(document_id: str, current_user: dict = Depends(get_current_user)):
     for d in MOCK_DOCUMENTS + _uploaded_docs:
@@ -233,16 +246,3 @@ async def list_pending_signatures(current_user: dict = Depends(get_current_user)
          "viewed_at": (_now - timedelta(hours=4)).isoformat(), "signed_at": None},
     ]
     return {"pending": mock_pending + pending, "total": len(mock_pending) + len(pending)}
-
-
-@router.get("/categories")
-async def list_categories(current_user: dict = Depends(get_current_user)):
-    return {
-        "categories": [
-            {"id": "agreements", "label": "Agreements & IPS", "icon": "FileSignature"},
-            {"id": "compliance", "label": "Compliance (ADV, CRS)", "icon": "Shield"},
-            {"id": "statements", "label": "Statements & Reports", "icon": "FileText"},
-            {"id": "tax", "label": "Tax Documents", "icon": "Receipt"},
-            {"id": "account_forms", "label": "Account Forms", "icon": "ClipboardList"},
-        ]
-    }
