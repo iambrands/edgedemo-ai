@@ -49,6 +49,23 @@ async def test():
             ('GET', '/api/v1/portal/dashboard'),
             ('GET', '/api/v1/portal/goals'),
             ('GET', '/api/v1/portal/notifications'),
+            # Compliance Co-Pilot
+            ('GET', '/api/v1/compliance/dashboard'),
+            ('GET', '/api/v1/compliance/alerts'),
+            ('GET', '/api/v1/compliance/tasks'),
+            ('GET', '/api/v1/compliance/audit-trail'),
+            # Competitive gap features
+            ('GET', '/api/v1/custodian-feeds/connections'),
+            ('GET', '/api/v1/performance/firm/summary'),
+            ('GET', '/api/v1/documents'),
+            ('GET', '/api/v1/firm/profile'),
+            ('GET', '/api/v1/firm/advisors'),
+            ('GET', '/api/v1/rebalancing/drift'),
+            ('GET', '/api/v1/planning/estate/hh-001'),
+            ('GET', '/api/v1/archive/dashboard'),
+            ('GET', '/api/v1/engagement/dashboard'),
+            ('GET', '/api/v1/crm-integrations/integrations'),
+            ('GET', '/api/v1/direct-indexing/indices'),
         ]
         fails = 0
         for method, path in endpoints:

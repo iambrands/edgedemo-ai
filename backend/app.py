@@ -271,6 +271,15 @@ except Exception as e:
     _ria_router_errors.append(f"compliance: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_compliance router: %s", e, exc_info=True)
 
+# Mount compliance dashboard (mock data — no DB required)
+try:
+    from backend.api.compliance_dashboard import router as compliance_dashboard_router
+    app.include_router(compliance_dashboard_router)
+    _ria_routers_mounted.append("compliance_dashboard")
+except Exception as e:
+    _ria_router_errors.append(f"compliance_dashboard: {type(e).__name__}: {e}")
+    logger.error("Failed to mount compliance_dashboard router: %s", e, exc_info=True)
+
 # Mount RIA chat router
 try:
     from backend.api.ria_chat import router as ria_chat_router
@@ -547,12 +556,10 @@ if _db_available:
         from backend.api.households import router as households_router
         from backend.api.accounts import router as accounts_router
         from backend.api.analysis_extended import router as analysis_extended_router
-        from backend.api.compliance_dashboard import router as compliance_dashboard_router
         app.include_router(dashboard_router)
         app.include_router(households_router)
         app.include_router(accounts_router)
         app.include_router(analysis_extended_router)
-        app.include_router(compliance_dashboard_router)
     except Exception as e:
         logger.warning("Could not mount dashboard/households/accounts: %s", e)
 else:
