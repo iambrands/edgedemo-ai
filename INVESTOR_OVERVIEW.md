@@ -4,18 +4,18 @@
 
 Edge is a comprehensive wealth management platform designed to enhance efficiency for Registered Investment Advisors (RIAs). The platform consolidates portfolio analysis, client management, compliance automation, trading, tax optimization, billing, reporting, communication, and AI-powered intelligence into a single unified experience — eliminating the need for 6-10 disconnected tools that most advisory firms use today.
 
-**Status:** Production-deployed platform with 45+ features across 26 RIA dashboard pages and 19 client portal pages  
+**Status:** Production-deployed platform with 57+ features across 38 RIA dashboard pages and 19 client portal pages  
 **Tech Stack:** FastAPI (Python), React 18 + TypeScript, Tailwind CSS, OpenAI GPT-4, Playwright E2E testing  
 **Deployment:** Railway (production), with Docker support for self-hosted infrastructure  
-**Tests:** 82+ E2E smoke tests passing, full TypeScript type coverage
+**Tests:** 293 Playwright E2E tests passing, full TypeScript type coverage
 
 ---
 
 ## Platform Architecture
 
-### RIA Dashboard (26 Pages)
+### RIA Dashboard (38 Pages)
 
-Organized into 6 menu groups with sub-menus:
+Organized into 8 menu groups with sub-menus:
 
 **Client Management**
 - Households — Multi-account family groupings with aggregated views
@@ -32,6 +32,13 @@ Organized into 6 menu groups with sub-menus:
 - Tax-Loss Harvesting — Opportunity scanning, wash sale detection, replacement suggestions
 - Alternative Assets — PE/VC fund tracking, capital calls, J-curve analytics, waterfall distributions
 - Best Execution — Trade quality monitoring, NBBO comparison, broker performance, compliance attestation
+- Client Portfolios — Live portfolio view with real-time quotes, sortable holdings
+- Performance & Accounting — TWRR/MWRR calculations, Brinson-Fachler attribution, firm/account/household views
+- Rebalancing Engine — Automated drift detection, tax-aware trade generation, rebalancing history
+- Direct Indexing — Personalized index construction, ESG exclusions, continuous tax-loss harvesting
+
+**Financial Planning**
+- Planning — Multi-goal tracking, Monte Carlo simulations (1,000 iterations), Social Security optimization (ages 62-70), Roth conversion ladder analysis, estate planning summary
 
 **Operations**
 - Report Builder — Custom report templates, drag-and-drop sections, PDF generation
@@ -41,15 +48,23 @@ Organized into 6 menu groups with sub-menus:
 - Meeting Intelligence — Calendar integration, AI meeting prep, transcription, action items
 - Liquidity Planning — Withdrawal projections, RMD calculations, cash flow analysis
 - Custodian Connections — Multi-custodian aggregation via OAuth (Schwab, Fidelity, Pershing, etc.)
+- Custodian Data Feeds — Real-time integration with Schwab, Fidelity, Pershing, Vanguard via Plaid or direct feeds
+- Document Vault — Secure storage, DocuSign e-signature tracking, SEC-compliant retention, category management
 
 **Compliance**
 - Compliance Dashboard — Scoring, alerts, tasks, audit trail
 - Compliance Documents — ADV Part 2B, Form CRS generation and versioning
 - Workflow Templates — 6 pre-built workflows (New Client, Annual Review, Death of Client/Spouse, Divorce, Rollover Processing, Account Closure)
+- Communication Archiving — SEC Rule 17a-4 compliant archiving of email, SMS, portal messages, video meetings
 
 **Communication**
 - Secure Messages — Encrypted advisor-client messaging with thread management
 - Conversation Intelligence — Call/meeting analysis, sentiment detection, compliance flag monitoring
+
+**Administration**
+- Firm Management — Multi-advisor hierarchy, RBAC (7 roles), team management, audit log
+- Engagement Analytics — Client engagement scoring, at-risk identification, portal adoption tracking, NPS insights
+- CRM Integrations — Bidirectional sync with Salesforce, Redtail, Wealthbox; field mapping, sync history
 
 **AI Features**
 - Floating AI Chat — Always-available assistant for portfolio questions, meeting prep, client narratives
@@ -101,6 +116,8 @@ Organized into 6 menu groups with sub-menus:
 - **Order Management:** Trade creation, review, and execution workflow
 - **Automated Rebalancing:** Drift detection against model portfolios with one-click rebalance
 - **Best Execution Monitoring:** NBBO comparison, price improvement tracking, broker performance scoring
+- **Automated Rebalancing Engine:** Drift detection across all accounts, threshold-based flagging, tax-aware trade generation with lot selection (FIFO, specific ID, tax-optimized), batch execution
+- **Direct Indexing:** Personalized S&P 500/Russell 1000 indices with ESG/values exclusions, continuous tax-loss harvesting with wash sale checks, tracking error monitoring
 
 ### 5. Compliance Automation
 - **Compliance Dashboard:** Real-time scoring, alert generation, and task management
@@ -108,12 +125,14 @@ Organized into 6 menu groups with sub-menus:
 - **Workflow Templates:** 6 pre-built workflows for common advisory events (New Client, Annual Review, Death of Client/Spouse, Divorce, Rollover Processing, Account Closure)
 - **Audit Trail:** Timestamped logging of all compliance-relevant actions
 - **Conversation Intelligence:** AI-powered monitoring of advisor-client communications for compliance flags
+- **Communication Archiving:** SEC Rule 17a-4 compliant retention of all communications (email, SMS, portal, video), keyword flagging, supervisory review, integrity verification
+- **Engagement Analytics:** Client engagement scoring to identify at-risk relationships, portal adoption tracking, NPS measurement, proactive outreach recommendations
 
 ### 6. Client Management
 - **Household Aggregation:** Multi-account family groupings with unified portfolio views
 - **Bulk Import:** CSV-based onboarding for migrating entire client books
 - **Prospect Pipeline:** Lead scoring, activity tracking, and AI-generated proposals
-- **CRM Integration:** Bidirectional sync with Salesforce, Redtail, or Wealthbox
+- **CRM Integration:** Bidirectional sync with Salesforce, Redtail, and Wealthbox with configurable field mappings, sync history, and OAuth connection management
 - **Diverse Retirement Plans:** Full support for 401(k), 403(b), 457(b), TSP, IRA variants, SIMPLE IRA, Inherited IRA, pension rollovers — designed for clients from all occupations (teachers, government employees, military, etc.)
 
 ### 7. Reporting & Billing
@@ -152,6 +171,18 @@ Organized into 6 menu groups with sub-menus:
 - **Capital Calls & Distributions:** Pending call tracking, payment workflow, distribution recording
 - **Performance Analytics:** J-curve visualization, waterfall distribution modeling, IRR/MOIC calculations
 - **Document Management:** K-1 tracking, subscription agreements, side letters
+
+### 13. Financial Planning
+- **Multi-Goal Tracking:** Track retirement, education, emergency fund, and custom goals with probability of success, monthly contributions, and target dates
+- **Monte Carlo Simulation:** 1,000-iteration simulations with configurable assumptions (return, volatility, inflation, spending) producing success rate, median/P10/P90 outcomes
+- **Social Security Optimization:** Compare claiming strategies for ages 62-70 with monthly benefit, lifetime benefit, and break-even analysis
+- **Roth Conversion Analysis:** Multi-year ladder analysis with marginal tax rates, projected savings, and optimal conversion schedule
+- **Estate Planning:** Estate value summary, document inventory (will, trust, POA, healthcare directive), beneficiary overview, and estate tax exposure
+
+### 14. Firm Administration
+- **Multi-Advisor Hierarchy:** Support for 7 role types (Firm Owner, Senior Advisor, Financial Advisor, Associate Advisor, Operations Manager, CCO, Paraplanner) with granular permissions
+- **Team Management:** Create advisor teams with lead designation, track combined AUM, and manage team assignments
+- **Firm Audit Log:** Comprehensive activity log of all firm-level actions with timestamps, actors, and affected entities
 
 ---
 
@@ -193,7 +224,7 @@ Organized into 6 menu groups with sub-menus:
 - **State:** React hooks (useState, useEffect, useContext)
 - **Icons:** Lucide React (consistent icon library)
 - **Charts:** Chart.js for interactive visualizations
-- **Testing:** Playwright E2E (82+ tests), TypeScript strict checking
+- **Testing:** Playwright E2E (293 tests), TypeScript strict checking
 
 ### Deployment
 - **Production:** Railway with automatic deploys from GitHub
@@ -232,7 +263,7 @@ Organized into 6 menu groups with sub-menus:
 ## Market Positioning
 
 ### Competitive Advantages
-1. **All-in-One Platform:** 45+ features vs. competitors' 10-15
+1. **All-in-One Platform:** 57+ features vs. competitors' 10-15
 2. **AI-Powered Intelligence:** GPT-4-driven analysis, chat, narratives, and compliance review
 3. **Modern UX:** Professional blue/white/green design with grouped menus, floating chat, responsive layout
 4. **Comprehensive Onboarding:** Supports every retirement plan type including 403(b), 457(b), TSP, pension rollovers
@@ -304,26 +335,31 @@ Organized into 6 menu groups with sub-menus:
 - E2E test suite (82+ tests)
 - Branded UI (blue/white/green with grouped sidebar menus)
 - Diverse retirement plan support (401k, 403b, 457b, TSP, pension)
+- Performance accounting engine (TWRR/MWRR/Brinson-Fachler attribution)
+- Automated rebalancing engine with drift detection
+- Direct indexing with tax-loss harvesting
+- Monte Carlo simulation and financial planning suite
+- Social Security and Roth conversion optimization
+- Document vault with DocuSign e-signature integration
+- SEC-compliant communication archiving
+- Multi-advisor firm management with RBAC
+- Client engagement analytics dashboard
+- Salesforce/Redtail/Wealthbox CRM integrations
+- Mobile PWA with offline support
+- Custodian data feeds (Schwab, Fidelity, Pershing, Vanguard)
+- 293 Playwright E2E tests (up from 82+)
 
-### Phase 2: API Integration (Next 4-8 Weeks)
-- Tradier integration for live stock screener data and trading
-- Plaid integration for custodian account aggregation
+### Phase 2: Live API Integration (Next 4-8 Weeks)
+- Tradier integration for live stock screener data and trading execution
+- Plaid integration for live custodian account aggregation
 - Stripe integration for live billing and payment processing
 - SendGrid integration for report email delivery
 - Nylas integration for calendar sync
 
 ### Phase 3: Advanced Capabilities (8-16 Weeks)
-- PDF report export with branding
-- DocuSign e-signature integration
+- PDF report export with white-label branding
 - Stream real-time messaging backend
-- Monte Carlo simulation for retirement projections
-- Mobile-responsive optimizations
-
-### Phase 4: Enterprise Features (16+ Weeks)
-- White-label solution for wealth management firms
-- Public API for third-party integrations
-- Advanced analytics (VaR, stress testing, correlation)
-- Salesforce/Redtail bidirectional CRM sync
+- Advanced analytics (VaR, stress testing, correlation matrices)
 - Native iOS/Android applications
 
 ---
@@ -351,10 +387,13 @@ Organized into 6 menu groups with sub-menus:
 
 | Metric | Value |
 |---|---|
-| RIA Dashboard Pages | 26 |
+| RIA Dashboard Pages | 38 |
 | Client Portal Pages | 19 |
-| Total Features | 45+ |
-| E2E Tests | 82+ |
+| Total Features | 57+ |
+| E2E Tests | 293 |
+| Financial Planning Tools | 5 (Goals, Monte Carlo, SS, Roth, Estate) |
+| Custodian Feeds | 4 (Schwab, Fidelity, Pershing, Vanguard) |
+| CRM Integrations | 3 (Salesforce, Redtail, Wealthbox) |
 | Video Lessons (RIA) | 35 across 9 courses |
 | Video Lessons (Client) | 20 across 7 courses |
 | Video Script Minutes | ~135 min |
@@ -398,6 +437,6 @@ Organized into 6 menu groups with sub-menus:
 
 ---
 
-*Document Version: 2.0*  
-*Last Updated: February 2026*  
+*Document Version: 3.0*  
+*Last Updated: March 2026*  
 *Prepared for: Investor Communications & Platform Overview*

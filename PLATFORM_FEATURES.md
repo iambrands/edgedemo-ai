@@ -6,15 +6,17 @@
 
 ## Table of Contents
 
-**Part 1: RIA Advisor Portal** (26 pages)
+**Part 1: RIA Advisor Portal** (38 pages)
 1. [Dashboard](#1-dashboard)
 2. [Client Management](#client-management) — Households, Accounts, Bulk Import, Prospects, CRM
-3. [Investing](#investing) — Analysis, Stock Screener, Model Portfolios, Trading, Tax Harvest, Alt Assets, Best Execution
-4. [Operations](#operations) — Reports, Statements, Billing, Meetings, Liquidity, Custodians
-5. [Compliance](#compliance) — Dashboard, Documents, Workflows
-6. [Communication](#communication) — Messages, Conversations
-7. [AI & Learning](#ai--learning) — AI Chat Widget, Learning Center
-8. [Settings](#settings)
+3. [Investing](#investing) — Analysis, Stock Screener, Model Portfolios, Trading, Tax Harvest, Alt Assets, Best Execution, Client Portfolios, Performance & Accounting, Rebalancing Engine, Direct Indexing
+4. [Financial Planning](#financial-planning) — Goals, Monte Carlo, Social Security, Roth Conversion, Estate
+5. [Operations](#operations) — Reports, Statements, Billing, Meetings, Liquidity, Custodians, Data Feeds, Document Vault
+6. [Compliance](#compliance) — Dashboard, Documents, Workflows, Communication Archiving
+7. [Communication](#communication) — Messages, Conversations
+8. [Administration](#administration) — Firm Management, Engagement Analytics, CRM Integrations
+9. [AI & Learning](#ai--learning) — AI Chat Widget, Learning Center
+10. [Settings](#settings)
 
 **Part 2: Client Portal** (19 pages)
 1. [Client Dashboard](#client-dashboard)
@@ -203,6 +205,68 @@ Each tool runs against client portfolio data and returns AI-generated insights w
 - **Broker Comparison:** Performance cards for each executing broker showing average price improvement, fill rate, and execution speed
 - **Quarterly Attestation:** Compliance attestation card with last attestation date and "Attest Now" button
 
+### Client Portfolios
+
+**What it does:** Live portfolio view with real-time market quotes and sortable holdings.
+
+- **Per-Household View:** Select a household to see all accounts and positions
+- **Live Quotes:** Real-time price data from Alpha Vantage API
+- **Sortable Columns:** Click any column header (Symbol, Shares, Price, Value, Gain/Loss, Weight) to sort ASC/DESC
+- **Portfolio Metrics:** Total value, day change, unrealized gain/loss at a glance
+- **Persistence:** Portfolio data saved to local storage for offline access
+
+### Performance & Accounting
+
+**What it does:** Institutional-grade performance measurement with TWRR and MWRR calculations.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Firm Overview** | Total AUM, YTD firm return, number of accounts and households |
+| **Account Performance** | Per-account TWRR, MWRR, Sharpe ratio, max drawdown, and daily NAV series |
+| **Attribution** | Brinson-Fachler sector-level attribution — allocation effect, selection effect, and interaction |
+
+- Supports household-level aggregation for family performance reporting
+- Period selection: 1M, 3M, 6M, YTD, 1Y, 3Y, 5Y, ALL
+
+### Rebalancing Engine
+
+**What it does:** Automated portfolio rebalancing with drift detection and tax-aware trade generation.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Drift Analysis** | Identifies accounts exceeding drift thresholds from model targets, showing max drift percentage and model assignment |
+| **Generated Trades** | Tax-aware buy/sell orders with lot selection (FIFO, specific ID, tax-optimized), showing estimated tax impact per trade |
+| **History** | Log of all rebalancing events with date, accounts affected, trades executed, and tax impact |
+
+- Select flagged accounts individually or "Select All Flagged"
+- Toggle Tax-Aware mode for tax-sensitive rebalancing
+- Release trades for execution after review
+
+### Direct Indexing
+
+**What it does:** Personalized index construction with ESG/values-based exclusions and continuous tax-loss harvesting.
+
+- **Custom Index Summary:** Active indices with tracking error, YTD return vs. benchmark, and tax alpha
+- **Index Detail:** Holdings count, sector weights, active exclusions (e.g., Tobacco, Firearms, Fossil Fuel Extraction), and custom tilts (e.g., Technology +5%, Healthcare +3%)
+- **Tax-Loss Harvesting:** Harvested losses YTD, harvest opportunities count, wash sale compliance
+- **Tracking Error:** Basis-point level tracking against benchmark (S&P 500, Russell 1000, etc.)
+
+---
+
+## Financial Planning
+
+### Planning
+
+**What it does:** Comprehensive financial planning with Monte Carlo simulations, goal tracking, and tax strategy analysis.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Goals** | Multi-goal tracking (Retirement, College Fund, Vacation Home, Emergency Fund) with target amount, current progress, monthly contribution, and probability of success. Overall plan score (0-100). |
+| **Monte Carlo** | Run Monte Carlo simulations (1,000 iterations) with configurable inputs — current assets, annual contribution, years to retire, years in retirement, spending, expected return, volatility, and inflation. Returns success rate, median/P10/P90 wealth outcomes. |
+| **Social Security** | Optimization scenarios for claiming ages 62-70, showing monthly benefit, lifetime benefit, and break-even analysis |
+| **Roth Conversion** | Multi-year Roth conversion ladder analysis — annual conversion amount, marginal tax rate, projected tax savings, and optimal conversion schedule |
+| **Estate** | Estate plan summary — total estate value, documents (will, trust, POA, healthcare directive), beneficiary summary, and estate tax exposure estimate |
+
 ---
 
 ## Operations
@@ -282,6 +346,30 @@ Each tool runs against client portfolio data and returns AI-generated insights w
 - Automated sync with configurable refresh intervals
 - Connection management — disconnect, re-authenticate, force sync
 
+### Custodian Data Feeds
+
+**What it does:** Real-time custodian data integration with Schwab, Fidelity, Pershing, and Vanguard via Plaid or direct feeds.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Connections** | All custodian connections with status (Active, Syncing, Error, Pending), sync frequency, accounts linked, last/next sync time, and connection type (direct feed vs. Plaid) |
+| **Accounts** | All accounts across all connected custodians with account number, type, balance, and last updated timestamp |
+| **Reconciliation** | Reconciliation history showing date, status (matched, break, pending), discrepancy amount, and resolution notes |
+
+- Supported custodians: Charles Schwab, Fidelity, Pershing, Vanguard
+- Trigger manual sync per connection
+- Disconnect or re-authenticate connections
+
+### Document Vault
+
+**What it does:** Secure document storage with e-signature tracking and SEC-compliant retention.
+
+- **Summary Cards:** Total documents, signed documents count, pending signatures count, e-signature provider status (DocuSign)
+- **Document List:** Searchable and filterable by category (Agreements & IPS, Compliance, Statements, Tax, Account Forms)
+- **Upload:** Upload new documents with category assignment
+- **E-Signature:** Send documents for DocuSign e-signature, track pending signatures with signer name, sent date, viewed date
+- **Pending Signatures Tab:** Dedicated view for all outstanding signature requests
+
 ---
 
 ## Compliance
@@ -323,6 +411,20 @@ Each workflow tracks progress per task, assigns team members, and logs completio
 - **Preview:** HTML preview of the document before publishing
 - **Archive:** Move outdated versions to archive while maintaining access for audits
 
+### Communication Archiving
+
+**What it does:** SEC Rule 17a-4 compliant archiving of all advisor-client communications.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Dashboard** | Summary statistics — total archived messages, messages archived today, flagged messages requiring review, channels monitored |
+| **Messages** | Searchable archive of all communications filtered by channel (email, SMS, portal, video, chat). Each message shows subject, sender, recipient, timestamp, and flagged keywords. |
+| **Retention Policies** | Active retention policies per channel — email (6 years per SEC Rule 17a-4), SMS (3 years), portal messages (6 years), video recordings (3 years) |
+
+- Keyword flagging for compliance-sensitive terms (guarantee, promise, no risk, etc.)
+- Integrity verification using message hashes
+- Supervisory review workflow for flagged communications
+
 ---
 
 ## Communication
@@ -348,6 +450,49 @@ Each workflow tracks progress per task, assigns team members, and logs completio
 | **Compliance** | Flagged conversations with potential compliance issues — each flag shows the transcript excerpt, risk category, and recommended action |
 | **Actions** | AI-extracted action items from conversations with assignee, due date, and status |
 | **Detail** | Individual conversation view with full transcript, sentiment timeline, key topics, and compliance assessment |
+
+---
+
+## Administration
+
+### Firm Management
+
+**What it does:** Multi-advisor firm hierarchy with role-based access control and team administration.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Advisors** | List of all team members with name, role, title, email, households managed, AUM, and last login. Add new advisors. |
+| **Teams** | Advisor teams with lead designation, member count, and combined AUM |
+| **Roles** | Role-based access control — Firm Owner (full access), Senior Advisor, Financial Advisor, Associate Advisor, Operations Manager, Chief Compliance Officer, Paraplanner, each with specific permissions |
+| **Audit Log** | Timestamped log of all firm-level actions — who did what, when, and affected entity |
+
+- Firm profile header showing firm name, total AUM, household count, and team size
+
+### Engagement Analytics
+
+**What it does:** Track client engagement and identify at-risk relationships.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Dashboard** | Average engagement score, at-risk client count, AUM at risk, portal adoption rate, NPS summary |
+| **All Clients** | Sortable list of all clients with engagement score (0-100, color-coded), login frequency, documents viewed, messages sent, session duration, NPS status (promoter/passive/detractor), and engagement trend |
+| **At-Risk** | Focused view of clients flagged as at-risk with recommended proactive outreach actions |
+
+- Engagement scoring based on portal logins, document views, message activity, and session duration
+- Color-coded scores with trend indicators (improving, stable, declining)
+
+### CRM Integrations
+
+**What it does:** Bidirectional synchronization with Salesforce, Redtail, and Wealthbox.
+
+| Tab | What It Does |
+|-----|--------------|
+| **Integrations** | Connected CRM systems with status, contacts/accounts/activities synced, sync frequency, sync errors, and last sync time |
+| **Sync History** | Detailed sync log showing timestamp, direction (Edge→CRM or CRM→Edge), records synced, errors, and duration |
+| **Field Mappings** | Configurable field mapping between Edge and CRM (e.g., Edge "First Name" → Salesforce "FirstName"), with enabled/disabled toggles per mapping |
+
+- OAuth-based connection flow
+- Supports bidirectional, Edge→CRM, and CRM→Edge sync directions
 
 ---
 
@@ -648,7 +793,8 @@ These features span both portals:
 | **Blue Sidebar Navigation** | Both portals use a collapsible left sidebar with a blue gradient background, grouped menus, and emerald-green active indicators. |
 | **Branding** | Blue, white, and green color scheme throughout. Firm name displayed in sidebar header. |
 | **Responsive Design** | Tailwind CSS utility classes for responsive layouts |
-| **E2E Testing** | 82+ Playwright smoke tests covering every page in both portals |
+| **Mobile PWA** | Progressive Web App with Service Worker for offline caching, installable to home screen on mobile devices. Manifest with theme color and icons. |
+| **E2E Testing** | 293 Playwright tests covering every page in both portals |
 
 ---
 
@@ -656,8 +802,8 @@ These features span both portals:
 
 | Category | RIA Portal | Client Portal |
 |----------|-----------|---------------|
-| **Total Pages** | 26 | 19 |
-| **Menu Groups** | 5 collapsible + Dashboard + standalone items | 4 collapsible + Home + standalone items |
+| **Total Pages** | 38 | 19 |
+| **Menu Groups** | 8 collapsible + Dashboard + standalone items | 4 collapsible + Home + standalone items |
 | **Analysis Tools** | 6 (Portfolio, Fee, Tax, Risk, ETF, IPS) | — |
 | **Stock Screener Presets** | 5 | — |
 | **Workflow Templates** | 6 | — |
@@ -667,9 +813,13 @@ These features span both portals:
 | **Request Types** | — | 6 (Withdrawal, Contribution, Transfer, Address, Document, Beneficiary) |
 | **Goal Types** | — | 6 (Retirement, Education, Home, Emergency, Wealth Transfer, Custom) |
 | **Meeting Types** | — | 5 (Portfolio Review, Financial Planning, Tax, Quick Check-In, Account Setup) |
+| **Financial Planning Tools** | 5 (Goals, Monte Carlo, Social Security, Roth Conversion, Estate) | — |
+| **Custodian Integrations** | 4 (Schwab, Fidelity, Pershing, Vanguard) + Plaid | — |
+| **CRM Integrations** | 3 (Salesforce, Redtail, Wealthbox) | — |
+| **E2E Tests** | 293 | — |
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: February 2026*
+*Document Version: 2.0*
+*Last Updated: March 2026*
 *Platform: Edge — Wealth Management Platform for RIAs*

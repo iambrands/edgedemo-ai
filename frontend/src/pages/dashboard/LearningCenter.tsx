@@ -15,6 +15,9 @@ import {
   Bot,
   Receipt,
   UserPlus,
+  Target,
+  Building2,
+  Database,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,7 +38,7 @@ interface Course {
   title: string;
   description: string;
   icon: LucideIcon;
-  category: 'getting-started' | 'client-management' | 'investing' | 'compliance' | 'advanced';
+  category: 'getting-started' | 'client-management' | 'investing' | 'compliance' | 'advanced' | 'planning' | 'administration';
   lessons: Lesson[];
 }
 
@@ -161,6 +164,49 @@ const COURSES: Course[] = [
       { id: 'bf-3', title: 'Portal Customization', duration: '2:30', description: 'Customize branding, enable/disable features, and tailor the portal for your practice.', videoId: 'HEYGEN_CUSTOMIZE_01', completed: false },
     ],
   },
+  {
+    id: 'financial-planning',
+    title: 'Financial Planning Suite',
+    description: 'Master the full financial planning toolkit — goal tracking, Monte Carlo simulations, Social Security optimization, Roth conversion analysis, and estate planning.',
+    icon: Target,
+    category: 'planning',
+    lessons: [
+      { id: 'plan-1', title: 'Multi-Goal Tracking', duration: '3:30', description: 'Create and monitor retirement, education, emergency fund, and custom goals with probability of success.', videoId: 'HEYGEN_GOALS_01', completed: false },
+      { id: 'plan-2', title: 'Monte Carlo Simulations', duration: '4:30', description: 'Run 1,000-iteration simulations with configurable assumptions to project retirement outcomes and success rates.', videoId: 'HEYGEN_MONTECARLO_01', completed: false },
+      { id: 'plan-3', title: 'Social Security Optimization', duration: '3:00', description: 'Compare claiming strategies for ages 62-70 with monthly benefit, lifetime benefit, and break-even analysis.', videoId: 'HEYGEN_SOCSEC_01', completed: false },
+      { id: 'plan-4', title: 'Roth Conversion Analysis', duration: '4:00', description: 'Build multi-year conversion ladders, analyze marginal tax rates, and project optimal conversion schedules.', videoId: 'HEYGEN_ROTH_01', completed: false },
+      { id: 'plan-5', title: 'Estate Planning Overview', duration: '3:00', description: 'Review estate documents, beneficiary designations, and estimate estate tax exposure.', videoId: 'HEYGEN_ESTATE_01', completed: false },
+    ],
+  },
+  {
+    id: 'rebalancing-indexing',
+    title: 'Rebalancing & Direct Indexing',
+    description: 'Automate portfolio rebalancing with drift detection, generate tax-aware trades, and build personalized indices with ESG exclusions.',
+    icon: Database,
+    category: 'investing',
+    lessons: [
+      { id: 'ri-1', title: 'Drift Detection & Analysis', duration: '3:30', description: 'Understand how the rebalancing engine identifies accounts that have drifted beyond model thresholds.', videoId: 'HEYGEN_DRIFT_01', completed: false },
+      { id: 'ri-2', title: 'Tax-Aware Trade Generation', duration: '4:00', description: 'Generate rebalancing trades with lot selection methods (FIFO, specific ID, tax-optimized) and review tax impact.', videoId: 'HEYGEN_TAXAWARE_01', completed: false },
+      { id: 'ri-3', title: 'Direct Indexing Setup', duration: '4:30', description: 'Create custom S&P 500 or Russell 1000 indices with ESG/values-based exclusions and sector tilts.', videoId: 'HEYGEN_DIRECTINDEX_01', completed: false },
+      { id: 'ri-4', title: 'Tax-Loss Harvesting in Direct Indexing', duration: '3:30', description: 'Run continuous tax-loss harvesting with wash sale compliance and track harvested losses YTD.', videoId: 'HEYGEN_DIXHARVEST_01', completed: false },
+      { id: 'ri-5', title: 'Performance Attribution', duration: '3:00', description: 'Use Brinson-Fachler model to analyze sector-level allocation and selection effects for client reporting.', videoId: 'HEYGEN_ATTRIBUTION_01', completed: false },
+    ],
+  },
+  {
+    id: 'firm-admin',
+    title: 'Firm Administration',
+    description: 'Manage your multi-advisor firm — team hierarchy, role-based access, CRM integrations, engagement analytics, document vault, and communication archiving.',
+    icon: Building2,
+    category: 'administration',
+    lessons: [
+      { id: 'fa-1', title: 'Firm Management & Roles', duration: '4:00', description: 'Add advisors, assign roles (Owner, Senior, Associate, CCO, Paraplanner), create teams, and manage the firm hierarchy.', videoId: 'HEYGEN_FIRMROLES_01', completed: false },
+      { id: 'fa-2', title: 'CRM Integrations', duration: '3:30', description: 'Connect Salesforce, Redtail, or Wealthbox for bidirectional sync with configurable field mappings.', videoId: 'HEYGEN_CRMSETUP_01', completed: false },
+      { id: 'fa-3', title: 'Document Vault & E-Signatures', duration: '3:30', description: 'Upload documents, organize by category, send for DocuSign e-signature, and track pending signatures.', videoId: 'HEYGEN_DOCVAULT_01', completed: false },
+      { id: 'fa-4', title: 'Engagement Analytics', duration: '3:00', description: 'Monitor client engagement scores, identify at-risk relationships, track portal adoption, and view NPS insights.', videoId: 'HEYGEN_ENGAGEMENT_01', completed: false },
+      { id: 'fa-5', title: 'Communication Archiving', duration: '3:00', description: 'SEC Rule 17a-4 compliant archiving of email, SMS, portal messages, and video meeting recordings.', videoId: 'HEYGEN_COMMARCHIVE_01', completed: false },
+      { id: 'fa-6', title: 'Custodian Data Feeds', duration: '3:30', description: 'Connect real-time data feeds from Schwab, Fidelity, Pershing, and Vanguard via Plaid or direct integration.', videoId: 'HEYGEN_CUSTFEEDS_01', completed: false },
+    ],
+  },
 ];
 
 const CATEGORIES = [
@@ -168,7 +214,9 @@ const CATEGORIES = [
   { id: 'getting-started', label: 'Getting Started' },
   { id: 'client-management', label: 'Client Management' },
   { id: 'investing', label: 'Investing & Reports' },
+  { id: 'planning', label: 'Financial Planning' },
   { id: 'compliance', label: 'Compliance' },
+  { id: 'administration', label: 'Administration' },
   { id: 'advanced', label: 'Advanced' },
 ] as const;
 
@@ -427,7 +475,7 @@ export default function LearningCenter() {
             <div className="w-px h-10 bg-blue-500" />
             <div className="text-right">
               <p className="text-blue-200 text-xs">Total Time</p>
-              <p className="text-2xl font-bold">~90m</p>
+              <p className="text-2xl font-bold">~135m</p>
             </div>
           </div>
         </div>

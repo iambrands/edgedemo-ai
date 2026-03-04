@@ -77,6 +77,43 @@ const CATEGORIES: HelpCategory[] = [
     ],
   },
   {
+    id: 'financial-planning',
+    title: 'Financial Planning',
+    icon: BarChart3,
+    articles: [
+      { id: 'fp-1', title: 'Setting Up Client Goals', excerpt: 'Create and track retirement, education, and custom financial goals', readTime: '5 min', type: 'guide' },
+      { id: 'fp-2', title: 'Running Monte Carlo Simulations', excerpt: 'Configure assumptions and interpret success rates for retirement projections', readTime: '6 min', type: 'article' },
+      { id: 'fp-3', title: 'Social Security Optimization', excerpt: 'Compare claiming strategies for ages 62-70 with break-even analysis', readTime: '5 min', type: 'article' },
+      { id: 'fp-4', title: 'Roth Conversion Analysis', excerpt: 'Build multi-year conversion ladders and project tax savings', readTime: '7 min', type: 'guide' },
+      { id: 'fp-5', title: 'Estate Planning Overview', excerpt: 'Review estate documents, beneficiaries, and tax exposure estimates', readTime: '4 min', type: 'article' },
+    ],
+  },
+  {
+    id: 'investing',
+    title: 'Investing & Rebalancing',
+    icon: BarChart3,
+    articles: [
+      { id: 'inv-1', title: 'Performance Accounting (TWRR/MWRR)', excerpt: 'Understanding time-weighted and money-weighted return calculations', readTime: '7 min', type: 'article' },
+      { id: 'inv-2', title: 'Automated Rebalancing Engine', excerpt: 'Detect drift, generate tax-aware trades, and execute rebalances', readTime: '8 min', type: 'guide' },
+      { id: 'inv-3', title: 'Direct Indexing Setup', excerpt: 'Create custom indices with ESG exclusions and tax-loss harvesting', readTime: '6 min', type: 'guide' },
+      { id: 'inv-4', title: 'Brinson-Fachler Attribution', excerpt: 'Sector-level performance attribution for client reporting', readTime: '5 min', type: 'article' },
+      { id: 'inv-5', title: 'Client Portfolios with Live Quotes', excerpt: 'View real-time portfolio data with sortable holdings columns', readTime: '4 min', type: 'article' },
+    ],
+  },
+  {
+    id: 'operations',
+    title: 'Operations & Administration',
+    icon: FileText,
+    articles: [
+      { id: 'ops-1', title: 'Custodian Data Feeds', excerpt: 'Connect and sync data from Schwab, Fidelity, Pershing, and Vanguard', readTime: '5 min', type: 'guide' },
+      { id: 'ops-2', title: 'Document Vault & E-Signatures', excerpt: 'Store documents securely and track DocuSign e-signature requests', readTime: '6 min', type: 'guide' },
+      { id: 'ops-3', title: 'Firm Management & RBAC', excerpt: 'Manage advisors, teams, roles, and view the firm audit log', readTime: '7 min', type: 'guide' },
+      { id: 'ops-4', title: 'CRM Integrations', excerpt: 'Set up bidirectional sync with Salesforce, Redtail, or Wealthbox', readTime: '6 min', type: 'guide' },
+      { id: 'ops-5', title: 'Engagement Analytics', excerpt: 'Track client engagement scores and identify at-risk relationships', readTime: '5 min', type: 'article' },
+      { id: 'ops-6', title: 'Communication Archiving', excerpt: 'SEC Rule 17a-4 compliant archiving of all advisor-client communications', readTime: '6 min', type: 'article' },
+    ],
+  },
+  {
     id: 'settings',
     title: 'Account Settings',
     icon: Settings,
@@ -148,6 +185,38 @@ const FAQS = [
   {
     question: 'Can I import data from my existing systems?',
     answer: 'Yes. We support CSV imports for client data, positions, and transactions. Contact support for help with large migrations or custom integrations.',
+  },
+  {
+    question: 'How does the rebalancing engine work?',
+    answer: 'The rebalancing engine automatically detects when client accounts drift beyond their model portfolio thresholds. You can generate tax-aware trades with configurable lot selection (FIFO, specific ID, or tax-optimized) and release them for execution in batches.',
+  },
+  {
+    question: 'What is Direct Indexing?',
+    answer: 'Direct Indexing lets you build personalized versions of major indices (like the S&P 500) for individual clients. You can exclude sectors based on ESG/values preferences, apply custom sector tilts, and run continuous tax-loss harvesting — all while tracking error against the benchmark.',
+  },
+  {
+    question: 'How do Monte Carlo simulations work?',
+    answer: 'Navigate to Financial Planning > Monte Carlo tab. Configure inputs like current assets, annual contributions, years to retirement, expected return, volatility, and spending. The system runs 1,000 simulations and returns a success rate with median, P10, and P90 wealth outcomes.',
+  },
+  {
+    question: 'How do I connect my CRM (Salesforce, Redtail, Wealthbox)?',
+    answer: 'Go to the CRM Integrations page under Administration. Click "Connect" on your CRM provider and complete the OAuth authorization. You can configure sync direction (bidirectional, Edge→CRM, or CRM→Edge), field mappings, and sync frequency.',
+  },
+  {
+    question: 'What is communication archiving?',
+    answer: 'Edge archives all advisor-client communications (email, SMS, portal messages, video meetings) in compliance with SEC Rule 17a-4. Messages are automatically retained per policy (e.g., 6 years for email), flagged for compliance-sensitive keywords, and available for supervisory review.',
+  },
+  {
+    question: 'How do I manage multiple advisors in my firm?',
+    answer: 'Go to Firm Management under Administration. You can add advisors, assign roles (Firm Owner, Senior Advisor, Financial Advisor, Associate Advisor, Operations Manager, CCO, Paraplanner), create teams, and monitor all activity through the audit log.',
+  },
+  {
+    question: 'How does the Document Vault work?',
+    answer: 'The Document Vault provides secure storage for all client documents with category organization (Agreements, Compliance, Statements, Tax, Account Forms). You can upload documents, send them for DocuSign e-signature, and track pending signatures — all with SEC-compliant retention.',
+  },
+  {
+    question: 'What engagement analytics are available?',
+    answer: 'The Engagement Analytics dashboard shows client engagement scores (0-100), portal login frequency, document views, messaging activity, and NPS ratings. At-risk clients are automatically flagged with recommended proactive outreach actions.',
   },
 ];
 

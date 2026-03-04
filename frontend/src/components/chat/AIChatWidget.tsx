@@ -9,10 +9,12 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  'Portfolio summary',
-  'Compliance alerts',
-  'Tax-loss opportunities',
-  'Fee comparison',
+  'Summarize my practice',
+  'Review compliance alerts',
+  'Rebalancing opportunities',
+  'Run Monte Carlo',
+  'At-risk clients',
+  'Prepare for next meeting',
 ];
 
 interface AIChatWidgetProps {
