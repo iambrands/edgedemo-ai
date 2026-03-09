@@ -71,9 +71,18 @@ export default function PortalTaxCenter() {
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
       const token = localStorage.getItem('portal_token');
+
+      let clientId = '';
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          clientId = payload.client_id || '';
+        } catch { /* token decode failed — backend will resolve from JWT */ }
+      }
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('client_id', 'current');
+      formData.append('client_id', clientId);
 
       const res = await fetch(`${apiBase}/api/v1/tax/ingest`, {
         method: 'POST',
