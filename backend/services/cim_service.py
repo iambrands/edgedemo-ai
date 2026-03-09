@@ -228,6 +228,16 @@ class CIMService:
             self.rules_engine.check_suitability_match(
                 recommendation, client_kyc
             ),
+            self.rules_engine.check_ia_act_fiduciary(
+                recommendation, client_kyc
+            ),
+            self.rules_engine.check_series65_suitability(
+                recommendation, client_kyc
+            ),
+            self.rules_engine.check_adv_currency(
+                recommendation.get("adv_data", {})
+            ),
+            self.rules_engine.check_conflict_of_interest(recommendation),
         ]
 
         for r in results:
@@ -252,7 +262,7 @@ class CIMService:
                 )
 
         status = "APPROVED"
-        if any(v.severity == "CRITICAL" for v in violations):
+        if any(v.severity in ("CRITICAL", "BLOCKING") for v in violations):
             status = "REJECTED"
         elif violations:
             status = "CONDITIONAL"
@@ -262,6 +272,21 @@ class CIMService:
                     text="Recommendation requires supervisory review.",
                 )
             )
+
+        if status == "REJECTED" and advisor_id:
+            try:
+                from backend.models.compliance_rules import ComplianceAuditLog
+                audit = ComplianceAuditLog(
+                    advisor_id=UUID(str(advisor_id)),
+                    action="RECOMMENDATION_BLOCKED",
+                    entity_type="recommendation",
+                    entity_id=str(recommendation.get("id", "")),
+                    metadata_json={"violations": [v.rule for v in violations]},
+                )
+                self.session.add(audit)
+                await self.session.flush()
+            except Exception as e:
+                logger.error("BLOCKED audit log failed: %s", e)
 
         return CIMResponse(
             status=status,

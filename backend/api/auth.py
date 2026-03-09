@@ -6,6 +6,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, List
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -175,7 +176,21 @@ async def login(request: LoginRequest, req: Request = None):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     token = create_access_token({"sub": user["email"], "role": user["role"]})
-    
+
+    try:
+        from backend.models import get_session_factory
+        factory = get_session_factory()
+        async with factory() as db:
+            from backend.services.cim.adv_monitor import check_adv_on_login
+            adv_result = await check_adv_on_login(
+                advisor_id=UUID(user["id"]), db=db,
+            )
+            if adv_result.get("passed") is False:
+                logger.warning("ADV currency warning on login for %s: %s",
+                               user["email"], adv_result)
+    except Exception:
+        pass
+
     return TokenResponse(
         access_token=token,
         user=user_to_response(user),

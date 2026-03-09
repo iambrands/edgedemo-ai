@@ -3,6 +3,7 @@ Edge Portfolio Analyzer Backend API
 Handles portfolio analysis requests using OpenAI GPT API
 """
 
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -900,12 +901,63 @@ async def _on_startup():
     except Exception as exc:
         logger.warning("Redis init skipped: %s", exc)
 
-    # Start APScheduler for periodic tasks (IMM-03 ADV checks, IMM-04 follow-ups)
+    # Start APScheduler for periodic tasks
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
-        _scheduler = AsyncIOScheduler()
+        _scheduler = AsyncIOScheduler(timezone="UTC")
         _scheduler.start()
-        logger.info("APScheduler started")
+
+        if _db_available:
+            from apscheduler.triggers.interval import IntervalTrigger
+            from apscheduler.triggers.cron import CronTrigger
+            from backend.models import get_session_factory
+
+            async def _run_adv_currency_check():
+                factory = get_session_factory()
+                async with factory() as db:
+                    from backend.services.cim.adv_monitor import check_all_adv_currency
+                    count = await check_all_adv_currency(db)
+                    await db.commit()
+                    logger.info("ADV currency check completed: %d warnings", count)
+
+            async def _run_follow_up_check():
+                factory = get_session_factory()
+                async with factory() as db:
+                    from backend.services.prospect.follow_up_service import check_follow_ups
+                    count = await check_follow_ups(db)
+                    await db.commit()
+                    logger.info("Follow-up check completed: %d actions", count)
+
+            _scheduler.add_job(
+                _run_adv_currency_check,
+                trigger=CronTrigger(hour=6, minute=0),
+                id="adv_currency_check",
+                replace_existing=True,
+                misfire_grace_time=300,
+            )
+            _scheduler.add_job(
+                _run_follow_up_check,
+                trigger=IntervalTrigger(hours=4),
+                id="prospect_follow_ups",
+                replace_existing=True,
+                misfire_grace_time=120,
+            )
+
+            jobs = _scheduler.get_jobs()
+            logger.info("APScheduler started — %d jobs registered: %s",
+                        len(jobs), [j.id for j in jobs])
+
+            # IMM-01: Altruist poll is a long-running loop — start as asyncio task
+            try:
+                from backend.services.market_data import periodic_altruist_poll
+                asyncio.create_task(periodic_altruist_poll(
+                    get_session_factory(), interval_seconds=60))
+                logger.info("Altruist poll task started")
+            except Exception as exc:
+                logger.warning("Altruist poll init skipped: %s", exc)
+        else:
+            logger.info("APScheduler started — 0 jobs (no DB available)")
+
     except Exception as exc:
         logger.warning("APScheduler init failed: %s", exc)
 
