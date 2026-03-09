@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { DollarSign, Users, Briefcase, AlertTriangle, Activity, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { DollarSign, Users, Briefcase, AlertTriangle, Activity, RefreshCw, Lightbulb } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -15,6 +15,46 @@ import {
 import { dashboardApi, type DashboardSummary } from '../../services/api';
 import { formatCurrency } from '../../utils/format';
 import { clsx } from 'clsx';
+import { DataFreshnessIndicator } from '../../components/dashboard/DataFreshnessIndicator';
+import { RecommendationCard, type Recommendation } from '../../components/dashboard/RecommendationCard';
+
+function RecommendationsPanel() {
+  const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRecs = useCallback(async () => {
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const token = localStorage.getItem('edgeai_token') || sessionStorage.getItem('edgeai_token');
+      const res = await fetch(`${apiBase}/api/v1/clients/current/recommendations`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) setRecs(await res.json());
+    } catch { /* graceful degradation */ } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchRecs(); }, [fetchRecs]);
+
+  if (loading) return null;
+  if (!recs.length) return null;
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb className="w-5 h-5 text-primary-500" />
+        <h2 className="text-lg font-semibold text-slate-900">AI Recommendations</h2>
+        <Badge variant="blue">{recs.length}</Badge>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {recs.map(rec => (
+          <RecommendationCard key={rec.rec_id} recommendation={rec} onAction={fetchRecs} />
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export function Overview() {
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -77,10 +117,10 @@ export function Overview() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Welcome back. Here's your practice at a glance."
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader title="Dashboard" subtitle="Welcome back. Here's your practice at a glance." />
+        <DataFreshnessIndicator />
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -163,6 +203,9 @@ export function Overview() {
           </div>
         </Card>
       </div>
+
+      {/* AI Recommendations (IMM-06) */}
+      <RecommendationsPanel />
 
       {/* Household Overview Table */}
       <Card>

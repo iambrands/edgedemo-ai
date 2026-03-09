@@ -39,6 +39,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { useToast } from '../../contexts/ToastContext';
+import { ComplianceExceptionPanel } from '../../components/dashboard/ComplianceExceptionPanel';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -515,6 +516,9 @@ export default function Compliance() {
               </div>
             </Card>
           </div>
+
+          {/* Compliance Exceptions (IMM-03) */}
+          <ComplianceExceptionPanel />
         </div>}
       </TabPanel>
 

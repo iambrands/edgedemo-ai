@@ -28,7 +28,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 import { clsx } from 'clsx';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface NavItem {
   to: string;
@@ -132,6 +132,12 @@ export default function PortalNav({ isCollapsed, onToggle, nudgeCount = 0, firmN
     });
   };
 
+  useEffect(() => {
+    if (!isCollapsed && window.innerWidth < 768) {
+      onToggle();
+    }
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     try {
       await portalLogout();
@@ -141,10 +147,18 @@ export default function PortalNav({ isCollapsed, onToggle, nudgeCount = 0, firmN
   };
 
   return (
+    <>
+    {/* Mobile backdrop */}
+    {!isCollapsed && (
+      <div
+        className="fixed inset-0 bg-black/50 z-30 md:hidden"
+        onClick={onToggle}
+      />
+    )}
     <aside
       className={clsx(
-        'fixed left-0 top-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 z-40 transition-all duration-200 shadow-xl flex flex-col',
-        isCollapsed ? 'w-16' : 'w-64',
+        'fixed left-0 top-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 z-40 transition-all duration-200 shadow-xl flex flex-col w-64',
+        isCollapsed ? '-translate-x-full md:translate-x-0 md:w-16' : 'translate-x-0',
       )}
     >
       {/* Logo + Collapse */}
@@ -376,5 +390,6 @@ export default function PortalNav({ isCollapsed, onToggle, nudgeCount = 0, firmN
         )}
       </div>
     </aside>
+    </>
   );
 }

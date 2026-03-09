@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     nginx \
     gettext-base \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory to project root

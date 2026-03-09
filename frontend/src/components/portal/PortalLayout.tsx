@@ -6,7 +6,7 @@ import AIChatWidget from '../chat/AIChatWidget';
 import { clsx } from 'clsx';
 
 export default function PortalLayout() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 768);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -18,11 +18,11 @@ export default function PortalLayout() {
       <div
         className={clsx(
           'transition-all duration-200',
-          isSidebarCollapsed ? 'ml-16' : 'ml-64',
+          isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64',
         )}
       >
         {/* Minimal top bar for mobile toggle */}
-        <header className="h-12 bg-white border-b border-slate-200 flex items-center px-6 sticky top-0 z-30 lg:hidden">
+        <header className="h-12 bg-white border-b border-slate-200 flex items-center px-6 sticky top-0 z-30 md:hidden">
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"

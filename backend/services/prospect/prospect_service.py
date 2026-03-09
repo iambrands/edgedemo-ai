@@ -478,3 +478,114 @@ class ProspectService:
 
         await self.db.commit()
         return prospect
+
+    # ─────────────────────────────────────────────────────────────
+    # Stage Gate Enforcement (IMM-04)
+    # ─────────────────────────────────────────────────────────────
+
+    STAGE_ORDER = [
+        ProspectStatus.NEW,
+        ProspectStatus.CONTACTED,
+        ProspectStatus.QUALIFIED,
+        ProspectStatus.PROPOSAL_SENT,
+        ProspectStatus.AGREEMENT_SIGNED,
+        ProspectStatus.ONBOARDING,
+        ProspectStatus.ACTIVE_CLIENT,
+    ]
+
+    STAGE_GATES: Dict[str, Dict[str, str]] = {
+        "contacted": {
+            "field": "stage_entered_at",
+            "error": "Set contact date before advancing to Contacted",
+        },
+        "qualified": {
+            "field": "risk_profile_completed",
+            "error": "Complete risk profile before advancing to Qualified",
+        },
+        "proposal_sent": {
+            "check": "has_proposal",
+            "error": "Generate a proposal before advancing to Proposal Sent",
+        },
+        "agreement_signed": {
+            "field": "signed_agreement_url",
+            "error": "Upload signed agreement before advancing to Agreement Signed",
+        },
+        "onboarding": {
+            "field": "custodian_account_id",
+            "error": "Link custodian account before advancing to Onboarding",
+        },
+        "active_client": {
+            "field": "first_funding_date",
+            "error": "Record first funding date before advancing to Active Client",
+        },
+    }
+
+    async def advance_stage(
+        self,
+        prospect_id: UUID,
+        target_stage: str,
+    ) -> Prospect:
+        """
+        Advance a prospect to a new pipeline stage with gate enforcement.
+        Returns HTTP 422 if gate prerequisites are not met.
+        """
+        from fastapi import HTTPException
+
+        prospect = await self.get_prospect(prospect_id)
+        if not prospect:
+            raise HTTPException(status_code=404, detail="Prospect not found")
+
+        gate = self.STAGE_GATES.get(target_stage)
+        if gate:
+            if "field" in gate:
+                value = getattr(prospect, gate["field"], None)
+                if not value:
+                    raise HTTPException(status_code=422, detail=gate["error"])
+            elif gate.get("check") == "has_proposal":
+                result = await self.db.execute(
+                    select(func.count(Proposal.id)).where(
+                        Proposal.prospect_id == prospect_id
+                    )
+                )
+                count = result.scalar() or 0
+                if count == 0:
+                    raise HTTPException(status_code=422, detail=gate["error"])
+
+        prospect.status = ProspectStatus(target_stage)
+        prospect.stage_entered_at = datetime.utcnow()
+        prospect.last_activity_at = datetime.utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(prospect)
+        return prospect
+
+    async def get_seed_milestone(self) -> Dict[str, Any]:
+        """Return progress toward 100 active client seed milestone."""
+        result = await self.db.execute(
+            select(func.count(Prospect.id)).where(
+                Prospect.status == ProspectStatus.ACTIVE_CLIENT
+            )
+        )
+        active = result.scalar() or 0
+        target = 100
+        progress = round((active / target) * 100, 1) if target else 0
+        return {
+            "active_clients": active,
+            "target": target,
+            "progress_pct": progress,
+            "projected_date": None,
+        }
+
+    async def get_communications(
+        self, prospect_id: UUID, limit: int = 50
+    ) -> list:
+        """Get communication history for a prospect."""
+        from backend.models.prospect import ProspectCommunication
+
+        result = await self.db.execute(
+            select(ProspectCommunication)
+            .where(ProspectCommunication.prospect_id == prospect_id)
+            .order_by(ProspectCommunication.sent_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())

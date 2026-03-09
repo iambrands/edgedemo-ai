@@ -51,6 +51,9 @@ class ProspectStatus(str, enum.Enum):
     MEETING_COMPLETED = "meeting_completed"
     PROPOSAL_SENT = "proposal_sent"
     NEGOTIATING = "negotiating"
+    AGREEMENT_SIGNED = "agreement_signed"
+    ONBOARDING = "onboarding"
+    ACTIVE_CLIENT = "active_client"
     WON = "won"
     LOST = "lost"
     NURTURING = "nurturing"
@@ -283,6 +286,23 @@ class Prospect(Base, TimestampMixin):
         JSONB, default=dict, nullable=True
     )
 
+    # Stage gate fields (IMM-04)
+    risk_profile_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    signed_agreement_url: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )
+    custodian_account_id: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    first_funding_date: Mapped[Optional[date]] = mapped_column(
+        Date, nullable=True
+    )
+    last_activity_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # AI insights
     ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ai_recommendations: Mapped[Optional[dict]] = mapped_column(
@@ -297,6 +317,11 @@ class Prospect(Base, TimestampMixin):
     )
     proposals: Mapped[List["Proposal"]] = relationship(
         "Proposal",
+        back_populates="prospect",
+        cascade="all, delete-orphan",
+    )
+    communications: Mapped[List["ProspectCommunication"]] = relationship(
+        "ProspectCommunication",
         back_populates="prospect",
         cascade="all, delete-orphan",
     )
@@ -652,3 +677,37 @@ class PipelineStageConfig(Base, TimestampMixin):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_terminal: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ProspectCommunication(Base, TimestampMixin):
+    """
+    Tracks automated and manual communications with prospects (IMM-04).
+    Emails, calls, meetings, and notes sent through the pipeline.
+    """
+
+    __tablename__ = "prospect_communications"
+    __table_args__ = (
+        Index("ix_prospect_comms_prospect", "prospect_id"),
+        Index("ix_prospect_comms_sent", "sent_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    prospect_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("prospects.id"), nullable=False
+    )
+    comm_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    template_name: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    metadata_json: Mapped[Optional[dict]] = mapped_column(
+        "metadata", JSONB, nullable=True
+    )
+
+    prospect: Mapped["Prospect"] = relationship(
+        "Prospect", back_populates="communications"
+    )

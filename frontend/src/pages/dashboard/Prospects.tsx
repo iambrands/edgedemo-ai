@@ -11,6 +11,8 @@ import {
   logActivity,
   generateProposal,
   rescoreProspect,
+  advanceStage,
+  getSeedMilestone,
 } from '../../services/prospectApi';
 import type {
   Prospect,
@@ -18,6 +20,7 @@ import type {
   Proposal,
   PipelineSummary,
   ProspectStatus,
+  SeedMilestone,
 } from '../../services/prospectApi';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { MetricCard } from '../../components/ui/MetricCard';
@@ -53,19 +56,22 @@ const STATUS_CONFIG: Record<
   meeting_completed: { label: 'Meeting Done', color: 'bg-orange-100 text-orange-800' },
   proposal_sent: { label: 'Proposal Sent', color: 'bg-pink-100 text-pink-800' },
   negotiating: { label: 'Negotiating', color: 'bg-cyan-100 text-cyan-800' },
+  agreement_signed: { label: 'Agreement Signed', color: 'bg-amber-100 text-amber-800' },
+  onboarding: { label: 'Onboarding', color: 'bg-emerald-100 text-emerald-800' },
+  active_client: { label: 'Active Client', color: 'bg-green-100 text-green-800' },
   won: { label: 'Won', color: 'bg-emerald-100 text-emerald-800' },
   lost: { label: 'Lost', color: 'bg-red-100 text-red-800' },
   nurturing: { label: 'Nurturing', color: 'bg-slate-100 text-slate-800' },
 };
 
-const PIPELINE_ORDER: ProspectStatus[] = [
-  'new',
-  'contacted',
-  'qualified',
-  'meeting_scheduled',
-  'meeting_completed',
-  'proposal_sent',
-  'negotiating',
+const PIPELINE_STAGES = [
+  { key: 'new' as ProspectStatus, label: 'Lead', color: 'bg-slate-500' },
+  { key: 'contacted' as ProspectStatus, label: 'Contacted', color: 'bg-blue-500' },
+  { key: 'qualified' as ProspectStatus, label: 'Qualified', color: 'bg-indigo-500' },
+  { key: 'proposal_sent' as ProspectStatus, label: 'Proposal Sent', color: 'bg-purple-500' },
+  { key: 'agreement_signed' as ProspectStatus, label: 'Agreement Signed', color: 'bg-amber-500' },
+  { key: 'onboarding' as ProspectStatus, label: 'Onboarding', color: 'bg-emerald-500' },
+  { key: 'active_client' as ProspectStatus, label: 'Active Client', color: 'bg-green-600' },
 ];
 
 const SOURCE_OPTIONS = [
@@ -372,6 +378,79 @@ function LogActivityModal({
 }
 
 // ============================================================================
+// SEED MILESTONE TRACKER
+// ============================================================================
+
+function SeedMilestoneTracker() {
+  const [data, setData] = useState<SeedMilestone | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getSeedMilestone()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <Card size="md">
+        <div className="text-center text-slate-500 py-4">Loading milestones...</div>
+      </Card>
+    );
+  }
+  if (!data) return null;
+
+  return (
+    <Card size="md">
+      <h3 className="font-semibold mb-4">Seed Milestone Tracker</h3>
+      <div className="space-y-3">
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-600">
+            {data.converted} of {data.target} clients converted
+          </span>
+          <span className="font-medium">{data.progress_pct}%</span>
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-3">
+          <div
+            className="bg-emerald-500 h-3 rounded-full transition-all"
+            style={{ width: `${Math.min(data.progress_pct, 100)}%` }}
+          />
+        </div>
+        {data.milestones && data.milestones.length > 0 && (
+          <div className="flex justify-between text-xs text-slate-500">
+            {data.milestones.map((m) => (
+              <div key={m.name} className="flex items-center gap-1">
+                <span className={m.achieved ? 'text-emerald-500' : 'text-slate-400'}>
+                  {m.achieved ? '\u2713' : '\u25CB'}
+                </span>
+                <span>
+                  {m.name} ({m.target})
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="grid grid-cols-3 gap-4 mt-2">
+          <div className="text-center p-2 bg-slate-50 rounded">
+            <p className="text-lg font-bold text-slate-700">{data.total_prospects}</p>
+            <p className="text-xs text-slate-500">Total Prospects</p>
+          </div>
+          <div className="text-center p-2 bg-slate-50 rounded">
+            <p className="text-lg font-bold text-blue-600">{data.active_pipeline}</p>
+            <p className="text-xs text-slate-500">In Pipeline</p>
+          </div>
+          <div className="text-center p-2 bg-slate-50 rounded">
+            <p className="text-lg font-bold text-emerald-600">{data.converted}</p>
+            <p className="text-xs text-slate-500">Converted</p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -391,6 +470,8 @@ export default function Prospects() {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [draggedProspectId, setDraggedProspectId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -484,6 +565,22 @@ export default function Prospects() {
     }
   };
 
+  const handleStageDrop = async (prospectId: string, targetStage: string) => {
+    try {
+      await advanceStage(prospectId, targetStage);
+      const stageLabel = PIPELINE_STAGES.find((s) => s.key === targetStage)?.label ?? targetStage;
+      toast.success(`Moved to ${stageLabel}`);
+      await loadData();
+    } catch (e: unknown) {
+      const err = e as Error & { status?: number };
+      if (err.status === 422) {
+        toast.error(err.message);
+      } else {
+        toast.error(err.message || 'Failed to advance stage');
+      }
+    }
+  };
+
   // ── Pipeline View ─────────────────────────────────────────────
 
   const renderPipeline = () => (
@@ -506,78 +603,143 @@ export default function Prospects() {
           label="In Progress"
           value={String(
             Object.entries(pipelineSummary?.stages ?? {})
-              .filter(([k]) => !['won', 'lost'].includes(k))
+              .filter(([k]) => !['won', 'lost', 'active_client'].includes(k))
               .reduce((sum, [, v]) => sum + v.count, 0)
           )}
           icon={<TrendingUp size={18} />}
           color="purple"
         />
         <MetricCard
-          label="Won"
-          value={String(pipelineSummary?.stages?.won?.count ?? 0)}
+          label="Converted"
+          value={String(
+            (pipelineSummary?.stages?.active_client?.count ?? 0) +
+            (pipelineSummary?.stages?.won?.count ?? 0)
+          )}
           icon={<Trophy size={18} />}
           color="emerald"
         />
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {PIPELINE_ORDER.map((status) => {
-          const config = STATUS_CONFIG[status];
-          const stageProspects = prospects.filter((p) => p.status === status);
-          const stageData = pipelineSummary?.stages?.[status];
+      {/* Enhanced 7-Stage Kanban Board */}
+      <div className="flex gap-3 overflow-x-auto pb-4">
+        {PIPELINE_STAGES.map((stage) => {
+          const stageProspects = prospects.filter((p) => p.status === stage.key);
+          const stageData = pipelineSummary?.stages?.[stage.key];
+          const isDropTarget = dragOverStage === stage.key;
 
           return (
-            <div key={status} className="flex-shrink-0 w-72 bg-slate-50 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-sm text-slate-700">{config.label}</h3>
-                <span className="text-xs text-slate-500">
-                  {stageData?.count ?? 0} &middot; {formatCurrency(stageData?.value)}
+            <div
+              key={stage.key}
+              className={`flex-shrink-0 w-64 rounded-lg p-3 transition-colors ${
+                isDropTarget ? 'bg-blue-50 ring-2 ring-blue-300' : 'bg-slate-50'
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverStage(stage.key);
+              }}
+              onDragLeave={() => setDragOverStage(null)}
+              onDrop={async (e) => {
+                e.preventDefault();
+                setDragOverStage(null);
+                const prospectId = e.dataTransfer.getData('text/plain');
+                if (prospectId && draggedProspectId) {
+                  const source = prospects.find((p) => p.id === prospectId);
+                  if (source && source.status !== stage.key) {
+                    await handleStageDrop(prospectId, stage.key);
+                  }
+                }
+                setDraggedProspectId(null);
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
+                <h3 className="font-semibold text-sm text-slate-700">{stage.label}</h3>
+                <span className="ml-auto text-xs text-slate-500 font-medium">
+                  {stageData?.count ?? stageProspects.length}
                 </span>
               </div>
-              <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-                {stageProspects.map((prospect) => (
-                  <div
-                    key={prospect.id}
-                    onClick={() => loadProspectDetail(prospect)}
-                    className="bg-white p-3 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow border border-slate-100"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm">
-                        {prospect.first_name} {prospect.last_name}
-                      </p>
-                      <span className={`text-xs font-bold ${scoreColor(prospect.lead_score)}`}>
-                        {prospect.lead_score}
-                      </span>
-                    </div>
-                    {prospect.tags?.includes('portfolio-review') && (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full mt-1">
-                        <FileBarChart className="w-3 h-3" />
-                        Portfolio Reviewed
-                      </span>
-                    )}
-                    {prospect.company && (
-                      <p className="text-xs text-slate-500 mt-0.5">{prospect.company}</p>
-                    )}
-                    {prospect.estimated_aum != null && (
-                      <p className="text-xs text-slate-600 mt-1">{formatCurrency(prospect.estimated_aum)}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-slate-500">{prospect.days_in_stage}d in stage</span>
-                      {prospect.next_action_date && (
-                        <span className="text-xs text-blue-600">{formatDate(prospect.next_action_date)}</span>
+              {stageData?.value != null && (
+                <p className="text-xs text-slate-500 mb-2">{formatCurrency(stageData.value)}</p>
+              )}
+              <div className="space-y-2 max-h-[32rem] overflow-y-auto">
+                {stageProspects.map((prospect) => {
+                  const days = prospect.days_in_stage ?? 0;
+                  const borderColor =
+                    days >= 7
+                      ? 'border-l-red-500'
+                      : days >= 3
+                        ? 'border-l-amber-500'
+                        : 'border-l-emerald-500';
+
+                  return (
+                    <div
+                      key={prospect.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', prospect.id);
+                        setDraggedProspectId(prospect.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedProspectId(null);
+                        setDragOverStage(null);
+                      }}
+                      onClick={() => loadProspectDetail(prospect)}
+                      className={`bg-white p-3 rounded-lg shadow-sm cursor-grab hover:shadow-md transition-shadow border border-slate-100 border-l-4 ${borderColor} ${
+                        draggedProspectId === prospect.id ? 'opacity-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm truncate">
+                          {prospect.first_name} {prospect.last_name}
+                        </p>
+                        <span className={`text-xs font-bold ${scoreColor(prospect.lead_score)}`}>
+                          {prospect.lead_score}
+                        </span>
+                      </div>
+                      {prospect.company && (
+                        <p className="text-xs text-slate-500 mt-0.5">{prospect.company}</p>
+                      )}
+                      {prospect.estimated_aum != null && (
+                        <p className="text-xs text-slate-600 mt-1 font-mono">
+                          {formatCurrency(prospect.estimated_aum)}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
+                        <span className={days >= 7 ? 'text-red-600 font-medium' : ''}>
+                          {days}d in stage
+                        </span>
+                        {prospect.next_action_date && (
+                          <span className="text-blue-600">
+                            {formatDate(prospect.next_action_date)}
+                          </span>
+                        )}
+                      </div>
+                      {stage.key === 'agreement_signed' && (
+                        <Button
+                          size="sm"
+                          className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStageDrop(prospect.id, 'active_client');
+                          }}
+                        >
+                          Convert to Client
+                        </Button>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {stageProspects.length === 0 && (
-                  <p className="text-center text-slate-500 text-xs py-4">No prospects</p>
+                  <p className="text-center text-slate-400 text-xs py-4">No prospects</p>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Seed Milestone Tracker */}
+      <SeedMilestoneTracker />
     </div>
   );
 

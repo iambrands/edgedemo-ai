@@ -317,7 +317,9 @@ export default function PortalDashboard() {
                           No positions data available
                         </div>
                       ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                        {/* Desktop table */}
+                        <div className="hidden md:block overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-slate-50 border-b border-slate-100">
@@ -410,6 +412,47 @@ export default function PortalDashboard() {
                             </tfoot>
                           </table>
                         </div>
+
+                        {/* Mobile holding cards */}
+                        <div className="md:hidden divide-y divide-slate-100">
+                          {acctPositions.map((pos) => (
+                            <div key={pos.symbol} className="p-4 flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-semibold text-slate-900">{pos.symbol}</span>
+                                  <Badge variant="gray">{pos.asset_class}</Badge>
+                                </div>
+                                <p className="text-sm text-slate-500 truncate">{pos.name}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">{pos.quantity.toLocaleString()} shares</p>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-medium text-slate-900">{formatCurrency(pos.value)}</p>
+                                <div className="flex items-center justify-end gap-1 mt-0.5">
+                                  {pos.gain_loss >= 0 ? (
+                                    <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                                  ) : (
+                                    <ArrowDownRight className="w-3 h-3 text-red-500" />
+                                  )}
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      pos.gain_loss >= 0 ? 'text-emerald-600' : 'text-red-600'
+                                    }`}
+                                  >
+                                    {formatCurrency(Math.abs(pos.gain_loss))}
+                                  </span>
+                                  <span
+                                    className={`text-xs ${
+                                      pos.gain_pct >= 0 ? 'text-emerald-500' : 'text-red-500'
+                                    }`}
+                                  >
+                                    ({formatGainPct(pos.gain_pct)})
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        </>
                       )}
                     </div>
                   )}

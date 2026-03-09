@@ -710,6 +710,254 @@ async def run_mock_analysis(tool_type: str, household_id: str):
 # All mock routers in a single list for easy mounting
 # ════════════════════════════════════════════════════════════════════════════
 
+# ════════════════════════════════════════════════════════════════════════════
+# MARKET DATA (IMM-01)  /api/v1/market-data
+# ════════════════════════════════════════════════════════════════════════════
+
+market_data_router = APIRouter(prefix="/api/v1/market-data", tags=["market-data-mock"])
+
+
+@market_data_router.get("/advisor/{advisor_id}/data-freshness")
+async def mock_data_freshness(advisor_id: str):
+    return {
+        "last_sync": datetime.now(timezone.utc).isoformat(),
+        "stale": False,
+        "age_seconds": 15,
+    }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# COMPLIANCE EXCEPTIONS (IMM-03)  /api/v1/compliance/exceptions
+# ════════════════════════════════════════════════════════════════════════════
+
+compliance_exceptions_router = APIRouter(
+    prefix="/api/v1/compliance", tags=["compliance-exceptions-mock"]
+)
+
+
+@compliance_exceptions_router.get("/exceptions")
+async def mock_compliance_exceptions(resolved: bool = False):
+    if resolved:
+        return []
+    return [
+        {
+            "id": "exc-001",
+            "rule_code": "IA206_FIDUCIARY",
+            "category": "FIDUCIARY_DUTY",
+            "severity": "WARNING",
+            "message": "Portfolio drift 11.2% from IPS target allocation for client Henderson",
+            "client_name": "Mark Henderson",
+            "triggered_at": datetime.now(timezone.utc).isoformat(),
+            "resolved": False,
+        },
+        {
+            "id": "exc-002",
+            "rule_code": "SERIES65_SUITABILITY",
+            "category": "SUITABILITY",
+            "severity": "BLOCKING",
+            "message": "Options strategy recommended for conservative profile (Wilson household)",
+            "client_name": "Nicole Wilson",
+            "triggered_at": datetime.now(timezone.utc).isoformat(),
+            "resolved": False,
+        },
+        {
+            "id": "exc-003",
+            "rule_code": "ADV_CURRENCY",
+            "category": "DISCLOSURE_OBLIGATIONS",
+            "severity": "INFO",
+            "message": "ADV Part 2B update recommended — last updated 310 days ago",
+            "client_name": None,
+            "triggered_at": datetime.now(timezone.utc).isoformat(),
+            "resolved": False,
+        },
+    ]
+
+
+@compliance_exceptions_router.patch("/exceptions/{exception_id}/resolve")
+async def mock_resolve_exception(exception_id: str, request: Request):
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    return {
+        "id": exception_id,
+        "resolved": True,
+        "resolved_at": datetime.now(timezone.utc).isoformat(),
+        "resolution_note": body.get("note", "Resolved"),
+    }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# TAX ANALYSIS (IMM-02)  /api/v1/tax
+# ════════════════════════════════════════════════════════════════════════════
+
+tax_analysis_router = APIRouter(prefix="/api/v1/tax", tags=["tax-analysis-mock"])
+
+
+@tax_analysis_router.post("/ingest")
+async def mock_tax_ingest(request: Request):
+    return {"job_id": str(uuid.uuid4()), "status": "processing"}
+
+
+@tax_analysis_router.get("/status/{job_id}")
+async def mock_tax_status(job_id: str):
+    return {"job_id": job_id, "status": "complete", "confidence": 0.92}
+
+
+@tax_analysis_router.get("/profile/{client_id}")
+async def mock_tax_profile(client_id: str):
+    return {
+        "client_id": client_id,
+        "tax_year": 2025,
+        "filing_status": "mfj",
+        "agi": 285000.0,
+        "taxable_income": 228000.0,
+        "effective_rate": 0.226,
+        "marginal_rate": 0.32,
+        "capital_gains": {"short_term": 4200.0, "long_term": 18500.0},
+        "qualified_dividends": 3200.0,
+        "retirement_contributions": {"traditional_ira": 6500.0, "roth_ira": 0.0, "401k": 22500.0},
+        "confidence": 0.92,
+        "tax_aversion_score": 0.78,
+        "tlh_opportunity_score": 0.72,
+    }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# RECOMMENDATIONS (IMM-06)  /api/v1/clients/{client_id}/recommendations
+# ════════════════════════════════════════════════════════════════════════════
+
+recommendations_router = APIRouter(prefix="/api/v1", tags=["recommendations-mock"])
+
+
+@recommendations_router.get("/clients/{client_id}/recommendations")
+async def mock_recommendations(client_id: str):
+    return [
+        {
+            "rec_id": "mock-rec-001",
+            "advisor_id": "demo-advisor-001",
+            "client_id": client_id,
+            "rec_type": "TLH",
+            "symbol": "AAPL",
+            "quantity": 10,
+            "target_weight": 0.0,
+            "rationale": "Harvest $1,200 short-term loss to offset Q1 gains.",
+            "confidence": 0.82,
+            "tax_impact": {
+                "estimated_gain_loss": -1200.0,
+                "tax_consequence": "loss_harvest",
+                "estimated_tax_dollars": -336.0,
+            },
+            "compliance_status": "APPROVED",
+            "compliance_flags": [],
+            "expires_at": datetime.now(timezone.utc).isoformat(),
+            "order_preview": {
+                "class": "equity",
+                "symbol": "AAPL",
+                "side": "sell",
+                "quantity": 10,
+                "type": "market",
+                "duration": "day",
+            },
+        },
+        {
+            "rec_id": "mock-rec-002",
+            "advisor_id": "demo-advisor-001",
+            "client_id": client_id,
+            "rec_type": "BUY",
+            "symbol": "MSFT",
+            "quantity": 5,
+            "target_weight": 0.08,
+            "rationale": "Add MSFT to reduce tech concentration risk vs SPY benchmark.",
+            "confidence": 0.61,
+            "tax_impact": {
+                "estimated_gain_loss": 0,
+                "tax_consequence": "neutral",
+                "estimated_tax_dollars": 0,
+            },
+            "compliance_status": "WARNING",
+            "compliance_flags": [
+                "Portfolio drift 10.3% from IPS target — review before executing"
+            ],
+            "expires_at": datetime.now(timezone.utc).isoformat(),
+            "order_preview": {
+                "class": "equity",
+                "symbol": "MSFT",
+                "side": "buy",
+                "quantity": 5,
+                "type": "market",
+                "duration": "day",
+            },
+        },
+    ]
+
+
+@recommendations_router.post("/recommendations/{rec_id}/submit-order")
+async def mock_submit_order(rec_id: str, request: Request):
+    return {
+        "order_id": f"tradier-{uuid.uuid4().hex[:8]}",
+        "rec_id": rec_id,
+        "status": "filled",
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@recommendations_router.post("/recommendations/{rec_id}/snooze")
+async def mock_snooze(rec_id: str):
+    return {"rec_id": rec_id, "snoozed": True}
+
+
+@recommendations_router.post("/recommendations/{rec_id}/dismiss")
+async def mock_dismiss(rec_id: str, request: Request):
+    return {"rec_id": rec_id, "dismissed": True}
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# SEED MILESTONE (IMM-04) — added to existing prospects router above
+# ════════════════════════════════════════════════════════════════════════════
+
+
+@prospects_router.get("/analytics/seed-milestone")
+async def mock_seed_milestone():
+    return {
+        "active_clients": 12,
+        "target": 100,
+        "progress_pct": 12.0,
+        "projected_date": "2026-09-15",
+    }
+
+
+@prospects_router.patch("/{prospect_id}/stage")
+async def mock_advance_stage(prospect_id: str, request: Request):
+    body: Dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    return {
+        "id": prospect_id,
+        "status": body.get("target_stage", "contacted"),
+        "last_activity_at": datetime.now(timezone.utc).isoformat(),
+        "first_name": "Demo",
+        "last_name": "Prospect",
+        "email": "demo@example.com",
+        "lead_source": "website",
+        "lead_score": 65,
+        "fit_score": 70,
+        "intent_score": 55,
+        "engagement_score": 45,
+        "days_in_stage": 0,
+        "total_days_in_pipeline": 5,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@prospects_router.get("/{prospect_id}/communications")
+async def mock_prospect_communications(prospect_id: str):
+    return {"communications": [], "total": 0}
+
+
 ALL_MOCK_ROUTERS = [
     ("prospects", prospects_router),
     ("custodians", custodians_router),
@@ -721,4 +969,8 @@ ALL_MOCK_ROUTERS = [
     ("compliance_docs", compliance_docs_router),
     ("compliance_copilot", compliance_copilot_router),
     ("analysis", analysis_mock_router),
+    ("market_data", market_data_router),
+    ("compliance_exceptions", compliance_exceptions_router),
+    ("tax", tax_analysis_router),
+    ("recommendations", recommendations_router),
 ]

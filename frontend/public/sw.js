@@ -1,5 +1,5 @@
-const CACHE_NAME = 'edge-v1';
-const STATIC_ASSETS = ['/', '/manifest.json'];
+const CACHE_NAME = 'edge-portal-v1';
+const STATIC_ASSETS = ['/portal', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -18,17 +18,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok && event.request.method === 'GET') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  const { request } = event;
+  if (request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+  } else {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request))
+    );
+  }
 });

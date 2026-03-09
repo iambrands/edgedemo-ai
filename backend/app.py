@@ -332,6 +332,10 @@ _db_routers = [
     ("conversations", "backend.api.conversations"),
     ("model_portfolios", "backend.api.model_portfolios"),
     ("alternative_assets", "backend.api.alternative_assets"),
+    ("market_data", "backend.api.market_data"),
+    ("compliance_exceptions", "backend.api.compliance_exceptions"),
+    ("tax", "backend.api.tax"),
+    ("recommendations", "backend.api.recommendations"),
 ]
 
 if _db_available:
@@ -880,6 +884,42 @@ def parse_openai_response(response_text: str) -> Dict[str, Any]:
         logger.error(f"Failed to parse OpenAI response as JSON: {e}")
         logger.error(f"Response text: {response_text[:500]}")
         raise ValueError(f"Failed to parse AI response: {str(e)}")
+
+
+# ── Startup / Shutdown Events ──────────────────────────────────────────────────
+
+_scheduler = None
+
+@app.on_event("startup")
+async def _on_startup():
+    global _scheduler
+    # Initialize Redis (non-blocking — degrades gracefully)
+    try:
+        from backend.services.redis_client import get_redis
+        await get_redis()
+    except Exception as exc:
+        logger.warning("Redis init skipped: %s", exc)
+
+    # Start APScheduler for periodic tasks (IMM-03 ADV checks, IMM-04 follow-ups)
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        _scheduler = AsyncIOScheduler()
+        _scheduler.start()
+        logger.info("APScheduler started")
+    except Exception as exc:
+        logger.warning("APScheduler init failed: %s", exc)
+
+
+@app.on_event("shutdown")
+async def _on_shutdown():
+    global _scheduler
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+    try:
+        from backend.services.redis_client import close_redis
+        await close_redis()
+    except Exception:
+        pass
 
 
 # ── Serve Frontend SPA ──────────────────────────────────────────────────────

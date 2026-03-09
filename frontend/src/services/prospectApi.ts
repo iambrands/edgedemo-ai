@@ -53,6 +53,9 @@ export type ProspectStatus =
   | 'meeting_completed'
   | 'proposal_sent'
   | 'negotiating'
+  | 'agreement_signed'
+  | 'onboarding'
+  | 'active_client'
   | 'won'
   | 'lost'
   | 'nurturing';
@@ -336,4 +339,55 @@ export function rescoreProspect(prospectId: string): Promise<ScoreResult> {
 
 export function rescoreAll(): Promise<{ rescored: number }> {
   return fetchJson(`${BASE}/score/all`, { method: 'POST' });
+}
+
+// -- Stage Advancement -------------------------------------------------------
+
+export async function advanceStage(
+  prospectId: string,
+  targetStage: string,
+): Promise<Prospect> {
+  const res = await fetch(`${API_BASE}${BASE}/${prospectId}/stage`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ target_stage: targetStage }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Stage advance failed' }));
+    const error = new Error(err.detail || `HTTP ${res.status}`) as Error & { status: number };
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+// -- Seed Milestone ----------------------------------------------------------
+
+export interface SeedMilestone {
+  total_prospects: number;
+  active_pipeline: number;
+  converted: number;
+  target: number;
+  progress_pct: number;
+  milestones: Array<{ name: string; target: number; achieved: boolean }>;
+}
+
+export function getSeedMilestone(): Promise<SeedMilestone> {
+  return fetchJson<SeedMilestone>(`${BASE}/analytics/seed-milestone`);
+}
+
+// -- Communications ----------------------------------------------------------
+
+export interface Communication {
+  id: string;
+  type: string;
+  subject?: string;
+  date: string;
+  direction?: string;
+}
+
+export function getCommunications(
+  prospectId: string,
+): Promise<{ communications: Communication[] }> {
+  return fetchJson(`${BASE}/${prospectId}/communications`);
 }

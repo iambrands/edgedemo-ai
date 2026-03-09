@@ -34,6 +34,20 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     
+    # Market Data — Tradier
+    tradier_api_key: str = ""
+    tradier_account_id: str = ""
+    tradier_base_url: str = "https://sandbox.tradier.com/v1"
+
+    # Market Data — Altruist
+    altruist_api_key: str = ""
+    altruist_base_url: str = "https://api.altruist.com/v1"
+
+    # Email — SendGrid
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = "notifications@edgeadvisors.ai"
+    sendgrid_from_name: str = "Edge Advisors"
+
     # CORS - Railway frontend URL will be added dynamically
     cors_origins: str = "http://localhost:5173,http://localhost:5175,http://127.0.0.1:5173"
     

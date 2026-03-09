@@ -194,3 +194,126 @@ class BIMService:
                 "Adjust tone based on client's communication preferences",
             ],
         }
+
+    async def compute_tax_aversion_score(self, client_id, db) -> float:
+        """
+        Compute tax aversion score from most recent tax profile.
+        Higher effective rate + large STCG + low estimated payments = higher aversion.
+        Returns 0.0-1.0, stores in bim_scores table.
+        """
+        try:
+            from sqlalchemy import select
+            from backend.models.tax_profile import TaxProfile
+            from backend.models.bim_score import BIMScore
+
+            result = await db.execute(
+                select(TaxProfile)
+                .where(TaxProfile.client_id == client_id)
+                .order_by(TaxProfile.tax_year.desc())
+                .limit(1)
+            )
+            profile = result.scalar_one_or_none()
+            if not profile:
+                return 0.5
+
+            score = 0.5
+            if profile.effective_rate and float(profile.effective_rate) > 0.30:
+                score += 0.20
+            cg = profile.capital_gains or {}
+            st = cg.get("short_term", 0)
+            lt = cg.get("long_term", 0)
+            if st > lt and st > 0:
+                score += 0.15
+            raw = profile.raw_data or {}
+            est_paid = raw.get("estimated_tax_paid", 0)
+            total_tax = raw.get("total_tax", 1)
+            if total_tax > 0 and est_paid < (total_tax * 0.80):
+                score += 0.15
+
+            score = min(1.0, max(0.0, score))
+
+            bim_score = BIMScore(
+                client_id=client_id,
+                score_type="tax_aversion",
+                score=score,
+                metadata_json={"effective_rate": str(profile.effective_rate), "stcg": st, "ltcg": lt},
+            )
+            db.add(bim_score)
+            await db.flush()
+            return score
+        except Exception as e:
+            logger.warning("Tax aversion scoring failed: %s", e)
+            return 0.5
+
+    async def compute_tlh_opportunity_score(self, client_id, portfolio: list, db) -> float:
+        """
+        Scan portfolio for unrealized losses > $500.
+        Higher score when client has high STCG (harvesting more valuable).
+        Returns 0.0-1.0, stores in bim_scores table.
+        """
+        try:
+            from backend.models.bim_score import BIMScore
+
+            losses = [p for p in portfolio if p.get("unrealized_gain", 0) < -500]
+            total_loss = sum(abs(p.get("unrealized_gain", 0)) for p in losses)
+
+            if not losses:
+                return 0.0
+
+            score = min(0.5, len(losses) * 0.1)
+            if total_loss > 5000:
+                score += 0.3
+            elif total_loss > 1000:
+                score += 0.15
+
+            score = min(1.0, max(0.0, score))
+
+            bim_score = BIMScore(
+                client_id=client_id,
+                score_type="tlh_opportunity",
+                score=score,
+                metadata_json={"loss_count": len(losses), "total_loss": total_loss},
+            )
+            db.add(bim_score)
+            await db.flush()
+            return score
+        except Exception as e:
+            logger.warning("TLH opportunity scoring failed: %s", e)
+            return 0.0
+
+    async def compute_recommendation_confidence(self, rec, client_id, db) -> float:
+        """
+        Weighted composite confidence score for IMM-06 recommendations.
+        IIM signal (0.40) + BIM alignment (0.35) + CIM compliance (0.25)
+        """
+        try:
+            from sqlalchemy import select
+            from backend.models.bim_score import BIMScore
+
+            iim_signal = getattr(rec, 'confidence', 0.5) * 0.40
+
+            alignment = 0.5
+            scores_result = await db.execute(
+                select(BIMScore).where(
+                    BIMScore.client_id == client_id,
+                    BIMScore.score_type == "tax_aversion",
+                ).order_by(BIMScore.computed_at.desc()).limit(1)
+            )
+            tax_score = scores_result.scalar_one_or_none()
+            rec_type = getattr(rec, 'rec_type', '')
+            if tax_score:
+                tax_val = float(tax_score.score)
+                if tax_val > 0.7 and rec_type in ('TLH', 'tax_loss_harvest'):
+                    alignment = 0.9
+                elif tax_val > 0.7 and rec_type in ('BUY',) and getattr(rec, 'risk_level', 3) > 3:
+                    alignment = 0.3
+            bim_component = alignment * 0.35
+
+            compliance_status = getattr(rec, 'compliance_status', 'APPROVED')
+            cim_map = {'APPROVED': 1.0, 'WARNING': 0.6, 'BLOCKED': 0.0}
+            cim_component = cim_map.get(compliance_status, 0.5) * 0.25
+
+            return round(iim_signal + bim_component + cim_component, 4)
+        except Exception as e:
+            logger.warning("Confidence scoring failed: %s", e)
+            return 0.5

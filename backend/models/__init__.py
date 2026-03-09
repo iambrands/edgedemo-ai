@@ -182,6 +182,13 @@ from .conversation import (  # noqa: E402
     ActionItemStatus,
     ActionItemPriority,
 )
+from .compliance_rules import (  # noqa: E402
+    ComplianceRuleConfig,
+    ComplianceException,
+    ComplianceAuditLog,
+)
+from .tax_profile import TaxProfile  # noqa: E402
+from .bim_score import BIMScore  # noqa: E402
 
 __all__ = [
     "Account",
@@ -307,4 +314,12 @@ __all__ = [
     "SentimentType",
     "ActionItemStatus",
     "ActionItemPriority",
+    # Compliance Rule Engine models
+    "ComplianceRuleConfig",
+    "ComplianceException",
+    "ComplianceAuditLog",
+    # Tax Profile models
+    "TaxProfile",
+    # BIM Scoring models
+    "BIMScore",
 ]

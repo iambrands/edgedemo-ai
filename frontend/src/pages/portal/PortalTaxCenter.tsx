@@ -58,6 +58,61 @@ export default function PortalTaxCenter() {
   const [lots, setLots] = useState<TaxLot[]>([]);
   const [txFilter, setTxFilter] = useState<'all' | 'short' | 'long'>('all');
   const [tab, setTab] = useState<'realized' | 'lots' | 'docs'>('realized');
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  const handleUpload1040 = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadStatus('Uploading...');
+
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const token = localStorage.getItem('portal_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('client_id', 'current');
+
+      const res = await fetch(`${apiBase}/api/v1/tax/ingest`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const { job_id } = await res.json();
+
+      setUploadStatus('Processing document...');
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${apiBase}/api/v1/tax/status/${job_id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          const statusData = await statusRes.json();
+          if (statusData.status === 'complete') {
+            clearInterval(pollInterval);
+            setUploading(false);
+            setUploadStatus(null);
+            window.location.reload();
+          } else if (statusData.status === 'error') {
+            clearInterval(pollInterval);
+            setUploading(false);
+            setUploadStatus('Processing failed');
+          }
+        } catch {
+          clearInterval(pollInterval);
+          setUploading(false);
+          setUploadStatus('Status check failed');
+        }
+      }, 3000);
+    } catch {
+      setUploading(false);
+      setUploadStatus('Upload failed');
+    }
+  };
 
   useEffect(() => {
     Promise.all([getTaxSummary(), getTaxLots()])
@@ -86,11 +141,25 @@ export default function PortalTaxCenter() {
 
   return (
     <div className="space-y-6">
-        <PageHeader title="Tax Center" subtitle="Tax year 2025 — Estimates for informational purposes" />
+        <div className="flex items-center justify-between">
+          <PageHeader title="Tax Center" subtitle="Tax year 2025 — Estimates for informational purposes" />
+          <div className="flex items-center gap-2">
+            {uploadStatus && (
+              <span className="text-sm text-blue-600 animate-pulse">{uploadStatus}</span>
+            )}
+            <label className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg cursor-pointer ${
+              uploading ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}>
+              <FileText className="w-4 h-4" />
+              {uploading ? 'Processing...' : 'Upload 1040'}
+              <input type="file" accept=".pdf" className="hidden" onChange={handleUpload1040} disabled={uploading} />
+            </label>
+          </div>
+        </div>
 
         {/* ── Summary Cards ──────────────────────────── */}
         {summary && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               label="Realized Gains"
               value={fmtCur(summary.realized_gains_st + summary.realized_gains_lt)}
@@ -173,7 +242,7 @@ export default function PortalTaxCenter() {
         )}
 
         {/* ── Tabs ────────────────────────────────────── */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {([
             { key: 'realized', label: 'Realized Transactions' },
             { key: 'lots', label: 'Tax Lots' },
@@ -182,7 +251,7 @@ export default function PortalTaxCenter() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === t.key ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
               }`}
             >

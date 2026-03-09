@@ -95,6 +95,94 @@ class ComplianceRulesEngine:
             details={"alignment_check": "performed"},
         )
 
+    def check_ia_act_fiduciary(self, recommendation: dict, client_ips: dict) -> RuleResult:
+        """IA Act Section 206 — portfolio drift from IPS target allocation."""
+        target = client_ips.get("target_allocation", {})
+        current = recommendation.get("current_allocation", {})
+        max_drift = 0.0
+        for asset_class, target_pct in target.items():
+            current_pct = current.get(asset_class, 0)
+            drift = abs(current_pct - target_pct)
+            max_drift = max(max_drift, drift)
+
+        passed = max_drift <= 10.0
+        return RuleResult(
+            "IA206_FIDUCIARY",
+            passed=passed,
+            severity="WARNING" if not passed and max_drift <= 15.0 else ("BLOCKING" if not passed else "LOW"),
+            details={"max_drift_pct": max_drift, "threshold": 10.0},
+        )
+
+    def check_series65_suitability(
+        self, recommendation: dict, client_profile: dict
+    ) -> RuleResult:
+        """NASAA Series 65 suitability — product vs. client profile."""
+        strategy = recommendation.get("strategy_type", "")
+        risk_level = recommendation.get("risk_level", 3)
+        liquidity = recommendation.get("liquidity_rating", 5)
+        time_horizon = client_profile.get("time_horizon_years", 10)
+        risk_tolerance = client_profile.get("risk_tolerance", 3)
+        profile_type = client_profile.get("profile_type", "moderate")
+
+        flags: list[str] = []
+        severity = "LOW"
+
+        if "option" in strategy.lower() and profile_type in ("conservative", "income"):
+            flags.append("Options strategy for conservative profile")
+            severity = "BLOCKING"
+        if liquidity < 3 and time_horizon < 3:
+            flags.append("Illiquid alternative for short time horizon (<3yr)")
+            severity = "BLOCKING"
+        if risk_level > risk_tolerance + 1:
+            flags.append(f"Risk level {risk_level} exceeds tolerance {risk_tolerance}")
+            if severity != "BLOCKING":
+                severity = "WARNING"
+
+        return RuleResult(
+            "SERIES65_SUITABILITY",
+            passed=len(flags) == 0,
+            severity=severity,
+            details={"flags": flags},
+        )
+
+    def check_adv_currency(self, adv_data: dict) -> RuleResult:
+        """ADV Part 2B currency check — must be updated within 12 months."""
+        days_since_update = adv_data.get("days_since_update", 0)
+        aum_change_pct = abs(adv_data.get("aum_change_pct", 0))
+        new_strategies = adv_data.get("new_strategies_added", False)
+
+        if days_since_update > 365 or (aum_change_pct > 20) or new_strategies:
+            return RuleResult(
+                "ADV_CURRENCY",
+                passed=False,
+                severity="BLOCKING" if days_since_update > 365 else "WARNING",
+                details={
+                    "days_since_update": days_since_update,
+                    "aum_change_pct": aum_change_pct,
+                    "material_change": aum_change_pct > 20 or new_strategies,
+                },
+            )
+        if days_since_update > 300:
+            return RuleResult(
+                "ADV_CURRENCY",
+                passed=True,
+                severity="WARNING",
+                details={"days_since_update": days_since_update, "action": "UPDATE_RECOMMENDED"},
+            )
+        return RuleResult("ADV_CURRENCY", passed=True, details={"days_since_update": days_since_update})
+
+    def check_conflict_of_interest(self, trade: dict) -> RuleResult:
+        """Section 206(3) — principal trades require written client consent."""
+        involves_advisor_account = trade.get("involves_advisor_account", False)
+        if involves_advisor_account:
+            return RuleResult(
+                "CONFLICT_206_3",
+                passed=False,
+                severity="BLOCKING",
+                details={"reason": "Principal trade detected — requires written client consent"},
+            )
+        return RuleResult("CONFLICT_206_3", passed=True)
+
 
 class CIMService:
     """Compliance Investment Model. Every decision logged to ComplianceLog."""
@@ -211,3 +299,42 @@ class CIMService:
         )
         self.session.add(entry)
         await self.session.flush()
+
+    async def compute_suitability_score(
+        self, client_profile: dict, recommendation: dict
+    ) -> dict:
+        """
+        Compute suitability score per Series 65 requirements.
+        Base score 100, deductions for mismatches.
+        Returns: {score: int, passed: bool, blocking: bool, flags: list[str]}
+        """
+        score = 100
+        flags: list[str] = []
+
+        complexity = recommendation.get("complexity_rating", 1)
+        sophistication = client_profile.get("sophistication_level", 3)
+        if complexity > sophistication:
+            score -= 25
+            flags.append(f"Strategy complexity ({complexity}) exceeds client sophistication ({sophistication})")
+
+        liquidity_need = client_profile.get("liquidity_needs", 3)
+        liquidity_rating = recommendation.get("liquidity_rating", 5)
+        if liquidity_rating < liquidity_need:
+            score -= 20
+            flags.append(f"Liquidity rating ({liquidity_rating}) below client need ({liquidity_need})")
+
+        risk_tolerance = client_profile.get("risk_tolerance", 3)
+        risk_level = recommendation.get("risk_level", 3)
+        if risk_level > risk_tolerance + 1:
+            score -= 15
+            flags.append(f"Risk level ({risk_level}) exceeds tolerance ({risk_tolerance}) by >1")
+
+        blocking = score < 60
+        passed = score >= 80
+
+        return {
+            "score": max(0, score),
+            "passed": passed,
+            "blocking": blocking,
+            "flags": flags,
+        }

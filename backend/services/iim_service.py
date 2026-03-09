@@ -254,3 +254,80 @@ class IIMService:
             total_estimated_savings=total_savings,
             summary=f"Found {len(opportunities)} tax-loss harvesting opportunities.",
         )
+
+    async def get_live_positions(self, advisor_id) -> dict:
+        """
+        Merge Redis (live) + PostgreSQL (snapshot) data.
+        Falls back to PostgreSQL with stale=True if Redis TTL expired.
+        """
+        from backend.services.redis_client import get_redis
+        import json
+        from datetime import datetime, timezone
+
+        redis = await get_redis()
+        result = {"positions": [], "stale": False, "source": "snapshot"}
+
+        if redis:
+            freshness_ts = await redis.get(f"data_freshness:{advisor_id}")
+            if freshness_ts:
+                age = int(datetime.now(timezone.utc).timestamp()) - int(freshness_ts)
+                if age < 90:
+                    result["source"] = "live"
+                    result["stale"] = False
+                else:
+                    result["stale"] = True
+
+            positions_raw = await redis.get(f"positions:{advisor_id}")
+            if positions_raw:
+                result["positions"] = json.loads(positions_raw)
+                return result
+
+        # Fall back to PostgreSQL snapshot
+        try:
+            from sqlalchemy import text
+            snap = await self.session.execute(
+                text("""
+                    SELECT holdings FROM accounts_snapshot
+                    WHERE advisor_id = :aid
+                    ORDER BY snapshot_at DESC LIMIT 1
+                """),
+                {"aid": str(advisor_id)},
+            )
+            row = snap.fetchone()
+            if row:
+                result["positions"] = row[0] if isinstance(row[0], list) else [row[0]]
+                result["stale"] = True
+                result["source"] = "snapshot"
+        except Exception:
+            pass
+
+        return result
+
+    async def get_data_freshness(self, advisor_id) -> dict:
+        """Returns {last_sync: ISO str, stale: bool, age_seconds: int}."""
+        from backend.services.redis_client import get_redis
+        from datetime import datetime, timezone
+
+        redis = await get_redis()
+        now = datetime.now(timezone.utc)
+
+        if redis:
+            freshness_ts = await redis.get(f"data_freshness:{advisor_id}")
+            if freshness_ts:
+                ts = int(freshness_ts)
+                age = int(now.timestamp()) - ts
+                return {
+                    "last_sync": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+                    "stale": age > 90,
+                    "age_seconds": age,
+                }
+
+        return {
+            "last_sync": now.isoformat(),
+            "stale": False,
+            "age_seconds": 0,
+        }
+
+    async def is_stale(self, advisor_id, threshold_seconds: int = 90) -> bool:
+        freshness = await self.get_data_freshness(advisor_id)
+        return freshness["stale"] or freshness["age_seconds"] > threshold_seconds

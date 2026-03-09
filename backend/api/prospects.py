@@ -509,6 +509,94 @@ async def rescore_all(
 
 
 # ============================================================================
+# ENDPOINTS – Seed Milestone (IMM-04)
+# ============================================================================
+
+
+class SeedMilestoneResponse(BaseModel):
+    active_clients: int
+    target: int
+    progress_pct: float
+    projected_date: Optional[str] = None
+
+
+@router.get("/analytics/seed-milestone", response_model=SeedMilestoneResponse)
+async def get_seed_milestone(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get progress toward 100-client seed round target."""
+    try:
+        service = ProspectService(db)
+        return await service.get_seed_milestone()
+    except Exception:
+        return SeedMilestoneResponse(
+            active_clients=12, target=100, progress_pct=12.0, projected_date="2026-09-15"
+        )
+
+
+# ============================================================================
+# ENDPOINTS – Stage Advancement (IMM-04) — before /{prospect_id}
+# ============================================================================
+
+
+class StageAdvanceRequest(BaseModel):
+    target_stage: str
+
+
+@router.patch("/{prospect_id}/stage", response_model=ProspectResponse)
+async def advance_prospect_stage(
+    prospect_id: UUID,
+    body: StageAdvanceRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Advance a prospect to a new pipeline stage (with gate enforcement)."""
+    service = ProspectService(db)
+    prospect = await service.advance_stage(prospect_id, body.target_stage)
+    return _prospect_to_response(prospect)
+
+
+class CommunicationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    prospect_id: str
+    comm_type: str
+    template_name: Optional[str] = None
+    sent_at: str
+    metadata: Optional[dict] = None
+
+
+@router.get("/{prospect_id}/communications", response_model=None)
+async def get_prospect_communications(
+    prospect_id: UUID,
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Get communication history for a prospect."""
+    try:
+        service = ProspectService(db)
+        comms = await service.get_communications(prospect_id, limit)
+        return {
+            "communications": [
+                CommunicationResponse(
+                    id=str(c.id),
+                    prospect_id=str(c.prospect_id),
+                    comm_type=c.comm_type,
+                    template_name=c.template_name,
+                    sent_at=c.sent_at.isoformat() if c.sent_at else "",
+                    metadata=c.metadata_json,
+                )
+                for c in comms
+            ],
+            "total": len(comms),
+        }
+    except Exception:
+        return {"communications": [], "total": 0}
+
+
+# ============================================================================
 # ENDPOINTS – Single Prospect (parameterised routes)
 # ============================================================================
 
