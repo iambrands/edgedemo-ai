@@ -69,6 +69,7 @@ export const PUBLIC_PAGES = [
   { path: '/legal/terms',        title: 'Terms' },
   { path: '/legal/privacy',      title: 'Privacy' },
   { path: '/legal/disclosures',  title: 'Disclosures' },
+  { path: '/legal/data-retention', title: 'Data Retention' },
   { path: '/company/about',      title: 'About' },
   { path: '/company/careers',    title: 'Join' },
   { path: '/company/blog',       title: 'Insight' },

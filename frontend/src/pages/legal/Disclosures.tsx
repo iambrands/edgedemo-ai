@@ -16,6 +16,7 @@ export default function Disclosures() {
           <div className="flex gap-4 ml-auto text-sm">
             <Link to="/legal/terms" className="text-slate-500 hover:text-slate-900">Terms</Link>
             <Link to="/legal/privacy" className="text-slate-500 hover:text-slate-900">Privacy</Link>
+            <Link to="/legal/data-retention" className="text-slate-500 hover:text-slate-900">Data Retention</Link>
           </div>
         </div>
       </header>

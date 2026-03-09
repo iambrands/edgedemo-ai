@@ -18,6 +18,7 @@ export function Footer() {
       { label: 'Terms of Use', href: '/legal/terms', isRoute: true },
       { label: 'Privacy Policy', href: '/legal/privacy', isRoute: true },
       { label: 'Disclosures', href: '/legal/disclosures', isRoute: true },
+      { label: 'Data Retention', href: '/legal/data-retention', isRoute: true },
     ],
   };
 

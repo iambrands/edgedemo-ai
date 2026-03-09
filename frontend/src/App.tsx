@@ -65,7 +65,7 @@ import {
 import { RIAOnboarding } from './pages/onboarding';
 import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { Technology, Methodology } from './pages/about';
-import { Terms, Privacy, Disclosures } from './pages/legal';
+import { Terms, Privacy, Disclosures, DataRetention } from './pages/legal';
 import { About, Careers, Blog, Contact } from './pages/company';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -157,6 +157,7 @@ export default function App() {
       <Route path="/legal/terms" element={<Terms />} />
       <Route path="/legal/privacy" element={<Privacy />} />
       <Route path="/legal/disclosures" element={<Disclosures />} />
+      <Route path="/legal/data-retention" element={<DataRetention />} />
 
       {/* Company */}
       <Route path="/company/about" element={<About />} />

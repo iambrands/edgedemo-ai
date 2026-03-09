@@ -16,6 +16,7 @@ export default function Terms() {
           <div className="flex gap-4 ml-auto text-sm">
             <Link to="/legal/privacy" className="text-slate-500 hover:text-slate-900">Privacy</Link>
             <Link to="/legal/disclosures" className="text-slate-500 hover:text-slate-900">Disclosures</Link>
+            <Link to="/legal/data-retention" className="text-slate-500 hover:text-slate-900">Data Retention</Link>
           </div>
         </div>
       </header>
