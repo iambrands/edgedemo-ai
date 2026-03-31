@@ -431,7 +431,7 @@ function SeedMilestoneTracker() {
             ))}
           </div>
         )}
-        <div className="grid grid-cols-3 gap-4 mt-2">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-2">
           <div className="text-center p-2 bg-slate-50 rounded">
             <p className="text-lg font-bold text-slate-700">{data.total_prospects}</p>
             <p className="text-xs text-slate-500">Total Prospects</p>

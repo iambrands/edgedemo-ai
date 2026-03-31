@@ -490,7 +490,7 @@ export default function ModelPortfolios() {
         </div>
 
         {/* Summary row */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <MetricCard label="Pending" value={String(pending.length)} color="amber" />
           <MetricCard label="Approved" value={String(signals.filter((s) => s.status === 'approved').length)} color="blue" />
           <MetricCard label="Completed" value={String(signals.filter((s) => s.status === 'completed').length)} color="emerald" />

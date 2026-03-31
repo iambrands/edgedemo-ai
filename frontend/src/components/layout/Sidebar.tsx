@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -192,11 +192,27 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     navigate('/');
   };
 
+  // Auto-close on navigation when in mobile overlay mode
+  useEffect(() => {
+    if (!isCollapsed && window.innerWidth < 768) {
+      onToggle();
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
+    <>
+    {/* Mobile backdrop */}
+    {!isCollapsed && (
+      <div
+        className="fixed inset-0 bg-black/50 z-30 md:hidden"
+        onClick={onToggle}
+        aria-hidden="true"
+      />
+    )}
     <aside
       className={clsx(
-        'fixed left-0 top-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 z-40 transition-all duration-200 shadow-xl',
-        isCollapsed ? 'w-16' : 'w-64'
+        'fixed left-0 top-0 h-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 z-40 transition-all duration-200 shadow-xl w-64',
+        isCollapsed ? '-translate-x-full md:translate-x-0 md:w-16' : 'translate-x-0',
       )}
     >
       <div className="flex flex-col h-full">
@@ -393,5 +409,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }
