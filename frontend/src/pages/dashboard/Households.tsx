@@ -131,7 +131,7 @@ export function Households() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wide">Total Value</p>
                   <p className="text-lg font-semibold text-slate-900">

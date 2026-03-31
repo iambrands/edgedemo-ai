@@ -9,7 +9,7 @@ import AIChatWidget from '../chat/AIChatWidget';
 
 export function DashboardLayout() {
   const { user, isLoading } = useAuth();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 768);
   const alertCount = ALERTS.filter((a) => a.severity === 'high' || a.severity === 'medium').length;
 
   if (isLoading) {
@@ -37,7 +37,7 @@ export function DashboardLayout() {
       <div
         className={clsx(
           'transition-all duration-200',
-          isSidebarCollapsed ? 'ml-16' : 'ml-64'
+          isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64',
         )}
       >
         {/* Top Bar */}
@@ -45,7 +45,8 @@ export function DashboardLayout() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 lg:hidden"
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 md:hidden"
+              aria-label="Toggle navigation"
             >
               <Menu size={20} />
             </button>

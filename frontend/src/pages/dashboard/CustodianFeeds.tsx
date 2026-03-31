@@ -220,7 +220,7 @@ export default function CustodianFeeds() {
                 </div>
                 <Badge variant={recon.status === 'complete' ? 'green' : 'amber'}>{recon.status}</Badge>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-emerald-50 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-emerald-700">{recon.accounts_reconciled}</p>
                   <p className="text-xs text-emerald-600 mt-1">Accounts Reconciled</p>
