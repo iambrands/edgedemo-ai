@@ -4,6 +4,10 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+try:
+    from backend.services.ai_guardrails import apply_compliance_guardrails
+except ImportError:
+    from services.ai_guardrails import apply_compliance_guardrails
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +124,7 @@ Analyze this meeting and provide a JSON response with the following structure:
 }}
 
 Be thorough but concise. Flag any compliance concerns immediately. Extract exact quotes for action items."""
+        prompt = apply_compliance_guardrails(prompt, audience="advisor")
 
         try:
             response = getattr(client, "messages").create(
@@ -336,6 +341,7 @@ Write a warm, professional email that:
 5. Offers availability for questions
 
 Return JSON: {{"subject": "...", "body": "..."}}"""
+        prompt = apply_compliance_guardrails(prompt, audience="advisor")
 
         try:
             response = getattr(client, "messages").create(

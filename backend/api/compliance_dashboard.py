@@ -8,10 +8,14 @@ query real database tables via ComplianceService.
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel
 
 from backend.api.rate_limit import limit_requests
+try:
+    from backend.api.auth import get_current_user
+except ImportError:
+    from api.auth import get_current_user
 
 import logging
 
@@ -202,6 +206,7 @@ def _demo_audit_log():
 @router.get("/dashboard")
 async def get_compliance_dashboard(
     _: None = Depends(limit_requests("compliance_dashboard", max_calls=120, window_seconds=3600)),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get compliance dashboard metrics (new Co-Pilot format)."""
     alerts = _demo_alerts()
@@ -255,6 +260,7 @@ async def get_compliance_dashboard(
 async def list_alerts(
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
 ):
     """List compliance alerts with optional filters."""
     items = _demo_alerts()
@@ -266,25 +272,25 @@ async def list_alerts(
 
 
 @router.get("/alerts/{alert_id}")
-async def get_alert(alert_id: str):
+async def get_alert(alert_id: str, current_user: dict = Depends(get_current_user)):
     """Get alert detail with comments."""
     for alert in _demo_alerts():
         if alert["id"] == alert_id:
             return alert
-    return {"detail": "Alert not found"}
+    raise HTTPException(status_code=404, detail="Alert not found")
 
 
 @router.patch("/alerts/{alert_id}/status")
-async def update_alert_status(alert_id: str):
+async def update_alert_status(alert_id: str, current_user: dict = Depends(get_current_user)):
     """Update alert status (demo — returns the alert unchanged)."""
     for alert in _demo_alerts():
         if alert["id"] == alert_id:
             return alert
-    return {"detail": "Alert not found"}
+    raise HTTPException(status_code=404, detail="Alert not found")
 
 
 @router.post("/alerts/{alert_id}/comments")
-async def add_alert_comment(alert_id: str):
+async def add_alert_comment(alert_id: str, current_user: dict = Depends(get_current_user)):
     """Add comment to alert (demo)."""
     return {
         "id": "cm-new-001",
@@ -302,6 +308,7 @@ async def add_alert_comment(alert_id: str):
 async def list_tasks(
     status: Optional[str] = Query(None),
     include_completed: bool = Query(False),
+    current_user: dict = Depends(get_current_user),
 ):
     """List compliance tasks."""
     items = _demo_tasks()
@@ -313,20 +320,20 @@ async def list_tasks(
 
 
 @router.post("/tasks")
-async def create_task():
+async def create_task(current_user: dict = Depends(get_current_user)):
     """Create a new task (demo — returns first task)."""
     return _demo_tasks()[0]
 
 
 @router.post("/tasks/{task_id}/complete")
-async def complete_task(task_id: str):
+async def complete_task(task_id: str, current_user: dict = Depends(get_current_user)):
     """Mark task completed (demo)."""
     for task in _demo_tasks():
         if task["id"] == task_id:
             task["status"] = "completed"
             task["completed_at"] = _now().isoformat()
             return task
-    return {"detail": "Task not found"}
+    raise HTTPException(status_code=404, detail="Task not found")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -334,6 +341,6 @@ async def complete_task(task_id: str):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/audit-trail")
-async def get_audit_trail_copilot():
+async def get_audit_trail_copilot(current_user: dict = Depends(get_current_user)):
     """Get compliance audit trail in Co-Pilot format."""
     return _demo_audit_log()

@@ -15,6 +15,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.api.rate_limit import limit_requests
+try:
+    from backend.services.ai_guardrails import apply_compliance_guardrails
+except ImportError:
+    from services.ai_guardrails import apply_compliance_guardrails
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +353,7 @@ async def analyze_portfolio(
 
     try:
         prompt = _build_analysis_prompt(payload.holdings, payload.clientProfile or "conservative but wants a bit of growth")
+        prompt = apply_compliance_guardrails(prompt, audience="advisor")
         response = client.messages.create(
             model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
             max_tokens=4000,

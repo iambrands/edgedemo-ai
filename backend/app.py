@@ -659,12 +659,20 @@ if "compliance_docs" not in [n for n in _ria_routers_mounted] and "compliance_do
 # Mount B2C self-service routes (DB required)
 if _db_available:
     try:
-        from backend.api.b2c.auth import router as b2c_auth_router
-        from backend.api.b2c.onboarding import router as b2c_onboarding_router
-        from backend.api.b2c.dashboard import router as b2c_dashboard_router
-        from backend.api.b2c.chat import router as b2c_chat_router
-        from backend.api.b2c.statements import router as b2c_statements_router
-        from backend.api.b2c.subscription import router as b2c_subscription_router
+        try:
+            from backend.api.b2c.auth import router as b2c_auth_router
+            from backend.api.b2c.onboarding import router as b2c_onboarding_router
+            from backend.api.b2c.dashboard import router as b2c_dashboard_router
+            from backend.api.b2c.chat import router as b2c_chat_router
+            from backend.api.b2c.statements import router as b2c_statements_router
+            from backend.api.b2c.subscription import router as b2c_subscription_router
+        except ImportError:
+            from api.b2c.auth import router as b2c_auth_router
+            from api.b2c.onboarding import router as b2c_onboarding_router
+            from api.b2c.dashboard import router as b2c_dashboard_router
+            from api.b2c.chat import router as b2c_chat_router
+            from api.b2c.statements import router as b2c_statements_router
+            from api.b2c.subscription import router as b2c_subscription_router
         app.include_router(b2c_auth_router)
         app.include_router(b2c_onboarding_router)
         app.include_router(b2c_dashboard_router)
@@ -677,7 +685,10 @@ if _db_available:
 else:
     logger.info("Skipping B2C routes (no DATABASE_URL)")
     try:
-        from backend.api.mock_b2c import router as mock_b2c_router
+        try:
+            from backend.api.mock_b2c import router as mock_b2c_router
+        except ImportError:
+            from api.mock_b2c import router as mock_b2c_router
         app.include_router(mock_b2c_router)
         logger.info("Mock B2C router mounted (GET /api/v1/b2c/me)")
     except Exception as e:

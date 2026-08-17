@@ -353,6 +353,25 @@ except ImportError:
     from api.auth import get_current_user
 
 
+def _can_access_meeting(meeting: dict, current_user: dict) -> bool:
+    """IDOR-safe access check for demo meeting records."""
+    user_id = str(current_user.get("id") or "")
+    advisor_id = str(current_user.get("advisor_id") or "")
+    meeting_advisor_id = str(meeting.get("advisor_id") or "")
+
+    if not meeting_advisor_id:
+        return True
+    return meeting_advisor_id in {user_id, advisor_id}
+
+
+def _require_meeting_access(meeting_id: str, current_user: dict) -> dict:
+    """Return meeting only when visible to requester; otherwise 404."""
+    meeting = DEMO_MEETINGS.get(meeting_id)
+    if not meeting or not _can_access_meeting(meeting, current_user):
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    return meeting
+
+
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
@@ -363,9 +382,13 @@ async def list_meetings(
     status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
+    current_user: dict = Depends(get_current_user),
 ):
-    """List meetings with optional filters (no auth for demo)"""
-    meetings = list(DEMO_MEETINGS.values())
+    """List meetings with optional filters."""
+    meetings = [
+        m for m in DEMO_MEETINGS.values()
+        if _can_access_meeting(m, current_user)
+    ]
     
     if household_id:
         meetings = [m for m in meetings if m["household_id"] == household_id]
@@ -381,12 +404,10 @@ async def list_meetings(
 @router.get("/{meeting_id}", response_model=MeetingResponse)
 async def get_meeting(
     meeting_id: str,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Get meeting details (no auth for demo)"""
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    return meeting
+    """Get meeting details."""
+    return _require_meeting_access(meeting_id, current_user)
 
 
 @router.post("", response_model=MeetingResponse)
@@ -434,9 +455,7 @@ async def upload_recording(
     Upload meeting recording for transcription and analysis.
     Accepts: mp3, mp4, mpeg, mpga, m4a, wav, webm
     """
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    meeting = _require_meeting_access(meeting_id, current_user)
     
     # Validate file type
     allowed_extensions = ["mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm"]
@@ -471,11 +490,10 @@ async def upload_recording(
 @router.get("/{meeting_id}/transcript", response_model=TranscriptResponse)
 async def get_transcript(
     meeting_id: str,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Get meeting transcript (no auth for demo)"""
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    """Get meeting transcript."""
+    _require_meeting_access(meeting_id, current_user)
     
     transcript = DEMO_TRANSCRIPT.get(meeting_id)
     if not transcript:
@@ -487,11 +505,10 @@ async def get_transcript(
 @router.get("/{meeting_id}/analysis", response_model=AnalysisResponse)
 async def get_analysis(
     meeting_id: str,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Get meeting analysis (no auth for demo)"""
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    """Get meeting analysis."""
+    _require_meeting_access(meeting_id, current_user)
     
     analysis = DEMO_ANALYSIS.get(meeting_id)
     if not analysis:
@@ -507,11 +524,10 @@ async def get_analysis(
 async def get_action_items(
     meeting_id: str,
     status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Get action items for a meeting (no auth for demo)"""
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    """Get action items for a meeting."""
+    _require_meeting_access(meeting_id, current_user)
     
     items = DEMO_ACTION_ITEMS.get(meeting_id, [])
     
@@ -529,6 +545,7 @@ async def update_action_item(
     current_user: dict = Depends(get_current_user)
 ):
     """Update an action item"""
+    _require_meeting_access(meeting_id, current_user)
     items = DEMO_ACTION_ITEMS.get(meeting_id, [])
     
     for item in items:
@@ -552,9 +569,7 @@ async def regenerate_analysis(
     current_user: dict = Depends(get_current_user)
 ):
     """Regenerate meeting analysis from existing transcript"""
-    meeting = DEMO_MEETINGS.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    meeting = _require_meeting_access(meeting_id, current_user)
     
     transcript = DEMO_TRANSCRIPT.get(meeting_id)
     if not transcript:

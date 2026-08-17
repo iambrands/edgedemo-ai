@@ -20,6 +20,11 @@ async def confirm_statement(
     db: AsyncSession = Depends(get_db),
 ):
     """Confirm parsed statement and persist it for the authenticated B2C user."""
+    user_type = str(getattr(current_user, "user_type", "") or "")
+    if user_type and not user_type.startswith("b2c_"):
+        # Scope guard: hide endpoint behavior from non-B2C identities.
+        raise HTTPException(status_code=404, detail="Statement not found")
+
     stmt = PARSED_STATEMENTS.get(statement_id)
     if not stmt:
         raise HTTPException(status_code=404, detail="Statement not found")
