@@ -10,9 +10,20 @@ from pathlib import Path
 import types
 
 # Determine if we're running in Nixpacks flat structure (no backend/ dir)
-# or standard structure (with backend/ dir)
+# or standard structure (with backend/ dir). Prefer __file__ over cwd — uvicorn
+# often runs from backend/, which would falsely match Nixpacks (api/ exists, backend/ does not).
+_app_dir = Path(__file__).resolve().parent
 _cwd = Path.cwd()
-_is_nixpacks = not (_cwd / "backend").is_dir() and (_cwd / "api").is_dir()
+_standard_repo_root = (
+    _app_dir.parent
+    if _app_dir.name == "backend" and (_app_dir.parent / "backend" / "app.py").exists()
+    else None
+)
+_is_nixpacks = (
+    _standard_repo_root is None
+    and not (_cwd / "backend").is_dir()
+    and (_cwd / "api").is_dir()
+)
 
 if _is_nixpacks:
     # Nixpacks puts everything flat in /app
@@ -60,15 +71,14 @@ if _is_nixpacks:
         backend_module.config = config_module
 else:
     # Standard structure - find project root
-    file_based = Path(__file__).resolve().parent.parent
-    if (file_based / "backend").is_dir():
-        _project_root = file_based
+    if _standard_repo_root is not None:
+        _project_root = _standard_repo_root
     elif (_cwd / "backend").is_dir():
         _project_root = _cwd
     elif Path("/app/backend").is_dir():
         _project_root = Path("/app")
     else:
-        _project_root = file_based
+        _project_root = _app_dir.parent
 
 # Ensure project root in path
 if str(_project_root) not in sys.path:
@@ -222,7 +232,11 @@ _ria_router_errors = []
 # at runtime even though they import successfully. We pre-detect this and force
 # mock fallbacks for DB routers.
 _db_url = os.getenv("DATABASE_URL", "")
-_db_available = bool(_db_url) and "localhost" not in _db_url and "user:pass@" not in _db_url
+_env = os.getenv("ENVIRONMENT", "development").lower()
+_db_available = bool(_db_url) and "user:pass@" not in _db_url
+# Production must not use loopback Postgres; staging/dev may use local DB on Mac Mini.
+if _env not in ("development", "staging", "test"):
+    _db_available = _db_available and "localhost" not in _db_url and "127.0.0.1" not in _db_url
 if not _db_available:
     logger.info("No production DATABASE_URL configured — DB-dependent routers will use mock fallbacks")
 

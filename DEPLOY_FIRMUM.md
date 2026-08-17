@@ -94,6 +94,43 @@ launchctl stop com.iab.cloudflared && sleep 2 && launchctl start com.iab.cloudfl
 launchctl stop com.iabadvisors.cloudflared && sleep 2 && launchctl start com.iabadvisors.cloudflared
 ```
 
+### Staging 404 fix (remote tunnel config)
+
+`prod-mac-studio` is **remotely managed** in Cloudflare Zero Trust. Edits to `~/.cloudflared/config.yml` on Mac Studio are **ignored** for ingress; Cloudflare pushes config version N from the dashboard/API.
+
+If `https://staging.firmum.ai` returns **404** while `http://10.58.146.142:5006/api/health` is healthy, fix **ingress** (and optionally **edit** the existing DNS row — do not create a new one).
+
+#### "A DNS record with this name already exists"
+
+That error means `staging` is **already in DNS**. Do **not** click Add record again.
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/) → **firmum.ai** → **DNS** → **Records**
+2. Find the existing **`staging`** row → **Edit** (not Add)
+3. Pick **one** target below, then add the matching ingress
+
+| Approach | Edit `staging` CNAME target | Add ingress where |
+|----------|----------------------------|-------------------|
+| **A — Mini tunnel (preferred)** | `e5ee3930-03f0-42c2-a4d7-2efe6cad8cb9.cfargotunnel.com` | Already in Mini `config.yml` → `localhost:5006` — no Studio change |
+| **B — Studio proxies to Mini** | `143a4609-ce85-4ebc-b921-1b43fcf20639.cfargotunnel.com` | Zero Trust → **prod-mac-studio** → **Configure** → add hostname (see below) |
+
+Proxied (orange cloud) must stay **ON** for either approach.
+
+For **Option B**, if Zero Trust still refuses to save because DNS exists, add ingress only (no new DNS):
+
+1. Zero Trust → **Networks** → **Connectors** → **prod-mac-studio** → **Configure**
+2. **Public Hostname** → Add hostname `staging.firmum.ai`, service `http://10.58.146.142:5006`
+3. If the UI tries to create DNS and errors, use **Option B — API script** instead (updates ingress only)
+
+**Option B — API script** (ingress only, never touches DNS):
+
+```bash
+export CLOUDFLARE_API_TOKEN='...'   # Account → Cloudflare Tunnel → Edit
+chmod +x scripts/update_firmum_staging_tunnel.sh
+./scripts/update_firmum_staging_tunnel.sh
+```
+
+**Note:** `cloudflared tunnel route dns` from this account targets the `stocksedge.ai` zone (`staging.firmum.ai.stocksedge.ai`), not `firmum.ai`. Use the **firmum.ai** DNS dashboard to edit the existing `staging` row.
+
 ---
 
 ## 3. Environment

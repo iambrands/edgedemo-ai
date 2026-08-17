@@ -89,7 +89,7 @@ def upgrade() -> None:
         # Pipeline
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "new",
                 "contacted",
                 "qualified",
@@ -100,13 +100,12 @@ def upgrade() -> None:
                 "won",
                 "lost",
                 "nurturing",
-                name="prospectstatus",
-            ),
+                name="prospectstatus", create_type=False),
             server_default="new",
         ),
         sa.Column(
             "lead_source",
-            sa.Enum(
+            postgresql.ENUM(
                 "website",
                 "referral",
                 "linkedin",
@@ -116,8 +115,7 @@ def upgrade() -> None:
                 "partnership",
                 "existing_client",
                 "other",
-                name="leadsource",
-            ),
+                name="leadsource", create_type=False),
             server_default="other",
         ),
         sa.Column("source_detail", sa.String(255)),
@@ -228,7 +226,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "activity_type",
-            sa.Enum(
+            postgresql.ENUM(
                 "call",
                 "email",
                 "meeting",
@@ -241,8 +239,7 @@ def upgrade() -> None:
                 "proposal",
                 "document_sent",
                 "document_signed",
-                name="activitytype",
-            ),
+                name="activitytype", create_type=False),
             nullable=False,
         ),
         sa.Column("subject", sa.String(500)),
@@ -334,7 +331,7 @@ def upgrade() -> None:
         sa.Column("version", sa.Integer, server_default="1"),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "draft",
                 "review",
                 "sent",
@@ -343,8 +340,7 @@ def upgrade() -> None:
                 "rejected",
                 "expired",
                 "revised",
-                name="proposalstatus",
-            ),
+                name="proposalstatus", create_type=False),
             server_default="draft",
         ),
         # Content

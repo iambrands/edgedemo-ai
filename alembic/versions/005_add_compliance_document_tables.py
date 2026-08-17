@@ -45,17 +45,11 @@ def upgrade() -> None:
         "compliance_documents",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("firm_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("document_type", sa.Enum(
-            'adv_part_2a', 'adv_part_2b', 'form_crs', 'privacy_policy', 'advisory_agreement',
-            name='documenttype'
-        ), nullable=False),
+        sa.Column("document_type", document_type_enum, nullable=False),
         sa.Column("title", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("current_version_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("status", sa.Enum(
-            'draft', 'pending_review', 'approved', 'published', 'archived',
-            name='documentstatus'
-        ), nullable=True),
+        sa.Column("status", document_status_enum, nullable=True),
         sa.Column("effective_date", sa.DateTime(), nullable=True),
         sa.Column("expiration_date", sa.DateTime(), nullable=True),
         sa.Column("regulatory_filing_date", sa.DateTime(), nullable=True),
@@ -82,10 +76,7 @@ def upgrade() -> None:
         sa.Column("ai_model", sa.String(50), nullable=True),
         sa.Column("ai_prompt_hash", sa.String(64), nullable=True),
         sa.Column("generation_inputs", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("status", sa.Enum(
-            'draft', 'pending_review', 'approved', 'published', 'archived',
-            name='documentstatus'
-        ), nullable=True),
+        sa.Column("status", document_status_enum, nullable=True),
         sa.Column("reviewed_by", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("reviewed_at", sa.DateTime(), nullable=True),
         sa.Column("review_notes", sa.Text(), nullable=True),
@@ -185,10 +176,7 @@ def upgrade() -> None:
         sa.Column("client_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("delivery_method", sa.String(50), nullable=False),
         sa.Column("delivery_email", sa.String(255), nullable=True),
-        sa.Column("delivery_status", sa.Enum(
-            'pending', 'sent', 'delivered', 'opened', 'acknowledged', 'failed',
-            name='deliverystatus'
-        ), nullable=True),
+        sa.Column("delivery_status", delivery_status_enum, nullable=True),
         sa.Column("sent_at", sa.DateTime(), nullable=True),
         sa.Column("delivered_at", sa.DateTime(), nullable=True),
         sa.Column("opened_at", sa.DateTime(), nullable=True),
@@ -214,10 +202,7 @@ def upgrade() -> None:
     op.create_table(
         "document_templates",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("document_type", sa.Enum(
-            'adv_part_2a', 'adv_part_2b', 'form_crs', 'privacy_policy', 'advisory_agreement',
-            name='documenttype'
-        ), nullable=False),
+        sa.Column("document_type", document_type_enum, nullable=False),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("template_html", sa.Text(), nullable=False),

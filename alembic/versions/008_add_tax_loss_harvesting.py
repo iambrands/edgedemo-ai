@@ -54,7 +54,7 @@ def upgrade() -> None:
         sa.Column("cusip_b", sa.String(9), nullable=True),
         sa.Column(
             "relation_type",
-            sa.Enum(
+            postgresql.ENUM(
                 "substantially_identical",
                 "same_sector_etf",
                 "correlated",
@@ -86,8 +86,7 @@ def upgrade() -> None:
             "symbol_a",
             "symbol_b",
             "relation_type",
-            name="uq_security_relationship",
-        ),
+            name="uq_security_relationship", create_type=False),
     )
     op.create_index(
         "ix_security_relationships_symbol_a",
@@ -143,7 +142,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "open",
                 "partially_closed",
                 "closed",
@@ -253,7 +252,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "identified",
                 "recommended",
                 "approved",
@@ -269,7 +268,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "wash_sale_status",
-            sa.Enum(
+            postgresql.ENUM(
                 "clear",
                 "in_window",
                 "violated",
@@ -408,7 +407,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "clear",
                 "in_window",
                 "violated",
@@ -545,8 +544,7 @@ def upgrade() -> None:
             "advisor_id",
             "client_id",
             "account_id",
-            name="uq_harvesting_settings",
-        ),
+            name="uq_harvesting_settings", create_type=False),
     )
 
     # ------------------------------------------------------------------

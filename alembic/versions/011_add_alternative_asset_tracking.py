@@ -86,7 +86,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column(
             "asset_type",
-            sa.Enum(
+            postgresql.ENUM(
                 "private_equity",
                 "venture_capital",
                 "hedge_fund",
@@ -105,7 +105,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "committed",
                 "active",
                 "harvesting",
@@ -265,7 +265,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "transaction_type",
-            sa.Enum(
+            postgresql.ENUM(
                 "capital_call",
                 "distribution",
                 "return_of_capital",
@@ -340,7 +340,7 @@ def upgrade() -> None:
         sa.Column("nav", sa.Numeric(18, 2), nullable=False),
         sa.Column(
             "source",
-            sa.Enum(
+            postgresql.ENUM(
                 "fund_statement",
                 "gp_report",
                 "third_party",
@@ -403,7 +403,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "document_type",
-            sa.Enum(
+            postgresql.ENUM(
                 "k1",
                 "fund_statement",
                 "capital_call_notice",

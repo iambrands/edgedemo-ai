@@ -99,20 +99,19 @@ def upgrade() -> None:
         # Sentiment
         sa.Column(
             "overall_sentiment",
-            sa.Enum(
+            postgresql.ENUM(
                 "very_positive",
                 "positive",
                 "neutral",
                 "negative",
                 "very_negative",
-                name="sentimenttype",
-            ),
+                name="sentimenttype", create_type=False),
             server_default="neutral",
         ),
         sa.Column("sentiment_score", sa.Numeric(5, 4)),
         sa.Column(
             "client_sentiment",
-            sa.Enum(
+            postgresql.ENUM(
                 "very_positive",
                 "positive",
                 "neutral",
@@ -148,13 +147,12 @@ def upgrade() -> None:
         ),
         sa.Column(
             "compliance_risk_level",
-            sa.Enum(
+            postgresql.ENUM(
                 "low",
                 "medium",
                 "high",
                 "critical",
-                name="compliancerisklevel",
-            ),
+                name="compliancerisklevel", create_type=False),
             server_default="low",
         ),
         sa.Column(
@@ -235,7 +233,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "category",
-            sa.Enum(
+            postgresql.ENUM(
                 "performance_guarantee",
                 "unsuitable_recommendation",
                 "missing_disclosure",
@@ -246,13 +244,12 @@ def upgrade() -> None:
                 "fiduciary_breach",
                 "regulatory_violation",
                 "other",
-                name="compliancecategorytype",
-            ),
+                name="compliancecategorytype", create_type=False),
             nullable=False,
         ),
         sa.Column(
             "risk_level",
-            sa.Enum(
+            postgresql.ENUM(
                 "low",
                 "medium",
                 "high",
@@ -341,25 +338,23 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "pending",
                 "in_progress",
                 "completed",
                 "cancelled",
                 "overdue",
-                name="actionitemstatus",
-            ),
+                name="actionitemstatus", create_type=False),
             server_default="pending",
         ),
         sa.Column(
             "priority",
-            sa.Enum(
+            postgresql.ENUM(
                 "low",
                 "medium",
                 "high",
                 "urgent",
-                name="actionitempriority",
-            ),
+                name="actionitempriority", create_type=False),
             server_default="medium",
         ),
         sa.Column("due_date", sa.DateTime(timezone=True)),
@@ -426,7 +421,7 @@ def upgrade() -> None:
         sa.Column("word_count", sa.Integer, server_default="0"),
         sa.Column(
             "sentiment",
-            sa.Enum(
+            postgresql.ENUM(
                 "very_positive",
                 "positive",
                 "neutral",
@@ -492,7 +487,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text),
         sa.Column(
             "category",
-            sa.Enum(
+            postgresql.ENUM(
                 "performance_guarantee",
                 "unsuitable_recommendation",
                 "missing_disclosure",
@@ -510,7 +505,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "risk_level",
-            sa.Enum(
+            postgresql.ENUM(
                 "low",
                 "medium",
                 "high",

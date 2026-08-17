@@ -7,6 +7,7 @@ elif [[ -f .env ]]; then
   source .env
 fi
 set +a
+export PYTHONPATH="/Users/iabadvisors/Projects/edgeai-demo${PYTHONPATH:+:$PYTHONPATH}"
 cd backend
 VENV="../venv/bin/uvicorn"
 if [[ ! -x "$VENV" ]]; then
