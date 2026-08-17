@@ -3,7 +3,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from backend.services.b2c_onboarding import OnboardingService, RISK_QUESTIONS
+try:
+    from backend.services.b2c_onboarding import OnboardingService, RISK_QUESTIONS
+except ImportError:
+    from services.b2c_onboarding import OnboardingService, RISK_QUESTIONS
 
 router = APIRouter(prefix="/api/v1/b2c", tags=["b2c-mock"])
 _security = HTTPBearer(auto_error=False)
