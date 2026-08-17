@@ -190,7 +190,7 @@ class ComplianceService:
 
             api_key = os.getenv("ANTHROPIC_API_KEY")
             if api_key:
-                client = anthropic.Anthropic(api_key=api_key)
+                client = getattr(anthropic, "Anthropic")(api_key=api_key)
 
                 prompt = (
                     f"You are a compliance officer at an SEC-registered RIA. "
@@ -210,7 +210,7 @@ class ComplianceService:
                     "Return ONLY valid JSON."
                 )
 
-                response = client.messages.create(
+                response = getattr(client, "messages").create(
                     model="claude-sonnet-4-20250514",
                     max_tokens=2000,
                     messages=[{"role": "user", "content": prompt}],

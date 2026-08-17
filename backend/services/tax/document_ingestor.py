@@ -139,7 +139,7 @@ async def _extract_with_claude(images: list[str]) -> Optional[dict]:
             ),
         })
 
-        response = await client.messages.create(
+        response = await getattr(client, "messages").create(
             model="claude-sonnet-4-5-20250514",
             max_tokens=2000,
             messages=[{"role": "user", "content": content}],

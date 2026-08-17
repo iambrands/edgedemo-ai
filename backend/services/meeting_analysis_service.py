@@ -122,7 +122,7 @@ Analyze this meeting and provide a JSON response with the following structure:
 Be thorough but concise. Flag any compliance concerns immediately. Extract exact quotes for action items."""
 
         try:
-            response = client.messages.create(
+            response = getattr(client, "messages").create(
                 model=self.model,
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}]
@@ -338,7 +338,7 @@ Write a warm, professional email that:
 Return JSON: {{"subject": "...", "body": "..."}}"""
 
         try:
-            response = client.messages.create(
+            response = getattr(client, "messages").create(
                 model=self.model,
                 max_tokens=1024,
                 messages=[{"role": "user", "content": prompt}]

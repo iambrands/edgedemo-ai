@@ -36,7 +36,7 @@ class ProposalGenerator:
         self.db = db
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if api_key:
-            self.client = anthropic.Anthropic(api_key=api_key)
+            self.client = getattr(anthropic, "Anthropic")(api_key=api_key)
         else:
             self.client = None
             logger.warning(
@@ -218,7 +218,7 @@ class ProposalGenerator:
         )
 
         try:
-            response = self.client.messages.create(
+            response = getattr(self.client, "messages").create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],

@@ -33,7 +33,7 @@ class ComplianceDocService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = getattr(anthropic, "Anthropic")(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
     # ==================== ADV PART 2B ====================
 
@@ -206,7 +206,7 @@ Return a JSON object with these sections:
 Return ONLY valid JSON, no other text."""
 
         try:
-            response = self.client.messages.create(
+            response = getattr(self.client, "messages").create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}],
@@ -527,7 +527,7 @@ Return a JSON object with these sections:
 Return ONLY valid JSON, no other text."""
 
         try:
-            response = self.client.messages.create(
+            response = getattr(self.client, "messages").create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}],
