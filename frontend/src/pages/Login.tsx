@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { Footer } from '../components/layout/Footer';
+import { Logo } from '../components/brand/Logo';
 
 export function Login() {
   const navigate = useNavigate();
@@ -51,17 +52,12 @@ export function Login() {
     <>
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
       {/* Logo */}
-      <Link to="/" className="mb-8">
-        <span className="text-2xl font-bold">
-          <span className="text-slate-900">Edge</span>
-          <span className="text-primary-500">AI</span>
-        </span>
-      </Link>
+      <Logo size="lg" className="mb-8" />
 
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Sign in to your account</h1>
-          <p className="text-slate-500 text-sm">Welcome back to Edge</p>
+          <p className="text-slate-500 text-sm">Welcome back to Firmum</p>
         </div>
 
         {error && (

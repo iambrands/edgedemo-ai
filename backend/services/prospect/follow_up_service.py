@@ -136,7 +136,7 @@ def _render_template(template_name: str, prospect: Prospect) -> str:
         "follow_up_1": f"""
             <p>Hi {prospect.first_name},</p>
             <p>I wanted to follow up on our recent conversation about your
-            financial goals. I'd love to explore how Edge can help you build
+            financial goals. I'd love to explore how Firmum can help you build
             and protect your wealth.</p>
             <p>Would you have time for a brief call this week?</p>
         """,

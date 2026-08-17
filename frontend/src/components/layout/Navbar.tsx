@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
+import { Logo } from '../brand/Logo';
+import { AppLink } from '../brand/AppLink';
+import { goToApp } from '../../utils/appUrl';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,9 +35,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-slate-900">Edge</span>
-          </Link>
+          <Logo />
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
@@ -53,19 +53,19 @@ export function Navbar() {
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
+              <Button onClick={() => goToApp('/dashboard')}>Dashboard</Button>
             ) : (
               <>
-                <Link
+                <AppLink
                   to="/portal/login"
                   className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
                 >
                   Client Login
-                </Link>
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                </AppLink>
+                <Button variant="ghost" onClick={() => goToApp('/login')}>
                   Advisor Login
                 </Button>
-                <Button onClick={() => navigate('/onboarding/ria')}>Get Started →</Button>
+                <Button onClick={() => goToApp('/onboarding')}>Get Started →</Button>
               </>
             )}
           </div>
@@ -95,26 +95,26 @@ export function Navbar() {
               ))}
               <div className="pt-4 px-4 flex flex-col gap-2">
                 {user ? (
-                  <Button onClick={() => navigate('/dashboard')} className="w-full">
+                  <Button onClick={() => goToApp('/dashboard')} className="w-full">
                     Dashboard
                   </Button>
                 ) : (
                   <>
                     <Button
                       variant="secondary"
-                      onClick={() => navigate('/portal/login')}
+                      onClick={() => goToApp('/portal/login')}
                       className="w-full"
                     >
                       Client Login
                     </Button>
                     <Button
                       variant="secondary"
-                      onClick={() => navigate('/login')}
+                      onClick={() => goToApp('/login')}
                       className="w-full"
                     >
                       Advisor Login
                     </Button>
-                    <Button onClick={() => navigate('/onboarding/ria')} className="w-full">
+                    <Button onClick={() => goToApp('/onboarding')} className="w-full">
                       Get Started →
                     </Button>
                   </>

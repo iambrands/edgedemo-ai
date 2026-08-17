@@ -127,12 +127,12 @@ async def capture_pain_points(firm_id: str, pain_points: List[PainPoint]):
     solution_map = {
         "onboarding": "Automated statement parsing reduces client onboarding from 2 hours to 15 minutes",
         "compliance": "Real-time compliance monitoring identifies potential issues before they become violations",
-        "efficiency": "Edge automates portfolio reviews and generates client-ready reports",
+        "efficiency": "Firmum automates portfolio reviews and generates client-ready reports",
         "reporting": "Custom report builder with scheduled delivery reduces manual report generation",
         "cost": "Consolidated platform eliminates the need for multiple vendor subscriptions",
     }
     solutions = [
-        {"pain_point": pp.description, "solution": solution_map.get(pp.category, "Edge can help streamline this workflow")}
+        {"pain_point": pp.description, "solution": solution_map.get(pp.category, "Firmum can help streamline this workflow")}
         for pp in pain_points
     ]
 
@@ -194,7 +194,7 @@ async def configure_rollovers(firm_id: str, config: dict):
             ],
             "steps": [
                 "Client initiates rollover request",
-                "Edge extracts account details from uploaded statement",
+                "Firmum extracts account details from uploaded statement",
                 "Auto-generates transfer paperwork",
                 "Compliance pre-check for suitability",
                 "Advisor review and approval",

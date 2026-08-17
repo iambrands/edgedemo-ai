@@ -430,7 +430,7 @@ async def save_risk_profile(req: RiskProfileRequest, authorization: str | None =
 # ║  ACCOUNTS & POSITIONS                                                      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
-@router.get("/accounts/{account_id}/positions")
+@router.get("/accounts/{account_id}/positions")  # paginate
 async def get_positions(account_id: str, authorization: str | None = Header(None)):
     hh = _resolve_household(authorization)
     return hh.get("positions", {}).get(account_id, [])

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, ChevronRight, Target, BarChart3, Scale,
+  ArrowLeft, Target, BarChart3, Scale,
   Heart, FileSearch, TrendingUp, AlertTriangle, BookOpen,
 } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const ANALYSIS_MODULES = [
   {
@@ -54,7 +54,7 @@ const PRINCIPLES = [
   {
     icon: AlertTriangle,
     title: 'Conservative by Default',
-    text: 'When uncertainty exists, Edge errs on the side of caution. Ambiguous compliance situations are flagged for human review rather than auto-resolved.',
+    text: 'When uncertainty exists, Firmum errs on the side of caution. Ambiguous compliance situations are flagged for human review rather than auto-resolved.',
   },
   {
     icon: BookOpen,
@@ -70,26 +70,19 @@ const PRINCIPLES = [
 
 export default function Methodology() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/about/technology" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Back to Technology</span>
-          </Link>
-          <Link to="/" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-            Home <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-12 space-y-16">
+    <MarketingPageShell>
+      <div className="max-w-5xl mx-auto px-4 pt-6">
+        <Link to="/about/technology" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 w-fit">
+          <ArrowLeft className="h-4 w-4" />
+          Our Technology
+        </Link>
+      </div>
+      <main className="max-w-5xl mx-auto px-4 py-8 sm:py-12 space-y-16">
         {/* Hero */}
         <section className="text-center max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Methodology</h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            A detailed look at how Edge analyzes portfolios, generates recommendations,
+            A detailed look at how Firmum analyzes portfolios, generates recommendations,
             and ensures the accuracy of every output. Our methodology combines deterministic
             financial logic with AI-powered insight generation.
           </p>
@@ -189,7 +182,6 @@ export default function Methodology() {
           </Link>
         </section>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

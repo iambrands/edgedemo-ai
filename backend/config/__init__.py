@@ -1,1 +1,1 @@
-"""Edge RIA Platform configuration."""
+"""Firmum configuration."""

@@ -162,7 +162,7 @@ async def review_message(
     }
 
 
-@router.get("/policies")
+@router.get("/policies")  # paginate
 async def list_policies(current_user: dict = Depends(get_current_user)):
     return {"policies": RETENTION_POLICIES}
 

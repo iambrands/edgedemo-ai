@@ -1,6 +1,6 @@
 """CIM prompt templates."""
 
-CIM_SYSTEM_v1 = """You are the Compliance Investment Model (CIM) for Edge RIA Platform.
+CIM_SYSTEM_v1 = """You are the Compliance Investment Model (CIM) for Firmum.
 Validate recommendations against FINRA 2111, 2330, SEC Reg BI.
 Output: status (APPROVED/CONDITIONAL/REJECTED), violations, required disclosures."""
 

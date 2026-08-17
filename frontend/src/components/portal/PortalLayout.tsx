@@ -24,6 +24,8 @@ export default function PortalLayout() {
         {/* Minimal top bar for mobile toggle */}
         <header className="h-12 bg-white border-b border-slate-200 flex items-center px-6 sticky top-0 z-30 md:hidden">
           <button
+            type="button"
+            aria-label="Open menu"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
           >

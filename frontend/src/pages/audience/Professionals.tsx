@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { AppLink } from '../../components/brand/AppLink';
 import {
   ArrowLeft,
   ChevronRight,
@@ -282,7 +283,7 @@ export default function Professionals() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Simple, Transparent Pricing</h2>
             <p className="text-slate-600 max-w-2xl mx-auto">
-              Choose the plan that fits your practice. All plans include a 14-day free trial.
+              Choose the plan that fits your practice. All plans include a 30-day free trial.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -319,16 +320,29 @@ export default function Professionals() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to={plan.href}
-                  className={`text-center px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    plan.highlighted
-                      ? 'bg-white text-blue-700 hover:bg-blue-50'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+                {plan.href === '/signup' ? (
+                  <AppLink
+                    to={plan.href}
+                    className={`text-center px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                      plan.highlighted
+                        ? 'bg-white text-blue-700 hover:bg-blue-50'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {plan.cta}
+                  </AppLink>
+                ) : (
+                  <Link
+                    to={plan.href}
+                    className={`text-center px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                      plan.highlighted
+                        ? 'bg-white text-blue-700 hover:bg-blue-50'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -341,16 +355,16 @@ export default function Professionals() {
             Ready to Transform Your Practice?
           </h2>
           <p className="text-slate-600 mb-8 max-w-xl mx-auto">
-            Join 500+ advisors who are using Edge to serve more clients, reduce compliance risk,
+            Join 500+ advisors who are using Firmum to serve more clients, reduce compliance risk,
             and grow their business.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
+            <AppLink
               to="/signup"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
             >
               Start Free Trial <ArrowRight className="h-4 w-4" />
-            </Link>
+            </AppLink>
             <Link
               to="/company/contact"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors"

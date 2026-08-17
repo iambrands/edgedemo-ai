@@ -1,4 +1,4 @@
-"""Statement parsers for Edge RIA Platform."""
+"""Statement parsers for Firmum."""
 
 from .base_parser import (
     BaseStatementParser,

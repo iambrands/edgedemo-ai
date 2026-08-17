@@ -1,16 +1,11 @@
-import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
-  ChevronRight,
   Calendar,
   User,
   ArrowRight,
   Sparkles,
   Mail,
-  Info,
-  Briefcase,
 } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const FEATURED_POST = {
   title: 'The Future of AI in Wealth Management',
@@ -77,40 +72,16 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Blog() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6">
-            <Link to="/company/about" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Info className="h-3.5 w-3.5" /> About
-            </Link>
-            <Link to="/company/careers" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Briefcase className="h-3.5 w-3.5" /> Careers
-            </Link>
-            <Link to="/company/contact" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Mail className="h-3.5 w-3.5" /> Contact
-            </Link>
-          </nav>
-          <Link to="/" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 sm:hidden">
-            Home <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </header>
-
+    <MarketingPageShell>
       <main className="max-w-5xl mx-auto px-4 py-12 space-y-20">
         {/* Hero */}
         <section className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-6">
             <Sparkles className="h-4 w-4" />
-            Edge Blog
+            Firmum Blog
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6">
-            Edge Insights
+            Firmum Insights
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Expert perspectives on AI, wealth management, compliance, and the technology
@@ -201,7 +172,6 @@ export default function Blog() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

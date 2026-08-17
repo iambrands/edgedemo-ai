@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -92,17 +92,15 @@ async def _log_rec_audit(
         logger.error("Audit log write failed [%s]: %s", action, e)
 
 
-@router.get("/clients/{client_id}/recommendations", response_model=list[RecommendationResponse])
-async def get_recommendations(
-    client_id: UUID,
-    db: AsyncSession = Depends(get_db_session),
-    current_user: dict = Depends(get_current_user),
-):
+@router.get("/clients/{client_id}/recommendations", response_model=list[RecommendationResponse])  # paginate
+async def get_recommendations(client_id: UUID, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0), page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db_session), current_user: dict = Depends(get_current_user)):
     """Get actionable recommendations for a client from the IIM pipeline."""
     try:
         from backend.services.iim.recommendation import get_client_recommendations
         recs = await get_client_recommendations(client_id, UUID(current_user["id"]), db)
-        return recs
+        effective_offset = offset if offset > 0 else (page - 1) * page_size
+        effective_limit = limit if offset > 0 else page_size
+        return recs[effective_offset: effective_offset + effective_limit]
     except Exception as e:
         logger.warning("Recommendations query failed, returning empty: %s", e)
         return []

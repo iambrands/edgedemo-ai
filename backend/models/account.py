@@ -47,6 +47,8 @@ class Account(Base, TimestampMixin, SoftDeleteMixin, AuditMixin):
         String(50), nullable=False
     )  # AccountType enum values
     tax_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    management_mode: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     investment_objective: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     risk_tolerance: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     margin_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

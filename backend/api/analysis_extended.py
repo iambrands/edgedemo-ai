@@ -138,7 +138,7 @@ class RiskAnalysisReport(BaseModel):
 
 @router.get("/risk-report/{household_id}", response_model=RiskAnalysisReport)
 async def get_risk_analysis_report(household_id: str):
-    """Get extended risk analysis for dashboard display."""
+    """Get extended risk analysis for dashboard display. Returns hardcoded mock data only."""
     return RiskAnalysisReport(
         household_id=household_id,
         overall_risk_score=72,

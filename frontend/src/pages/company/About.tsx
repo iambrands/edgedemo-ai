@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   ChevronRight,
   Eye,
   Shield,
@@ -11,17 +10,14 @@ import {
   ThumbsUp,
   Clock,
   Sparkles,
-  Briefcase,
-  Newspaper,
-  Mail,
 } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const TEAM = [
   {
     name: 'Sarah Chen',
     role: 'CEO & Co-Founder',
-    bio: 'Former managing director at Goldman Sachs Wealth Management. 15 years leading high-net-worth advisory teams before co-founding Edge to bring institutional intelligence to every advisor.',
+    bio: 'Former managing director at Goldman Sachs Wealth Management. 15 years leading high-net-worth advisory teams before co-founding Firmum to bring institutional intelligence to every advisor.',
   },
   {
     name: 'Michael Torres',
@@ -36,7 +32,7 @@ const TEAM = [
   {
     name: 'James Wilson',
     role: 'Head of Compliance',
-    bio: 'Former FINRA examiner with 20 years of regulatory experience. Ensures every Edge feature meets or exceeds regulatory requirements across all jurisdictions.',
+    bio: 'Former FINRA examiner with 20 years of regulatory experience. Ensures every Firmum feature meets or exceeds regulatory requirements across all jurisdictions.',
   },
 ];
 
@@ -72,43 +68,19 @@ const STATS = [
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6">
-            <Link to="/company/careers" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Briefcase className="h-3.5 w-3.5" /> Careers
-            </Link>
-            <Link to="/company/blog" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Newspaper className="h-3.5 w-3.5" /> Blog
-            </Link>
-            <Link to="/company/contact" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Mail className="h-3.5 w-3.5" /> Contact
-            </Link>
-          </nav>
-          <Link to="/" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 sm:hidden">
-            Home <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </header>
-
+    <MarketingPageShell>
       <main className="max-w-5xl mx-auto px-4 py-12 space-y-20">
         {/* Hero */}
         <section className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-6">
             <Sparkles className="h-4 w-4" />
-            About Edge
+            About Firmum
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6">
             Wealth Management Designed for Efficiency
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Edge is redefining how financial advisors serve their clients by combining
+            Firmum is redefining how financial advisors serve their clients by combining
             institutional-grade analytics with cutting-edge artificial intelligence.
           </p>
         </section>
@@ -128,13 +100,13 @@ export default function About() {
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Our Story</h2>
             <div className="space-y-4 text-slate-600 leading-relaxed">
               <p>
-                Edge was founded by financial advisors who saw firsthand how AI could
+                Firmum was founded by financial advisors who saw firsthand how AI could
                 transform the way advisors serve their clients. After years of watching
                 promising technology fail to bridge the gap between institutional and
                 independent advisory, they decided to build the platform they always wished existed.
               </p>
               <p>
-                Today, Edge is built by a team combining decades of wealth management
+                Today, Firmum is built by a team combining decades of wealth management
                 experience with cutting-edge AI research. We understand the nuances of
                 fiduciary responsibility, regulatory compliance, and client communication
                 — because we've lived it.
@@ -218,7 +190,7 @@ export default function About() {
           </h2>
           <p className="text-slate-600 mb-6 max-w-xl mx-auto">
             Whether you're an advisor looking to scale or an investor seeking smarter insights,
-            Edge is built for you.
+            Firmum is built for you.
           </p>
           <Link
             to="/company/contact"
@@ -229,7 +201,6 @@ export default function About() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

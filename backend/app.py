@@ -1,5 +1,5 @@
 """
-Edge Portfolio Analyzer Backend API
+Firmum Backend API
 Handles portfolio analysis requests using OpenAI GPT API
 """
 
@@ -75,9 +75,9 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 # Debug: Print startup info (visible in Railway logs)
-print(f"[Edge] Starting from: {os.getcwd()}", flush=True)
-print(f"[Edge] Project root detected: {_project_root}", flush=True)
-print(f"[Edge] Python path: {sys.path[:3]}...", flush=True)
+print(f"[Firmum] Starting from: {os.getcwd()}", flush=True)
+print(f"[Firmum] Project root detected: {_project_root}", flush=True)
+print(f"[Firmum] Python path: {sys.path[:3]}...", flush=True)
 
 import json
 
@@ -111,7 +111,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Edge Portfolio Analyzer API",
+    title="Firmum API",
     description="Backend API for Edge Portfolio Analysis powered by OpenAI GPT",
     version="1.11.0"
 )
@@ -170,6 +170,19 @@ if railway_frontend:
 railway_public_url = os.getenv("RAILWAY_PUBLIC_DOMAIN")
 if railway_public_url:
     ALLOWED_ORIGINS.append(f"https://{railway_public_url}")
+
+# Product domain (Firmum) + legacy advisor domains — append when PUBLIC_DOMAIN is set
+_public_domain = os.getenv("PUBLIC_DOMAIN", os.getenv("FIRMUM_PUBLIC_DOMAIN", "")).strip()
+if _public_domain:
+    for prefix in ("", "www.", "app.", "staging."):
+        ALLOWED_ORIGINS.append(f"https://{prefix}{_public_domain}")
+
+for _legacy in ("edgeadvisors.ai", "edgeria.ai", "firmum.ai"):
+    ALLOWED_ORIGINS.extend([f"https://{_legacy}", f"https://www.{_legacy}", f"https://app.{_legacy}"])
+
+# De-dupe while preserving order
+_seen: set[str] = set()
+ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o not in _seen and not _seen.add(o)]
 
 app.add_middleware(
     CORSMiddleware,
@@ -650,17 +663,25 @@ if _db_available:
         from backend.api.b2c.onboarding import router as b2c_onboarding_router
         from backend.api.b2c.dashboard import router as b2c_dashboard_router
         from backend.api.b2c.chat import router as b2c_chat_router
+        from backend.api.b2c.statements import router as b2c_statements_router
         from backend.api.b2c.subscription import router as b2c_subscription_router
         app.include_router(b2c_auth_router)
         app.include_router(b2c_onboarding_router)
         app.include_router(b2c_dashboard_router)
         app.include_router(b2c_chat_router)
+        app.include_router(b2c_statements_router)
         app.include_router(b2c_subscription_router)
         logger.info("B2C API routes mounted")
     except Exception as e:
         logger.warning("Could not mount B2C routes: %s", e)
 else:
     logger.info("Skipping B2C routes (no DATABASE_URL)")
+    try:
+        from backend.api.mock_b2c import router as mock_b2c_router
+        app.include_router(mock_b2c_router)
+        logger.info("Mock B2C router mounted (GET /api/v1/b2c/me)")
+    except Exception as e:
+        logger.warning("Could not mount mock B2C router: %s", e)
 
 
 # Pydantic models for request/response validation
@@ -1037,7 +1058,7 @@ async def serve_frontend():
         return FileResponse(str(_DEV_INDEX))
     return {
         "status": "healthy",
-        "service": "Edge Portfolio Analyzer API",
+        "service": "Firmum API",
         "version": "1.0.0",
         "message": "Frontend not found. API is running."
     }
@@ -1462,7 +1483,7 @@ def generate_mock_analysis(client: ClientInfo, holdings: List[Holding]) -> Dict[
 @limiter.limit("10/hour")
 def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
     """
-    Analyze a portfolio using Edge's AI-powered intelligence
+    Analyze a portfolio using Firmum's AI-powered intelligence
     
     Rate limited to 10 requests per IP per hour.
     Falls back to mock responses if AI service is not configured.
@@ -1485,13 +1506,13 @@ def analyze_portfolio(request: Request, payload: AnalyzePortfolioRequest):
             response = anthropic_client.messages.create(
                 model=ANTHROPIC_MODEL,
                 max_tokens=4000,
+                # temperature omitted — causes 400 errors on extended-thinking models
                 messages=[
                     {
                         "role": "user",
                         "content": prompt
                     }
-                ],
-                temperature=0.7
+                ]
             )
             
             # Extract text from Anthropic's response
@@ -1558,5 +1579,5 @@ async def spa_catch_all(full_path: str):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)  # nosec B104 — intentional server binding
 

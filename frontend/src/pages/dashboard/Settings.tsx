@@ -111,7 +111,7 @@ export function Settings() {
       <Card>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">API Keys</h2>
         <p className="text-sm text-slate-500 mb-6">
-          Use API keys to integrate Edge with your applications. Keep your keys secure
+          Use API keys to integrate Firmum with your applications. Keep your keys secure
           and never share them publicly.
         </p>
 

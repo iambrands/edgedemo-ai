@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { AppLink } from '../../components/brand/AppLink';
 import {
   ArrowLeft,
   ChevronRight,
@@ -83,7 +84,7 @@ const STEPS = [
     icon: Lightbulb,
     step: '03',
     title: 'Get Personalized Insights',
-    description: 'Receive tailored recommendations, proactive alerts, and clear reporting — all through your personal dashboard.',
+    description: 'Receive tailored suggestions, proactive alerts, and clear reporting — all through your personal dashboard.',
   },
 ];
 
@@ -122,7 +123,7 @@ export default function Investors() {
             For Investors
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6">
-            Smarter Investing Starts at the Edge
+            The steady layer for modern advisory firms
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             AI-powered portfolio intelligence that gives you institutional-grade analysis,
@@ -199,7 +200,7 @@ export default function Investors() {
         <section className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-12 shadow-sm">
           <Quote className="h-10 w-10 text-blue-200 mb-4" />
           <blockquote className="text-lg sm:text-xl text-slate-700 leading-relaxed mb-6">
-            "Edge completely changed how I understand my portfolio. The AI insights flagged a
+            "Firmum completely changed how I understand my portfolio. The AI insights flagged a
             concentration risk I hadn't noticed, and the tax optimization alone saved me over
             $8,000 last year. I finally feel in control of my financial future."
           </blockquote>
@@ -223,12 +224,12 @@ export default function Investors() {
             Join thousands of investors who are already using AI to make smarter decisions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/portal/login"
+            <AppLink
+              to="/client/signup"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-700 rounded-xl font-medium hover:bg-blue-50 transition-colors"
             >
               Get Started <ArrowRight className="h-4 w-4" />
-            </Link>
+            </AppLink>
             <Link
               to="/company/contact"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/30 text-white rounded-xl font-medium hover:bg-white/10 transition-colors"

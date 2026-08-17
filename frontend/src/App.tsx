@@ -67,6 +67,16 @@ import { RIAHelpCenter, ClientHelpCenter } from './pages/help';
 import { Technology, Methodology } from './pages/about';
 import { Terms, Privacy, Disclosures, DataRetention } from './pages/legal';
 import { About, Careers, Blog, Contact } from './pages/company';
+import { FeaturesPage, PricingPage, UpdatesPage } from './pages/marketing';
+import { Investors, Professionals } from './pages/audience';
+import {
+  ClientRegister,
+  ClientOnboardingPage,
+  ClientDIYDashboard,
+  ConnectAdvisor,
+  ClientAccountability,
+} from './pages/client';
+import { AppHostGate } from './components/brand/AppHostGate';
 
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import PortalLayout from './components/portal/PortalLayout';
@@ -100,11 +110,15 @@ export default function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/features" element={<FeaturesPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/updates" element={<UpdatesPage />} />
+      <Route path="/login" element={<AppHostGate><Login /></AppHostGate>} />
+      <Route path="/signup" element={<AppHostGate><Signup /></AppHostGate>} />
+      <Route path="/register" element={<Navigate to="/signup" replace />} />
 
       {/* Dashboard Routes (Protected - Advisor) */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route path="/dashboard" element={<AppHostGate><DashboardLayout /></AppHostGate>}>
         <Route index element={<ErrorBoundary><Overview /></ErrorBoundary>} />
         <Route path="households" element={<ErrorBoundary><Households /></ErrorBoundary>} />
         <Route path="accounts" element={<ErrorBoundary><Accounts /></ErrorBoundary>} />
@@ -146,8 +160,8 @@ export default function App() {
       </Route>
 
       {/* RIA Onboarding & Help (standalone, no sidebar layout) */}
-      <Route path="/onboarding" element={<RIAOnboarding />} />
-      <Route path="/help" element={<RIAHelpCenter />} />
+      <Route path="/onboarding" element={<AppHostGate><RIAOnboarding /></AppHostGate>} />
+      <Route path="/help" element={<AppHostGate><RIAHelpCenter /></AppHostGate>} />
 
       {/* About (AI Transparency) */}
       <Route path="/about/technology" element={<Technology />} />
@@ -159,6 +173,17 @@ export default function App() {
       <Route path="/legal/disclosures" element={<Disclosures />} />
       <Route path="/legal/data-retention" element={<DataRetention />} />
 
+      {/* Audience (marketing) */}
+      <Route path="/audience/investors" element={<Investors />} />
+      <Route path="/audience/professionals" element={<Professionals />} />
+
+      {/* Client self-serve (app host — DIY signup, onboarding, dashboard) */}
+      <Route path="/client/signup" element={<AppHostGate><ClientRegister /></AppHostGate>} />
+      <Route path="/client/onboarding" element={<AppHostGate><ClientOnboardingPage /></AppHostGate>} />
+      <Route path="/client/dashboard" element={<AppHostGate><ClientDIYDashboard /></AppHostGate>} />
+      <Route path="/client/connect-advisor" element={<AppHostGate><ConnectAdvisor /></AppHostGate>} />
+      <Route path="/client/accountability" element={<AppHostGate><ClientAccountability /></AppHostGate>} />
+
       {/* Company */}
       <Route path="/company/about" element={<About />} />
       <Route path="/company/careers" element={<Careers />} />
@@ -166,12 +191,12 @@ export default function App() {
       <Route path="/company/contact" element={<Contact />} />
 
       {/* Client Portal Routes (standalone — no sidebar) */}
-      <Route path="/portal/login" element={<PortalLogin />} />
-      <Route path="/portal/onboarding" element={<ClientOnboarding />} />
-      <Route path="/portal/help" element={<ClientHelpCenter />} />
+      <Route path="/portal/login" element={<AppHostGate><PortalLogin /></AppHostGate>} />
+      <Route path="/portal/onboarding" element={<AppHostGate><ClientOnboarding /></AppHostGate>} />
+      <Route path="/portal/help" element={<AppHostGate><ClientHelpCenter /></AppHostGate>} />
 
       {/* Client Portal Routes (with sidebar layout) */}
-      <Route path="/portal" element={<PortalGuard><PortalLayout /></PortalGuard>}>
+      <Route path="/portal" element={<AppHostGate><PortalGuard><PortalLayout /></PortalGuard></AppHostGate>}>
         <Route index element={<Navigate to="/portal/dashboard" replace />} />
         <Route path="dashboard" element={<ErrorBoundary><PortalDashboard /></ErrorBoundary>} />
         <Route path="performance" element={<ErrorBoundary><PortalPerformance /></ErrorBoundary>} />

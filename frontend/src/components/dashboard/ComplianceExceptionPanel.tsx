@@ -41,7 +41,10 @@ export function ComplianceExceptionPanel() {
       const res = await fetch(`${apiBase}/api/v1/compliance/exceptions`, {
         headers: getAuthHeaders(),
       });
-      if (res.ok) setExceptions(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setExceptions(Array.isArray(data) ? data : []);
+      }
     } catch { /* graceful degradation */ } finally {
       setLoading(false);
     }

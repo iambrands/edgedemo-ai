@@ -45,8 +45,8 @@ class Settings(BaseSettings):
 
     # Email — SendGrid
     sendgrid_api_key: str = ""
-    sendgrid_from_email: str = "notifications@edgeadvisors.ai"
-    sendgrid_from_name: str = "Edge Advisors"
+    sendgrid_from_email: str = "notifications@firmum.ai"
+    sendgrid_from_name: str = "Firmum"
 
     # CORS - Railway frontend URL will be added dynamically
     cors_origins: str = "http://localhost:5173,http://localhost:5175,http://127.0.0.1:5173"

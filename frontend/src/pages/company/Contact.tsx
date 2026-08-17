@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   ChevronRight,
   Mail,
   Phone,
@@ -13,11 +12,8 @@ import {
   Send,
   CheckCircle2,
   Sparkles,
-  Info,
-  Briefcase,
-  Newspaper,
 } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const CONTACT_INFO = [
   { icon: Mail, label: 'Email', value: 'hello@edge.com', href: 'mailto:hello@edge.com' },
@@ -43,31 +39,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6">
-            <Link to="/company/about" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Info className="h-3.5 w-3.5" /> About
-            </Link>
-            <Link to="/company/careers" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Briefcase className="h-3.5 w-3.5" /> Careers
-            </Link>
-            <Link to="/company/blog" className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              <Newspaper className="h-3.5 w-3.5" /> Blog
-            </Link>
-          </nav>
-          <Link to="/" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 sm:hidden">
-            Home <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </header>
-
+    <MarketingPageShell>
       <main className="max-w-5xl mx-auto px-4 py-12 space-y-20">
         {/* Hero */}
         <section className="text-center max-w-3xl mx-auto">
@@ -79,7 +51,7 @@ export default function Contact() {
             Get in Touch
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Have questions about Edge? Want to schedule a demo? We'd love to hear from you.
+            Have questions about Firmum? Want to schedule a demo? We'd love to hear from you.
           </p>
         </section>
 
@@ -229,7 +201,6 @@ export default function Contact() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

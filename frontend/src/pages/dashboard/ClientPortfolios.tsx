@@ -200,7 +200,7 @@ export function ClientPortfolios() {
       <div class="report-header">
         <div class="logo-row">
           <div class="logo-mark">E</div>
-          <div class="logo-text">Edge</div>
+          <div class="logo-text">Firmum</div>
         </div>
         <h1>Portfolio Performance Report</h1>
         <div class="subtitle">Current Holdings & Live Market Performance</div>
@@ -259,7 +259,7 @@ export function ClientPortfolios() {
       </table>
 
       <div class="report-footer">
-        <p class="brand">Edge &mdash; AI-Powered Wealth Management Platform</p>
+        <p class="brand">Firmum &mdash; AI-Powered Wealth Management Platform</p>
         <p>IAB Advisors, Inc. &bull; Report generated ${date}</p>
         <p>Market data source: ${quotesSource === 'alpha_vantage' ? 'Alpha Vantage' : 'Simulated'} &bull; Confidential</p>
       </div>

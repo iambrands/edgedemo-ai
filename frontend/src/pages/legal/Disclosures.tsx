@@ -1,26 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Shield, Info } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { AlertTriangle, Shield, Info } from 'lucide-react';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const EFFECTIVE_DATE = 'January 1, 2026';
 
 export default function Disclosures() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <div className="flex gap-4 ml-auto text-sm">
-            <Link to="/legal/terms" className="text-slate-500 hover:text-slate-900">Terms</Link>
-            <Link to="/legal/privacy" className="text-slate-500 hover:text-slate-900">Privacy</Link>
-            <Link to="/legal/data-retention" className="text-slate-500 hover:text-slate-900">Data Retention</Link>
-          </div>
-        </div>
-      </header>
-
+    <MarketingPageShell>
+      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap gap-4 text-sm border-b border-slate-100">
+        <Link to="/legal/terms" className="text-slate-500 hover:text-primary-600">Terms of Use</Link>
+        <Link to="/legal/privacy" className="text-slate-500 hover:text-primary-600">Privacy Policy</Link>
+        <Link to="/legal/data-retention" className="text-slate-500 hover:text-primary-600">Data Retention</Link>
+      </div>
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Disclosures</h1>
         <p className="text-sm text-slate-500 mb-10">Effective: {EFFECTIVE_DATE}</p>
@@ -31,7 +22,7 @@ export default function Disclosures() {
           <div>
             <h3 className="font-semibold text-slate-900 mb-1">Important Notice</h3>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Edge is a technology platform, not a registered investment advisor, broker-dealer,
+              Firmum is a technology platform, not a registered investment advisor, broker-dealer,
               or financial planner. The information, analytics, and AI-generated content provided
               through the Platform do not constitute investment advice, tax advice, or legal advice.
             </p>
@@ -40,11 +31,11 @@ export default function Disclosures() {
 
         <div className="prose prose-slate max-w-none space-y-8">
           <section>
-            <h2 className="text-xl font-semibold text-slate-900">About Edge</h2>
+            <h2 className="text-xl font-semibold text-slate-900">About Firmum</h2>
             <p className="text-slate-600 leading-relaxed">
-              Edge is an AI-powered technology platform developed by IAB Advisors, Inc. that provides
+              Firmum is an AI-powered technology platform developed by IAB Advisors, Inc. that provides
               portfolio analytics, compliance tools, and client communication features for registered
-              investment advisors (RIAs). Edge is designed to augment the professional capabilities
+              investment advisors (RIAs). Firmum is designed to augment the professional capabilities
               of qualified financial advisors, not replace them.
             </p>
           </section>
@@ -99,7 +90,7 @@ export default function Disclosures() {
               <div className="flex gap-3">
                 <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-slate-700">
-                  RIA firms using the Platform are independently registered and regulated. Their use of Edge
+                  RIA firms using the Platform are independently registered and regulated. Their use of Firmum
                   does not imply any endorsement, affiliation, or regulatory relationship between IAB Advisors, Inc.
                   and the RIA firm.
                 </p>
@@ -120,7 +111,7 @@ export default function Disclosures() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900">Intellectual Property</h2>
             <p className="text-slate-600 leading-relaxed">
-              Edge's AI models, algorithms, training data, and processing methodologies are proprietary
+              Firmum's AI models, algorithms, training data, and processing methodologies are proprietary
               trade secrets of IAB Advisors, Inc. The models incorporate substantial human expertise
               from financial advisors, compliance officers, and behavioral finance researchers—providing
               both exceptional quality and robust intellectual property protection. Unauthorized use,
@@ -153,7 +144,6 @@ export default function Disclosures() {
           </section>
         </div>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

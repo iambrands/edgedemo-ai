@@ -1,1 +1,1 @@
-"""Edge RIA Platform backend."""
+"""Firmum backend."""

@@ -1,374 +1,289 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  Check,
-  Brain,
-  Users,
-  Shield,
-  UserPlus,
-  ArrowUpDown,
-  Receipt,
-  Target,
-  ClipboardCheck,
-  Sparkles,
+  CheckCircle2,
   ArrowRight,
+  ChevronRight,
+  Zap,
+  Star,
+  X,
 } from 'lucide-react';
-import { Navbar } from '../components/layout/Navbar';
+import { MarketingNav } from '../components/layout/MarketingNav';
 import { Footer } from '../components/layout/Footer';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-
-const PLATFORM_FEATURES = [
-  {
-    icon: Brain,
-    title: 'Portfolio Intelligence',
-    description:
-      'AI-powered portfolio analysis, model portfolios, automated rebalancing, and tax-loss harvesting — all from one dashboard.',
-    color: 'bg-blue-50 text-blue-600',
-  },
-  {
-    icon: Users,
-    title: 'Client Portal',
-    description:
-      'White-label portal your clients love — goals tracking, performance views, messaging, and document sharing. FREE for all your clients.',
-    color: 'bg-emerald-50 text-emerald-600',
-    badge: 'FREE',
-  },
-  {
-    icon: Shield,
-    title: 'Compliance & Reporting',
-    description:
-      'Automated compliance monitoring, audit trails, regulatory reporting, and document management built for fiduciary advisors.',
-    color: 'bg-purple-50 text-purple-600',
-  },
-  {
-    icon: UserPlus,
-    title: 'CRM & Prospects',
-    description:
-      'AI lead scoring, pipeline management, automated proposal generation, and activity tracking to grow your practice.',
-    color: 'bg-amber-50 text-amber-600',
-  },
-  {
-    icon: ArrowUpDown,
-    title: 'Trading & Execution',
-    description:
-      'Best execution analysis, multi-custodian support, trade blotter, and rebalancing across all client accounts.',
-    color: 'bg-rose-50 text-rose-600',
-  },
-  {
-    icon: Receipt,
-    title: 'Billing & Operations',
-    description:
-      'AUM-based fee schedules, automated billing, custodian integrations, and comprehensive reporting for your practice.',
-    color: 'bg-teal-50 text-teal-600',
-  },
-];
-
-const PRICING_TIERS = [
-  {
-    name: 'Starter',
-    price: '$499',
-    aum: 'Up to $10M AUM',
-    clients: '25 clients',
-    features: [
-      'Portfolio management & analysis',
-      'AI-powered insights',
-      'Compliance dashboard',
-      'Client reports & statements',
-      'Email & chat support',
-    ],
-    cta: 'Start Free Trial',
-    featured: false,
-  },
-  {
-    name: 'Professional',
-    price: '$999',
-    aum: 'Up to $50M AUM',
-    clients: '100 clients',
-    features: [
-      'Everything in Starter',
-      'Automated rebalancing',
-      'Tax-loss harvesting',
-      'White-label client portal',
-      'CRM & prospect pipeline',
-      'Priority support',
-    ],
-    cta: 'Start Free Trial',
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    aum: '$50M+ AUM',
-    clients: 'Unlimited clients',
-    features: [
-      'Everything in Professional',
-      'Custom integrations & API',
-      'Multi-custodian trading',
-      'Advanced compliance suite',
-      'Dedicated account manager',
-      'Custom onboarding & training',
-    ],
-    cta: 'Contact Sales',
-    featured: false,
-  },
-];
+import { scrollToLandingSection } from '../utils/landingScroll';
+import { FeaturesShowcase, AIEnginesSection } from '../components/marketing/FeaturesShowcase';
+import { PricingSection } from '../components/marketing/PricingSection';
+import { StepCard, SectionHeader } from '../components/marketing/MarketingPrimitives';
+import { AdvisorDashboardMockup, GradientOrbs } from '../components/marketing/FirmumMockups';
+import {
+  HERO_STATS,
+  TRUST_CUSTODIANS,
+  HOW_IT_WORKS_STEPS,
+  COMPARISON_ROWS,
+  FAQS,
+  TESTIMONIALS,
+} from '../constants/marketingSite';
+import { MARKETING_COPY } from '../constants/marketingCopy';
+import { PRODUCT_NAME } from '../constants/brand';
+import { AppLink } from '../components/brand/AppLink';
+import { goToApp } from '../utils/appUrl';
 
 export function Landing() {
-  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as { scrollTo?: string } | null;
+    const target = state?.scrollTo;
+    if (target) {
+      requestAnimationFrame(() => scrollToLandingSection(target));
+      window.history.replaceState({}, '', `#${target}`);
+    } else if (location.hash) {
+      const id = location.hash.replace('#', '');
+      requestAnimationFrame(() => scrollToLandingSection(id));
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <MarketingNav />
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
-            <Badge variant="blue" className="mb-6">
-              Built for Registered Investment Advisors
-            </Badge>
-            <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold text-slate-900 leading-tight mb-6">
-              The AI-Powered Platform That Runs Your{' '}
-              <span className="text-primary-500">Entire Advisory Practice</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
-              From portfolio intelligence to client engagement — Edge gives RIAs
-              institutional-grade tools to grow AUM, delight clients, and stay compliant.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button size="lg" onClick={() => navigate('/onboarding/ria')}>
-                Start 14-Day Free Trial <ArrowRight className="w-4 h-4 ml-1 inline" />
-              </Button>
-              <Button variant="secondary" size="lg" onClick={() => navigate('/company/contact')}>
-                Schedule Demo
-              </Button>
-            </div>
-
-            {/* Trust Stats */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary-500">$2.4B+</p>
-                <p className="text-sm text-slate-500">AUM Managed</p>
+      {/* Hero */}
+      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-emerald-50" />
+        <GradientOrbs />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+            <div className="flex-1 max-w-xl">
+              <div className="inline-flex items-center gap-2 bg-blue-50 text-primary-700 text-sm font-medium px-4 py-1.5 rounded-full mb-6 border border-blue-100">
+                <Zap className="h-4 w-4" />
+                {PRODUCT_NAME} · Built for Registered Investment Advisors
               </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary-500">500+</p>
-                <p className="text-sm text-slate-500">Advisory Firms</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary-500">99.9%</p>
-                <p className="text-sm text-slate-500">Uptime</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Platform Features ─────────────────────────────────────────── */}
-      <section id="features" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Built for Every Part of Your Practice
-            </h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-              One platform to manage portfolios, serve clients, stay compliant, and grow your firm
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {PLATFORM_FEATURES.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <Card key={feature.title} variant="feature" className="relative">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${feature.color}`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base font-semibold text-slate-900">{feature.title}</h3>
-                        {feature.badge && (
-                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                            {feature.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-slate-500 leading-relaxed">{feature.description}</p>
-                    </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-extrabold text-slate-900 tracking-tight leading-tight">
+                The Steady Layer for{' '}
+                <span className="bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
+                  Modern Advisory Firms
+                </span>
+              </h1>
+              <p className="mt-5 text-lg text-slate-600 leading-relaxed">
+                {MARKETING_COPY.elevatorPitch.medium} Replace disconnected tools with one intelligent
+                platform — portfolios, compliance, client portal, and AI in one place.
+              </p>
+              <div className="mt-5 space-y-2">
+                {[
+                  '38 advisor modules + free white-label client portal',
+                  'Three AI engines with advisor review on every output',
+                  '17+ brokerage statement formats parsed automatically',
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-primary-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">{item}</span>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── AI Engines ────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-              <Sparkles className="w-4 h-4" />
-              Powered by Advanced AI
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Three AI Engines Working for Your Practice
-            </h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-              Purpose-built AI that understands wealth management, not generic chatbots
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card variant="feature">
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
-                <Brain className="w-6 h-6 text-blue-600" />
+                ))}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Portfolio Intelligence Engine
-              </h3>
-              <p className="text-slate-500 text-sm mb-4">
-                Analyzes client portfolios for concentration risk, fee drag, and tax
-                inefficiency. Generates actionable recommendations you can share with clients.
-              </p>
-              <Badge variant="green">In Production</Badge>
-            </Card>
-
-            <Card variant="feature">
-              <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
-                <Target className="w-6 h-6 text-purple-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Client Insight Engine
-              </h3>
-              <p className="text-slate-500 text-sm mb-4">
-                Understands client goals, risk tolerance, and behavioral patterns to generate
-                personalized nudges and conversation starters for every meeting.
-              </p>
-              <Badge variant="green">In Production</Badge>
-            </Card>
-
-            <Card variant="feature">
-              <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
-                <ClipboardCheck className="w-6 h-6 text-teal-500" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Compliance & Risk Monitor
-              </h3>
-              <p className="text-slate-500 text-sm mb-4">
-                Continuously monitors portfolios for regulatory compliance, drift alerts,
-                and suitability issues. Auto-generates audit documentation.
-              </p>
-              <Badge variant="green">In Production</Badge>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ───────────────────────────────────────────────────── */}
-      <section id="pricing" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-4">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-slate-500 text-lg">
-              Plans that scale with your practice. No hidden fees.
-            </p>
-          </div>
-
-          {/* Client Portal FREE callout */}
-          <div className="flex justify-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-5 py-2">
-              <Users className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-700">
-                Client Portal included FREE with every plan — your clients pay nothing
-              </span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {PRICING_TIERS.map((tier) => (
-              <Card
-                key={tier.name}
-                variant={tier.featured ? 'pricing-featured' : 'default'}
-                className="relative"
-              >
-                {tier.featured && (
-                  <Badge variant="blue" className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Most Popular
-                  </Badge>
-                )}
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{tier.name}</h3>
-                <p className="text-3xl font-bold text-slate-900 mb-1">
-                  {tier.price}
-                  {tier.price !== 'Custom' && (
-                    <span className="text-base font-normal text-slate-500">/mo</span>
-                  )}
-                </p>
-                <p className="text-sm text-slate-500 mb-1">{tier.aum}</p>
-                <p className="text-sm text-primary-600 mb-6">{tier.clients}</p>
-
-                <ul className="space-y-3 mb-6">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
-                      <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* FREE portal badge */}
-                <div className="flex items-center gap-2 bg-emerald-50 rounded-lg px-3 py-2 mb-6">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs font-medium text-emerald-700">FREE Client Portal</span>
-                </div>
-
-                <Button
-                  variant={tier.featured ? 'primary' : 'secondary'}
-                  className="w-full"
-                  onClick={() =>
-                    tier.cta === 'Contact Sales'
-                      ? navigate('/company/contact')
-                      : navigate('/onboarding/ria')
-                  }
+              <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+                <AppLink
+                  to="/onboarding"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary-600 text-white text-base font-semibold px-7 py-3.5 rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/25"
                 >
-                  {tier.cta}
-                </Button>
-              </Card>
+                  Start 30-Day Free Trial
+                  <ArrowRight className="h-5 w-5" />
+                </AppLink>
+                <Link
+                  to="/features"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-slate-700 text-base font-semibold px-7 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all"
+                >
+                  See All Features
+                  <ChevronRight className="h-5 w-5" />
+                </Link>
+              </div>
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" /> No credit card
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Cancel anytime
+                </span>
+                <AppLink to="/login" className="text-primary-600 hover:text-primary-800 font-medium">
+                  Advisor Login →
+                </AppLink>
+              </div>
+            </div>
+            <div className="flex-1 w-full lg:max-w-[520px]">
+              <AdvisorDashboardMockup />
+            </div>
+          </div>
+
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto border-t border-slate-200 pt-10">
+            {HERO_STATS.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900">{s.value}</div>
+                <div className="mt-1 text-sm text-slate-500 font-medium">{s.label}</div>
+              </div>
             ))}
           </div>
 
-          <p className="text-center text-sm text-slate-400 mt-8">
-            All plans include a 14-day free trial. No credit card required. Cancel anytime.
-          </p>
+          <div className="mt-12 text-center">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">
+              Multi-custodian aggregation
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              {TRUST_CUSTODIANS.map((name) => (
+                <span
+                  key={name}
+                  className="text-sm font-semibold text-slate-300 hover:text-slate-500 transition-colors"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────── */}
+      {/* How it works */}
+      <section id="how-it-works" className="py-20 sm:py-28 bg-white scroll-mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader
+            badge="How it works"
+            title="From Onboarding to Compliance in Four Steps"
+            subtitle="Get your book connected, analyzed, and client-ready in days — not months."
+          />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_IT_WORKS_STEPS.map((s, i) => (
+              <StepCard key={s.step} num={i + 1} title={s.title} desc={s.desc} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <FeaturesShowcase />
+      <AIEnginesSection />
+
+      {/* Compare */}
+      <section id="compare" className="py-20 sm:py-28 bg-slate-900 scroll-mt-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader
+            badge="Compare"
+            title="Firmum vs. Legacy Tool Stacks"
+            subtitle="Stop paying for six tools that don't talk to each other."
+            dark
+          />
+          <div className="rounded-2xl border border-slate-700 overflow-hidden">
+            <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 py-3 px-4 bg-slate-800/80 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span>Capability</span>
+              <span className="text-center">Legacy stack</span>
+              <span className="text-center text-primary-400">Firmum</span>
+            </div>
+            {COMPARISON_ROWS.map((row) => (
+              <div
+                key={row.feature}
+                className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 py-3.5 px-4 border-t border-slate-800 text-sm"
+              >
+                <span className="text-slate-300 font-medium">{row.feature}</span>
+                <span className="text-center text-slate-500">
+                  {row.legacy ? <CheckCircle2 className="w-5 h-5 text-slate-500 mx-auto" /> : <X className="w-5 h-5 text-red-400/80 mx-auto" />}
+                </span>
+                <span className="text-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mx-auto" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 sm:py-28 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader badge="Advisors" title="Trusted by Growing RIAs" />
+          <div className="grid md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.author} className="rounded-2xl bg-white border border-slate-200 p-8 shadow-sm">
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${t.color} text-white text-sm font-bold flex items-center justify-center`}>
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{t.author}</p>
+                    <p className="text-xs text-slate-500">
+                      {t.role}, {t.firm}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <PricingSection />
+
+      {/* FAQ */}
+      <section id="faq" className="py-20 sm:py-28 bg-white scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader badge="FAQ" title="Frequently Asked Questions" />
+          <div className="space-y-3">
+            {FAQS.map((faq) => (
+              <details
+                key={faq.q}
+                className="group rounded-xl border border-slate-200 open:shadow-sm open:border-primary-200"
+              >
+                <summary className="cursor-pointer list-none px-5 py-4 font-semibold text-slate-900 hover:text-primary-600 transition-colors">
+                  {faq.q}
+                </summary>
+                <p className="px-5 pb-4 text-sm text-slate-600 leading-relaxed">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Updates teaser */}
+      <section className="py-16 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Latest product updates</h2>
+            <p className="mt-1 text-slate-500 text-sm">
+              Tax module improvements, compliance rules, IMM sprint features, and more.
+            </p>
+          </div>
+          <Link
+            to="/updates"
+            className="inline-flex items-center gap-2 text-primary-600 font-semibold hover:text-primary-700"
+          >
+            View release notes
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* CTA */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Ready to Modernize Your Practice?
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to Modernize Your Practice?</h2>
           <p className="text-lg text-primary-100 mb-8">
-            Join 500+ advisory firms using Edge to deliver better outcomes for their clients.
+            Join advisory firms using Firmum to deliver better outcomes — with less operational overhead.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              variant="secondary"
-              size="lg"
-              className="!bg-white !text-primary-600 !border-white hover:!bg-slate-100"
-              onClick={() => navigate('/onboarding/ria')}
+            <button
+              type="button"
+              onClick={() => goToApp('/onboarding')}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-primary-600 font-semibold px-7 py-3.5 rounded-xl hover:bg-slate-100 transition-colors"
             >
-              Start 14-Day Free Trial
-            </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate('/company/contact')}>
+              Start 30-Day Free Trial
+            </button>
+            <Link
+              to="/company/contact"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white font-semibold px-7 py-3.5 rounded-xl border border-white/40 hover:bg-white/10 transition-colors"
+            >
               Schedule Demo
-            </Button>
+            </Link>
           </div>
         </div>
       </section>

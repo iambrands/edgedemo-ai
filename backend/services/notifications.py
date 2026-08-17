@@ -65,7 +65,7 @@ async def send_advisor_alert(
     metadata: Optional[dict] = None,
 ) -> bool:
     """Send an internal alert email to an advisor."""
-    subject = f"[Edge Alert] {alert_type}"
+    subject = f"[Firmum Alert] {alert_type}"
     html = f"<h3>{alert_type}</h3><p>{message}</p>"
     if metadata:
         html += f"<pre>{metadata}</pre>"

@@ -46,6 +46,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { clsx } from 'clsx';
+import { Logo } from '../brand/Logo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -217,20 +218,15 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                <span className="text-lg font-bold text-white">E</span>
-              </div>
-              <span className="text-xl font-bold text-white">Edge</span>
-            </div>
-          )}
-          {isCollapsed && (
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center mx-auto">
-              <span className="text-lg font-bold text-white">E</span>
-            </div>
-          )}
+        <div className="h-16 flex items-center justify-between px-3 border-b border-white/10">
+          <Logo
+            variant="dark"
+            iconOnly={isCollapsed}
+            showWordmark={!isCollapsed}
+            size="md"
+            to="/dashboard"
+            className={clsx(isCollapsed && 'mx-auto')}
+          />
           <button
             onClick={onToggle}
             className={clsx(

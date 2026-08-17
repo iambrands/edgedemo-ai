@@ -2,7 +2,7 @@
 Client onboarding wizard endpoints.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import uuid4
@@ -62,8 +62,10 @@ async def get_session(session_id: str):
     return SESSIONS[session_id]
 
 
-@router.get("/active/list")
-async def list_active_sessions():
-    """List all active (in-progress) onboarding sessions."""
+@router.get("/active/list")  # paginate
+async def list_active_sessions(limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0), page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200)):
+    """List active onboarding sessions with pagination."""
     active = [s for s in SESSIONS.values() if s.get("status") == "in_progress"]
-    return {"sessions": active, "count": len(active)}
+    effective_offset = offset if offset > 0 else (page - 1) * page_size
+    effective_limit = limit if offset > 0 else page_size
+    return {"sessions": active[effective_offset: effective_offset + effective_limit], "count": len(active)}

@@ -117,7 +117,7 @@ export default function AIChatWidget({ variant = 'ria' }: AIChatWidgetProps) {
           <div>
             <p className="text-white font-semibold text-sm">AI Assistant</p>
             <p className="text-blue-200 text-xs">
-              {variant === 'ria' ? 'Edge Platform' : 'Ask me anything'}
+              {variant === 'ria' ? 'Firmum' : 'Ask me anything'}
             </p>
           </div>
         </div>

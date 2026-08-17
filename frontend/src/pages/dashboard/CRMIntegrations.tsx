@@ -176,7 +176,7 @@ export default function CRMIntegrations() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="pb-2 text-left text-xs font-semibold text-slate-600 uppercase">Edge Field</th>
+                    <th className="pb-2 text-left text-xs font-semibold text-slate-600 uppercase">Firmum Field</th>
                     <th className="pb-2 text-center text-xs font-semibold text-slate-600 uppercase">Direction</th>
                     <th className="pb-2 text-left text-xs font-semibold text-slate-600 uppercase">CRM Field</th>
                     <th className="pb-2 text-center text-xs font-semibold text-slate-600 uppercase">Active</th>

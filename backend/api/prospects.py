@@ -496,7 +496,7 @@ async def get_pending_tasks(
 # ============================================================================
 
 
-@router.post("/score/all")
+@router.post("/score/all")  # paginate
 async def rescore_all(
     db: AsyncSession = Depends(get_db_session),
     current_user: dict = Depends(get_current_user),

@@ -58,7 +58,10 @@ export const PORTAL_PAGES: PageEntry[] = [
 ];
 
 export const PUBLIC_PAGES = [
-  { path: '/',        title: 'Edge' },
+  { path: '/',        title: 'Firmum' },
+  { path: '/features', title: 'Tool' },
+  { path: '/pricing',  title: 'Pricing' },
+  { path: '/updates',  title: 'New' },
   { path: '/login',   title: 'Sign' },
   { path: '/signup',  title: 'Create' },
   { path: '/help',    title: 'Help' },

@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
 import {
   Shield, Brain, Eye, Users, Lock, CheckCircle,
-  ArrowLeft, ChevronRight, Cpu, Layers, BarChart3,
+  ChevronRight, Cpu, Layers, BarChart3,
 } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const PILLARS = [
   {
     icon: Brain,
     title: 'Three Proprietary AI Models',
     description:
-      'Edge is powered by three purpose-built intelligence models, each designed for a specific domain of wealth management.',
+      'Firmum is powered by three purpose-built intelligence models, each designed for a specific domain of wealth management.',
     details: [
       {
         name: 'Investment Intelligence Model (IIM)',
@@ -30,7 +30,7 @@ const PILLARS = [
     icon: Users,
     title: 'Human-in-the-Loop by Design',
     description:
-      'Every AI-generated output is designed for advisor review before reaching clients. Edge augments your expertise — it never replaces it.',
+      'Every AI-generated output is designed for advisor review before reaching clients. Firmum augments your expertise — it never replaces it.',
     details: [
       { name: 'Advisor Review', role: 'All AI-generated narratives, compliance alerts, and recommendations pass through an advisor approval layer.' },
       { name: 'Editable Outputs', role: 'Advisors can review, edit, and personalize any AI-generated content before publishing to clients.' },
@@ -75,21 +75,13 @@ const RELIABILITY_POINTS = [
 
 export default function Technology() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Back to Edge</span>
-          </Link>
-          <Link to="/about/methodology" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-            Methodology <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-12 space-y-16">
+    <MarketingPageShell>
+      <div className="max-w-5xl mx-auto px-4 pt-6 flex justify-end">
+        <Link to="/about/methodology" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
+          Methodology <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
+      <main className="max-w-5xl mx-auto px-4 py-8 sm:py-12 space-y-16">
         {/* Hero */}
         <section className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-700 text-sm font-medium mb-6">
@@ -100,7 +92,7 @@ export default function Technology() {
             Our Technology
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            Edge is a wealth management platform designed to enhance efficiency, built from the ground up with proprietary
+            Firmum is a wealth management platform designed to enhance efficiency, built from the ground up with proprietary
             models purpose-designed for financial advisory. Here's how it works, why you can trust it,
             and how we protect your data.
           </p>
@@ -164,7 +156,7 @@ export default function Technology() {
             <div>
               <h2 className="text-xl font-bold mb-3">Proprietary & Protected</h2>
               <p className="text-slate-300 leading-relaxed mb-4">
-                Edge's AI models, algorithms, training methodologies, and data processing pipelines are proprietary
+                Firmum's AI models, algorithms, training methodologies, and data processing pipelines are proprietary
                 intellectual property of IAB Advisors, Inc. Our technology is protected by trade secret law,
                 copyright, and contractual protections. The models incorporate significant human expertise from
                 financial advisors, compliance officers, and behavioral finance researchers — strengthening both
@@ -195,7 +187,6 @@ export default function Technology() {
           </Link>
         </section>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

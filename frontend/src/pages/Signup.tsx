@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { clsx } from 'clsx';
 import { Footer } from '../components/layout/Footer';
+import { Logo } from '../components/brand/Logo';
 
 type AccountType = 'user' | 'ria' | null;
 
@@ -112,12 +113,7 @@ export function Signup() {
     <>
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
-      <Link to="/" className="mb-8">
-        <span className="text-2xl font-bold">
-          <span className="text-slate-900">Edge</span>
-          <span className="text-primary-500">AI</span>
-        </span>
-      </Link>
+      <Logo size="lg" className="mb-8" />
 
       <Card className="w-full max-w-md">
         <div className="text-center mb-6">

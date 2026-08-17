@@ -1,26 +1,16 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const EFFECTIVE_DATE = 'January 1, 2026';
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <div className="flex gap-4 ml-auto text-sm">
-            <Link to="/legal/terms" className="text-slate-500 hover:text-slate-900">Terms</Link>
-            <Link to="/legal/disclosures" className="text-slate-500 hover:text-slate-900">Disclosures</Link>
-            <Link to="/legal/data-retention" className="text-slate-500 hover:text-slate-900">Data Retention</Link>
-          </div>
-        </div>
-      </header>
-
+    <MarketingPageShell>
+      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap gap-4 text-sm border-b border-slate-100">
+        <Link to="/legal/terms" className="text-slate-500 hover:text-primary-600">Terms of Use</Link>
+        <Link to="/legal/disclosures" className="text-slate-500 hover:text-primary-600">Disclosures</Link>
+        <Link to="/legal/data-retention" className="text-slate-500 hover:text-primary-600">Data Retention</Link>
+      </div>
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Privacy Policy</h1>
         <p className="text-sm text-slate-500 mb-10">Effective: {EFFECTIVE_DATE}</p>
@@ -29,7 +19,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900">1. Overview</h2>
             <p className="text-slate-600 leading-relaxed">
-              IAB Advisors, Inc. ("Company", "we", "our") operates the Edge platform. This Privacy
+              IAB Advisors, Inc. ("Company", "we", "our") operates the Firmum platform. This Privacy
               Policy describes how we collect, use, store, and protect information when you use our
               services. We are committed to protecting your privacy in compliance with SEC Regulation
               S-P, the California Consumer Privacy Act (CCPA), and other applicable laws.
@@ -151,7 +141,6 @@ export default function Privacy() {
           </section>
         </div>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

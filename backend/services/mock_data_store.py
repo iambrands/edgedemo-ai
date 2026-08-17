@@ -1,5 +1,5 @@
 """
-Centralized mock data store for all Edge features.
+Centralized mock data store for all Firmum features.
 Returns demo data matching exact endpoint response shapes when the DB is unavailable.
 """
 

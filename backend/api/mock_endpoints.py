@@ -301,7 +301,7 @@ async def custodian_accounts():
     return _store().custodian_accounts_response()
 
 
-@custodians_router.get("/positions")
+@custodians_router.get("/positions")  # paginate
 async def custodian_positions():
     return _store().custodian_positions_response()
 

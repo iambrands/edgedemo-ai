@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Footer } from '../../components/layout/Footer';
+import { Logo } from '../../components/brand/Logo';
 import { portalLogin } from '../../services/portalApi';
 
 export default function PortalLogin() {
@@ -40,12 +41,7 @@ export default function PortalLogin() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex flex-col items-center justify-center px-4">
-        <Link to="/" className="mb-8 flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">E</span>
-          </div>
-          <span className="text-2xl font-bold text-slate-900">Edge</span>
-        </Link>
+        <Logo to="/" size="lg" className="mb-8" />
 
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
           <div className="text-center mb-8">

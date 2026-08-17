@@ -25,6 +25,38 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class MeResponse(BaseModel):
+    id: str
+    email: str
+    user_type: str
+    subscription_tier: str | None = None
+    onboarding_completed: bool
+    risk_profile_completed: bool
+    management_mode: str = "diy"
+    advisor_connection_status: str = "none"
+
+
+@router.get("/me", response_model=MeResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Current B2C user profile and connection status."""
+    if current_user.advisor_id:
+        mode = "advisor_linked"
+        conn_status = "active"
+    else:
+        mode = "diy"
+        conn_status = "none"
+    return MeResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        user_type=current_user.user_type,
+        subscription_tier=current_user.subscription_tier,
+        onboarding_completed=current_user.onboarding_completed,
+        risk_profile_completed=current_user.risk_profile_completed,
+        management_mode=mode,
+        advisor_connection_status=conn_status,
+    )
+
+
 @router.post("/register", response_model=TokenResponse)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register new B2C user. Returns tokens (auto-login)."""

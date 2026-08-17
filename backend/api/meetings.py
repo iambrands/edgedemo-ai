@@ -8,6 +8,8 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from uuid import UUID
 
+from backend.api.rate_limit import limit_requests
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/meetings", tags=["Meeting Intelligence"])
@@ -425,6 +427,7 @@ async def upload_recording(
     meeting_id: str,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    _: None = Depends(limit_requests("meeting_upload_recording", max_calls=30, window_seconds=3600)),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -545,6 +548,7 @@ async def update_action_item(
 async def regenerate_analysis(
     meeting_id: str,
     background_tasks: BackgroundTasks,
+    _: None = Depends(limit_requests("meeting_regenerate_analysis", max_calls=30, window_seconds=3600)),
     current_user: dict = Depends(get_current_user)
 ):
     """Regenerate meeting analysis from existing transcript"""

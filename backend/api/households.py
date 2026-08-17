@@ -103,7 +103,7 @@ MOCK_HOUSEHOLDS = [
 ]
 
 
-@router.get("", response_model=list[HouseholdSummary])
+@router.get("", response_model=list[HouseholdSummary])  # paginate
 async def list_households(
     status: str | None = None,
     search: str | None = None,

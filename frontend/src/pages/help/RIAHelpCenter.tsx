@@ -41,9 +41,9 @@ const CATEGORIES: HelpCategory[] = [
     title: 'Getting Started',
     icon: Book,
     articles: [
-      { id: '1', title: 'Complete Setup Guide', excerpt: 'Step-by-step guide to setting up your Edge account', readTime: '10 min', type: 'guide' },
+      { id: '1', title: 'Complete Setup Guide', excerpt: 'Step-by-step guide to setting up your Firmum account', readTime: '10 min', type: 'guide' },
       { id: '2', title: 'Connecting Your First Custodian', excerpt: 'How to link Schwab, Fidelity, or other custodians', readTime: '5 min', type: 'article' },
-      { id: '3', title: 'Platform Overview Video', excerpt: 'Quick tour of all Edge features', readTime: '8 min', type: 'video' },
+      { id: '3', title: 'Platform Overview Video', excerpt: 'Quick tour of all Firmum features', readTime: '8 min', type: 'video' },
     ],
   },
   {
@@ -160,7 +160,7 @@ const FAQS = [
   },
   {
     question: 'Is my client data secure?',
-    answer: 'Yes. Edge uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties.',
+    answer: 'Yes. Firmum uses bank-level 256-bit AES encryption, SOC 2 Type II compliance, and all data is stored in secure AWS data centers. We never share your data with third parties.',
   },
   {
     question: 'How does the AI compliance monitoring work?',
@@ -200,11 +200,11 @@ const FAQS = [
   },
   {
     question: 'How do I connect my CRM (Salesforce, Redtail, Wealthbox)?',
-    answer: 'Go to the CRM Integrations page under Administration. Click "Connect" on your CRM provider and complete the OAuth authorization. You can configure sync direction (bidirectional, Edge→CRM, or CRM→Edge), field mappings, and sync frequency.',
+    answer: 'Go to the CRM Integrations page under Administration. Click "Connect" on your CRM provider and complete the OAuth authorization. You can configure sync direction (bidirectional, Firmum→CRM, or CRM→Firmum), field mappings, and sync frequency.',
   },
   {
     question: 'What is communication archiving?',
-    answer: 'Edge archives all advisor-client communications (email, SMS, portal messages, video meetings) in compliance with SEC Rule 17a-4. Messages are automatically retained per policy (e.g., 6 years for email), flagged for compliance-sensitive keywords, and available for supervisory review.',
+    answer: 'Firmum archives all advisor-client communications (email, SMS, portal messages, video meetings) in compliance with SEC Rule 17a-4. Messages are automatically retained per policy (e.g., 6 years for email), flagged for compliance-sensitive keywords, and available for supervisory review.',
   },
   {
     question: 'How do I manage multiple advisors in my firm?',
@@ -381,7 +381,7 @@ export default function RIAHelpCenter() {
         <div id="brokerages" className="mt-12">
           <h2 className="text-xl font-semibold text-slate-900 mb-2">Supported Brokerages & Custodians</h2>
           <p className="text-sm text-slate-500 mb-6">
-            Edge supports direct API integrations and file-based imports from {SUPPORTED_BROKERAGES.length}+ platforms.
+            Firmum supports direct API integrations and file-based imports from {SUPPORTED_BROKERAGES.length}+ platforms.
           </p>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">

@@ -6,11 +6,14 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 import logging
 import uuid
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from backend.api.auth import get_current_user
+from backend.models import get_session_factory
+from backend.services.statement_persistence import StatementPersistenceService
 from backend.services.pdf_service import pdf_service
 from backend.parsers.registry import get_default_registry
 
@@ -109,6 +112,65 @@ PARSED_STATEMENTS: Dict[str, Dict[str, Any]] = {
 parser_registry = get_default_registry()
 
 
+def _parse_uuid(value: Any) -> Optional[UUID]:
+    if not value:
+        return None
+    try:
+        return UUID(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+async def _persist_confirmed_statement(
+    statement_id: str,
+    stmt: Dict[str, Any],
+    *,
+    household_id: Optional[UUID],
+    client_id: Optional[UUID],
+    management_mode: str = "self_directed",
+    source: str = "statement_upload",
+) -> Optional[Dict[str, Any]]:
+    """Persist statement using DB service when database is available."""
+    if not household_id:
+        return None
+
+    try:
+        factory = get_session_factory()
+        async with factory() as db:
+            service = StatementPersistenceService(db)
+            result = await service.persist_confirmed_statement(
+                statement_id,
+                stmt,
+                household_id=household_id,
+                client_id=client_id,
+                management_mode=management_mode,
+                source=source,
+            )
+            await db.commit()
+            return result
+    except Exception as exc:
+        logger.warning("Statement persistence skipped for %s: %s", statement_id, exc)
+        return None
+
+
+def _can_access_statement(stmt: Dict[str, Any], current_user: dict) -> bool:
+    """Check statement visibility without leaking cross-tenant existence."""
+    statement_household_id = _parse_uuid(stmt.get("householdId"))
+    user_household_id = _parse_uuid(current_user.get("household_id"))
+    if statement_household_id and user_household_id and statement_household_id != user_household_id:
+        return False
+
+    owner_user_id = str(stmt.get("uploadedByUserId") or "")
+    current_user_id = str(current_user.get("id") or "")
+    owner_role = str(stmt.get("uploadedByRole") or "")
+    current_role = str(current_user.get("role") or "")
+    # For client-originated uploads in shared memory mode, lock access to uploader only.
+    if owner_user_id and current_user_id and owner_user_id != current_user_id:
+        if owner_role == "b2c" or current_role == "b2c":
+            return False
+    return True
+
+
 # --- Background task for parsing ---
 
 async def parse_statement_background(stmt_id: str, file_bytes: bytes, filename: str):
@@ -174,6 +236,7 @@ async def list_statements(current_user: dict = Depends(get_current_user)):
             status=s.get("status", "pending"),
         )
         for s in PARSED_STATEMENTS.values()
+        if _can_access_statement(s, current_user)
     ]
 
 
@@ -200,6 +263,9 @@ async def upload_statement(
     # Generate statement ID
     stmt_id = f"stmt-{str(uuid.uuid4())[:8]}"
     
+    user_household_id = _parse_uuid(current_user.get("household_id"))
+    chosen_household_id = user_household_id or _parse_uuid(householdId)
+
     # Create initial record
     PARSED_STATEMENTS[stmt_id] = {
         "id": stmt_id,
@@ -209,7 +275,9 @@ async def upload_statement(
         "confidence": "0%",
         "date": datetime.utcnow().strftime("%Y-%m-%d"),
         "status": "parsing",
-        "householdId": householdId,
+        "householdId": str(chosen_household_id) if chosen_household_id else None,
+        "uploadedByUserId": current_user.get("id"),
+        "uploadedByRole": current_user.get("role", "ria"),
         "positions": [],
     }
     
@@ -231,6 +299,8 @@ async def get_statement(statement_id: str, current_user: dict = Depends(get_curr
     stmt = PARSED_STATEMENTS.get(statement_id)
     if not stmt:
         raise HTTPException(status_code=404, detail="Statement not found")
+    if not _can_access_statement(stmt, current_user):
+        raise HTTPException(status_code=404, detail="Statement not found")
     
     return stmt
 
@@ -240,6 +310,8 @@ async def get_parsed_data(statement_id: str, current_user: dict = Depends(get_cu
     """Get parsed data from a statement for review."""
     stmt = PARSED_STATEMENTS.get(statement_id)
     if not stmt:
+        raise HTTPException(status_code=404, detail="Statement not found")
+    if not _can_access_statement(stmt, current_user):
         raise HTTPException(status_code=404, detail="Statement not found")
     
     positions = stmt.get("positions", [])
@@ -268,8 +340,25 @@ async def confirm_parsed_data(statement_id: str, current_user: dict = Depends(ge
     if stmt.get("status") not in ["parsed", "confirmed"]:
         raise HTTPException(status_code=400, detail="Statement not ready for confirmation")
     
-    # Update status
+    statement_household_id = _parse_uuid(stmt.get("householdId"))
+    user_household_id = _parse_uuid(current_user.get("household_id"))
+    user_client_id = _parse_uuid(current_user.get("client_id"))
+    if not _can_access_statement(stmt, current_user):
+        # IDOR-safe behavior: hide cross-household existence.
+        raise HTTPException(status_code=404, detail="Statement not found")
+
+    persistence = await _persist_confirmed_statement(
+        statement_id,
+        stmt,
+        household_id=statement_household_id or user_household_id,
+        client_id=user_client_id,
+    )
+
+    # Update status in in-memory store
     stmt["status"] = "confirmed"
+    if persistence:
+        stmt["persistedStatementId"] = persistence["statement_db_id"]
+        stmt["persistedAccountId"] = persistence["account_id"]
     
     positions_count = len(stmt.get("positions", []))
     
@@ -277,5 +366,7 @@ async def confirm_parsed_data(statement_id: str, current_user: dict = Depends(ge
         "status": "confirmed",
         "statementId": statement_id,
         "positionsCreated": positions_count,
+        "persisted": bool(persistence),
+        "persistedStatementId": persistence["statement_db_id"] if persistence else None,
         "message": f"{positions_count} positions confirmed and saved",
     }

@@ -29,6 +29,7 @@ import type { LucideIcon } from 'lucide-react';
 import { portalLogout, getPortalClientName } from '../../services/portalApi';
 import { clsx } from 'clsx';
 import { useState, useEffect } from 'react';
+import { Logo } from '../brand/Logo';
 
 interface NavItem {
   to: string;
@@ -162,24 +163,16 @@ export default function PortalNav({ isCollapsed, onToggle, nudgeCount = 0, firmN
       )}
     >
       {/* Logo + Collapse */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-        {!isCollapsed && (
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-bold text-white">E</span>
-            </div>
-            <div className="min-w-0">
-              <span className="text-xl font-bold text-white block leading-tight">Edge</span>
-              {firmName && (
-                <span className="text-[10px] text-blue-300 block truncate leading-tight">{firmName}</span>
-              )}
-            </div>
+      <div className="h-16 flex items-center justify-between px-3 border-b border-white/10">
+        {!isCollapsed ? (
+          <div className="min-w-0">
+            <Logo variant="dark" size="sm" to="/portal" className="mb-0.5" />
+            {firmName && (
+              <span className="text-[10px] text-blue-300 block truncate leading-tight pl-0.5">{firmName}</span>
+            )}
           </div>
-        )}
-        {isCollapsed && (
-          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center mx-auto">
-            <span className="text-lg font-bold text-white">E</span>
-          </div>
+        ) : (
+          <Logo variant="dark" iconOnly size="sm" to="/portal" className="mx-auto" />
         )}
         <button
           onClick={onToggle}

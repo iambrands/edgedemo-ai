@@ -13,8 +13,12 @@ export async function navigateAndVerify(
 
   await page.goto(path, { waitUntil: 'domcontentloaded', timeout });
 
-  // Allow React to hydrate
+  // Allow React to hydrate and auth gate to resolve
   await page.waitForTimeout(800);
+  if (path.startsWith('/dashboard')) {
+    await page.waitForURL(/\/dashboard/, { timeout });
+    await page.waitForSelector('main', { timeout });
+  }
 
   // Page should not be blank
   const bodyText = await page.locator('body').innerText();

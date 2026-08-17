@@ -1,3 +1,5 @@
+import { PRODUCT_NAME } from './brand';
+
 /**
  * Marketing copy updated per Orie's feedback.
  * Key changes:
@@ -9,12 +11,9 @@
 
 export const MARKETING_COPY = {
   elevatorPitch: {
-    short:
-      'Edge is a data and information aggregation platform designed to enhance efficiency and streamline advisor workflows.',
-    medium:
-      'Edge aggregates held-away assets, automates statement parsing, and streamlines compliance documentation -- reducing operational overhead so advisors can focus on client relationships.',
-    full:
-      'Edge is a wealth management platform designed to enhance efficiency through intelligent data aggregation. We automatically parse statements from 17+ custodians, aggregate held-away assets into a unified household view, identify compliance requirements, and generate audit-ready documentation -- all while reducing the operational overhead that keeps advisors from focusing on what matters most: their clients.',
+    short: `${PRODUCT_NAME} is a data and information aggregation platform designed to enhance efficiency and streamline advisor workflows.`,
+    medium: `${PRODUCT_NAME} aggregates held-away assets, automates statement parsing, and streamlines compliance documentation — reducing operational overhead so advisors can focus on client relationships.`,
+    full: `${PRODUCT_NAME} is a wealth management platform designed to enhance efficiency through intelligent data aggregation. We automatically parse statements from 17+ custodians, aggregate held-away assets into a unified household view, identify compliance requirements, and generate audit-ready documentation — all while reducing the operational overhead that keeps advisors from focusing on what matters most: their clients.`,
   },
 
   features: {
@@ -29,8 +28,7 @@ export const MARKETING_COPY = {
       description:
         'Identifies FINRA and SEC compliance requirements, flags potential issues for review, and generates timestamped audit trails for documentation.',
       benefit: 'Proactive issue identification',
-      disclaimer:
-        'Edge assists with compliance documentation but is not a substitute for compliance review by qualified professionals.',
+      disclaimer: `${PRODUCT_NAME} assists with compliance documentation but is not a substitute for compliance review by qualified professionals.`,
     },
     behavioralIntelligence: {
       headline: 'Behavioral Intelligence',
@@ -55,7 +53,7 @@ export const MARKETING_COPY = {
     householdView: {
       headline: 'Household-Level Intelligence',
       description:
-        'Aggregate all client accounts -- including held-away assets -- into a unified household view for comprehensive analysis and planning.',
+        'Aggregate all client accounts — including held-away assets — into a unified household view for comprehensive analysis and planning.',
       benefit: 'Complete client picture',
     },
   },
@@ -79,12 +77,9 @@ export const MARKETING_COPY = {
   },
 
   disclaimers: {
-    compliance:
-      'Edge compliance features assist with documentation and issue identification. They do not replace the judgment of qualified compliance professionals.',
-    tax:
-      'Tax analysis features identify opportunities for enhanced tax efficiency. Always consult a qualified tax professional before making tax-related decisions.',
-    investment:
-      'Edge provides analysis and insights to support advisor decision-making. All investment decisions remain the responsibility of the advisor and client.',
+    compliance: `${PRODUCT_NAME} compliance features assist with documentation and issue identification. They do not replace the judgment of qualified compliance professionals.`,
+    tax: 'Tax analysis features identify opportunities for enhanced tax efficiency. Always consult a qualified tax professional before making tax-related decisions.',
+    investment: `${PRODUCT_NAME} provides analysis and insights to support advisor decision-making. All investment decisions remain the responsibility of the advisor and client.`,
   },
 };
 

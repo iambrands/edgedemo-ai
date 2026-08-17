@@ -4,7 +4,7 @@ Account management endpoints.
 
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/accounts", tags=["Accounts"])
@@ -90,12 +90,8 @@ MOCK_ACCOUNTS = [
 ]
 
 
-@router.get("", response_model=list[AccountListItem])
-async def list_accounts(
-    custodian: str | None = None,
-    type: str | None = None,
-    household_id: str | None = None,
-):
+@router.get("", response_model=list[AccountListItem])  # paginate
+async def list_accounts(custodian: str | None = None, type: str | None = None, household_id: str | None = None, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0), page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200)):
     """List all accounts with optional filtering."""
     results = MOCK_ACCOUNTS
     if custodian:
@@ -104,6 +100,9 @@ async def list_accounts(
         results = [a for a in results if a["type"].lower() == type.lower()]
     if household_id:
         results = [a for a in results if a["household_id"] == household_id]
+    effective_offset = offset if offset > 0 else (page - 1) * page_size
+    effective_limit = limit if offset > 0 else page_size
+    paged = results[effective_offset: effective_offset + effective_limit]
     return [
         AccountListItem(
             id=a["id"],
@@ -114,7 +113,7 @@ async def list_accounts(
             value=a["total_value"],
             status=a["status"],
         )
-        for a in results
+        for a in paged
     ]
 
 

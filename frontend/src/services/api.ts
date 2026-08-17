@@ -1,5 +1,5 @@
 /**
- * API service layer for Edge frontend.
+ * API service layer for Firmum frontend.
  * Handles all backend communication with auth headers.
  */
 

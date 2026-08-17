@@ -14,6 +14,8 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from backend.api.rate_limit import limit_requests
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/portfolio-review", tags=["Portfolio Review"])
@@ -335,6 +337,7 @@ def _generate_mock_analysis(
 @router.post("/analyze", response_model=PortfolioAnalysisResponse)
 async def analyze_portfolio(
     payload: AnalyzeRequest,
+    _: None = Depends(limit_requests("portfolio_review_analyze", max_calls=20, window_seconds=3600)),
     current_user: dict = Depends(get_current_user),
 ):
     """Analyze uploaded portfolio positions using Claude AI."""
@@ -349,8 +352,8 @@ async def analyze_portfolio(
         response = client.messages.create(
             model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
             max_tokens=4000,
+            # temperature omitted — causes 400 errors on extended-thinking models
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
         )
 
         response_text = response.content[0].text

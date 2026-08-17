@@ -453,7 +453,7 @@ async def get_sync_logs(
         .order_by(CustodianSyncLog.started_at.desc())
         .limit(limit)
     )
-    logs = list(logs_result.scalars().all())
+    logs = list(logs_result.scalars())
 
     return SyncLogListResponse(
         logs=[
@@ -503,7 +503,7 @@ async def list_accounts(
             query = query.where(CustodianAccount.client_id == None)  # noqa: E711
 
         result = await db.execute(query)
-        accounts = list(result.scalars().all())
+        accounts = list(result.scalars())
 
         total_mv = sum(float(a.market_value) for a in accounts)
         total_cash = sum(float(a.cash_balance) for a in accounts)
@@ -573,14 +573,8 @@ async def map_account_to_client(
 # ENDPOINTS: Unified Portfolio Views
 # ============================================================================
 
-@router.get("/positions", response_model=None)
-async def get_unified_positions(
-    client_id: Optional[str] = None,
-    household_id: Optional[str] = None,
-    asset_class: Optional[str] = None,
-    db: AsyncSession = Depends(get_db_session),
-    current_user: dict = Depends(get_current_user),
-):
+@router.get("/positions", response_model=None)  # paginate
+async def get_unified_positions(client_id: Optional[str] = None, household_id: Optional[str] = None, asset_class: Optional[str] = None, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), page: int = Query(1, ge=1), page_size: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db_session), current_user: dict = Depends(get_current_user)):
     """Get unified positions across all custodians, aggregated by symbol."""
     try:
         service = CustodianService(db)
@@ -593,9 +587,14 @@ async def get_unified_positions(
         if asset_class:
             positions = [p for p in positions if p["asset_class"] == asset_class]
 
+        total_positions = len(positions)
+        effective_offset = offset if offset > 0 else (page - 1) * page_size
+        effective_limit = limit if offset > 0 else page_size
+        paged_positions = positions[effective_offset: effective_offset + effective_limit]
+
         return PositionListResponse(
-            positions=[UnifiedPositionResponse(**p) for p in positions],
-            total_positions=len(positions),
+            positions=[UnifiedPositionResponse(**p) for p in paged_positions],
+            total_positions=total_positions,
             total_market_value=sum(p["total_market_value"] for p in positions),
             total_cost_basis=sum(p["total_cost_basis"] for p in positions),
         )
@@ -706,7 +705,7 @@ async def _get_transactions_from_db(
         .limit(page_size)
     )
     result = await db.execute(query)
-    transactions = list(result.scalars().all())
+    transactions = list(result.scalars())
 
     return TransactionListResponse(
         transactions=[_transaction_to_response(t) for t in transactions],

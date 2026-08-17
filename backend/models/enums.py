@@ -1,4 +1,4 @@
-"""Enums for Edge RIA Platform models."""
+"""Enums for Firmum models."""
 
 import enum
 

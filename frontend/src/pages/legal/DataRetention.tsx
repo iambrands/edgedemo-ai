@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Download, Clock, Shield, Trash2, Archive, FileCheck } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { Download, Clock, Shield, Trash2, Archive, FileCheck } from 'lucide-react';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const EFFECTIVE_DATE = 'March 1, 2026';
 const VERSION = '1.0';
@@ -73,21 +73,12 @@ const RETENTION_SCHEDULE = [
 
 export default function DataRetention() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <div className="flex gap-4 ml-auto text-sm">
-            <Link to="/legal/terms" className="text-slate-500 hover:text-slate-900">Terms</Link>
-            <Link to="/legal/privacy" className="text-slate-500 hover:text-slate-900">Privacy</Link>
-            <Link to="/legal/disclosures" className="text-slate-500 hover:text-slate-900">Disclosures</Link>
-          </div>
-        </div>
-      </header>
-
+    <MarketingPageShell>
+      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap gap-4 text-sm border-b border-slate-100">
+        <Link to="/legal/terms" className="text-slate-500 hover:text-primary-600">Terms of Use</Link>
+        <Link to="/legal/privacy" className="text-slate-500 hover:text-primary-600">Privacy Policy</Link>
+        <Link to="/legal/disclosures" className="text-slate-500 hover:text-primary-600">Disclosures</Link>
+      </div>
       <main className="max-w-4xl mx-auto px-4 py-12">
         <div className="flex items-start justify-between mb-2">
           <h1 className="text-3xl font-bold text-slate-900">Data Retention &amp; Disposal Policy</h1>
@@ -101,7 +92,7 @@ export default function DataRetention() {
           </a>
         </div>
         <p className="text-sm text-slate-500 mb-2">Effective: {EFFECTIVE_DATE} &middot; Version {VERSION}</p>
-        <p className="text-sm text-slate-500 mb-10">IAB Advisors, Inc. d/b/a Edge</p>
+        <p className="text-sm text-slate-500 mb-10">IAB Advisors, Inc. d/b/a Firmum</p>
 
         <div className="prose prose-slate max-w-none space-y-8">
 
@@ -113,7 +104,7 @@ export default function DataRetention() {
             </h2>
             <p className="text-slate-600 leading-relaxed">
               This Data Retention and Disposal Policy ("Policy") establishes the requirements for
-              retaining, archiving, and securely disposing of data processed by the Edge platform.
+              retaining, archiving, and securely disposing of data processed by the Firmum platform.
               It ensures compliance with federal securities regulations, FINRA rules, state privacy laws,
               and industry best practices while protecting client confidentiality and minimizing data
               exposure risk.
@@ -127,7 +118,7 @@ export default function DataRetention() {
               2. Scope
             </h2>
             <p className="text-slate-600 leading-relaxed">
-              This Policy applies to all data created, received, maintained, or transmitted by the Edge
+              This Policy applies to all data created, received, maintained, or transmitted by the Firmum
               platform, including but not limited to:
             </p>
             <ul className="space-y-2 text-slate-600 text-sm list-disc list-inside mt-3">
@@ -141,7 +132,7 @@ export default function DataRetention() {
             </ul>
             <p className="text-slate-600 leading-relaxed mt-3">
               This Policy applies to all employees, contractors, and third-party service providers with
-              access to Edge platform data, regardless of storage medium (electronic, cloud, or physical).
+              access to Firmum platform data, regardless of storage medium (electronic, cloud, or physical).
             </p>
           </section>
 
@@ -257,7 +248,7 @@ export default function DataRetention() {
                   For all disposals of client financial data, a Certificate of Destruction is generated
                   and retained for 3 years. Each certificate includes: data category, volume destroyed,
                   method of destruction, date, and authorizing officer. Certificates are stored in the
-                  Edge compliance audit log and are available for regulatory examination.
+                  Firmum compliance audit log and are available for regulatory examination.
                 </p>
               </div>
             </div>
@@ -407,7 +398,6 @@ export default function DataRetention() {
           </section>
         </div>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

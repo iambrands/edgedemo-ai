@@ -266,7 +266,7 @@ function GoalsStep({ formData, setFormData }: StepProps) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-slate-600">
-        Select all that apply. This helps your advisor tailor recommendations to your needs.
+        Select all that apply. This helps your advisor tailor suggestions to your needs.
       </p>
 
       <div className="grid grid-cols-2 gap-3">
@@ -407,7 +407,7 @@ function RiskAssessmentStep({ formData, setFormData }: StepProps) {
           <p className="text-2xl font-bold text-slate-900">{riskProfile}</p>
           <p className="text-sm text-slate-500 mt-1 mb-3">
             Score: {pct}/100 — Based on your responses, your advisor will
-            recommend an appropriate portfolio allocation.
+            suggest an appropriate portfolio allocation range for discussion with your advisor.
           </p>
           <p className="text-xs text-slate-400">
             You can retake this assessment anytime from your portal's Risk Profile page.
@@ -637,7 +637,7 @@ export default function ClientOnboarding() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-xl font-bold text-blue-600">Edge</span>
+            <span className="text-xl font-bold text-blue-600">Firmum</span>
             <span className="text-xl font-bold text-teal-500">AI</span>
             <span className="ml-2 text-xs text-slate-400 uppercase tracking-wider">Client Portal</span>
           </div>

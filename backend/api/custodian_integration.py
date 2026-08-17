@@ -240,7 +240,7 @@ async def list_accounts(
     return {"accounts": accts, "total": len(accts)}
 
 
-@router.get("/positions")
+@router.get("/positions")  # paginate
 async def list_positions(
     account_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user),

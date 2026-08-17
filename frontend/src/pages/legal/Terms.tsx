@@ -1,26 +1,16 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Footer } from '../../components/layout/Footer';
+import { MarketingPageShell } from '../../components/layout/MarketingPageShell';
 
 const EFFECTIVE_DATE = 'January 1, 2026';
 
 export default function Terms() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Home</span>
-          </Link>
-          <div className="flex gap-4 ml-auto text-sm">
-            <Link to="/legal/privacy" className="text-slate-500 hover:text-slate-900">Privacy</Link>
-            <Link to="/legal/disclosures" className="text-slate-500 hover:text-slate-900">Disclosures</Link>
-            <Link to="/legal/data-retention" className="text-slate-500 hover:text-slate-900">Data Retention</Link>
-          </div>
-        </div>
-      </header>
-
+    <MarketingPageShell>
+      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap gap-4 text-sm border-b border-slate-100">
+        <Link to="/legal/privacy" className="text-slate-500 hover:text-primary-600">Privacy Policy</Link>
+        <Link to="/legal/disclosures" className="text-slate-500 hover:text-primary-600">Disclosures</Link>
+        <Link to="/legal/data-retention" className="text-slate-500 hover:text-primary-600">Data Retention</Link>
+      </div>
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Terms of Use</h1>
         <p className="text-sm text-slate-500 mb-10">Effective: {EFFECTIVE_DATE}</p>
@@ -29,8 +19,8 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900">1. Acceptance of Terms</h2>
             <p className="text-slate-600 leading-relaxed">
-              By accessing or using the Edge platform ("Platform"), you agree to be bound by these
-              Terms of Use ("Terms"). If you do not agree, do not use the Platform. Edge is a product
+              By accessing or using the Firmum platform ("Platform"), you agree to be bound by these
+              Terms of Use ("Terms"). If you do not agree, do not use the Platform. Firmum is a product
               of IAB Advisors, Inc. ("Company", "we", "our").
             </p>
           </section>
@@ -38,7 +28,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900">2. Description of Service</h2>
             <p className="text-slate-600 leading-relaxed">
-              Edge provides AI-powered investment analytics, portfolio reporting, compliance tools,
+              Firmum provides AI-powered investment analytics, portfolio reporting, compliance tools,
               and client communication features for registered investment advisors ("RIAs") and their
               clients. The Platform is designed to augment—not replace—the professional judgment of
               qualified financial advisors.
@@ -130,7 +120,6 @@ export default function Terms() {
           </section>
         </div>
       </main>
-      <Footer />
-    </div>
+    </MarketingPageShell>
   );
 }

@@ -143,7 +143,7 @@ export default function ClientHelpCenter() {
           <div className="w-7 h-7 rounded-md bg-white/15 flex items-center justify-center">
             <span className="text-sm font-bold text-white">E</span>
           </div>
-          <span className="text-lg font-bold text-white">Edge</span>
+          <span className="text-lg font-bold text-white">Firmum</span>
         </div>
       )}
 

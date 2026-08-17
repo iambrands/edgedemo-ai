@@ -8,8 +8,10 @@ query real database tables via ComplianceService.
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from pydantic import BaseModel
+
+from backend.api.rate_limit import limit_requests
 
 import logging
 
@@ -198,7 +200,9 @@ def _demo_audit_log():
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/dashboard")
-async def get_compliance_dashboard():
+async def get_compliance_dashboard(
+    _: None = Depends(limit_requests("compliance_dashboard", max_calls=120, window_seconds=3600)),
+):
     """Get compliance dashboard metrics (new Co-Pilot format)."""
     alerts = _demo_alerts()
     tasks = _demo_tasks()

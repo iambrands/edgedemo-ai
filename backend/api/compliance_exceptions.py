@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,12 +44,8 @@ class ResolveExceptionRequest(BaseModel):
     note: str
 
 
-@router.get("/exceptions", response_model=list[ExceptionResponse])
-async def get_compliance_exceptions(
-    resolved: bool = False,
-    db: AsyncSession = Depends(get_db_session),
-    current_user: dict = Depends(get_current_user),
-):
+@router.get("/exceptions", response_model=list[ExceptionResponse])  # paginate
+async def get_compliance_exceptions(resolved: bool = False, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0), page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db_session), current_user: dict = Depends(get_current_user)):
     """Get compliance exceptions filtered by resolution status."""
     try:
         from backend.models.compliance_rules import ComplianceException, ComplianceRuleConfig
@@ -60,7 +56,10 @@ async def get_compliance_exceptions(
             .order_by(ComplianceException.triggered_at.desc())
         )
         result = await db.execute(query)
-        rows = result.all()
+        rows = list(result)
+        effective_offset = offset if offset > 0 else (page - 1) * page_size
+        effective_limit = limit if offset > 0 else page_size
+        paged_rows = rows[effective_offset: effective_offset + effective_limit]
         return [
             ExceptionResponse(
                 id=str(exc.id),
@@ -74,7 +73,7 @@ async def get_compliance_exceptions(
                 resolved_at=exc.resolved_at.isoformat() if exc.resolved_at else None,
                 resolution_note=exc.resolution_note,
             )
-            for exc, rule in rows
+            for exc, rule in paged_rows
         ]
     except Exception as e:
         logger.warning("Compliance exceptions query failed: %s", e)

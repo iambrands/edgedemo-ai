@@ -1,4 +1,4 @@
-"""Edge RIA Platform services."""
+"""Firmum services."""
 
 from .compliance_doc_service import ComplianceDocService
 from .custodian import CustodianService

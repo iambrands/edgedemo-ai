@@ -9,6 +9,7 @@ import { loginAsRIA } from './helpers/auth';
 
 const AVOID_PATTERNS = [
   /\bEdgeAI\b/,
+  /\bEdge Advisors\b/,
   /\bAI[- ]native\b/i,
   /\btax savings\b/i,
   /\bfull compliance solution\b/i,

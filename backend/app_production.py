@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
     # Startup
-    logger.info(f"Edge API starting in {settings.environment} mode...")
+    logger.info(f"Firmum API starting in {settings.environment} mode...")
     
     # Initialize database tables if in production
     if settings.environment == "production":
@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("Edge API shutting down...")
+    logger.info("Firmum API shutting down...")
 
 
 def create_app() -> FastAPI:
@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     show_docs = settings.environment != "production" or settings.debug
     
     app = FastAPI(
-        title="Edge RIA Platform",
+        title="Firmum",
         description="AI-powered wealth management platform for RIAs",
         version="1.0.0",
         lifespan=lifespan,
@@ -130,7 +130,7 @@ def create_app() -> FastAPI:
     async def root():
         """Root endpoint with API info."""
         return {
-            "message": "Edge RIA Platform API",
+            "message": "Firmum API",
             "version": "1.0.0",
             "docs": "/api/docs" if show_docs else "Disabled in production",
         }
@@ -145,4 +145,4 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)  # nosec B104 — intentional server binding

@@ -1,0 +1,54 @@
+---
+description: Firmum model gate — pick the cheapest model that meets the task minimum; stop and prompt a switch at gate boundaries.
+alwaysApply: true
+---
+
+# Firmum Model Gate
+
+Use the **lowest gate that can do the current task well**. Do not burn GPT-5.5, Codex, or Claude on G0 work. Never go *below* the minimum gate. Going *above* is fine if the user is already on that model and says stay.
+
+**Never use Grok** unless the user names Grok in that message. Do not substitute Grok when a requested model is unavailable — say so and stay on Composer.
+
+## Gates
+
+| Gate | Use this model | Typical work |
+|------|----------------|--------------|
+| **G0** | Composer 2.5 Fast | Routes, copy, shells, lint, `appUrl`, wiring |
+| **G1** | GPT-5.5 Medium (fallback: GPT-5.6 Sol Medium) | CRUD APIs, React pages, onboarding UI |
+| **G2** | GPT-5.3 Codex | StatementService, migrations, multi-file backend |
+| **G3** | Claude Sonnet/Opus thinking | Auth unify, IDOR/scopes, compliance prompts |
+| **G4** | Human | Prod Postgres, Alembic on live DB, deploy, legal |
+
+## Current queue (after G0)
+
+Next implementable work is **G1**: `onboarding-persist` + `/client/signup` on GPT-5.5 Medium. Do not start G2/G3 in a G0/G1 session.
+
+| Task | Min | Do now if on… |
+|------|-----|----------------|
+| Client route shells, Investors, copy, PortalLogin logo | G0 | Composer |
+| `GET /api/v1/b2c/me` stub | G0 | Composer |
+| `/client/signup` + B2C register/login | G1 | GPT-5.5 Medium |
+| Persist onboarding wizard → Client | G1 | GPT-5.5 Medium |
+| `/client/dashboard` API shell | G1 | GPT-5.5 Medium |
+| `StatementService` + confirm → Account/Position | G2 | Codex |
+| `advisor_connection_requests` + APIs | G2 | Codex |
+| Auth unify, scope 404-not-403, AI guardrails | G3 | Claude thinking |
+| Postgres + `alembic upgrade` on Mini/Studio | G4 | User only |
+
+## At a gate boundary
+
+Stop. Do not continue the next-gate task on the cheaper model. End with:
+
+```
+## MODEL SWITCH REQUIRED → [Model]
+
+[What just finished]. Next is [task IDs]. Switch the Agent picker to **[Model]**, then paste:
+
+[one-paragraph resume prompt]
+```
+
+User can override with "stay on this model."
+
+## Subagents
+
+Default subagent model: Composer (`composer-2.5-fast` or newer). Only pass GPT/Claude/Codex when the delegated task’s min gate is G1+.

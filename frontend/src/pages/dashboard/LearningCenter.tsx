@@ -50,11 +50,11 @@ const COURSES: Course[] = [
   {
     id: 'platform-overview',
     title: 'Platform Overview',
-    description: 'A complete tour of the Edge platform — what it does, how it works, and how to navigate the dashboard.',
+    description: 'A complete tour of the Firmum platform — what it does, how it works, and how to navigate the dashboard.',
     icon: GraduationCap,
     category: 'getting-started',
     lessons: [
-      { id: 'po-1', title: 'Welcome to Edge', duration: '3:00', description: 'Meet your AI tutor and learn what Edge can do for your practice.', videoId: 'HEYGEN_WELCOME_01', completed: false },
+      { id: 'po-1', title: 'Welcome to Firmum', duration: '3:00', description: 'Meet your AI tutor and learn what Firmum can do for your practice.', videoId: 'HEYGEN_WELCOME_01', completed: false },
       { id: 'po-2', title: 'Navigating the Dashboard', duration: '4:30', description: 'Learn the sidebar, top navigation, and how to find every feature.', videoId: 'HEYGEN_NAV_01', completed: false },
       { id: 'po-3', title: 'Key Metrics & KPIs', duration: '3:30', description: 'Understanding your AUM, household count, alerts, and activity feed.', videoId: 'HEYGEN_KPI_01', completed: false },
     ],
@@ -447,7 +447,7 @@ export default function LearningCenter() {
             Learning Center
           </h1>
           <p className="text-slate-600 mt-1">
-            Master every feature of the Edge platform with guided video tutorials from your AI tutor.
+            Master every feature of the Firmum platform with guided video tutorials from your AI tutor.
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 /**
- * Shared formatting utilities for the EdgeAI platform.
+ * Shared formatting utilities for the Firmum platform.
  * Canonical source for currency, percentage, number, and date formatting.
  * All pages should import from here instead of defining local formatters.
  */

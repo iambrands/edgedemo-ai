@@ -1,4 +1,4 @@
-"""Edge RIA Platform data models."""
+"""Firmum data models."""
 
 import logging
 import os

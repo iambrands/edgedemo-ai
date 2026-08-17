@@ -179,7 +179,7 @@ class B2CDashboardService:
                 Alert(
                     type="rebalancing",
                     severity="info",
-                    message="Upgrade to Starter for rebalancing recommendations",
+                        message="Upgrade to Starter for rebalancing suggestions",
                     action="upgrade",
                     gated=True,
                     upgrade_tier="starter",

@@ -17,7 +17,7 @@ class Settings:
     STRIPE_PRICE_PREMIUM: str = os.getenv("STRIPE_PRICE_PREMIUM", "")
 
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
-    DOMAIN: str = os.getenv("DOMAIN", "https://demo.edgeadvisors.ai")
+    DOMAIN: str = os.getenv("DOMAIN", "https://app.firmum.ai")
 
     # Multi-Custodian Aggregation
     CUSTODIAN_ENCRYPTION_KEY: str = os.getenv("CUSTODIAN_ENCRYPTION_KEY", "")
@@ -40,8 +40,8 @@ class Settings:
 
     # Email — SendGrid
     sendgrid_api_key: str = os.getenv("SENDGRID_API_KEY", "")
-    sendgrid_from_email: str = os.getenv("SENDGRID_FROM_EMAIL", "notifications@edgeadvisors.ai")
-    sendgrid_from_name: str = os.getenv("SENDGRID_FROM_NAME", "Edge Advisors")
+    sendgrid_from_email: str = os.getenv("SENDGRID_FROM_EMAIL", "notifications@firmum.ai")
+    sendgrid_from_name: str = os.getenv("SENDGRID_FROM_NAME", "Firmum")
 
     # Redis
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379")

@@ -37,7 +37,7 @@ interface StepProps {
 /* ------------------------------------------------------------------ */
 
 const STEPS: StepDef[] = [
-  { id: 'welcome', title: 'Welcome', description: 'Get started with Edge', icon: Sparkles },
+  { id: 'welcome', title: 'Welcome', description: 'Get started with Firmum', icon: Sparkles },
   { id: 'profile', title: 'Your Profile', description: 'Personal & professional info', icon: User },
   { id: 'firm', title: 'Firm Details', description: 'Your practice information', icon: Building2 },
   { id: 'clientTypes', title: 'Client Types', description: 'Account & rollover types you handle', icon: ClipboardList },
@@ -57,7 +57,7 @@ function WelcomeStep() {
       <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
         <Sparkles className="h-10 w-10 text-white" />
       </div>
-      <h3 className="text-2xl font-bold text-slate-900 mb-3">Welcome to Edge!</h3>
+      <h3 className="text-2xl font-bold text-slate-900 mb-3">Welcome to Firmum!</h3>
       <p className="text-slate-600 max-w-md mx-auto mb-8">
         Let&apos;s get your practice set up. This wizard will guide you through
         connecting your accounts, setting up compliance, and customizing your
@@ -292,7 +292,7 @@ function ClientTypesStep({ formData, setFormData }: StepProps) {
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
         <p className="text-sm text-blue-800">
-          Select the account and plan types your firm commonly handles. Edge supports
+          Select the account and plan types your firm commonly handles. Firmum supports
           automated rollovers and onboarding for all of these plan types, including
           specialized support for teachers, government employees, and public-sector workers.
         </p>
@@ -345,11 +345,11 @@ function ClientTypesStep({ formData, setFormData }: StepProps) {
       {selected.length > 0 && (
         <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
           <p className="text-sm font-medium text-emerald-800 mb-2">
-            Edge Rollover Workflow for Selected Plans
+            Firmum Rollover Workflow for Selected Plans
           </p>
           <ol className="text-xs text-emerald-700 space-y-1 list-decimal list-inside">
             <li>Client initiates rollover request via portal</li>
-            <li>Edge extracts account details from uploaded statement</li>
+            <li>Firmum extracts account details from uploaded statement</li>
             <li>Auto-generates transfer paperwork for the plan type</li>
             <li>Compliance pre-check for suitability</li>
             <li>Advisor review and approval</li>
@@ -371,7 +371,7 @@ function ComplianceStep({ formData, setFormData }: StepProps) {
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
         <p className="text-sm text-blue-800">
-          Edge helps you maintain compliance with SEC and FINRA regulations.
+          Firmum helps you maintain compliance with SEC and FINRA regulations.
           Let&apos;s configure your compliance preferences.
         </p>
       </div>
@@ -601,7 +601,7 @@ function BillingStep({ formData, setFormData }: StepProps) {
 
       <div className="p-4 bg-slate-50 rounded-lg">
         <p className="text-sm text-slate-600">
-          Start with a <strong>14-day free trial</strong>. No credit card required. Cancel anytime.
+          Start with a <strong>30-day free trial</strong>. No credit card required. Cancel anytime.
         </p>
       </div>
     </div>
@@ -657,7 +657,7 @@ export default function RIAOnboarding() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <span className="text-xl font-bold text-blue-600">Edge</span>
+            <span className="text-xl font-bold text-blue-600">Firmum</span>
             <span className="text-xl font-bold text-teal-500">AI</span>
           </div>
           <button onClick={handleSkip} className="text-sm text-slate-500 hover:text-slate-700">
