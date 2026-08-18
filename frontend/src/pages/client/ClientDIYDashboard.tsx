@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Bell, Receipt, Sparkles } from 'lucide-react';
 import { AppLink } from '../../components/brand/AppLink';
 import { ClientPageShell } from './ClientPageShell';
@@ -22,28 +22,23 @@ export default function ClientDIYDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadSuccess, setUploadSuccess] = useState('');
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadDashboard() {
-      setError('');
-      setIsLoading(true);
-      try {
-        const response = await b2cApi.getDashboard();
-        if (isMounted) setDashboard(response);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to load dashboard';
-        if (isMounted) setError(message);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+  const loadDashboard = useCallback(async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const response = await b2cApi.getDashboard();
+      setDashboard(response);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to load dashboard';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
-
-    loadDashboard();
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
 
   const stats = [
     { label: 'Total value', value: formatCurrency(dashboard?.total_aum ?? '0') },
@@ -130,24 +125,23 @@ export default function ClientDIYDashboard() {
           </div>
         </div>
 
-        {dashboard?.accounts.length === 0 && (
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-            <h2 className="font-semibold text-blue-950">Next step: add your first account</h2>
-            <p className="mt-1 text-sm text-blue-900">
-              Enter a statement ID below to import your holdings and see your full portfolio picture.
-            </p>
-          </div>
-        )}
-
         <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="font-semibold text-slate-900 text-sm mb-3">Add your first account</h2>
+          <h2 className="font-semibold text-slate-900 text-sm mb-1">
+            {dashboard?.accounts.length ? 'Upload another statement' : 'Add your first account'}
+          </h2>
+          <p className="text-xs text-slate-500 mb-3">
+            {dashboard?.accounts.length
+              ? 'PDF · Schwab, Fidelity, E*Trade, Robinhood, NW Mutual supported'
+              : 'Drop your brokerage PDF below to import holdings automatically.'}
+          </p>
           {uploadSuccess && (
             <p className="mb-3 text-xs text-emerald-700">{uploadSuccess}</p>
           )}
           <StatementUploadZone
-            onConfirmed={(_id, count) =>
-              setUploadSuccess(`${count} position${count !== 1 ? 's' : ''} imported. Refresh to see your updated portfolio.`)
-            }
+            onConfirmed={(_id, count) => {
+              setUploadSuccess(`${count} position${count !== 1 ? 's' : ''} imported.`);
+              loadDashboard();
+            }}
           />
         </div>
 

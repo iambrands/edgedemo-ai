@@ -5,8 +5,47 @@
  * Run:  npx playwright test smoke.spec.ts
  */
 import { test, expect } from '@playwright/test';
-import { loginAsRIA, loginAsClient } from './helpers/auth';
-import { RIA_PAGES, PORTAL_PAGES, PUBLIC_PAGES } from './fixtures/test-data';
+import { loginAsRIA, loginAsClient, loginAsB2CUser } from './helpers/auth';
+import { RIA_PAGES, PORTAL_PAGES, PUBLIC_PAGES, B2C_PAGES } from './fixtures/test-data';
+
+/* ── B2C DIY Client pages ───────────────────────────────────────── */
+
+test.describe('B2C Client Pages', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsB2CUser(page);
+  });
+
+  for (const pg of B2C_PAGES) {
+    test(`${pg.path} loads (no crash)`, async ({ page }) => {
+      await page.goto(pg.path, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2000);
+
+      // Should not hard-redirect away (stays on /client/*)
+      expect(page.url(), `${pg.path} redirected unexpectedly`).toContain('/client/');
+
+      const elements = await page.locator('body *').count();
+      expect(elements, `${pg.path} rendered no elements`).toBeGreaterThan(3);
+    });
+  }
+});
+
+test.describe('B2C Client — Heading Verification', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsB2CUser(page);
+  });
+
+  for (const pg of B2C_PAGES) {
+    test(`${pg.path} heading contains "${pg.title}"`, async ({ page }) => {
+      await page.goto(pg.path, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2000);
+
+      const heading = page.locator('h1, h2').first();
+      await expect(heading).toBeVisible({ timeout: 5_000 });
+      const text = await heading.innerText();
+      expect(text.toLowerCase()).toContain(pg.title.toLowerCase());
+    });
+  }
+});
 
 /* ── Public pages (no auth) ─────────────────────────────────────── */
 

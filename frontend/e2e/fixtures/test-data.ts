@@ -58,6 +58,14 @@ export const PORTAL_PAGES: PageEntry[] = [
   { path: '/portal/learn',           title: 'Learn',          kind: 'mixed' },
 ];
 
+export const B2C_PAGES: PageEntry[] = [
+  { path: '/client/dashboard',        title: 'My Firmum',     kind: 'cards' },
+  { path: '/client/connect-advisor',  title: 'Connect',       kind: 'form' },
+  { path: '/client/statements',       title: 'Statement',     kind: 'table' },
+  { path: '/client/upgrade',          title: 'Plan',          kind: 'cards' },
+  { path: '/client/accountability',   title: 'Advisor',       kind: 'mixed' },
+];
+
 export const PUBLIC_PAGES = [
   { path: '/',        title: 'Firmum' },
   { path: '/features', title: 'Tool' },

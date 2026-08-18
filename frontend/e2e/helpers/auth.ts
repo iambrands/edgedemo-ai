@@ -591,6 +591,76 @@ export async function loginAsClient(page: Page) {
   await page.waitForTimeout(300);
 }
 
+/**
+ * Seed B2C DIY user auth token and mock all /api/v1/b2c/* endpoints.
+ */
+export async function loginAsB2CUser(page: Page) {
+  const fulfillJson = (route: Route, body: unknown) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'Cache-Control': 'no-store' },
+      body: JSON.stringify(body),
+    });
+
+  // Generic fallback for any b2c API
+  await page.context().route('**/api/v1/b2c/**', (route) => {
+    const url = route.request().url();
+
+    if (url.includes('/b2c/me')) {
+      return fulfillJson(route, {
+        id: 'test-b2c-001',
+        email: 'demo@b2c.test',
+        user_type: 'b2c_diy',
+        subscription_tier: 'free',
+        onboarding_completed: true,
+        risk_profile_completed: false,
+        management_mode: 'diy',
+        advisor_connection_status: 'none',
+      });
+    }
+    if (url.includes('/b2c/dashboard')) {
+      return fulfillJson(route, {
+        total_aum: '125000',
+        accounts: [{ id: 'acc-1', name: 'Brokerage (4521)', custodian: 'Schwab' }],
+        allocation: [
+          { asset_class: 'US Equity', pct: 65 },
+          { asset_class: 'Fixed Income', pct: 25 },
+          { asset_class: 'International', pct: 10 },
+        ],
+        alerts: [],
+        fee_impact_summary: { annual_cost: 625, fee_pct: 0.5 },
+        ai_chat_remaining: 8,
+        subscription_tier: 'free',
+      });
+    }
+    if (url.includes('/b2c/statements')) {
+      return fulfillJson(route, { statements: [] });
+    }
+    if (url.includes('/b2c/advisor/connect')) {
+      return fulfillJson(route, {
+        status: 'none',
+        request_id: null,
+        matched_advisor_id: null,
+        matched_at: null,
+      });
+    }
+    if (url.includes('/b2c/subscription')) {
+      return fulfillJson(route, { tier: 'free', active: false, trial_end: null, cancel_at_period_end: false });
+    }
+    // generic catch-all
+    return fulfillJson(route, { status: 'ok', data: [], statements: [] });
+  });
+
+  await page.addInitScript(() => {
+    localStorage.setItem('firmum_b2c_token', 'e2e-b2c-test-token');
+    localStorage.setItem('firmum_b2c_refresh_token', 'e2e-b2c-refresh-token');
+  });
+
+  await page.goto('/client/dashboard', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(300);
+}
+
 /** Clear all auth tokens. */
 export async function logout(page: Page) {
   await page.evaluate(() => {
