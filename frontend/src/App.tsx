@@ -95,6 +95,7 @@ const ConnectAdvisor = React.lazy(() => import('./pages/client/ConnectAdvisor'))
 const ClientAccountability = React.lazy(() => import('./pages/client/ClientAccountability'));
 const ClientStatements = React.lazy(() => import('./pages/client/ClientStatements'));
 const ClientUpgrade = React.lazy(() => import('./pages/client/ClientUpgrade'));
+const ClientRetirementPlanner = React.lazy(() => import('./pages/client/ClientRetirementPlanner'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -227,6 +228,8 @@ export default function App() {
           <Route path="/client/accountability" element={<AppHostGate><ClientAccountability /></AppHostGate>} />
           <Route path="/client/statements" element={<AppHostGate><ClientStatements /></AppHostGate>} />
           <Route path="/client/upgrade" element={<AppHostGate><ClientUpgrade /></AppHostGate>} />
+          <Route path="/client/retirement" element={<AppHostGate><ClientRetirementPlanner /></AppHostGate>} />
+          <Route path="/client/planning" element={<AppHostGate><ClientRetirementPlanner /></AppHostGate>} />
 
           {/* Company */}
           <Route path="/company/about" element={<About />} />

@@ -36,6 +36,18 @@ class Settings:
     STRIPE_PRICE_STARTER: str = os.getenv("STRIPE_PRICE_STARTER", "")
     STRIPE_PRICE_PRO: str = os.getenv("STRIPE_PRICE_PRO", "")
     STRIPE_PRICE_PREMIUM: str = os.getenv("STRIPE_PRICE_PREMIUM", "")
+    STRIPE_PRICE_STARTER_ANNUAL: str = os.getenv("STRIPE_PRICE_STARTER_ANNUAL", "")
+    STRIPE_PRICE_PRO_ANNUAL: str = os.getenv("STRIPE_PRICE_PRO_ANNUAL", "")
+    STRIPE_PRICE_PREMIUM_ANNUAL: str = os.getenv("STRIPE_PRICE_PREMIUM_ANNUAL", "")
+
+    ADVISOR_CONNECT_PLATFORM_FEE_BPS: int = int(
+        os.getenv("ADVISOR_CONNECT_PLATFORM_FEE_BPS", "25")
+    )
+
+    # Plaid account aggregation
+    PLAID_CLIENT_ID: str = os.getenv("PLAID_CLIENT_ID", "")
+    PLAID_SECRET: str = os.getenv("PLAID_SECRET", "")
+    PLAID_ENV: str = os.getenv("PLAID_ENV", "sandbox")
 
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
     DOMAIN: str = os.getenv("DOMAIN", "https://app.firmum.ai")

@@ -26,3 +26,4 @@ apscheduler>=3.10.0
 websockets>=12.0
 pdf2image>=1.17.0
 sendgrid>=6.11.0
+plaid-python>=14.0.0

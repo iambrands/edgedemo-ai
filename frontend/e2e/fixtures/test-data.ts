@@ -63,6 +63,7 @@ export const B2C_PAGES: PageEntry[] = [
   { path: '/client/connect-advisor',  title: 'Connect',       kind: 'form' },
   { path: '/client/statements',       title: 'Statement',     kind: 'table' },
   { path: '/client/upgrade',          title: 'Plan',          kind: 'cards' },
+  { path: '/client/retirement',       title: 'Retirement',    kind: 'form' },
   { path: '/client/accountability',   title: 'Advisor',       kind: 'mixed' },
 ];
 

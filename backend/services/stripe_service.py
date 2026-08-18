@@ -27,22 +27,69 @@ PRICE_TO_TIER = {
     settings.STRIPE_PRICE_STARTER: "starter",
     settings.STRIPE_PRICE_PRO: "pro",
     settings.STRIPE_PRICE_PREMIUM: "premium",
+    settings.STRIPE_PRICE_STARTER_ANNUAL: "starter",
+    settings.STRIPE_PRICE_PRO_ANNUAL: "pro",
+    settings.STRIPE_PRICE_PREMIUM_ANNUAL: "premium",
 }
-TIER_TO_PRICE = {v: k for k, v in PRICE_TO_TIER.items() if k}
+
+TIER_TO_PRICE_MONTHLY = {
+    "starter": settings.STRIPE_PRICE_STARTER,
+    "pro": settings.STRIPE_PRICE_PRO,
+    "premium": settings.STRIPE_PRICE_PREMIUM,
+}
+
+TIER_TO_PRICE_ANNUAL = {
+    "starter": settings.STRIPE_PRICE_STARTER_ANNUAL,
+    "pro": settings.STRIPE_PRICE_PRO_ANNUAL,
+    "premium": settings.STRIPE_PRICE_PREMIUM_ANNUAL,
+}
+
+
+def stripe_is_configured() -> bool:
+    """True when all six price IDs and the secret key are set."""
+    required = [
+        settings.STRIPE_SECRET_KEY,
+        settings.STRIPE_PRICE_STARTER,
+        settings.STRIPE_PRICE_PRO,
+        settings.STRIPE_PRICE_PREMIUM,
+    ]
+    return all(required)
+
+
+def stripe_config_status() -> dict:
+    """Return which Stripe price IDs are configured (useful for /health or admin)."""
+    return {
+        "stripe_configured": stripe_is_configured(),
+        "prices": {
+            "starter_monthly": bool(settings.STRIPE_PRICE_STARTER),
+            "pro_monthly": bool(settings.STRIPE_PRICE_PRO),
+            "premium_monthly": bool(settings.STRIPE_PRICE_PREMIUM),
+            "starter_annual": bool(settings.STRIPE_PRICE_STARTER_ANNUAL),
+            "pro_annual": bool(settings.STRIPE_PRICE_PRO_ANNUAL),
+            "premium_annual": bool(settings.STRIPE_PRICE_PREMIUM_ANNUAL),
+        },
+    }
 
 
 class StripeService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_checkout_session(self, user: User, tier: str) -> dict:
+    async def create_checkout_session(
+        self, user: User, tier: str, billing_interval: str = "monthly"
+    ) -> dict:
         """Create Stripe Checkout session for subscription."""
         if not stripe or not settings.STRIPE_SECRET_KEY:
-            raise ValueError("Stripe not configured")
+            raise ValueError(
+                "Stripe is not configured. Set STRIPE_SECRET_KEY and price ID environment variables."
+            )
 
-        price_id = TIER_TO_PRICE.get(tier)
+        price_map = (
+            TIER_TO_PRICE_ANNUAL if billing_interval == "annual" else TIER_TO_PRICE_MONTHLY
+        )
+        price_id = price_map.get(tier)
         if not price_id:
-            raise ValueError(f"Invalid tier: {tier}")
+            raise ValueError(f"Invalid tier or billing interval: {tier}/{billing_interval}")
 
         if not user.stripe_customer_id:
             customer = stripe.Customer.create(
@@ -57,8 +104,8 @@ class StripeService:
             payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription",
-            success_url=f"{settings.DOMAIN}/dashboard?subscription=success",
-            cancel_url=f"{settings.DOMAIN}/pricing?subscription=canceled",
+            success_url=f"{settings.DOMAIN}/client/dashboard?subscription=success",
+            cancel_url=f"{settings.DOMAIN}/client/upgrade?subscription=canceled",
             allow_promotion_codes=True,
             metadata={"user_id": str(user.id), "tier": tier},
             subscription_data={

@@ -8,12 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import get_current_user, get_db
 from backend.models.user import User
-from backend.services.stripe_service import StripeService
+from backend.services.stripe_service import StripeService, stripe_config_status
 from backend.services.usage_tracker import UsageTracker
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/b2c/subscription", tags=["b2c-subscription"])
+
+
+@router.get("/config")
+async def get_stripe_config():
+    """Return Stripe configuration status (no auth required — no secrets exposed)."""
+    return stripe_config_status()
 
 
 @router.get("")
@@ -39,6 +45,7 @@ async def get_subscription(
 
 class UpgradeRequest(BaseModel):
     tier: str
+    billing_interval: str = "monthly"  # monthly | annual
 
 
 @router.post("/upgrade")
@@ -51,10 +58,14 @@ async def create_checkout(
     tier = req.tier
     if tier not in ("starter", "pro", "premium"):
         raise HTTPException(status_code=400, detail="Invalid tier")
+    if req.billing_interval not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="Invalid billing interval")
 
     try:
         svc = StripeService(db)
-        return await svc.create_checkout_session(current_user, tier)
+        return await svc.create_checkout_session(
+            current_user, tier, billing_interval=req.billing_interval
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

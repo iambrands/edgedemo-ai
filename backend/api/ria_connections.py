@@ -15,6 +15,7 @@ from backend.api.dependencies import get_db
 from backend.models.advisor_connection import AdvisorConnectionRequest
 from backend.models.advisor import Advisor
 from backend.models.user import User
+from backend.services.advisor_billing_service import log_match_fee
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,9 @@ async def accept_connection_request(
     req.accepted_at = now
     if advisor_id:
         req.matched_advisor_id = advisor_id
+
+    # Log 0.25% platform fee on estimated AUM — non-blocking
+    await log_match_fee(req, db)
 
     logger.info(
         "Connection request %s accepted by advisor %s", request_id, ria_email

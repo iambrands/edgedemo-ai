@@ -1,54 +1,47 @@
 ---
-description: Firmum model gate — pick the cheapest model that meets the task minimum; stop and prompt a switch at gate boundaries.
+description: Firmum model gate — Composer for G0, Claude 4.6 Sonnet for features, Claude 4.6 Opus for risk reviews.
 alwaysApply: true
 ---
 
 # Firmum Model Gate
 
-Use the **lowest gate that can do the current task well**. Do not burn GPT-5.5, Codex, or Claude on G0 work. Never go *below* the minimum gate. Going *above* is fine if the user is already on that model and says stay.
+Use the **lowest gate that can do the current task well**. User preference: **Claude 4.6** family (Sonnet default, Opus for risk). **No Codex, no Opus 5/4.8** unless user overrides.
 
-**Never use Grok** unless the user names Grok in that message. Do not substitute Grok when a requested model is unavailable — say so and stay on Composer.
+**Never use Grok** unless the user names Grok in that message.
+
+See also: `model-selection-firmum.mdc` for cost-tier workflow.
 
 ## Gates
 
 | Gate | Use this model | Typical work |
 |------|----------------|--------------|
-| **G0** | Composer 2.5 Fast | Routes, copy, shells, lint, `appUrl`, wiring |
-| **G1** | GPT-5.5 Medium (fallback: GPT-5.6 Sol Medium) | CRUD APIs, React pages, onboarding UI |
-| **G2** | GPT-5.3 Codex | StatementService, migrations, multi-file backend |
-| **G3** | Claude Sonnet/Opus thinking | Auth unify, IDOR/scopes, compliance prompts |
-| **G4** | Human | Prod Postgres, Alembic on live DB, deploy, legal |
+| **G0** | Composer 2.5 Fast | Routes, copy, shells, lint, mocks, build, deploy commands |
+| **G1** | Claude 4.6 Sonnet (thinking) | Plaid, Stripe, billing, CRUD APIs, React features, multi-file backend |
+| **G2** | Claude 4.6 Opus (thinking) | Security review, IDOR/compliance, AI guardrails, complex migration review |
+| **G4** | Human | Stripe Dashboard, prod env, live DB migrations, legal |
 
-## Current queue (after G0)
+## Current queue
 
-Next implementable work is **G1**: `onboarding-persist` + `/client/signup` on GPT-5.5 Medium. Do not start G2/G3 in a G0/G1 session.
-
-| Task | Min | Do now if on… |
-|------|-----|----------------|
-| Client route shells, Investors, copy, PortalLogin logo | G0 | Composer |
-| `GET /api/v1/b2c/me` stub | G0 | Composer |
-| `/client/signup` + B2C register/login | G1 | GPT-5.5 Medium |
-| Persist onboarding wizard → Client | G1 | GPT-5.5 Medium |
-| `/client/dashboard` API shell | G1 | GPT-5.5 Medium |
-| `StatementService` + confirm → Account/Position | G2 | Codex |
-| `advisor_connection_requests` + APIs | G2 | Codex |
-| Auth unify, scope 404-not-403, AI guardrails | G3 | Claude thinking |
-| Postgres + `alembic upgrade` on Mini/Studio | G4 | User only |
+| Task | Min gate |
+|------|----------|
+| Model rules, E2E mock updates, mock planning endpoints, build/test | G0 Composer |
+| Plaid Link + account sync | G1 Sonnet |
+| Stripe subscription verification + advisor connect billing | G1 Sonnet |
+| Security/compliance pass on Plaid + planning | G2 Opus 4.6 |
+| Stripe price IDs + prod env | G4 Human |
 
 ## At a gate boundary
 
-Stop. Do not continue the next-gate task on the cheaper model. End with:
+Stop. End with:
 
 ```
 ## MODEL SWITCH REQUIRED → [Model]
 
-[What just finished]. Next is [task IDs]. Switch the Agent picker to **[Model]**, then paste:
+[What just finished]. Next is [task]. Switch the Agent picker to **[Model]**, then paste:
 
 [one-paragraph resume prompt]
 ```
 
-User can override with "stay on this model."
-
 ## Subagents
 
-Default subagent model: Composer (`composer-2.5-fast` or newer). Only pass GPT/Claude/Codex when the delegated task’s min gate is G1+.
+Default: **Composer 2.5 Fast**. Use **Claude 4.6 Sonnet** only when the delegated task min gate is G1+.

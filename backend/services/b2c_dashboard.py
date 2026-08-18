@@ -14,13 +14,18 @@ from backend.api.b2c.schemas import (
     Alert,
     AllocationBreakdown,
     DashboardResponse,
+    FeeBenchmark,
     FeeImpactSummary,
+    NetWorthPoint,
+    RiskProfileSummary,
 )
 from backend.models.account import Account
 from backend.models.client import Client
 from backend.models.position import Position
+from backend.models.statement import Statement
 from backend.services.entitlements import TIER_FEATURES, EntitlementService
 from backend.services.iim_service import IIMService
+from backend.services.tier_catalog import FEE_BENCHMARKS
 from backend.services.usage_tracker import UsageTracker
 
 logger = logging.getLogger(__name__)
@@ -42,6 +47,9 @@ class B2CDashboardService:
                 accounts=[],
                 allocation=[],
                 fee_impact_summary=None,
+                fee_benchmarks=[],
+                net_worth_history=[],
+                risk_profile=await self._get_risk_profile(user),
                 alerts=[
                     Alert(
                         type="onboarding",
@@ -59,7 +67,10 @@ class B2CDashboardService:
             (a.last_statement_value or Decimal("0")) for a in accounts
         )
         allocation = await self._calculate_allocation(user)
-        fee_impact = await self._calculate_fee_summary(accounts)
+        fee_impact = await self._calculate_fee_summary(accounts, total_aum)
+        fee_benchmarks = self._build_fee_benchmarks(total_aum, fee_impact)
+        net_worth_history = await self._get_net_worth_history(accounts)
+        risk_profile = await self._get_risk_profile(user)
         alerts = await self._build_alerts(user, fee_impact)
 
         account_summaries = [
@@ -77,6 +88,9 @@ class B2CDashboardService:
             accounts=account_summaries,
             allocation=allocation,
             fee_impact_summary=fee_impact,
+            fee_benchmarks=fee_benchmarks,
+            net_worth_history=net_worth_history,
+            risk_profile=risk_profile,
             alerts=alerts,
             ai_chat_remaining=await self._get_chat_remaining(user),
             subscription_tier=user.subscription_tier or "free",
@@ -120,14 +134,13 @@ class B2CDashboardService:
             return []
 
     async def _calculate_fee_summary(
-        self, accounts: list
+        self, accounts: list, total_aum: Decimal
     ) -> Optional[FeeImpactSummary]:
         """Calculate fee impact across all accounts."""
         if not accounts:
             return None
 
         total_annual = Decimal("0")
-        total_aum = sum(a.last_statement_value or Decimal("0") for a in accounts)
         highest_fee_account = ""
         highest_fee_rate = Decimal("0")
 
@@ -145,8 +158,11 @@ class B2CDashboardService:
 
         ten_year = total_annual * 10
         thirty_year = total_annual * 30
-        low_cost = total_aum * Decimal("0.0005") if total_aum else Decimal("0")
+        low_cost = total_aum * Decimal("0.0015") if total_aum else Decimal("0")
         potential_savings = max(Decimal("0"), total_annual - low_cost)
+        effective_rate = (
+            (total_annual / total_aum * Decimal("100")) if total_aum else None
+        )
 
         return FeeImpactSummary(
             annual_cost=total_annual,
@@ -155,6 +171,83 @@ class B2CDashboardService:
             potential_savings=potential_savings,
             highest_fee_account=highest_fee_account or None,
             highest_fee_rate=highest_fee_rate if highest_fee_rate else None,
+            effective_fee_rate_pct=effective_rate,
+        )
+
+    def _build_fee_benchmarks(
+        self, total_aum: Decimal, fee_impact: Optional[FeeImpactSummary]
+    ) -> list[FeeBenchmark]:
+        if not total_aum or total_aum <= 0:
+            return []
+        benchmarks = []
+        for key, meta in FEE_BENCHMARKS.items():
+            rate = Decimal(str(meta["rate_pct"]))
+            benchmarks.append(
+                FeeBenchmark(
+                    label=meta["label"],
+                    rate_pct=rate,
+                    annual_cost_at_aum=total_aum * rate / Decimal("100"),
+                )
+            )
+        if fee_impact and fee_impact.effective_fee_rate_pct is not None:
+            benchmarks.insert(
+                0,
+                FeeBenchmark(
+                    label="Your portfolio (est.)",
+                    rate_pct=fee_impact.effective_fee_rate_pct,
+                    annual_cost_at_aum=fee_impact.annual_cost,
+                ),
+            )
+        return benchmarks
+
+    async def _get_net_worth_history(self, accounts: list) -> list[NetWorthPoint]:
+        if not accounts:
+            return []
+        account_ids = [a.id for a in accounts]
+        result = await self.db.execute(
+            select(Statement.statement_date, func.sum(Statement.ending_value))
+            .where(
+                Statement.account_id.in_(account_ids),
+                Statement.statement_date.isnot(None),
+                Statement.ending_value.isnot(None),
+            )
+            .group_by(Statement.statement_date)
+            .order_by(Statement.statement_date.asc())
+            .limit(24)
+        )
+        points = []
+        for stmt_date, total in result.all():
+            if stmt_date and total:
+                points.append(
+                    NetWorthPoint(
+                        date=stmt_date.isoformat(),
+                        value=Decimal(str(total)),
+                    )
+                )
+        return points
+
+    async def _get_risk_profile(self, user) -> Optional[RiskProfileSummary]:
+        if not user.client_id:
+            return None
+        result = await self.db.execute(
+            select(Client).where(Client.id == user.client_id)
+        )
+        client = result.scalar_one_or_none()
+        if not client or not client.risk_tolerance:
+            return None
+        tolerance = client.risk_tolerance
+        risk_map = {
+            "conservative": (25, "Conservative"),
+            "moderate_conservative": (40, "Moderately Conservative"),
+            "moderate": (55, "Moderate"),
+            "moderate_aggressive": (72, "Moderately Aggressive"),
+            "aggressive": (88, "Aggressive"),
+        }
+        risk_number, label = risk_map.get(tolerance, (50, tolerance.replace("_", " ").title()))
+        return RiskProfileSummary(
+            risk_number=risk_number,
+            risk_tolerance=tolerance,
+            label=label,
         )
 
     async def _build_alerts(
@@ -202,7 +295,7 @@ class B2CDashboardService:
             Alert(
                 type="education",
                 severity="info",
-                message="Explore IAB Academy courses",
+                message="Explore Firmum learning resources",
                 action="education",
                 gated=False,
             )

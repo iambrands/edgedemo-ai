@@ -80,6 +80,18 @@ export interface B2CDashboardResponse {
     potential_savings: string;
     highest_fee_account?: string | null;
     highest_fee_rate?: string | null;
+    effective_fee_rate_pct?: string | null;
+  } | null;
+  fee_benchmarks?: Array<{
+    label: string;
+    rate_pct: string;
+    annual_cost_at_aum: string;
+  }>;
+  net_worth_history?: Array<{ date: string; value: string }>;
+  risk_profile?: {
+    risk_number: number;
+    risk_tolerance: string;
+    label: string;
   } | null;
   alerts: Array<{
     type: string;
@@ -140,6 +152,68 @@ export interface AdvisorConnectionStatus {
   request_id: string | null;
   matched_advisor_id: string | null;
   matched_at: string | null;
+}
+
+export interface PlaidLinkTokenResponse {
+  link_token: string;
+  expiration: string;
+  mock: boolean;
+}
+
+export interface PlaidExchangeRequest {
+  public_token: string;
+  institution_id?: string;
+  institution_name?: string;
+}
+
+export interface PlaidLinkedAccount {
+  account_id: string;
+  name: string;
+  type: string;
+  balance: number;
+}
+
+export interface PlaidExchangeResponse {
+  item_id: string;
+  plaid_item_id: string;
+  institution_name: string;
+  accounts: PlaidLinkedAccount[];
+  mock: boolean;
+}
+
+export interface PlaidItem {
+  item_id: string;
+  institution_name: string;
+  institution_id: string | null;
+  status: string;
+  last_synced_at: string | null;
+}
+
+export interface StripeConfigStatus {
+  stripe_configured: boolean;
+  prices: Record<string, boolean>;
+}
+
+export interface B2CRetirementPlanRequest {
+  current_assets: number;
+  annual_contribution: number;
+  years_to_retire: number;
+  years_in_retirement: number;
+  annual_spending: number;
+  expected_return?: number;
+  volatility?: number;
+  inflation?: number;
+}
+
+export interface B2CRetirementPlanResponse {
+  success_rate: number;
+  simulations: number;
+  median_ending_balance: number;
+  p10_ending: number;
+  p90_ending: number;
+  percentile_paths: Record<'p10' | 'p25' | 'p50' | 'p75' | 'p90', number[]>;
+  total_years: number;
+  disclaimer: string;
 }
 
 export function storeB2CTokens(response: B2CTokenResponse) {
@@ -240,6 +314,41 @@ export const b2cApi = {
 
   getDashboard: () => b2cFetch<B2CDashboardResponse>('/dashboard'),
 
+  runRetirementPlan: (body: B2CRetirementPlanRequest) =>
+    b2cFetch<B2CRetirementPlanResponse>('/planning/retirement', { method: 'POST', body }),
+
+  // Plaid account aggregation
+  createPlaidLinkToken: () =>
+    b2cFetch<PlaidLinkTokenResponse>('/plaid/link-token', { method: 'POST', body: {} }),
+
+  exchangePlaidToken: (body: PlaidExchangeRequest) =>
+    b2cFetch<PlaidExchangeResponse>('/plaid/exchange', { method: 'POST', body }),
+
+  getPlaidAccounts: () =>
+    b2cFetch<{ items: PlaidItem[] }>('/plaid/accounts'),
+
+  removePlaidItem: (itemId: string) =>
+    fetch(`${API_BASE}/api/v1/b2c/plaid/items/${encodeURIComponent(itemId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${getB2CToken()}` },
+    }),
+
+  // Stripe config status (no auth)
+  getStripeConfig: () =>
+    fetch(`${API_BASE}/api/v1/b2c/subscription/config`)
+      .then((r) => r.json()) as Promise<StripeConfigStatus>,
+
+  getTierCatalog: () =>
+    b2cFetch<{
+      tiers: Array<{
+        id: string;
+        name: string;
+        price_monthly_cents: number;
+        price_annual_cents: number;
+        features: Record<string, string | boolean>;
+      }>;
+    }>('/planning/tiers'),
+
   getStatements: () =>
     b2cFetch<{ statements: B2CStatement[] }>('/statements'),
 
@@ -263,10 +372,10 @@ export const b2cApi = {
       },
     }),
 
-  startCheckout: (tier: 'starter' | 'pro' | 'premium') =>
+  startCheckout: (tier: 'starter' | 'pro' | 'premium', billingInterval: 'monthly' | 'annual' = 'monthly') =>
     b2cFetch<{ checkout_url: string; session_id: string }>('/subscription/upgrade', {
       method: 'POST',
-      body: { tier },
+      body: { tier, billing_interval: billingInterval },
     }),
 
   getSubscription: () =>

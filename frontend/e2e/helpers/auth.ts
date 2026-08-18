@@ -622,16 +622,60 @@ export async function loginAsB2CUser(page: Page) {
     if (url.includes('/b2c/dashboard')) {
       return fulfillJson(route, {
         total_aum: '125000',
-        accounts: [{ id: 'acc-1', name: 'Brokerage (4521)', custodian: 'Schwab' }],
-        allocation: [
-          { asset_class: 'US Equity', pct: 65 },
-          { asset_class: 'Fixed Income', pct: 25 },
-          { asset_class: 'International', pct: 10 },
+        accounts: [
+          {
+            id: 'acc-1',
+            custodian: 'Schwab',
+            account_type: 'Brokerage',
+            total_value: '125000',
+            last_statement_date: '2026-01-31',
+          },
         ],
+        allocation: [
+          { asset_class: 'US Equity', pct: '65', value: '81250' },
+          { asset_class: 'Fixed Income', pct: '25', value: '31250' },
+          { asset_class: 'International', pct: '10', value: '12500' },
+        ],
+        fee_impact_summary: {
+          annual_cost: '625',
+          ten_year_impact: '7800',
+          thirty_year_impact: '32000',
+          potential_savings: '1200',
+          effective_fee_rate_pct: '0.50',
+        },
+        fee_benchmarks: [
+          { label: 'Your portfolio (estimated)', rate_pct: '0.50', annual_cost_at_aum: '625' },
+          { label: 'Robo-advisor average', rate_pct: '0.25', annual_cost_at_aum: '312' },
+          { label: 'Traditional advisor average', rate_pct: '1.00', annual_cost_at_aum: '1250' },
+        ],
+        net_worth_history: [
+          { date: '2025-10-31', value: '118000' },
+          { date: '2025-11-30', value: '121000' },
+          { date: '2025-12-31', value: '123500' },
+          { date: '2026-01-31', value: '125000' },
+        ],
+        risk_profile: {
+          risk_number: 62,
+          risk_tolerance: 'moderate',
+          label: 'Moderate growth',
+        },
         alerts: [],
-        fee_impact_summary: { annual_cost: 625, fee_pct: 0.5 },
         ai_chat_remaining: 8,
         subscription_tier: 'free',
+      });
+    }
+    if (url.includes('/b2c/planning/retirement')) {
+      const years = 45;
+      const path = Array.from({ length: years + 1 }, (_, i) => 100000 + i * 8000);
+      return fulfillJson(route, {
+        success_rate: 78.5,
+        simulations: 1000,
+        median_ending_balance: 850000,
+        p10_ending: 420000,
+        p90_ending: 1400000,
+        percentile_paths: { p10: path, p25: path, p50: path, p75: path, p90: path },
+        total_years: years,
+        disclaimer: 'Educational projection only — not personalized investment advice.',
       });
     }
     if (url.includes('/b2c/statements')) {
@@ -645,8 +689,29 @@ export async function loginAsB2CUser(page: Page) {
         matched_at: null,
       });
     }
+    if (url.includes('/b2c/subscription/config')) {
+      return fulfillJson(route, { stripe_configured: false, prices: {} });
+    }
+    if (url.includes('/b2c/subscription/upgrade')) {
+      return fulfillJson(route, { checkout_url: '/client/upgrade?mock=true', session_id: 'cs_mock' });
+    }
     if (url.includes('/b2c/subscription')) {
       return fulfillJson(route, { tier: 'free', active: false, trial_end: null, cancel_at_period_end: false });
+    }
+    if (url.includes('/b2c/plaid/link-token')) {
+      return fulfillJson(route, { link_token: 'link-sandbox-mock-e2e', expiration: '2099-01-01T00:00:00Z', mock: true });
+    }
+    if (url.includes('/b2c/plaid/exchange')) {
+      return fulfillJson(route, {
+        item_id: 'mock-item-e2e',
+        plaid_item_id: 'mock-plaid-e2e',
+        institution_name: 'Demo Bank',
+        accounts: [{ account_id: 'acc-e2e', name: 'Demo Brokerage', type: 'investment', balance: 125000 }],
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/plaid/accounts')) {
+      return fulfillJson(route, { items: [], mock: true });
     }
     // generic catch-all
     return fulfillJson(route, { status: 'ok', data: [], statements: [] });

@@ -689,6 +689,8 @@ if _db_available:
             from backend.api.b2c.statements import router as b2c_statements_router
             from backend.api.b2c.subscription import router as b2c_subscription_router
             from backend.api.b2c.advisor_connect import router as b2c_advisor_connect_router
+            from backend.api.b2c.planning import router as b2c_planning_router
+            from backend.api.b2c.plaid import router as b2c_plaid_router
         except ImportError:
             from api.b2c.auth import router as b2c_auth_router
             from api.b2c.onboarding import router as b2c_onboarding_router
@@ -697,6 +699,8 @@ if _db_available:
             from api.b2c.statements import router as b2c_statements_router
             from api.b2c.subscription import router as b2c_subscription_router
             from api.b2c.advisor_connect import router as b2c_advisor_connect_router
+            from api.b2c.planning import router as b2c_planning_router
+            from api.b2c.plaid import router as b2c_plaid_router
         app.include_router(b2c_auth_router)
         app.include_router(b2c_onboarding_router)
         app.include_router(b2c_dashboard_router)
@@ -704,6 +708,8 @@ if _db_available:
         app.include_router(b2c_statements_router)
         app.include_router(b2c_subscription_router)
         app.include_router(b2c_advisor_connect_router)
+        app.include_router(b2c_planning_router)
+        app.include_router(b2c_plaid_router)
         logger.info("B2C API routes mounted")
     except Exception as e:
         logger.warning("Could not mount B2C routes: %s", e)

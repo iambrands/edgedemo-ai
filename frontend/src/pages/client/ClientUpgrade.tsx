@@ -2,76 +2,22 @@ import { useState } from 'react';
 import { Check, Sparkles, Zap, Crown } from 'lucide-react';
 import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, getB2CToken } from '../../services/b2cApi';
+import { B2C_TIERS, type B2CPaidTier } from '../../constants/b2cTiers';
 
-interface Tier {
-  id: 'starter' | 'pro' | 'premium';
-  name: string;
-  price: string;
-  period: string;
-  icon: typeof Sparkles;
-  highlight: boolean;
-  trial: string;
-  features: string[];
-}
-
-const TIERS: Tier[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '$9',
-    period: '/mo',
-    icon: Sparkles,
-    highlight: false,
-    trial: '14-day free trial',
-    features: [
-      '3 statement uploads / month',
-      'Basic fee analysis',
-      '10 AI chat messages / month',
-      'Portfolio allocation view',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '$29',
-    period: '/mo',
-    icon: Zap,
-    highlight: true,
-    trial: '14-day free trial',
-    features: [
-      'Unlimited statement uploads',
-      'Advanced fee impact projections',
-      '100 AI chat messages / month',
-      'Tax-loss harvesting alerts',
-      'Advisor match request',
-    ],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '$79',
-    period: '/mo',
-    icon: Crown,
-    highlight: false,
-    trial: '14-day free trial',
-    features: [
-      'Everything in Pro',
-      'Unlimited AI chat',
-      'Priority advisor matching',
-      'Family household (up to 5 members)',
-      'Estate & beneficiary tracking',
-      'Dedicated onboarding call',
-    ],
-  },
-];
+const TIER_ICONS = {
+  starter: Sparkles,
+  pro: Zap,
+  premium: Crown,
+} as const;
 
 export default function ClientUpgrade() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
 
   const isLoggedIn = Boolean(getB2CToken());
 
-  const handleUpgrade = async (tier: 'starter' | 'pro' | 'premium') => {
+  const handleUpgrade = async (tier: B2CPaidTier) => {
     if (!isLoggedIn) {
       window.location.href = '/client/signup?redirect=/client/upgrade';
       return;
@@ -79,7 +25,7 @@ export default function ClientUpgrade() {
     setError('');
     setLoading(tier);
     try {
-      const res = await b2cApi.startCheckout(tier);
+      const res = await b2cApi.startCheckout(tier, billing);
       window.location.href = res.checkout_url;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start checkout');
@@ -90,11 +36,34 @@ export default function ClientUpgrade() {
   return (
     <ClientPageShell
       title="Upgrade your plan"
-      subtitle="Unlock deeper insights, unlimited uploads, and advisor matching."
+      subtitle="Unlock fee benchmarks, retirement planning, and advisor matching."
       badge="Plans"
       backTo="/client/dashboard"
       backLabel="Dashboard"
     >
+      <div className="mb-8 flex justify-center">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => setBilling('monthly')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              billing === 'monthly' ? 'bg-white shadow text-slate-900' : 'text-slate-600'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setBilling('annual')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              billing === 'annual' ? 'bg-white shadow text-slate-900' : 'text-slate-600'
+            }`}
+          >
+            Annual <span className="text-emerald-600 text-xs ml-1">Save ~18%</span>
+          </button>
+        </div>
+      </div>
+
       {error && (
         <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 text-center">
           {error}
@@ -102,8 +71,10 @@ export default function ClientUpgrade() {
       )}
 
       <div className="grid sm:grid-cols-3 gap-5">
-        {TIERS.map(tier => {
-          const Icon = tier.icon;
+        {B2C_TIERS.map((tier) => {
+          const Icon = TIER_ICONS[tier.id];
+          const price = billing === 'annual' ? tier.priceAnnual : tier.priceMonthly;
+          const period = billing === 'annual' ? '/yr' : '/mo';
           return (
             <div
               key={tier.id}
@@ -125,13 +96,13 @@ export default function ClientUpgrade() {
               </div>
 
               <div className="mb-1">
-                <span className="text-3xl font-extrabold text-slate-900">{tier.price}</span>
-                <span className="text-slate-500 text-sm">{tier.period}</span>
+                <span className="text-3xl font-extrabold text-slate-900">${price}</span>
+                <span className="text-slate-500 text-sm">{period}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-5">{tier.trial}</p>
+              <p className="text-xs text-slate-400 mb-5">14-day free trial</p>
 
               <ul className="space-y-2 flex-1 mb-6">
-                {tier.features.map(f => (
+                {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                     {f}
@@ -157,7 +128,7 @@ export default function ClientUpgrade() {
       </div>
 
       <p className="text-center text-xs text-slate-400 mt-6">
-        Cancel anytime. No hidden fees. Powered by Stripe.
+        Cancel anytime. Free tier includes fee benchmarks and net worth tracking. Powered by Stripe.
       </p>
     </ClientPageShell>
   );

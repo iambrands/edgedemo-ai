@@ -1,4 +1,5 @@
 import { MARKETING_COPY } from './marketingCopy';
+import { B2C_TIERS, RIA_PRICING_TIERS } from './b2cTiers';
 
 export const HERO_STATS = [
   { value: '38', label: 'Advisor Modules' },
@@ -18,60 +19,33 @@ export const TRUST_CUSTODIANS = [
   'Interactive Brokers',
 ];
 
-export const PRICING_TIERS = [
+export const PRICING_TIERS = RIA_PRICING_TIERS;
+
+export const B2C_PRICING_TIERS = [
   {
-    name: 'Starter',
-    audience: 'Emerging RIAs',
-    price: '$499',
+    name: 'Free',
+    price: '$0',
     period: '/mo',
-    aum: 'Up to $10M AUM',
-    clients: '25 client households',
     features: [
-      'Portfolio management & AI analysis',
-      'Compliance dashboard & alerts',
-      'Statement parsing (17+ formats)',
-      'Client reports & household view',
-      'Email & chat support',
+      '2 statement uploads / month',
+      'Fee benchmarks vs industry',
+      '10 AI chats / month',
+      'Risk score & net worth tracking',
+      'Basic retirement planner (lite)',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get started',
+    href: '/client/signup',
     featured: false,
   },
-  {
-    name: 'Professional',
-    audience: 'Growing practices',
-    price: '$999',
+  ...B2C_TIERS.map((tier) => ({
+    name: tier.name,
+    price: `$${tier.priceMonthly}`,
     period: '/mo',
-    aum: 'Up to $50M AUM',
-    clients: '100 client households',
-    features: [
-      'Everything in Starter',
-      'Automated rebalancing & tax harvesting',
-      'White-label client portal (FREE for clients)',
-      'CRM, prospects & meeting intelligence',
-      'Multi-custodian data feeds',
-      'Priority support',
-    ],
-    cta: 'Start Free Trial',
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    audience: 'Multi-advisor firms',
-    price: 'Custom',
-    period: '',
-    aum: '$50M+ AUM',
-    clients: 'Unlimited households',
-    features: [
-      'Everything in Professional',
-      'Firm management & RBAC',
-      'CRM integrations (Salesforce, Redtail, Wealthbox)',
-      'Advanced compliance & comm archiving',
-      'API access & custom integrations',
-      'Dedicated account manager',
-    ],
-    cta: 'Contact Sales',
-    featured: false,
-  },
+    features: tier.features,
+    cta: `Start ${tier.name}`,
+    href: '/client/signup',
+    featured: tier.highlight ?? false,
+  })),
 ];
 
 export const COMPARISON_ROWS = [
@@ -83,6 +57,10 @@ export const COMPARISON_ROWS = [
   { feature: 'Meeting prep & conversation intelligence', legacy: false, firmum: true },
   { feature: 'TWRR/MWRR performance accounting', legacy: false, firmum: true },
   { feature: 'Mobile-responsive PWA', legacy: false, firmum: true },
+  { feature: 'Fee analyzer vs industry benchmarks (B2C)', legacy: false, firmum: true },
+  { feature: 'Retirement Monte Carlo planner (B2C)', legacy: false, firmum: true },
+  { feature: 'Advisor match marketplace (0.25% platform fee)', legacy: false, firmum: true },
+  { feature: 'Risk score & net worth history (B2C)', legacy: false, firmum: true },
 ];
 
 export const HOW_IT_WORKS_STEPS = [
