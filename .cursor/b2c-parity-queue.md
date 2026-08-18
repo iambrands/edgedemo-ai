@@ -127,7 +127,7 @@ Goal: Give users a reason to open the app every week.
 - **Resume prompt:** Implement B2C-204: create NetWorthChart.tsx as an interactive line chart component. Props: data points array, onPeriodChange callback. Add period selector pills (1M, 6M, YTD, 1Y, All) that filter the displayed range. Show hover tooltip with date and formatted dollar amount. Replace NetWorthSparkline in ClientDIYDashboard.tsx with NetWorthChart.
 
 ### B2C-205 | Recurring bill detection
-- **Phase:** 2 | **Status:** open | **Min gate:** G1
+- **Phase:** 2 | **Status:** done | **Min gate:** G1
 - **Depends on:** B2C-201
 - **Files:** backend/services/bill_detection.py (new), backend/api/mock_b2c.py, frontend/src/components/client/RecurringBills.tsx (new)
 - **Acceptance:** Backend identifies recurring transactions by merchant + frequency. Frontend shows list with next expected date and monthly total. Mock data with 5-8 subscriptions.

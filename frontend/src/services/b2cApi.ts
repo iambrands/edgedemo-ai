@@ -134,6 +134,15 @@ export interface B2CStatement {
   filename: string;
 }
 
+export interface B2CBill {
+  merchant: string;
+  category: string;
+  amount: number;
+  frequency: string;         // "weekly" | "monthly" | "quarterly" | "annual"
+  next_expected_date: string; // "YYYY-MM-DD"
+  monthly_equivalent: number;
+}
+
 export interface B2CBudget {
   category: string;
   label: string;
@@ -464,6 +473,10 @@ export const b2cApi = {
     b2cFetch<{ transactions: B2CTransaction[]; mock?: boolean }>(
       `/plaid/transactions?days=${days}`,
     ),
+
+  // Recurring bills
+  getBills: () =>
+    b2cFetch<{ bills: B2CBill[]; total_monthly: number; mock?: boolean }>('/bills'),
 
   // Budgets
   getBudgets: () =>

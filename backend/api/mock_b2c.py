@@ -374,6 +374,26 @@ DEMO_TAX_SUMMARY = {
 }
 
 
+DEMO_BILLS = [
+    {"merchant": "AT&T Wireless",    "category": "utilities",    "amount":  85.00, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":  85.00},
+    {"merchant": "Austin Energy",    "category": "utilities",    "amount": 142.30, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent": 142.30},
+    {"merchant": "Internet Service", "category": "utilities",    "amount":  69.99, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":  69.99},
+    {"merchant": "Planet Fitness",   "category": "health",       "amount":  24.99, "frequency": "monthly",  "next_expected_date": "2026-09-13", "monthly_equivalent":  24.99},
+    {"merchant": "Netflix",          "category": "entertainment","amount":  22.99, "frequency": "monthly",  "next_expected_date": "2026-09-12", "monthly_equivalent":  22.99},
+    {"merchant": "Amazon Prime",     "category": "entertainment","amount":  14.99, "frequency": "monthly",  "next_expected_date": "2026-09-10", "monthly_equivalent":  14.99},
+    {"merchant": "Xbox Game Pass",   "category": "entertainment","amount":  14.99, "frequency": "monthly",  "next_expected_date": "2026-09-05", "monthly_equivalent":  14.99},
+    {"merchant": "Spotify",          "category": "entertainment","amount":  10.99, "frequency": "monthly",  "next_expected_date": "2026-09-11", "monthly_equivalent":  10.99},
+    {"merchant": "Google One Storage","category": "utilities",   "amount":   2.99, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":   2.99},
+]
+
+
+@router.get("/bills")
+async def mock_b2c_bills(_: str = Depends(require_mock_auth)):
+    """Demo recurring bills (subscriptions) in no-DB mode."""
+    total_monthly = round(sum(b["monthly_equivalent"] for b in DEMO_BILLS), 2)
+    return {"bills": DEMO_BILLS, "total_monthly": total_monthly, "mock": True}
+
+
 @router.get("/tax-summary")
 async def mock_b2c_tax_summary(_: str = Depends(require_mock_auth)):
     """Demo tax summary card data in no-DB mode."""

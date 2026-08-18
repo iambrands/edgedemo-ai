@@ -101,6 +101,7 @@ const ClientGoals = React.lazy(() => import('./pages/client/ClientGoals'));
 const ForgotPassword = React.lazy(() => import('./pages/client/ForgotPassword'));
 const ClientSpending = React.lazy(() => import('./pages/client/ClientSpending'));
 const ClientBudgets = React.lazy(() => import('./pages/client/ClientBudgets'));
+const ClientBills = React.lazy(() => import('./pages/client/ClientBills'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -255,6 +256,7 @@ export default function App() {
             <Route path="statements" element={<ErrorBoundary><ClientStatements /></ErrorBoundary>} />
             <Route path="spending" element={<ErrorBoundary><ClientSpending /></ErrorBoundary>} />
             <Route path="budgets" element={<ErrorBoundary><ClientBudgets /></ErrorBoundary>} />
+            <Route path="bills" element={<ErrorBoundary><ClientBills /></ErrorBoundary>} />
             <Route path="connect-advisor" element={<ErrorBoundary><ConnectAdvisor /></ErrorBoundary>} />
             <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
             <Route path="upgrade" element={<ErrorBoundary><ClientUpgrade /></ErrorBoundary>} />
