@@ -92,6 +92,10 @@ export async function loginAsRIA(page: Page) {
       return fulfillJson(route, []);
     }
 
+    if (url.includes('/ria/connections')) {
+      return fulfillJson(route, []);
+    }
+
     return fulfillJson(route, { status: 'ok', data: [], items: [], results: [] });
   });
 

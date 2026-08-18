@@ -21,6 +21,7 @@ export const RIA_PAGES: PageEntry[] = [
   { path: '/dashboard/custodians',        title: 'Custodian',            kind: 'mixed' },
   { path: '/dashboard/tax-harvest',       title: 'Tax',                  kind: 'mixed' },
   { path: '/dashboard/prospects',         title: 'Prospect',             kind: 'mixed' },
+  { path: '/dashboard/connections',       title: 'Connection',           kind: 'table' },
   { path: '/dashboard/conversations',     title: 'Conversation',         kind: 'mixed' },
   { path: '/dashboard/model-portfolios',  title: 'Model',                kind: 'mixed' },
   { path: '/dashboard/alternative-assets',title: 'Alternative',          kind: 'mixed' },
