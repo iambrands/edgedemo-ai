@@ -244,6 +244,26 @@ async def mock_delete_goal(goal_id: str, _: str = Depends(require_mock_auth)):
     return {"status": "deleted", "goal_id": goal_id, "mock": True}
 
 
+_BUDGET_CAT_LABELS: dict[str, str] = {
+    "groceries": "Groceries",
+    "dining": "Dining",
+    "transport": "Transport",
+    "entertainment": "Entertainment",
+    "shopping": "Shopping",
+    "utilities": "Utilities",
+    "health": "Health & Fitness",
+}
+_BUDGET_DEFAULTS: dict[str, float] = {
+    "groceries": 500.0,
+    "dining": 200.0,
+    "transport": 250.0,
+    "entertainment": 100.0,
+    "shopping": 300.0,
+    "utilities": 350.0,
+    "health": 100.0,
+}
+
+
 DEMO_TRANSACTIONS = [
     # ── Groceries ──────────────────────────────────────────────────────────────
     {"id": "txn-001", "date": "2026-08-15", "merchant": "Whole Foods Market",   "amount": 127.43, "category": "groceries",    "account": "Chase Checking", "pending": False},
@@ -292,6 +312,56 @@ DEMO_TRANSACTIONS = [
 async def mock_b2c_transactions(_: str = Depends(require_mock_auth)):
     """Demo transaction list in no-DB mode (30-day window)."""
     return {"transactions": DEMO_TRANSACTIONS, "mock": True}
+
+
+def _build_mock_budgets() -> list[dict]:
+    spending: dict[str, float] = {}
+    for t in DEMO_TRANSACTIONS:
+        if t["amount"] > 0:
+            cat = t["category"]
+            spending[cat] = spending.get(cat, 0.0) + t["amount"]
+    result = []
+    for cat, label in _BUDGET_CAT_LABELS.items():
+        limit = _BUDGET_DEFAULTS.get(cat, 200.0)
+        current = round(spending.get(cat, 0.0), 2)
+        pct = round((current / limit * 100) if limit > 0 else 0.0, 1)
+        result.append({
+            "category": cat,
+            "label": label,
+            "monthly_limit": limit,
+            "current_spend": current,
+            "pct": pct,
+            "status": "over" if pct > 100 else "warning" if pct >= 80 else "ok",
+        })
+    return result
+
+
+@router.get("/budgets")
+async def mock_get_budgets(_: str = Depends(require_mock_auth)):
+    """Demo budget list in no-DB mode."""
+    return {"budgets": _build_mock_budgets(), "mock": True}
+
+
+@router.post("/budgets")
+async def mock_set_budget(body: dict, _: str = Depends(require_mock_auth)):
+    """Accept budget update (no persistence in mock mode — returns updated budget)."""
+    cat = body.get("category", "other")
+    limit = float(body.get("monthly_limit", 200.0))
+    spending: dict[str, float] = {}
+    for t in DEMO_TRANSACTIONS:
+        if t["amount"] > 0:
+            spending[t["category"]] = spending.get(t["category"], 0.0) + t["amount"]
+    current = round(spending.get(cat, 0.0), 2)
+    pct = round((current / limit * 100) if limit > 0 else 0.0, 1)
+    return {
+        "category": cat,
+        "label": _BUDGET_CAT_LABELS.get(cat, cat.title()),
+        "monthly_limit": limit,
+        "current_spend": current,
+        "pct": pct,
+        "status": "over" if pct > 100 else "warning" if pct >= 80 else "ok",
+        "mock": True,
+    }
 
 
 DEMO_TAX_SUMMARY = {

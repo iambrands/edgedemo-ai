@@ -106,7 +106,7 @@ Goal: Give users a reason to open the app every week.
 - **Resume prompt:** Implement B2C-201: extend plaid_service.py to sync transactions via Plaid transactions/sync endpoint. Add GET /api/v1/b2c/plaid/transactions endpoint. Create mock_b2c_transactions in mock_b2c.py with 30+ realistic transactions across 6 categories (groceries, dining, transport, utilities, entertainment, shopping). Create ClientSpending.tsx at /client/spending with category pie chart and transaction list.
 
 ### B2C-202 | Budget tracking backend + UI
-- **Phase:** 2 | **Status:** open | **Min gate:** G1
+- **Phase:** 2 | **Status:** done | **Min gate:** G1
 - **Depends on:** B2C-201
 - **Files:** backend/api/b2c/budgets.py (new), backend/api/mock_b2c.py, frontend/src/pages/client/ClientBudgets.tsx (new)
 - **Acceptance:** Users can set monthly budgets per category. Dashboard shows budget vs actual with progress bars. Overspend alerts. Mock backend stores budgets in memory.

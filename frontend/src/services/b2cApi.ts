@@ -134,6 +134,15 @@ export interface B2CStatement {
   filename: string;
 }
 
+export interface B2CBudget {
+  category: string;
+  label: string;
+  monthly_limit: number;
+  current_spend: number;
+  pct: number;
+  status: 'ok' | 'warning' | 'over';
+}
+
 export interface B2CTransaction {
   id: string;
   date: string;       // "YYYY-MM-DD"
@@ -455,4 +464,14 @@ export const b2cApi = {
     b2cFetch<{ transactions: B2CTransaction[]; mock?: boolean }>(
       `/plaid/transactions?days=${days}`,
     ),
+
+  // Budgets
+  getBudgets: () =>
+    b2cFetch<{ budgets: B2CBudget[]; mock?: boolean }>('/budgets'),
+
+  setBudget: (category: string, monthly_limit: number) =>
+    b2cFetch<B2CBudget>('/budgets', {
+      method: 'POST',
+      body: { category, monthly_limit },
+    }),
 };
