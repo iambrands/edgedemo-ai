@@ -51,7 +51,7 @@ Goal: Turn the prototype into a product users don't immediately leave.
 - **Resume prompt:** Implement B2C-103: update mock_b2c_dashboard in backend/api/mock_b2c.py to return realistic demo data — 3 sample accounts (checking, brokerage, 401k), ~$125K total AUM, 12-month net_worth_history with realistic growth curve, populated fee_benchmarks and risk_profile. Data should look real enough that a first-time user sees value immediately.
 
 ### B2C-104 | 5-step guided onboarding
-- **Phase:** 1 | **Status:** open | **Min gate:** G1
+- **Phase:** 1 | **Status:** done | **Min gate:** G1
 - **Depends on:** B2C-101
 - **Files:** frontend/src/pages/client/ClientOnboardingPage.tsx
 - **Acceptance:** Multi-step wizard: (1) connect account via Plaid, (2) risk profile quiz, (3) set first goal, (4) fee scan preview, (5) dashboard tour. Progress indicator. Skip option. Saves state so user can resume.
