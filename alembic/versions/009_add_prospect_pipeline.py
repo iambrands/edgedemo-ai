@@ -257,12 +257,8 @@ def upgrade() -> None:
         # Email fields
         sa.Column("email_status", sa.String(50)),
         sa.Column("email_template_id", postgresql.UUID(as_uuid=True)),
-        # Meeting fields
-        sa.Column(
-            "meeting_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("meetings.id"),
-        ),
+        # Meeting fields (FK deferred — meetings table added in a later migration)
+        sa.Column("meeting_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("meeting_outcome", sa.String(50)),
         # Task fields
         sa.Column("task_due_date", sa.Date),

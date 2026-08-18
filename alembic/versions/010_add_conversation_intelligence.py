@@ -54,13 +54,8 @@ def upgrade() -> None:
     op.create_table(
         "conversation_analyses",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column(
-            "meeting_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("meetings.id"),
-            nullable=False,
-            unique=True,
-        ),
+        # meeting_id: FK deferred — meetings table added in a later migration
+        sa.Column("meeting_id", postgresql.UUID(as_uuid=True), nullable=True, unique=True),
         sa.Column(
             "advisor_id",
             postgresql.UUID(as_uuid=True),
