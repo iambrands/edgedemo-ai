@@ -101,6 +101,47 @@ export interface B2CStatementConfirmResponse {
   persistedAccountId?: string | null;
 }
 
+export interface B2CMeResponse {
+  id: string;
+  email: string;
+  user_type: string;
+  subscription_tier: string | null;
+  onboarding_completed: boolean;
+  risk_profile_completed: boolean;
+  management_mode: string;
+  advisor_connection_status: string;
+}
+
+export interface B2CStatement {
+  id: string;
+  account_id: string | null;
+  custodian: string | null;
+  statement_date: string | null;
+  ending_value: number | null;
+  status: string;
+  filename: string;
+}
+
+export interface AdvisorConnectRequest {
+  investable_assets_range?: string;
+  primary_goal?: string;
+  preferred_meeting_format?: string;
+  notes?: string;
+}
+
+export interface AdvisorConnectResponse {
+  request_id: string;
+  status: string;
+  message: string;
+}
+
+export interface AdvisorConnectionStatus {
+  status: string;
+  request_id: string | null;
+  matched_advisor_id: string | null;
+  matched_at: string | null;
+}
+
 export function storeB2CTokens(response: B2CTokenResponse) {
   localStorage.setItem(B2C_TOKEN_KEY, response.access_token);
   localStorage.setItem(B2C_REFRESH_TOKEN_KEY, response.refresh_token);
@@ -135,16 +176,18 @@ async function b2cFetch<T>(path: string, options: B2CApiOptions = {}): Promise<T
 
 export const b2cApi = {
   register: (body: B2CRegisterRequest) =>
-    b2cFetch<B2CTokenResponse>('/register', {
-      method: 'POST',
-      body,
-    }),
+    b2cFetch<B2CTokenResponse>('/register', { method: 'POST', body }),
 
   login: (email: string, password: string) =>
-    b2cFetch<B2CTokenResponse>('/login', {
+    b2cFetch<B2CTokenResponse>('/login', { method: 'POST', body: { email, password } }),
+
+  refresh: (refreshToken: string) =>
+    b2cFetch<B2CTokenResponse>('/refresh', {
       method: 'POST',
-      body: { email, password },
+      body: { refresh_token: refreshToken },
     }),
+
+  getMe: () => b2cFetch<B2CMeResponse>('/me'),
 
   getRiskQuestions: () =>
     b2cFetch<{ questions: B2CRiskQuestion[] }>('/onboarding/risk-profile/questions'),
@@ -157,8 +200,26 @@ export const b2cApi = {
 
   getDashboard: () => b2cFetch<B2CDashboardResponse>('/dashboard'),
 
+  getStatements: () =>
+    b2cFetch<{ statements: B2CStatement[] }>('/statements'),
+
   confirmStatement: (statementId: string) =>
     b2cFetch<B2CStatementConfirmResponse>(`/statements/${encodeURIComponent(statementId)}/confirm`, {
       method: 'POST',
+    }),
+
+  connectAdvisor: (body: AdvisorConnectRequest) =>
+    b2cFetch<AdvisorConnectResponse>('/advisor/connect', { method: 'POST', body }),
+
+  getAdvisorStatus: () =>
+    b2cFetch<AdvisorConnectionStatus>('/advisor/connect/status'),
+
+  cancelAdvisorConnection: () =>
+    fetch(`${B2C_API_URL}/advisor/connect`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getB2CToken()}`,
+      },
     }),
 };
