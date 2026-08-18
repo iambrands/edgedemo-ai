@@ -591,10 +591,59 @@ export async function loginAsClient(page: Page) {
   await page.waitForTimeout(300);
 }
 
+const B2C_TOKEN_RESPONSE = {
+  access_token: 'e2e-b2c-test-token',
+  refresh_token: 'e2e-b2c-refresh-token',
+  token_type: 'bearer',
+  expires_in: 3600,
+  user_id: 'test-b2c-001',
+  subscription_tier: 'free',
+};
+
+const B2C_DEMO_GOALS = [
+  {
+    id: 'goal-demo-001',
+    goal_type: 'retirement',
+    name: 'Retire by 2040',
+    target_amount: 1200000,
+    current_amount: 125000,
+    target_date: '2040-12-31',
+    monthly_contribution: 1500,
+    progress_pct: 10.4,
+    on_track: true,
+    notes: null,
+  },
+  {
+    id: 'goal-demo-002',
+    goal_type: 'emergency_fund',
+    name: 'Emergency Fund',
+    target_amount: 24000,
+    current_amount: 18000,
+    target_date: '2027-06-30',
+    monthly_contribution: 500,
+    progress_pct: 75.0,
+    on_track: true,
+    notes: null,
+  },
+  {
+    id: 'goal-demo-003',
+    goal_type: 'vacation',
+    name: 'Europe Trip',
+    target_amount: 8000,
+    current_amount: 2400,
+    target_date: '2027-03-31',
+    monthly_contribution: 200,
+    progress_pct: 30.0,
+    on_track: false,
+    notes: 'Summer 2027',
+  },
+];
+
 /**
- * Seed B2C DIY user auth token and mock all /api/v1/b2c/* endpoints.
+ * Mock all /api/v1/b2c/* endpoints for E2E tests.
+ * Call before navigating to B2C pages (login flow, onboarding, etc.).
  */
-export async function loginAsB2CUser(page: Page) {
+export async function setupB2CApiMocks(page: Page) {
   const fulfillJson = (route: Route, body: unknown) =>
     route.fulfill({
       status: 200,
@@ -603,10 +652,16 @@ export async function loginAsB2CUser(page: Page) {
       body: JSON.stringify(body),
     });
 
-  // Generic fallback for any b2c API
   await page.context().route('**/api/v1/b2c/**', (route) => {
     const url = route.request().url();
+    const method = route.request().method();
 
+    if (url.includes('/b2c/login') && method === 'POST') {
+      return fulfillJson(route, B2C_TOKEN_RESPONSE);
+    }
+    if (url.includes('/b2c/register') && method === 'POST') {
+      return fulfillJson(route, B2C_TOKEN_RESPONSE);
+    }
     if (url.includes('/b2c/me')) {
       return fulfillJson(route, {
         id: 'test-b2c-001',
@@ -614,7 +669,7 @@ export async function loginAsB2CUser(page: Page) {
         user_type: 'b2c_diy',
         subscription_tier: 'free',
         onboarding_completed: true,
-        risk_profile_completed: false,
+        risk_profile_completed: true,
         management_mode: 'diy',
         advisor_connection_status: 'none',
       });
@@ -625,9 +680,23 @@ export async function loginAsB2CUser(page: Page) {
         accounts: [
           {
             id: 'acc-1',
-            custodian: 'Schwab',
+            custodian: 'Chase',
+            account_type: 'Checking',
+            total_value: '15000',
+            last_statement_date: '2026-01-31',
+          },
+          {
+            id: 'acc-2',
+            custodian: 'Fidelity',
             account_type: 'Brokerage',
-            total_value: '125000',
+            total_value: '85000',
+            last_statement_date: '2026-01-31',
+          },
+          {
+            id: 'acc-3',
+            custodian: 'Vanguard',
+            account_type: '401(k)',
+            total_value: '25000',
             last_statement_date: '2026-01-31',
           },
         ],
@@ -649,19 +718,146 @@ export async function loginAsB2CUser(page: Page) {
           { label: 'Traditional advisor average', rate_pct: '1.00', annual_cost_at_aum: '1250' },
         ],
         net_worth_history: [
-          { date: '2025-10-31', value: '118000' },
-          { date: '2025-11-30', value: '121000' },
+          { date: '2025-03-31', value: '105200' },
+          { date: '2025-06-30', value: '109800' },
+          { date: '2025-09-30', value: '114500' },
           { date: '2025-12-31', value: '123500' },
           { date: '2026-01-31', value: '125000' },
         ],
         risk_profile: {
           risk_number: 62,
           risk_tolerance: 'moderate',
-          label: 'Moderate growth',
+          label: 'Moderate Growth',
         },
         alerts: [],
         ai_chat_remaining: 8,
         subscription_tier: 'free',
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/goals')) {
+      if (method === 'POST') {
+        return fulfillJson(route, {
+          ...B2C_DEMO_GOALS[0],
+          id: 'goal-new-e2e',
+          name: 'New E2E Goal',
+          mock: true,
+        });
+      }
+      return fulfillJson(route, { goals: B2C_DEMO_GOALS, mock: true });
+    }
+    if (url.includes('/b2c/onboarding/risk-profile/questions')) {
+      return fulfillJson(route, {
+        questions: [
+          {
+            id: 'q1',
+            question: 'How would you react if your portfolio dropped 20% in a year?',
+            options: [
+              { label: 'Sell everything', score: 1 },
+              { label: 'Hold steady', score: 3 },
+              { label: 'Buy more', score: 5 },
+            ],
+          },
+        ],
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/onboarding/risk-profile') && method === 'POST') {
+      return fulfillJson(route, {
+        risk_tolerance: 'moderate',
+        risk_score: 62,
+        target_allocation: { equity: '60', fixed_income: '30', cash: '10' },
+        investment_objective: 'growth',
+        time_horizon: 'long',
+        sophistication_level: 'intermediate',
+        risk_profile_completed: true,
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/plaid/transactions')) {
+      return fulfillJson(route, {
+        transactions: [
+          {
+            id: 'txn-e2e-001',
+            date: '2026-08-15',
+            merchant: 'Whole Foods Market',
+            amount: 127.43,
+            category: 'groceries',
+            account: 'Chase Checking',
+            pending: false,
+          },
+          {
+            id: 'txn-e2e-002',
+            date: '2026-08-14',
+            merchant: 'Chipotle',
+            amount: 18.75,
+            category: 'dining',
+            account: 'Chase Checking',
+            pending: false,
+          },
+        ],
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/budgets')) {
+      if (method === 'POST') {
+        return fulfillJson(route, {
+          category: 'groceries',
+          label: 'Groceries',
+          monthly_limit: 500,
+          current_spend: 620.49,
+          pct: 124.1,
+          status: 'over',
+          mock: true,
+        });
+      }
+      return fulfillJson(route, {
+        budgets: [
+          {
+            category: 'groceries',
+            label: 'Groceries',
+            monthly_limit: 500,
+            current_spend: 620.49,
+            pct: 124.1,
+            status: 'over',
+          },
+          {
+            category: 'dining',
+            label: 'Dining',
+            monthly_limit: 200,
+            current_spend: 148.3,
+            pct: 74.2,
+            status: 'ok',
+          },
+        ],
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/bills')) {
+      return fulfillJson(route, {
+        bills: [
+          {
+            merchant: 'Netflix',
+            category: 'entertainment',
+            amount: 22.99,
+            frequency: 'monthly',
+            next_expected_date: '2026-09-12',
+            monthly_equivalent: 22.99,
+          },
+        ],
+        total_monthly: 22.99,
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/tax-summary')) {
+      return fulfillJson(route, {
+        tax_year: 2026,
+        short_term_gains: 2840,
+        long_term_gains: 8120,
+        tlh_opportunities: 2,
+        tlh_estimated_savings: 680,
+        projected_tax_liability: 3240,
+        mock: true,
       });
     }
     if (url.includes('/b2c/planning/retirement')) {
@@ -713,15 +909,32 @@ export async function loginAsB2CUser(page: Page) {
     if (url.includes('/b2c/plaid/accounts')) {
       return fulfillJson(route, { items: [], mock: true });
     }
-    // generic catch-all
-    return fulfillJson(route, { status: 'ok', data: [], statements: [] });
+    if (url.includes('/b2c/forgot-password') && method === 'POST') {
+      return fulfillJson(route, {
+        status: 'sent',
+        message: 'If this email is registered, you will receive a reset link shortly.',
+        mock: true,
+      });
+    }
+    return fulfillJson(route, { status: 'ok', data: [], statements: [], mock: true });
   });
+}
 
+/** Seed B2C token in localStorage (call after setupB2CApiMocks). */
+export async function seedB2CTokens(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('firmum_b2c_token', 'e2e-b2c-test-token');
     localStorage.setItem('firmum_b2c_refresh_token', 'e2e-b2c-refresh-token');
+    localStorage.setItem('firmum_b2c_email', 'demo@b2c.test');
   });
+}
 
+/**
+ * Seed B2C DIY user auth token and mock all /api/v1/b2c/* endpoints.
+ */
+export async function loginAsB2CUser(page: Page) {
+  await setupB2CApiMocks(page);
+  await seedB2CTokens(page);
   await page.goto('/client/dashboard', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(300);
 }

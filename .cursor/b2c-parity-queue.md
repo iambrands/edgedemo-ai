@@ -79,7 +79,7 @@ Goal: Turn the prototype into a product users don't immediately leave.
 - **Resume prompt:** Implement B2C-107: add POST /api/v1/b2c/auth/forgot-password endpoint in backend/api/auth.py that accepts email, returns success (mock — no real email send in demo mode). Create ForgotPassword.tsx with email input form at /client/forgot-password. Add JWT expiry check to B2C auth middleware (30-min inactivity timeout). Add "Forgot password?" link on client login page.
 
 ### B2C-108 | Phase 1 E2E smoke tests
-- **Phase:** 1 | **Status:** open | **Min gate:** G0
+- **Phase:** 1 | **Status:** done | **Min gate:** G0
 - **Depends on:** B2C-101, B2C-102, B2C-104
 - **Files:** frontend/e2e/
 - **Acceptance:** Playwright tests covering: client login → dashboard renders net worth, nav shell links work, onboarding wizard can be started, goals page loads, fee chart renders.
