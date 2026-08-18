@@ -5,9 +5,13 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+
 from backend.api.dependencies import get_db, get_current_user
+from backend.models.advisor_connection import AdvisorConnectionRequest
 from backend.models.user import User
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.auth_service import (
     AuthService,
@@ -37,14 +41,28 @@ class MeResponse(BaseModel):
 
 
 @router.get("/me", response_model=MeResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """Current B2C user profile and connection status."""
     if current_user.advisor_id:
         mode = "advisor_linked"
         conn_status = "active"
     else:
         mode = "diy"
-        conn_status = "none"
+        try:
+            result = await db.execute(
+                select(AdvisorConnectionRequest)
+                .where(AdvisorConnectionRequest.user_id == current_user.id)
+                .order_by(AdvisorConnectionRequest.created_at.desc())
+                .limit(1)
+            )
+            latest = result.scalar_one_or_none()
+            conn_status = latest.status if latest else "none"
+        except Exception:
+            conn_status = "none"
+
     return MeResponse(
         id=str(current_user.id),
         email=current_user.email,
