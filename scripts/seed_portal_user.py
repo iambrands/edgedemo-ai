@@ -35,6 +35,7 @@ for _f in (".env", ".env.production", ".env.beta"):
 
 import bcrypt
 import sqlalchemy as sa
+from datetime import datetime
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import select
 from uuid import UUID
@@ -97,9 +98,12 @@ async def main(args: argparse.Namespace) -> None:
 
         hashed = _hash_password(args.password)
 
+        now = datetime.utcnow()
+
         if existing:
             existing.hashed_password = hashed
             existing.is_active = True
+            existing.updated_at = now
             await db.commit()
             print(f"\n✓ Updated existing portal user: {args.email}")
         else:
@@ -108,6 +112,8 @@ async def main(args: argparse.Namespace) -> None:
                 email=args.email,
                 hashed_password=hashed,
                 is_active=True,
+                created_at=now,
+                updated_at=now,
             )
             db.add(portal_user)
             await db.commit()
