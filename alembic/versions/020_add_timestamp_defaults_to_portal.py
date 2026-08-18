@@ -32,29 +32,42 @@ PORTAL_TABLES = [
     "meetings",
 ]
 
+# Query to check whether a table+column already has a server default.
+_HAS_DEFAULT_SQL = """
+    SELECT column_default IS NOT NULL
+    FROM information_schema.columns
+    WHERE table_name = :tbl AND column_name = :col
+      AND table_schema = 'public'
+"""
+
+
+def _set_default_if_missing(conn, table: str, col: str) -> None:
+    row = conn.execute(
+        sa.text(_HAS_DEFAULT_SQL),
+        {"tbl": table, "col": col},
+    ).fetchone()
+    if row is None:
+        return  # column doesn't exist in this schema
+    has_default = row[0]
+    if not has_default:
+        conn.execute(
+            sa.text(f"ALTER TABLE {table} ALTER COLUMN {col} SET DEFAULT now()")
+        )
+
 
 def upgrade() -> None:
+    conn = op.get_bind()
     for table in PORTAL_TABLES:
-        try:
-            op.execute(
-                f"ALTER TABLE {table} ALTER COLUMN created_at SET DEFAULT now()"
-            )
-            op.execute(
-                f"ALTER TABLE {table} ALTER COLUMN updated_at SET DEFAULT now()"
-            )
-        except Exception as exc:
-            # Table may not have both columns — skip gracefully
-            print(f"  Skipping {table}: {exc}")
+        _set_default_if_missing(conn, table, "created_at")
+        _set_default_if_missing(conn, table, "updated_at")
 
 
 def downgrade() -> None:
+    conn = op.get_bind()
     for table in PORTAL_TABLES:
-        try:
-            op.execute(
-                f"ALTER TABLE {table} ALTER COLUMN created_at DROP DEFAULT"
-            )
-            op.execute(
-                f"ALTER TABLE {table} ALTER COLUMN updated_at DROP DEFAULT"
-            )
-        except Exception:
-            pass
+        conn.execute(
+            sa.text(f"ALTER TABLE {table} ALTER COLUMN created_at DROP DEFAULT")
+        )
+        conn.execute(
+            sa.text(f"ALTER TABLE {table} ALTER COLUMN updated_at DROP DEFAULT")
+        )
