@@ -325,6 +325,15 @@ except Exception as e:
     _ria_router_errors.append(f"statements: {type(e).__name__}: {e}")
     logger.error("Failed to mount ria_statements router: %s", e, exc_info=True)
 
+# Mount RIA connections router (B2C advisor connect requests)
+try:
+    from backend.api.ria_connections import router as ria_connections_router
+    app.include_router(ria_connections_router)
+    _ria_routers_mounted.append("connections")
+except Exception as e:
+    _ria_router_errors.append(f"connections: {type(e).__name__}: {e}")
+    logger.error("Failed to mount ria_connections router: %s", e, exc_info=True)
+
 # Mount RIA analysis router
 try:
     from backend.api.ria_analysis import router as ria_analysis_router

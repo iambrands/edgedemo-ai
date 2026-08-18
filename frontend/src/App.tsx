@@ -52,6 +52,9 @@ const Liquidity = React.lazy(() => import('./pages/dashboard/Liquidity'));
 const Custodians = React.lazy(() => import('./pages/dashboard/Custodians'));
 const TaxHarvest = React.lazy(() => import('./pages/dashboard/TaxHarvest'));
 const Prospects = React.lazy(() => import('./pages/dashboard/Prospects'));
+const ConnectionRequests = React.lazy(() =>
+  import('./pages/dashboard/ConnectionRequests').then((m) => ({ default: m.ConnectionRequests })),
+);
 const Conversations = React.lazy(() => import('./pages/dashboard/Conversations'));
 const ModelPortfolios = React.lazy(() => import('./pages/dashboard/ModelPortfolios'));
 const AlternativeAssets = React.lazy(() => import('./pages/dashboard/AlternativeAssets'));
@@ -169,6 +172,7 @@ export default function App() {
             <Route path="custodians" element={<ErrorBoundary><Custodians /></ErrorBoundary>} />
             <Route path="tax-harvest" element={<ErrorBoundary><TaxHarvest /></ErrorBoundary>} />
             <Route path="prospects" element={<ErrorBoundary><Prospects /></ErrorBoundary>} />
+            <Route path="connections" element={<ErrorBoundary><ConnectionRequests /></ErrorBoundary>} />
             <Route path="conversations" element={<ErrorBoundary><Conversations /></ErrorBoundary>} />
             <Route path="model-portfolios" element={<ErrorBoundary><ModelPortfolios /></ErrorBoundary>} />
             <Route path="alternative-assets" element={<ErrorBoundary><AlternativeAssets /></ErrorBoundary>} />

@@ -79,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/dashboard/accounts', icon: Briefcase, label: 'Accounts' },
       { to: '/dashboard/bulk-import', icon: Upload, label: 'Bulk Import' },
       { to: '/dashboard/prospects', icon: UserPlus, label: 'Prospects' },
+      { to: '/dashboard/connections', icon: Target, label: 'Connection Requests' },
       { to: '/dashboard/crm', icon: Contact, label: 'CRM' },
       { to: '/dashboard/crm-integrations', icon: Plug, label: 'CRM Integrations' },
       { to: '/dashboard/engagement', icon: Activity, label: 'Engagement' },
