@@ -4,6 +4,7 @@ import { AppLink } from '../../components/brand/AppLink';
 import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, getB2CToken, type B2CDashboardResponse } from '../../services/b2cApi';
 import AIChatWidget from '../../components/chat/AIChatWidget';
+import { StatementUploadZone } from '../../components/client/StatementUploadZone';
 
 function formatCurrency(value: string | number): string {
   const amount = typeof value === 'number' ? value : Number(value);
@@ -19,9 +20,7 @@ export default function ClientDIYDashboard() {
   const [dashboard, setDashboard] = useState<B2CDashboardResponse | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [statementId, setStatementId] = useState('');
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -52,29 +51,6 @@ export default function ClientDIYDashboard() {
     { label: 'Alerts', value: String(dashboard?.alerts.length ?? 0) },
   ];
   const feeSummary = dashboard?.fee_impact_summary;
-
-  const handleConfirmStatement = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setConfirmMessage('');
-    setError('');
-    if (!statementId.trim()) {
-      setError('Enter a statement ID to confirm.');
-      return;
-    }
-    setIsConfirming(true);
-    try {
-      const response = await b2cApi.confirmStatement(statementId.trim());
-      setConfirmMessage(
-        `Confirmed ${response.statementId}: ${response.positionsCreated} positions persisted.`,
-      );
-      setStatementId('');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to confirm statement';
-      setError(message);
-    } finally {
-      setIsConfirming(false);
-    }
-  };
 
   return (
     <ClientPageShell
@@ -163,29 +139,17 @@ export default function ClientDIYDashboard() {
           </div>
         )}
 
-        <form onSubmit={handleConfirmStatement} className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="font-semibold text-slate-900 text-sm">Confirm parsed statement</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Enter a parsed statement ID (for example, <code>stmt-001</code>) to trigger persistence.
-          </p>
-          <div className="mt-3 flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={statementId}
-              onChange={(event) => setStatementId(event.target.value)}
-              placeholder="Statement ID"
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-            <button
-              type="submit"
-              disabled={isConfirming}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {isConfirming ? 'Confirming...' : 'Confirm'}
-            </button>
-          </div>
-          {confirmMessage && <p className="mt-2 text-xs text-emerald-700">{confirmMessage}</p>}
-        </form>
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="font-semibold text-slate-900 text-sm mb-3">Add your first account</h2>
+          {uploadSuccess && (
+            <p className="mb-3 text-xs text-emerald-700">{uploadSuccess}</p>
+          )}
+          <StatementUploadZone
+            onConfirmed={(_id, count) =>
+              setUploadSuccess(`${count} position${count !== 1 ? 's' : ''} imported. Refresh to see your updated portfolio.`)
+            }
+          />
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <AppLink

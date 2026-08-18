@@ -1,19 +1,24 @@
-"""B2C statement list and confirmation endpoints."""
+"""B2C statement list, upload, and confirmation endpoints."""
 
+import logging
+import uuid
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import get_current_user, get_db
-from backend.api.ria_statements import PARSED_STATEMENTS
+from backend.api.ria_statements import PARSED_STATEMENTS, parse_statement_background
 from backend.models.account import Account
 from backend.models.client import Client
 from backend.models.statement import Statement
 from backend.models.user import User
 from backend.services.statement_persistence import StatementPersistenceService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/b2c/statements", tags=["b2c-statements"])
 
@@ -75,6 +80,80 @@ async def list_statements(
             )
             for s in rows
         ]
+    }
+
+
+@router.post("/upload")
+async def upload_statement(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a PDF statement for parsing. PDF only, 20 MB max."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    filename_lower = (file.filename or "").lower()
+    if not filename_lower.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large (20 MB max)")
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="File is empty")
+
+    stmt_id = f"stmt-{str(uuid.uuid4())[:8]}"
+    PARSED_STATEMENTS[stmt_id] = {
+        "id": stmt_id,
+        "filename": file.filename,
+        "custodian": "Detecting...",
+        "parsed": "Processing...",
+        "confidence": "0%",
+        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+        "status": "parsing",
+        "householdId": str(current_user.household_id) if current_user.household_id else None,
+        "uploadedByUserId": str(current_user.id),
+        "uploadedByRole": "b2c",
+        "positions": [],
+    }
+
+    background_tasks.add_task(parse_statement_background, stmt_id, file_bytes, file.filename)
+
+    logger.info("B2C statement upload: %s by user %s", stmt_id, current_user.id)
+    return {
+        "id": stmt_id,
+        "filename": file.filename,
+        "status": "parsing",
+        "message": "Statement uploaded. Parsing in progress…",
+        "estimated_seconds": 10,
+    }
+
+
+@router.get("/{statement_id}/status")
+async def get_statement_status(
+    statement_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Poll parse status for a just-uploaded statement."""
+    stmt = PARSED_STATEMENTS.get(statement_id)
+    if not stmt:
+        raise HTTPException(status_code=404, detail="Statement not found")
+
+    uploaded_by = stmt.get("uploadedByUserId")
+    if uploaded_by and uploaded_by != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Statement not found")
+
+    return {
+        "id": stmt["id"],
+        "filename": stmt["filename"],
+        "status": stmt.get("status", "parsing"),
+        "custodian": stmt.get("custodian", "Detecting..."),
+        "parsed": stmt.get("parsed", "Processing..."),
+        "confidence": stmt.get("confidence", "0%"),
+        "position_count": len(stmt.get("positions", [])),
+        "total_value": stmt.get("totalValue"),
+        "error": stmt.get("error"),
     }
 
 
