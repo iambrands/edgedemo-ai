@@ -33,13 +33,17 @@ for _f in (".env", ".env.production", ".env.beta"):
         load_dotenv(p)
         break
 
+import bcrypt
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import select
-from passlib.context import CryptContext
 from uuid import UUID
 
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _hash_password(password: str) -> str:
+    """Hash password with bcrypt (mirrors portal_auth_service.hash_password)."""
+    pw_bytes = password.encode("utf-8")[:72]
+    return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 if not DATABASE_URL:
@@ -91,7 +95,7 @@ async def main(args: argparse.Namespace) -> None:
         )
         existing = result.scalar_one_or_none()
 
-        hashed = _pwd.hash(args.password)
+        hashed = _hash_password(args.password)
 
         if existing:
             existing.hashed_password = hashed

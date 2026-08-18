@@ -80,8 +80,8 @@ export default function ClientDIYDashboard() {
       title="My Firmum"
       subtitle="Your DIY dashboard — holdings, fees, and AI suggestions in one place."
       badge="DIY mode"
-      backTo="/client/onboarding"
-      backLabel="Onboarding"
+      backTo="/"
+      backLabel="Home"
     >
       <div className="space-y-6">
         {error && (
@@ -155,10 +155,9 @@ export default function ClientDIYDashboard() {
 
         {dashboard?.accounts.length === 0 && (
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-            <h2 className="font-semibold text-blue-950">Next step: upload a statement</h2>
+            <h2 className="font-semibold text-blue-950">Next step: add your first account</h2>
             <p className="mt-1 text-sm text-blue-900">
-              Statement upload and account persistence are a G2 task. This dashboard is ready to populate
-              once accounts exist.
+              Enter a statement ID below to import your holdings and see your full portfolio picture.
             </p>
           </div>
         )}

@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, storeB2CTokens } from '../../services/b2cApi';
 
+/** After login, redirect to onboarding if the user hasn't completed it yet. */
+async function resolvePostLoginRoute(): Promise<string> {
+  try {
+    const me = await b2cApi.getMe();
+    return me.onboarding_completed ? '/client/dashboard' : '/client/onboarding';
+  } catch {
+    return '/client/dashboard';
+  }
+}
+
 type AuthMode = 'register' | 'login';
 
 export default function ClientRegister() {
@@ -38,7 +48,8 @@ export default function ClientRegister() {
         : await b2cApi.login(email, password);
 
       storeB2CTokens(response);
-      navigate(isRegister ? '/client/onboarding' : '/client/dashboard');
+      const dest = isRegister ? '/client/onboarding' : await resolvePostLoginRoute();
+      navigate(dest);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to authenticate';
       if (message.includes('404') || message.includes('Not Found')) {
