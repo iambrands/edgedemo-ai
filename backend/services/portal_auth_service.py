@@ -144,12 +144,17 @@ class PortalAuthService:
 
     async def authenticate(self, email: str, password: str) -> Optional[ClientPortalUser]:
         """Authenticate portal user by email and password."""
-        result = await self.db.execute(
-            select(ClientPortalUser).where(
-                ClientPortalUser.email == email,
-                ClientPortalUser.is_active == True
+        try:
+            result = await self.db.execute(
+                select(ClientPortalUser).where(
+                    ClientPortalUser.email == email,
+                    ClientPortalUser.is_active == True
+                )
             )
-        )
+        except Exception as exc:
+            # Schema not yet migrated (e.g. missing table) — treat as invalid credentials.
+            logger.warning("Portal auth DB error (schema gap?): %s", exc)
+            return None
         user = result.scalar_one_or_none()
 
         if not user or not self.verify_password(password, user.hashed_password):
