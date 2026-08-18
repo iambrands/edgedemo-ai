@@ -7,8 +7,13 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 
-# Load .env from project root (for DATABASE_URL)
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+# Load env file from project root — try .env first, then .env.production, then .env.beta
+_root = Path(__file__).resolve().parent.parent
+for _candidate in (".env", ".env.production", ".env.beta"):
+    _path = _root / _candidate
+    if _path.exists():
+        load_dotenv(_path)
+        break
 from sqlalchemy import pool
 
 from alembic import context
