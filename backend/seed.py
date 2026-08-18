@@ -87,7 +87,7 @@ async def seed_database():
         print(f"Created advisor: {advisor.first_name} {advisor.last_name}")
 
         # ── 3. User (auth record) ────────────────────────────────
-        pw_hash = bcrypt.hashpw("CreateWealth2026$".encode(), bcrypt.gensalt()).decode()
+        pw_hash = bcrypt.hashpw("CreateWEalth2024$".encode(), bcrypt.gensalt()).decode()
         user = User(
             email="leslie@iabadvisors.com",
             hashed_password=pw_hash,
@@ -339,7 +339,7 @@ async def seed_database():
 
         await session.commit()
         print("\n✅ Database seeded successfully!")
-        print(f"   Login: leslie@iabadvisors.com / CreateWealth2026$")
+        print(f"   Login: leslie@iabadvisors.com / CreateWEalth2024$")
         print(f"   Firm: {firm.firm_name}")
         print(f"   Households: {len(households)}")
         print(f"   Clients: {len(clients)}")

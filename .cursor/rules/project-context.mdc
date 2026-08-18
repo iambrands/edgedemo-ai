@@ -21,7 +21,7 @@ alwaysApply: true
 ## Auth
 - **RIA Login**: `backend/api/auth.py` — standalone JWT (bcrypt + python-jose), no DB needed
 - **Client Portal**: `backend/services/portal_auth_service.py` — separate JWT for portal users
-- **Demo credential**: `leslie@iabadvisors.com` / `CreateWealth2026$`
+- **Demo credential**: `leslie@iabadvisors.com` / `CreateWEalth2024$`
 
 ## Branding
 - Product name is **Firmum** (tagline: "The steady layer for modern advisory firms")

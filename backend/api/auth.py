@@ -106,7 +106,7 @@ def get_users_db() -> dict:
             "leslie@iabadvisors.com": {
                 "id": "a0000000-0000-4000-8000-000000000001",  # UUID format required by DB endpoints
                 "email": "leslie@iabadvisors.com",
-                "password_hash": hash_password("CreateWealth2026$"),
+                "password_hash": hash_password("CreateWEalth2024$"),
                 "firstName": "Leslie",
                 "lastName": "Wilson",
                 "role": "ria",
