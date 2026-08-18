@@ -21,9 +21,18 @@ security = HTTPBearer(auto_error=False)
 
 # Configuration
 _default_secret = "edgeai-jwt-secret-change-in-production"
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", _default_secret)
-if SECRET_KEY == _default_secret and os.getenv("RAILWAY_ENVIRONMENT"):
-    logger.warning("JWT_SECRET_KEY is using the default value — set a strong secret in Railway variables!")
+_JWT_DEFAULTS = {_default_secret, "CHANGE-ME-IN-PRODUCTION", "change-me-in-production"}
+# Accept JWT_SECRET_KEY or JWT_SECRET (Studio .env.production uses JWT_SECRET)
+SECRET_KEY = os.getenv("JWT_SECRET_KEY") or os.getenv("JWT_SECRET", _default_secret)
+_env = os.getenv("ENVIRONMENT", "development").lower()
+if SECRET_KEY in _JWT_DEFAULTS:
+    if _env == "production":
+        raise RuntimeError(
+            "JWT_SECRET_KEY (or JWT_SECRET) is using the insecure default. "
+            "Set a strong secret before starting in production."
+        )
+    if _env not in ("development", "test"):
+        logger.critical("JWT_SECRET_KEY is the insecure default — set it in .env before exposing to traffic")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

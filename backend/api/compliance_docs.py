@@ -525,7 +525,7 @@ async def get_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     if document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     return document_to_response(document)
 
@@ -555,7 +555,7 @@ async def list_versions(
         raise HTTPException(status_code=404, detail="Document not found")
 
     if document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     versions = await service.get_document_versions(doc_uuid)
     return [version_to_response(v) for v in versions]
@@ -588,7 +588,7 @@ async def get_version_html(
     # Check access via parent document
     document = await service.get_document(version.document_id)
     if not document or document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     return HTMLResponse(content=version.content_html or "<p>No content</p>")
 
@@ -619,7 +619,7 @@ async def get_version_json(
 
     document = await service.get_document(version.document_id)
     if not document or document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     return version.content_json
 
@@ -706,7 +706,7 @@ async def archive_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     if document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     try:
         archived = await service.archive_document(doc_uuid)
@@ -746,7 +746,7 @@ async def deliver_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     if document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     if not document.current_version_id:
         raise HTTPException(status_code=400, detail="Document has no published version")
@@ -808,7 +808,7 @@ async def list_deliveries(
         raise HTTPException(status_code=404, detail="Document not found")
 
     if document.firm_id != firm_uuid:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=404, detail="Document not found")
 
     result = await db.execute(
         select(DocumentDelivery)

@@ -158,7 +158,7 @@ async def get_tax_profile(
     if caller["type"] == "portal":
         portal_cid = _parse_uuid(caller["client_id"])
         if portal_cid != client_id:
-            raise HTTPException(status_code=403, detail="Cannot access another client's tax profile")
+            raise HTTPException(status_code=404, detail="Tax profile not found")
     try:
         from backend.models.tax_profile import TaxProfile
         from backend.models.bim_score import BIMScore

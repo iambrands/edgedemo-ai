@@ -1,9 +1,10 @@
 """B2C conversational AI endpoint."""
 
+import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,8 @@ from backend.models.user import User
 from backend.services.ai_orchestrator import AIOrchestrator
 from backend.services.entitlements import TIER_FEATURES
 from backend.services.usage_tracker import UsageTracker
+
+_AI_TIMEOUT_SECONDS = 25
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +47,19 @@ async def b2c_chat(
     household_id = str(current_user.household_id) if current_user.household_id else None
     client_id = str(current_user.client_id) if current_user.client_id else str(current_user.id)
 
-    result = await orchestrator.process_query(
-        client_id=client_id,
-        query=req.message,
-        behavioral_profile="balanced",
-        household_id=household_id,
-    )
+    try:
+        result = await asyncio.wait_for(
+            orchestrator.process_query(
+                client_id=client_id,
+                query=req.message,
+                behavioral_profile="balanced",
+                household_id=household_id,
+            ),
+            timeout=_AI_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("AI pipeline timed out after %ds for user %s", _AI_TIMEOUT_SECONDS, current_user.id)
+        raise HTTPException(status_code=504, detail="AI response timed out. Please try again.")
 
     tracker = UsageTracker(db)
     await tracker.record_usage(current_user.id, "ai_chat_messages")
