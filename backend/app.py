@@ -187,8 +187,13 @@ if _public_domain:
     for prefix in ("", "www.", "app.", "staging."):
         ALLOWED_ORIGINS.append(f"https://{prefix}{_public_domain}")
 
-for _legacy in ("edgeadvisors.ai", "edgeria.ai", "firmum.ai"):
-    ALLOWED_ORIGINS.extend([f"https://{_legacy}", f"https://www.{_legacy}", f"https://app.{_legacy}"])
+for _domain in ("firmum.ai",):
+    ALLOWED_ORIGINS.extend([
+        f"https://{_domain}",
+        f"https://www.{_domain}",
+        f"https://app.{_domain}",
+        f"https://staging.{_domain}",
+    ])
 
 # De-dupe while preserving order
 _seen: set[str] = set()

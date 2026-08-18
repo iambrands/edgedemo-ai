@@ -8,8 +8,9 @@ alwaysApply: true
 ## Tech Stack
 - **Frontend**: React 18 + TypeScript, Vite, Tailwind CSS, Playwright E2E tests
 - **Backend**: FastAPI (Python 3.11), SQLAlchemy async models, Pydantic v2
-- **Deployment**: Mac Mini port 5006 (staging), domains `firmum.ai`, legacy `edgeadvisors.ai` / `edgeria.ai`
-- **Production URL**: `https://app.firmum.ai` (target)
+- **Deployment**: Mac Mini port 5006 (staging `staging.firmum.ai`), production `app.firmum.ai`
+- **Staging URL**: `https://staging.firmum.ai` | **Production URL**: `https://app.firmum.ai`
+- **Legacy domains** (`edgeadvisors.ai`, `edgeria.ai`) are retired — do NOT deploy or reference them
 
 ## Architecture
 - No production database yet — all DB-dependent routers use **mock data fallbacks**

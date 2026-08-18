@@ -8,8 +8,7 @@ export const MARKETING_SITE_URL = `https://${PRODUCT_DOMAIN}`;
 export const LEGAL_ENTITY = 'IAB Advisors, Inc.';
 export const LEGAL_DBA = `${PRODUCT_NAME} by ${LEGAL_ENTITY}`;
 
-/** Legacy domains — keep for redirects and email migration */
-export const LEGACY_DOMAINS = ['edgeadvisors.ai', 'edgeria.ai'] as const;
+export const STAGING_URL = `https://staging.${PRODUCT_DOMAIN}`;
 
 export const PRODUCT_DESCRIPTION =
   'AI-powered practice management platform for registered investment advisors.';
