@@ -99,7 +99,7 @@ Goal: Turn the prototype into a product users don't immediately leave.
 Goal: Give users a reason to open the app every week.
 
 ### B2C-201 | Plaid transaction sync + spending categories
-- **Phase:** 2 | **Status:** open | **Min gate:** G1
+- **Phase:** 2 | **Status:** done | **Min gate:** G1
 - **Depends on:** B2C-DONE-01
 - **Files:** backend/services/plaid_service.py, backend/api/b2c/plaid.py, backend/api/mock_b2c.py, frontend/src/pages/client/ClientSpending.tsx (new)
 - **Acceptance:** Backend fetches transactions from Plaid, categorizes by Plaid category. Frontend shows spending breakdown by category with monthly totals. Mock fallback with realistic transaction data.

@@ -98,6 +98,29 @@ async def remove_linked_account(
         raise HTTPException(status_code=404, detail="Item not found")
 
 
+@router.get("/transactions")
+async def get_transactions(
+    days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Fetch recent transactions for all linked Plaid items.
+
+    Returns realistic mock data when no live Plaid credentials are configured.
+    """
+    user_type = str(getattr(current_user, "user_type", "") or "")
+    if not user_type.startswith("b2c_"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    svc = PlaidService(db)
+    try:
+        txns = await svc.get_transactions(current_user.id, days=min(days, 90))
+        return {"transactions": txns}
+    except Exception as e:
+        logger.error("get_transactions failed: %s", e)
+        raise HTTPException(status_code=503, detail="Could not fetch transactions") from e
+
+
 @router.post("/webhook")
 async def plaid_webhook(request: Request):
     """Receive Plaid webhooks (item errors, re-consent needed, etc.)."""

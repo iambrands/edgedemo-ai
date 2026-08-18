@@ -7,7 +7,7 @@ Falls back gracefully to mock mode when PLAID_CLIENT_ID is not configured.
 import base64
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -83,6 +83,32 @@ def _decrypt_token(enc: str) -> str:
         return f.decrypt(enc.encode()).decode()
     except Exception:
         return base64.b64decode(enc.encode()).decode()
+
+
+# ---------------------------------------------------------------------------
+# Category mapping
+# ---------------------------------------------------------------------------
+
+def _map_plaid_category(plaid_categories: list) -> str:
+    """Map a Plaid category list to a simplified spending category."""
+    if not plaid_categories:
+        return "other"
+    top = " ".join(plaid_categories).lower()
+    if any(k in top for k in ("food and drink", "coffee", "restaurant", "dining", "fast food")):
+        return "dining"
+    if any(k in top for k in ("groceries", "supermarket")):
+        return "groceries"
+    if any(k in top for k in ("transportation", "taxi", "gas station", "parking", "car service")):
+        return "transport"
+    if any(k in top for k in ("entertainment", "recreation", "streaming", "music", "video game")):
+        return "entertainment"
+    if any(k in top for k in ("shops", "shopping", "clothing", "electronics")):
+        return "shopping"
+    if any(k in top for k in ("utilities", "phone", "internet", "telecom")):
+        return "utilities"
+    if any(k in top for k in ("health", "medical", "pharmacy", "fitness", "gym")):
+        return "health"
+    return "other"
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +303,87 @@ class PlaidService:
             }
             for item in items
         ]
+
+    async def get_transactions(self, user_id: UUID, days: int = 30) -> list[dict]:
+        """Fetch recent transactions for all linked items.
+
+        Returns mock data when in mock mode or when items use mock access tokens.
+        """
+        if _MOCK_MODE:
+            from backend.api.mock_b2c import DEMO_TRANSACTIONS
+            return list(DEMO_TRANSACTIONS)
+
+        try:
+            from backend.models.plaid_item import PlaidItem
+        except ImportError:
+            from models.plaid_item import PlaidItem
+
+        result = await self.db.execute(
+            select(PlaidItem).where(
+                PlaidItem.user_id == user_id,
+                PlaidItem.status == "active",
+            )
+        )
+        items = result.scalars().all()
+        if not items:
+            from backend.api.mock_b2c import DEMO_TRANSACTIONS
+            return list(DEMO_TRANSACTIONS)
+
+        start = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+        end = datetime.now(timezone.utc).date()
+        all_txns: list[dict] = []
+
+        for item in items:
+            try:
+                access_token = _decrypt_token(item.access_token_enc)
+                if access_token.startswith("access-sandbox-mock-"):
+                    from backend.api.mock_b2c import DEMO_TRANSACTIONS
+                    all_txns.extend(DEMO_TRANSACTIONS)
+                    continue
+                txns = await self._fetch_transactions(
+                    access_token, start, end, item.institution_name or ""
+                )
+                all_txns.extend(txns)
+            except Exception as e:
+                logger.warning("Failed to fetch transactions for item %s: %s", item.id, e)
+
+        all_txns.sort(key=lambda x: x.get("date", ""), reverse=True)
+        return all_txns
+
+    async def _fetch_transactions(
+        self, access_token: str, start_date, end_date, institution_name: str = ""
+    ) -> list[dict]:
+        """Fetch transactions from Plaid using transactions/get."""
+        try:
+            from plaid.model.transactions_get_request import TransactionsGetRequest
+            from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
+
+            request = TransactionsGetRequest(
+                access_token=access_token,
+                start_date=start_date,
+                end_date=end_date,
+                options=TransactionsGetRequestOptions(count=100),
+            )
+            resp = _plaid_client.transactions_get(request)
+            out = []
+            for t in (resp.get("transactions") or []):
+                raw_cats = t.get("category") or []
+                category = _map_plaid_category(raw_cats)
+                date_val = t.get("date")
+                date_str = date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val)
+                out.append({
+                    "id": t.get("transaction_id"),
+                    "date": date_str,
+                    "merchant": t.get("merchant_name") or t.get("name", "Unknown"),
+                    "amount": float(t.get("amount", 0)),
+                    "category": category,
+                    "account": institution_name,
+                    "pending": bool(t.get("pending", False)),
+                })
+            return out
+        except Exception as e:
+            logger.warning("Plaid transactions_get failed for %s: %s", institution_name, e)
+            return []
 
     async def remove_item(self, user_id: UUID, item_db_id: UUID) -> None:
         """Unlink a Plaid item. Returns 404 if not owned by this user."""

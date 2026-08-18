@@ -244,6 +244,56 @@ async def mock_delete_goal(goal_id: str, _: str = Depends(require_mock_auth)):
     return {"status": "deleted", "goal_id": goal_id, "mock": True}
 
 
+DEMO_TRANSACTIONS = [
+    # ── Groceries ──────────────────────────────────────────────────────────────
+    {"id": "txn-001", "date": "2026-08-15", "merchant": "Whole Foods Market",   "amount": 127.43, "category": "groceries",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-002", "date": "2026-08-12", "merchant": "H-E-B",                "amount":  89.22, "category": "groceries",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-003", "date": "2026-08-08", "merchant": "Trader Joe's",          "amount":  56.18, "category": "groceries",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-004", "date": "2026-08-04", "merchant": "Costco",                "amount": 234.67, "category": "groceries",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-005", "date": "2026-08-01", "merchant": "Whole Foods Market",   "amount": 112.99, "category": "groceries",    "account": "Chase Checking", "pending": False},
+    # ── Dining ─────────────────────────────────────────────────────────────────
+    {"id": "txn-006", "date": "2026-08-16", "merchant": "Starbucks",             "amount":   7.45, "category": "dining",       "account": "Chase Checking", "pending": True},
+    {"id": "txn-007", "date": "2026-08-14", "merchant": "Chipotle Mexican Grill","amount":  18.75, "category": "dining",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-008", "date": "2026-08-11", "merchant": "Torchy's Tacos",        "amount":  34.20, "category": "dining",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-009", "date": "2026-08-09", "merchant": "Starbucks",             "amount":   8.15, "category": "dining",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-010", "date": "2026-08-07", "merchant": "Sushi Zushi",           "amount":  67.80, "category": "dining",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-011", "date": "2026-08-04", "merchant": "McDonald's",            "amount":  12.35, "category": "dining",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-012", "date": "2026-08-02", "merchant": "Local Italian",         "amount":  89.60, "category": "dining",       "account": "Chase Checking", "pending": False},
+    # ── Transport ──────────────────────────────────────────────────────────────
+    {"id": "txn-013", "date": "2026-08-15", "merchant": "Uber",                  "amount":  23.40, "category": "transport",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-014", "date": "2026-08-13", "merchant": "Shell Gas Station",     "amount":  68.75, "category": "transport",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-015", "date": "2026-08-10", "merchant": "Lyft",                  "amount":  16.50, "category": "transport",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-016", "date": "2026-08-06", "merchant": "ExxonMobil",            "amount":  71.20, "category": "transport",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-017", "date": "2026-08-03", "merchant": "Uber",                  "amount":  31.80, "category": "transport",    "account": "Chase Checking", "pending": False},
+    # ── Entertainment ──────────────────────────────────────────────────────────
+    {"id": "txn-018", "date": "2026-08-12", "merchant": "Netflix",               "amount":  22.99, "category": "entertainment","account": "Chase Checking", "pending": False},
+    {"id": "txn-019", "date": "2026-08-11", "merchant": "Spotify",               "amount":  10.99, "category": "entertainment","account": "Chase Checking", "pending": False},
+    {"id": "txn-020", "date": "2026-08-10", "merchant": "Amazon Prime",          "amount":  14.99, "category": "entertainment","account": "Chase Checking", "pending": False},
+    {"id": "txn-021", "date": "2026-08-05", "merchant": "Xbox Game Pass",        "amount":  14.99, "category": "entertainment","account": "Chase Checking", "pending": False},
+    # ── Utilities ──────────────────────────────────────────────────────────────
+    {"id": "txn-022", "date": "2026-08-01", "merchant": "AT&T Wireless",         "amount":  85.00, "category": "utilities",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-023", "date": "2026-08-01", "merchant": "Austin Energy",         "amount": 142.30, "category": "utilities",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-024", "date": "2026-08-01", "merchant": "Google One Storage",    "amount":   2.99, "category": "utilities",    "account": "Chase Checking", "pending": False},
+    {"id": "txn-025", "date": "2026-08-01", "merchant": "Internet Service",      "amount":  69.99, "category": "utilities",    "account": "Chase Checking", "pending": False},
+    # ── Shopping ───────────────────────────────────────────────────────────────
+    {"id": "txn-026", "date": "2026-08-14", "merchant": "Amazon",                "amount": 156.78, "category": "shopping",     "account": "Chase Checking", "pending": False},
+    {"id": "txn-027", "date": "2026-08-11", "merchant": "Target",                "amount":  89.45, "category": "shopping",     "account": "Chase Checking", "pending": False},
+    {"id": "txn-028", "date": "2026-08-08", "merchant": "Best Buy",              "amount": 299.99, "category": "shopping",     "account": "Chase Checking", "pending": False},
+    {"id": "txn-029", "date": "2026-08-06", "merchant": "Amazon",                "amount":  43.22, "category": "shopping",     "account": "Chase Checking", "pending": False},
+    {"id": "txn-030", "date": "2026-08-03", "merchant": "Nordstrom Rack",        "amount": 178.50, "category": "shopping",     "account": "Chase Checking", "pending": False},
+    # ── Health & Fitness ───────────────────────────────────────────────────────
+    {"id": "txn-031", "date": "2026-08-13", "merchant": "Planet Fitness",        "amount":  24.99, "category": "health",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-032", "date": "2026-08-05", "merchant": "CVS Pharmacy",          "amount":  38.47, "category": "health",       "account": "Chase Checking", "pending": False},
+    {"id": "txn-033", "date": "2026-08-02", "merchant": "Walgreens",             "amount":  22.15, "category": "health",       "account": "Chase Checking", "pending": False},
+]
+
+
+@router.get("/plaid/transactions")
+async def mock_b2c_transactions(_: str = Depends(require_mock_auth)):
+    """Demo transaction list in no-DB mode (30-day window)."""
+    return {"transactions": DEMO_TRANSACTIONS, "mock": True}
+
+
 DEMO_TAX_SUMMARY = {
     "tax_year": 2026,
     "short_term_gains": 2840,

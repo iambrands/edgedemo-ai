@@ -134,6 +134,16 @@ export interface B2CStatement {
   filename: string;
 }
 
+export interface B2CTransaction {
+  id: string;
+  date: string;       // "YYYY-MM-DD"
+  merchant: string;
+  amount: number;     // positive = expense, negative = income
+  category: string;
+  account: string;
+  pending: boolean;
+}
+
 export interface B2CTaxSummary {
   tax_year: number;
   short_term_gains: number;
@@ -440,4 +450,9 @@ export const b2cApi = {
       method: 'POST',
       body: { email },
     }),
+
+  getTransactions: (days = 30) =>
+    b2cFetch<{ transactions: B2CTransaction[]; mock?: boolean }>(
+      `/plaid/transactions?days=${days}`,
+    ),
 };
