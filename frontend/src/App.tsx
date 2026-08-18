@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppHostGate } from './components/brand/AppHostGate';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import PortalLayout from './components/portal/PortalLayout';
+import ClientLayout from './components/client/ClientLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
 
@@ -127,6 +128,15 @@ const PortalGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// ── Auth guard for B2C self-serve client ─────────────────────────────────────
+const B2CGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const hasToken = localStorage.getItem('firmum_b2c_token');
+  if (!hasToken) {
+    return <Navigate to="/client/signup" replace />;
+  }
+  return <>{children}</>;
+};
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -220,16 +230,30 @@ export default function App() {
           <Route path="/audience/investors" element={<Investors />} />
           <Route path="/audience/professionals" element={<Professionals />} />
 
-          {/* Client self-serve */}
+          {/* Client self-serve — pre-auth (no sidebar) */}
           <Route path="/client/signup" element={<AppHostGate><ClientRegister /></AppHostGate>} />
           <Route path="/client/onboarding" element={<AppHostGate><ClientOnboardingPage /></AppHostGate>} />
-          <Route path="/client/dashboard" element={<AppHostGate><ClientDIYDashboard /></AppHostGate>} />
-          <Route path="/client/connect-advisor" element={<AppHostGate><ConnectAdvisor /></AppHostGate>} />
-          <Route path="/client/accountability" element={<AppHostGate><ClientAccountability /></AppHostGate>} />
-          <Route path="/client/statements" element={<AppHostGate><ClientStatements /></AppHostGate>} />
-          <Route path="/client/upgrade" element={<AppHostGate><ClientUpgrade /></AppHostGate>} />
-          <Route path="/client/retirement" element={<AppHostGate><ClientRetirementPlanner /></AppHostGate>} />
-          <Route path="/client/planning" element={<AppHostGate><ClientRetirementPlanner /></AppHostGate>} />
+
+          {/* Client self-serve — authenticated (sidebar layout) */}
+          <Route
+            path="/client"
+            element={
+              <AppHostGate>
+                <B2CGuard>
+                  <ClientLayout />
+                </B2CGuard>
+              </AppHostGate>
+            }
+          >
+            <Route index element={<Navigate to="/client/dashboard" replace />} />
+            <Route path="dashboard" element={<ErrorBoundary><ClientDIYDashboard /></ErrorBoundary>} />
+            <Route path="statements" element={<ErrorBoundary><ClientStatements /></ErrorBoundary>} />
+            <Route path="connect-advisor" element={<ErrorBoundary><ConnectAdvisor /></ErrorBoundary>} />
+            <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
+            <Route path="upgrade" element={<ErrorBoundary><ClientUpgrade /></ErrorBoundary>} />
+            <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+            <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+          </Route>
 
           {/* Company */}
           <Route path="/company/about" element={<About />} />

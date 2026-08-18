@@ -1,5 +1,4 @@
 import { Activity, DollarSign, FileText } from 'lucide-react';
-import { ClientPageShell } from './ClientPageShell';
 
 const SECTIONS = [
   {
@@ -21,13 +20,11 @@ const SECTIONS = [
 
 export default function ClientAccountability() {
   return (
-    <ClientPageShell
-      title="Advisor transparency"
-      subtitle="See what your advisor has done on your behalf — available after a connection is approved."
-      badge="Accountability"
-      backTo="/client/dashboard"
-      backLabel="Dashboard"
-    >
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Advisor transparency</h1>
+        <p className="text-sm text-slate-600 mt-1">See what your advisor has done on your behalf — available after a connection is approved.</p>
+      </div>
       <div className="space-y-4">
         {SECTIONS.map(({ icon: Icon, title, desc }) => (
           <div key={title} className="bg-white rounded-xl border border-slate-200 p-5 flex gap-4">
@@ -42,6 +39,6 @@ export default function ClientAccountability() {
           </div>
         ))}
       </div>
-    </ClientPageShell>
+    </div>
   );
 }

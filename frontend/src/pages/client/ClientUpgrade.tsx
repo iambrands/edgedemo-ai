@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Check, Sparkles, Zap, Crown } from 'lucide-react';
-import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, getB2CToken } from '../../services/b2cApi';
 import { B2C_TIERS, type B2CPaidTier } from '../../constants/b2cTiers';
 
@@ -34,13 +33,11 @@ export default function ClientUpgrade() {
   };
 
   return (
-    <ClientPageShell
-      title="Upgrade your plan"
-      subtitle="Unlock fee benchmarks, retirement planning, and advisor matching."
-      badge="Plans"
-      backTo="/client/dashboard"
-      backLabel="Dashboard"
-    >
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900">Upgrade your plan</h1>
+        <p className="text-sm text-slate-600 mt-1">Unlock fee benchmarks, retirement planning, and advisor matching.</p>
+      </div>
       <div className="mb-8 flex justify-center">
         <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1">
           <button
@@ -130,6 +127,6 @@ export default function ClientUpgrade() {
       <p className="text-center text-xs text-slate-400 mt-6">
         Cancel anytime. Free tier includes fee benchmarks and net worth tracking. Powered by Stripe.
       </p>
-    </ClientPageShell>
+    </div>
   );
 }

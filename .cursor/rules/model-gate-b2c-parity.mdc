@@ -1,0 +1,64 @@
+---
+description: Firmum B2C parity model gate — cost-driven, task-bound model selection. G0 Composer, G0.5 GPT 5.6, G1 Claude 4.6 Sonnet, G2 Claude 4.6 Opus (review only). Grok and Codex banned.
+alwaysApply: true
+---
+
+# Firmum Model Gate (B2C Parity)
+
+Use the **cheapest model that can do the task well**. This is the single authoritative gate document — supersedes any conflicting tier tables in other rules.
+
+## Banned models (hard)
+
+- **Grok** (any version) — never use unless the user names Grok in that message.
+- **Codex** (any version) — never use.
+- **Claude Opus 5 / Opus 4.8** — never use unless the user explicitly overrides in that message.
+
+## Tier table
+
+| Gate | Cursor model slug | When to use | When NOT to use |
+|------|-------------------|-------------|-----------------|
+| **G0** | `composer-2.5-fast` | Routes, mocks, copy, E2E smoke, lint/build/deploy, constants sync, shell scaffolds, `env.example` | Auth, Plaid/Stripe, migrations, multi-file state logic |
+| **G0.5** | `gpt-5.6-sol-medium` | Pattern clones (portal → client), bulk mock payloads, E2E from templates, docs from gold templates, post-Sonnet TS cleanup, chart components from existing data | Novel architecture, security-sensitive code, first implementation of a domain |
+| **G1** | `claude-4.6-sonnet-high-thinking` | Feature implementation: nav shell, onboarding state, dashboard wiring, Plaid tx sync, budgets, auth flows, unified shell | Pure copy/routes; security audit |
+| **G2** | `claude-4.6-opus-high-thinking` | **Review/unblock only** — IDOR, webhook sigs, token encryption, AI guardrails, migration review. Use only after a G1 diff exists. | Default implementer — never use Opus to write first-pass code |
+| **G4** | Human | Stripe Dashboard price IDs, live env vars, prod DDL, legal sign-off | Anything automatable |
+
+## Token-cost rules
+
+1. **One task ID per session** — read `.cursor/b2c-parity-queue.md` at session start, implement only that task, stop at gate boundary.
+2. **No Opus for exploration** — Opus sessions receive a diff link or file list, not full chat history.
+3. **Subagents default G0** — parallel mock/E2E work only; never delegate Plaid/Stripe/auth to subagents.
+4. **Mock-first** — G0 extends `backend/api/mock_b2c.py`; G1 wires real routers.
+5. **Resume prompts** — gate banner includes a one-paragraph paste prompt (no transcript dump).
+
+## G0.5 (GPT 5.6) guidance
+
+Use G0.5 when the task follows an existing file as a template (portal → client clone), generates repetitive mock rows, or fixes TypeScript after Sonnet — work that often causes Composer retries but doesn't need Sonnet reasoning.
+
+- **Stay on G0 Composer** for single-file edits, routes, deploy commands.
+- **Escalate to G1 Sonnet** for auth, billing, Plaid/Stripe, cross-tenant IDOR, or new architectural decisions.
+- If G0.5 underperforms, re-queue the task as G1 with `status: escalated` in the queue.
+
+## Workflow (lowest total cost)
+
+1. **Composer (G0)** — implement G0 tasks + run build/lint/deploy
+2. **GPT 5.6 (G0.5)** — pattern clones, bulk mocks, chart components, TS cleanup
+3. **Sonnet (G1)** — implement the feature
+4. **Opus (G2)** — optional review pass on security/compliance if Sonnet stalls
+5. **Composer (G0)** — fix post-review issues, update docs, re-run tests
+
+## Gate banner format (mandatory at boundaries)
+
+When the current task is done and the next task requires a different model, stop and output:
+
+```
+## MODEL SWITCH REQUIRED → [Model display name]
+
+Completed: [task ID + summary]. Next: [task ID]. Switch Agent picker to **[Model]**, then paste:
+
+[one-paragraph resume prompt with task ID, files to touch, and acceptance criteria]
+```
+
+## Task queue
+
+The full task registry lives in `.cursor/b2c-parity-queue.md`. Agents must read it at session start to determine what to work on and which gate applies.

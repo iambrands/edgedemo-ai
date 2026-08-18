@@ -1,47 +1,13 @@
 ---
-description: Firmum model gate — Composer for G0, Claude 4.6 Sonnet for features, Claude 4.6 Opus for risk reviews.
+description: Firmum model gate — pointer to authoritative gate doc. Never Grok/Codex.
 alwaysApply: true
 ---
 
 # Firmum Model Gate
 
-Use the **lowest gate that can do the current task well**. User preference: **Claude 4.6** family (Sonnet default, Opus for risk). **No Codex, no Opus 5/4.8** unless user overrides.
+**Authoritative gate document:** `model-gate-b2c-parity.mdc`
+**Task queue:** `.cursor/b2c-parity-queue.md`
 
-**Never use Grok** unless the user names Grok in that message.
+Read both at session start. Pick the first open task, use the lowest gate that fits.
 
-See also: `model-selection-firmum.mdc` for cost-tier workflow.
-
-## Gates
-
-| Gate | Use this model | Typical work |
-|------|----------------|--------------|
-| **G0** | Composer 2.5 Fast | Routes, copy, shells, lint, mocks, build, deploy commands |
-| **G1** | Claude 4.6 Sonnet (thinking) | Plaid, Stripe, billing, CRUD APIs, React features, multi-file backend |
-| **G2** | Claude 4.6 Opus (thinking) | Security review, IDOR/compliance, AI guardrails, complex migration review |
-| **G4** | Human | Stripe Dashboard, prod env, live DB migrations, legal |
-
-## Current queue
-
-| Task | Min gate |
-|------|----------|
-| Model rules, E2E mock updates, mock planning endpoints, build/test | G0 Composer |
-| Plaid Link + account sync | G1 Sonnet |
-| Stripe subscription verification + advisor connect billing | G1 Sonnet |
-| Security/compliance pass on Plaid + planning | G2 Opus 4.6 |
-| Stripe price IDs + prod env | G4 Human |
-
-## At a gate boundary
-
-Stop. End with:
-
-```
-## MODEL SWITCH REQUIRED → [Model]
-
-[What just finished]. Next is [task]. Switch the Agent picker to **[Model]**, then paste:
-
-[one-paragraph resume prompt]
-```
-
-## Subagents
-
-Default: **Composer 2.5 Fast**. Use **Claude 4.6 Sonnet** only when the delegated task min gate is G1+.
+**Never use Grok** unless the user names Grok in that message. **Never use Codex.**

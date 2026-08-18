@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { FileText, CheckCircle, Clock } from 'lucide-react';
-import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, type B2CStatement } from '../../services/b2cApi';
 
 function formatDate(iso: string | null): string {
@@ -36,13 +35,11 @@ export default function ClientStatements() {
   }, []);
 
   return (
-    <ClientPageShell
-      title="Statement history"
-      subtitle="All brokerage statements you've confirmed with Firmum."
-      badge="Account history"
-      backTo="/client/dashboard"
-      backLabel="Dashboard"
-    >
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Statement history</h1>
+        <p className="text-sm text-slate-600 mt-1">All brokerage statements you've confirmed with Firmum.</p>
+      </div>
       {loading && (
         <div className="flex justify-center py-16">
           <div className="h-8 w-8 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
@@ -105,6 +102,6 @@ export default function ClientStatements() {
           </table>
         </div>
       )}
-    </ClientPageShell>
+    </div>
   );
 }

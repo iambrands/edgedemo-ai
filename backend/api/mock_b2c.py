@@ -26,11 +26,150 @@ MOCK_ME = {
     "user_type": "b2c_retail",
     "subscription_tier": "free",
     "onboarding_completed": False,
-    "risk_profile_completed": False,
+    "risk_profile_completed": True,
     "management_mode": "diy",
     "advisor_connection_status": "none",
     "mock": True,
+    "demo_mode": True,
 }
+
+# Realistic first-run dashboard — avoids $0 empty state for new DIY users in no-DB mode.
+DEMO_TOTAL_AUM = "125000"
+
+DEMO_ACCOUNTS = [
+    {
+        "id": "acc-demo-001",
+        "custodian": "Chase",
+        "account_type": "Checking",
+        "total_value": "12450",
+        "last_statement_date": "2026-07-31",
+    },
+    {
+        "id": "acc-demo-002",
+        "custodian": "Fidelity",
+        "account_type": "Brokerage",
+        "total_value": "78320",
+        "last_statement_date": "2026-07-31",
+    },
+    {
+        "id": "acc-demo-003",
+        "custodian": "Vanguard",
+        "account_type": "401(k)",
+        "total_value": "34230",
+        "last_statement_date": "2026-07-31",
+    },
+]
+
+DEMO_ALLOCATION = [
+    {"asset_class": "US Equity", "pct": "55.0", "value": "68750"},
+    {"asset_class": "International Equity", "pct": "15.0", "value": "18750"},
+    {"asset_class": "Fixed Income", "pct": "20.0", "value": "25000"},
+    {"asset_class": "Cash & Equivalents", "pct": "10.0", "value": "12500"},
+]
+
+DEMO_FEE_IMPACT = {
+    "annual_cost": "812",
+    "ten_year_impact": "10150",
+    "thirty_year_impact": "42000",
+    "potential_savings": "438",
+    "highest_fee_account": "Fidelity Brokerage",
+    "highest_fee_rate": "0.65",
+    "effective_fee_rate_pct": "0.65",
+}
+
+DEMO_FEE_BENCHMARKS = [
+    {"label": "Your portfolio (estimated)", "rate_pct": "0.65", "annual_cost_at_aum": "812"},
+    {"label": "Robo-advisor average", "rate_pct": "0.25", "annual_cost_at_aum": "312"},
+    {"label": "Traditional advisor average", "rate_pct": "1.00", "annual_cost_at_aum": "1250"},
+]
+
+DEMO_RISK_PROFILE = {
+    "risk_number": 62,
+    "risk_tolerance": "moderate",
+    "label": "Moderate growth",
+}
+
+DEMO_NET_WORTH_HISTORY = [
+    {"date": "2025-08-31", "value": "105200"},
+    {"date": "2025-09-30", "value": "107800"},
+    {"date": "2025-10-31", "value": "110400"},
+    {"date": "2025-11-30", "value": "112900"},
+    {"date": "2025-12-31", "value": "115600"},
+    {"date": "2026-01-31", "value": "117200"},
+    {"date": "2026-02-28", "value": "118900"},
+    {"date": "2026-03-31", "value": "120100"},
+    {"date": "2026-04-30", "value": "121400"},
+    {"date": "2026-05-31", "value": "122600"},
+    {"date": "2026-06-30", "value": "123800"},
+    {"date": "2026-07-31", "value": "125000"},
+]
+
+DEMO_DASHBOARD_ALERTS = [
+    {
+        "type": "fee_savings",
+        "severity": "info",
+        "message": "You could save about $438/yr vs a traditional 1% advisor fee at your current balance.",
+        "action": "view_fee_analyzer",
+        "gated": False,
+        "upgrade_tier": None,
+    },
+    {
+        "type": "goal",
+        "severity": "info",
+        "message": "Set your first goal to track progress toward retirement or a major purchase.",
+        "action": "set_goal",
+        "gated": False,
+        "upgrade_tier": None,
+    },
+]
+
+DEMO_PLAID_ITEMS = [
+    {
+        "item_id": "mock-item-demo-001",
+        "plaid_item_id": "mock-plaid-item-demo-001",
+        "institution_name": "Chase",
+        "status": "active",
+        "accounts": [
+            {
+                "account_id": "acc-demo-001",
+                "name": "Chase Total Checking",
+                "type": "depository",
+                "subtype": "checking",
+                "balance": 12450.0,
+            },
+        ],
+    },
+    {
+        "item_id": "mock-item-demo-002",
+        "plaid_item_id": "mock-plaid-item-demo-002",
+        "institution_name": "Fidelity",
+        "status": "active",
+        "accounts": [
+            {
+                "account_id": "acc-demo-002",
+                "name": "Fidelity Brokerage",
+                "type": "investment",
+                "subtype": "brokerage",
+                "balance": 78320.0,
+            },
+        ],
+    },
+    {
+        "item_id": "mock-item-demo-003",
+        "plaid_item_id": "mock-plaid-item-demo-003",
+        "institution_name": "Vanguard",
+        "status": "active",
+        "accounts": [
+            {
+                "account_id": "acc-demo-003",
+                "name": "Vanguard 401(k)",
+                "type": "investment",
+                "subtype": "401k",
+                "balance": 34230.0,
+            },
+        ],
+    },
+]
 
 
 @router.get("/me")
@@ -86,30 +225,18 @@ async def mock_submit_risk_profile(body: dict, _: str = Depends(require_mock_aut
 async def mock_b2c_dashboard(_: str = Depends(require_mock_auth)):
     """Demo DIY dashboard payload when B2C DB routes are unavailable."""
     return {
-        "total_aum": "0",
-        "accounts": [],
-        "allocation": [],
-        "fee_impact_summary": None,
-        "fee_benchmarks": [
-            {"label": "Your portfolio (estimated)", "rate_pct": "0", "annual_cost_at_aum": "0"},
-            {"label": "Robo-advisor average", "rate_pct": "0.25", "annual_cost_at_aum": "0"},
-            {"label": "Traditional advisor average", "rate_pct": "1.00", "annual_cost_at_aum": "0"},
-        ],
-        "net_worth_history": [],
-        "risk_profile": None,
-        "alerts": [
-            {
-                "type": "onboarding",
-                "severity": "info",
-                "message": "Upload your first investment statement to get started",
-                "action": "upload_statement",
-                "gated": False,
-                "upgrade_tier": None,
-            }
-        ],
+        "total_aum": DEMO_TOTAL_AUM,
+        "accounts": DEMO_ACCOUNTS,
+        "allocation": DEMO_ALLOCATION,
+        "fee_impact_summary": DEMO_FEE_IMPACT,
+        "fee_benchmarks": DEMO_FEE_BENCHMARKS,
+        "net_worth_history": DEMO_NET_WORTH_HISTORY,
+        "risk_profile": DEMO_RISK_PROFILE,
+        "alerts": DEMO_DASHBOARD_ALERTS,
         "ai_chat_remaining": 10,
         "subscription_tier": "free",
         "mock": True,
+        "demo_mode": True,
     }
 
 
@@ -220,8 +347,8 @@ async def mock_plaid_exchange(_: dict, __: str = Depends(require_mock_auth)):
 
 @router.get("/plaid/accounts")
 async def mock_plaid_accounts(_: str = Depends(require_mock_auth)):
-    """Return mock linked institutions in no-DB mode."""
-    return {"items": [], "mock": True}
+    """Return demo linked institutions in no-DB mode."""
+    return {"items": DEMO_PLAID_ITEMS, "mock": True, "demo_mode": True}
 
 
 @router.get("/planning/tiers")

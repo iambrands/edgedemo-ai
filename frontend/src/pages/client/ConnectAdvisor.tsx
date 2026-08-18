@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, Clock, UserCheck, XCircle } from 'lucide-react';
-import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, type AdvisorConnectionStatus } from '../../services/b2cApi';
 
 const ASSET_RANGES = [
@@ -96,13 +95,11 @@ export default function ConnectAdvisor() {
   const cfg = activeStatus ? STATUS_CONFIG[activeStatus] : null;
 
   return (
-    <ClientPageShell
-      title="Connect with an advisor"
-      subtitle="Request a match with a Firmum-vetted advisor. Your data stays private until you approve the connection."
-      badge="Advisor link"
-      backTo="/client/dashboard"
-      backLabel="Dashboard"
-    >
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Connect with an advisor</h1>
+        <p className="text-sm text-slate-600 mt-1">Request a match with a Firmum-vetted advisor. Your data stays private until you approve the connection.</p>
+      </div>
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="h-8 w-8 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
@@ -219,6 +216,6 @@ export default function ConnectAdvisor() {
           )}
         </div>
       )}
-    </ClientPageShell>
+    </div>
   );
 }

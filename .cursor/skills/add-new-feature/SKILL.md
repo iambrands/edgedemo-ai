@@ -7,6 +7,14 @@ description: End-to-end workflow for adding a new feature to the Edge platform â
 
 Complete workflow for adding a feature that spans backend API, frontend UI, and tests.
 
+## Step 0: Check gate
+
+Before writing any code, look up the task in `.cursor/b2c-parity-queue.md`:
+
+1. If the task has an existing ID (e.g. B2C-201), use the `Min gate` from the queue.
+2. If it's a new task, assign the next available ID in the appropriate phase and set `Min gate` based on `model-gate-b2c-parity.mdc` tier rules.
+3. If the current model is below the task's minimum gate, **stop and output the gate banner** â€” do not start implementation.
+
 ## Step 1: Backend Router
 
 Create `backend/api/{feature_name}.py`:
@@ -137,6 +145,7 @@ test.describe('Feature Name', () => {
 
 ## Checklist
 
+- [ ] **Gate check:** task ID assigned, current model meets minimum gate
 - [ ] Backend router created with Pydantic models
 - [ ] Mock data added to `mock_endpoints.py` and registered in `ALL_MOCK_ROUTERS`
 - [ ] Router registered in `app.py` (with `_db_available` guard if DB-dependent)
@@ -145,3 +154,4 @@ test.describe('Feature Name', () => {
 - [ ] Navigation entry added in Sidebar
 - [ ] E2E test created and passing
 - [ ] `aria-label` added to any icon-only buttons
+- [ ] Task status updated to `done` in `.cursor/b2c-parity-queue.md`

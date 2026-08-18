@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Calculator, TrendingUp } from 'lucide-react';
 import { AppLink } from '../../components/brand/AppLink';
-import { ClientPageShell } from './ClientPageShell';
 import {
   b2cApi,
   type B2CRetirementPlanRequest,
@@ -74,14 +73,11 @@ export default function ClientRetirementPlanner() {
   };
 
   return (
-    <ClientPageShell
-      title="Retirement planner"
-      subtitle="Monte Carlo simulation — educational projection only, not investment advice."
-      badge="Planning"
-      backTo="/client/dashboard"
-      backLabel="Dashboard"
-    >
-      <div className="space-y-6">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Retirement planner</h1>
+        <p className="text-sm text-slate-600 mt-1">Monte Carlo simulation — educational projection only, not investment advice.</p>
+      </div>
         <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Calculator className="h-5 w-5 text-blue-600" />
@@ -162,7 +158,6 @@ export default function ClientRetirementPlanner() {
             <p className="text-xs text-slate-400 mt-4">{result.disclaimer}</p>
           </div>
         )}
-      </div>
-    </ClientPageShell>
+    </div>
   );
 }

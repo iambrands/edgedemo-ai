@@ -1,71 +1,47 @@
 ---
-description: Firmum cost-tier model selection — Composer first for G0, Claude 4.6 Sonnet for features, Claude 4.6 Opus for risk reviews only.
+description: Firmum cost-tier examples — Composer-safe vs Sonnet-required tasks. Gate tiers and queue live in model-gate-b2c-parity.mdc and b2c-parity-queue.md.
 alwaysApply: true
 ---
 
-# Firmum Model Selection (Cost-Tier)
+# Firmum Model Selection — Quick Examples
 
-Use the **cheapest model that can do the task well**. User preference: **Claude 4.6** (not Opus 5, not 4.8, not Codex unless overridden).
+**Full tier table and queue:** See `model-gate-b2c-parity.mdc` and `.cursor/b2c-parity-queue.md`.
 
-**Never use Grok** unless the user names Grok in that message.
+**Never use Grok** unless the user names Grok in that message. **Never use Codex.**
 
-## Tier map
+## Composer-safe (G0) — cheapest, use by default for these
 
-| Tier | Model | Use for |
-|------|--------|---------|
-| **G0** | **Composer 2.5 Fast** | Copy, routes, constants sync, lint, build, deploy commands, E2E smoke additions, `env.example`, mock payload wiring |
-| **G1** | **Claude 4.6 Sonnet (thinking)** | Features: Plaid, Stripe integration, billing, CRUD APIs, React pages, multi-file backend |
-| **G2** | **Claude 4.6 Opus (thinking)** | Migrations, security review, IDOR/compliance, AI guardrails — **review or unblock only**, not default implementer |
-| **G4** | **Human** | Stripe Dashboard products, prod env vars, live Postgres/Alembic, legal sign-off |
-
-## Workflow (lowest total cost)
-
-1. **Composer** — implement G0 + run build/lint/deploy
-2. **4.6 Sonnet** — implement the feature
-3. **4.6 Opus** — optional pass on security/compliance if Sonnet stalls
-4. **Composer** — fix TS errors, update docs, re-run tests
-
-## Composer-safe (G0) examples
-
-- Mirror `tier_catalog.py` → `b2cTiers.ts` / `marketingSite.ts`
 - Add route + lazy import in `App.tsx`
+- Mirror backend data to frontend constants (e.g. `tier_catalog.py` → `b2cTiers.ts`)
 - Marketing copy, FAQ, comparison rows
 - Extend `mock_b2c.py` / E2E mock payloads
 - `env.example` placeholders
 - Fix unused imports, implicit `any`, post-Sonnet build breaks
+- Shell scaffolds, build commands, deploy commands
 
-## Sonnet-required (G1) — do NOT use Composer
+## GPT 5.6 Sol (G0.5) — pattern clones and bulk work
 
-- Plaid Link token exchange, token storage, sync logic
+- Clone portal page → client page (e.g. `PortalGoals.tsx` → `ClientGoals.tsx`)
+- Bulk mock payload generation (30+ transactions, 8 advisors)
+- Chart components from existing data structures
+- Post-Sonnet TypeScript cleanup across multiple files
+- Docs from gold-standard templates
+
+## Sonnet-required (G1) — do NOT use Composer or GPT 5.6
+
+- Plaid Link token exchange, transaction sync, token storage
 - Stripe webhooks, subscription state, advisor connect billing
 - Entitlements / tier gating changes
-- Alembic migrations (design + implement on Sonnet; Opus review if complex)
+- Auth flows (forgot password, session management, 2FA)
+- New layout shells with auth-aware navigation
+- Alembic migrations (design + implement; Opus review if complex)
 - Auth scope / 404-not-403 enforcement
+- Unified client shell (DIY + advisor-linked modes)
 
-## Grok (optional, user must request)
+## Opus (G2) — review/unblock only, never default implementer
 
-- Competitor research summaries, marketing copy drafts, explain-only Q&A
-- Never ship Plaid/Stripe/auth code from Grok without Sonnet review
-
-## At gate boundary
-
-Stop and output:
-
-```
-## MODEL SWITCH REQUIRED → Claude 4.6 Sonnet (thinking)
-
-[What Composer finished]. Next: [task]. Switch model, then paste:
-
-[one-paragraph resume prompt]
-```
-
-## Current queue (post competitive-parity G0)
-
-| Task | Gate |
-|------|------|
-| Commit + deploy Phase 1 pricing/dashboard | G0 Composer |
-| Plaid account aggregation | G1 Sonnet |
-| Stripe checkout verification + dashboard wiring | G1 Sonnet |
-| Advisor connect billing (0.25% platform fee) | G1 Sonnet |
-| Security + compliance on Plaid/planning | G2 Opus 4.6 |
-| Create Stripe price IDs in Dashboard | G4 Human |
+- IDOR / cross-tenant access checks
+- Webhook signature validation review
+- Token encryption audit
+- AI guardrails review (no investment advice)
+- Complex migration review
