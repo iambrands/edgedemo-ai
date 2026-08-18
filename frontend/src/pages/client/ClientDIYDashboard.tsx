@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { BarChart3, Bell, Receipt, Sparkles } from 'lucide-react';
 import { AppLink } from '../../components/brand/AppLink';
 import { ClientPageShell } from './ClientPageShell';
-import { b2cApi, type B2CDashboardResponse } from '../../services/b2cApi';
+import { b2cApi, getB2CToken, type B2CDashboardResponse } from '../../services/b2cApi';
+import AIChatWidget from '../../components/chat/AIChatWidget';
 
 function formatCurrency(value: string | number): string {
   const amount = typeof value === 'number' ? value : Number(value);
@@ -213,6 +214,13 @@ export default function ClientDIYDashboard() {
           </AppLink>
         </div>
       </div>
+
+      <AIChatWidget
+        variant="client"
+        apiEndpoint="/api/v1/b2c/chat"
+        authToken={getB2CToken()}
+        quotaRemaining={dashboard?.ai_chat_remaining ?? null}
+      />
     </ClientPageShell>
   );
 }

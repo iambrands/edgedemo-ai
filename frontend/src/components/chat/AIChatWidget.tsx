@@ -8,7 +8,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const QUICK_PROMPTS = [
+const RIA_QUICK_PROMPTS = [
   'Summarize my practice',
   'Review compliance alerts',
   'Rebalancing opportunities',
@@ -17,11 +17,29 @@ const QUICK_PROMPTS = [
   'Prepare for next meeting',
 ];
 
+const B2C_QUICK_PROMPTS = [
+  'Am I on track for retirement?',
+  'Explain my asset allocation',
+  'Are my fees too high?',
+  'What is tax-loss harvesting?',
+  'How diversified am I?',
+];
+
 interface AIChatWidgetProps {
   variant?: 'ria' | 'client';
+  apiEndpoint?: string;
+  authToken?: string | null;
+  quotaRemaining?: number | null;
 }
 
-export default function AIChatWidget({ variant = 'ria' }: AIChatWidgetProps) {
+export default function AIChatWidget({
+  variant = 'ria',
+  apiEndpoint,
+  authToken,
+  quotaRemaining,
+}: AIChatWidgetProps) {
+  const endpoint = apiEndpoint ?? (variant === 'client' ? '/api/v1/b2c/chat' : '/api/v1/chat');
+  const quickPrompts = variant === 'client' ? B2C_QUICK_PROMPTS : RIA_QUICK_PROMPTS;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -51,30 +69,42 @@ export default function AIChatWidget({ variant = 'ria' }: AIChatWidgetProps) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/v1/chat', {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) headers.Authorization = `Bearer ${authToken}`;
+      const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ message: text }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Request failed');
+      }
       const data = await res.json();
+      const reply = data.response ?? data.message ?? 'I can help with that.';
+      const remaining = data.usage_remaining ?? null;
+      if (remaining !== null && remaining !== undefined) {
+        // fire-and-forget parent update is handled via the quota prop
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: `a-${Date.now()}`,
           role: 'assistant',
-          content: data.response || 'I can help you with that. Try asking about portfolio analysis, compliance, or tax optimization.',
+          content: reply,
           timestamp: new Date(),
         },
       ]);
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : null;
       setMessages((prev) => [
         ...prev,
         {
           id: `a-${Date.now()}`,
           role: 'assistant',
-          content: variant === 'ria'
+          content: detail ?? (variant === 'ria'
             ? 'I can analyze portfolios, check compliance, and generate reports. What would you like to know?'
-            : 'I can answer questions about your accounts, performance, and financial plan. What would you like to know?',
+            : 'I can answer questions about your accounts, performance, and financial plan. What would you like to know?'),
           timestamp: new Date(),
         },
       ]);
@@ -118,6 +148,11 @@ export default function AIChatWidget({ variant = 'ria' }: AIChatWidgetProps) {
             <p className="text-white font-semibold text-sm">AI Assistant</p>
             <p className="text-blue-200 text-xs">
               {variant === 'ria' ? 'Firmum' : 'Ask me anything'}
+              {quotaRemaining != null && (
+                <span className="ml-2 bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                  {quotaRemaining} left
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -155,7 +190,7 @@ export default function AIChatWidget({ variant = 'ria' }: AIChatWidgetProps) {
                 : 'Ask about your accounts, performance, or financial plan.'}
             </p>
             <div className="flex flex-wrap gap-1.5 justify-center">
-              {(variant === 'ria' ? QUICK_PROMPTS : ['My balance', 'Performance', 'Tax docs', 'Schedule meeting']).map((p) => (
+              {quickPrompts.map((p) => (
                 <button
                   key={p}
                   onClick={() => sendMessage(p)}
