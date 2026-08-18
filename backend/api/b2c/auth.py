@@ -29,6 +29,10 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
 class MeResponse(BaseModel):
     id: str
     email: str
@@ -38,6 +42,20 @@ class MeResponse(BaseModel):
     risk_profile_completed: bool
     management_mode: str = "diy"
     advisor_connection_status: str = "none"
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest):
+    """
+    Request a password reset link. Always returns success regardless of whether
+    the email exists, to prevent email enumeration.
+    In demo mode, no email is actually sent.
+    """
+    logger.info("Password reset requested for: %s (demo — no email sent)", body.email)
+    return {
+        "status": "sent",
+        "message": "If this email is registered, you will receive a reset link shortly.",
+    }
 
 
 @router.get("/me", response_model=MeResponse)

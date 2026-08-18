@@ -266,6 +266,17 @@ async def mock_b2c_me(_: str = Depends(require_mock_auth)):
     return MOCK_ME
 
 
+@router.post("/forgot-password")
+async def mock_forgot_password():
+    """Mock forgot password — always returns success (no email sent in demo mode)."""
+    return {
+        "status": "sent",
+        "message": "If this email is registered, you will receive a reset link shortly.",
+        "mock": True,
+        "demo_note": "No email is actually sent in demo mode.",
+    }
+
+
 @router.post("/register")
 async def mock_b2c_register():
     """Demo token response when B2C DB routes are unavailable."""

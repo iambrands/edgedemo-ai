@@ -434,4 +434,10 @@ export const b2cApi = {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${getB2CToken()}` },
     }),
+
+  forgotPassword: (email: string) =>
+    b2cFetch<{ status: string; message: string }>('/forgot-password', {
+      method: 'POST',
+      body: { email },
+    }),
 };

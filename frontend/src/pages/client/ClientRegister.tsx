@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, storeB2CTokens } from '../../services/b2cApi';
 
@@ -17,6 +18,8 @@ type AuthMode = 'register' | 'login';
 
 export default function ClientRegister() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('reason') === 'session_expired';
   const [mode, setMode] = useState<AuthMode>('register');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -69,6 +72,13 @@ export default function ClientRegister() {
       badge="Self-serve signup"
     >
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
+        {sessionExpired && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <Clock className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span>Your session expired after 30 minutes of inactivity. Please sign in again.</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-medium">
           <button
             type="button"
@@ -133,16 +143,28 @@ export default function ClientRegister() {
             />
           </label>
 
-          <label className="block text-sm font-medium text-slate-700">
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            {!isRegister && (
+              <div className="mt-1.5 text-right">
+                <Link
+                  to="/client/forgot-password"
+                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+          </div>
 
           <button
             type="submit"

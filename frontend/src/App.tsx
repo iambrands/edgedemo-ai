@@ -98,6 +98,7 @@ const ClientStatements = React.lazy(() => import('./pages/client/ClientStatement
 const ClientUpgrade = React.lazy(() => import('./pages/client/ClientUpgrade'));
 const ClientRetirementPlanner = React.lazy(() => import('./pages/client/ClientRetirementPlanner'));
 const ClientGoals = React.lazy(() => import('./pages/client/ClientGoals'));
+const ForgotPassword = React.lazy(() => import('./pages/client/ForgotPassword'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -233,6 +234,7 @@ export default function App() {
 
           {/* Client self-serve — pre-auth (no sidebar) */}
           <Route path="/client/signup" element={<AppHostGate><ClientRegister /></AppHostGate>} />
+          <Route path="/client/forgot-password" element={<AppHostGate><ForgotPassword /></AppHostGate>} />
           <Route path="/client/onboarding" element={<AppHostGate><ClientOnboardingPage /></AppHostGate>} />
 
           {/* Client self-serve — authenticated (sidebar layout) */}

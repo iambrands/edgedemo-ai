@@ -72,7 +72,7 @@ Goal: Turn the prototype into a product users don't immediately leave.
 - **Resume prompt:** Implement B2C-106: create FeeAnalyzerChart.tsx as a horizontal bar chart component. Props: userFeeRate, roboBenchmark (0.25%), traditionalBenchmark (1.0%). Color-code bars (green if below robo, yellow if between, red if above traditional). Show dollar savings estimate based on portfolio value. Import into ClientDIYDashboard.tsx and wire to fee_benchmarks mock data.
 
 ### B2C-107 | Forgot password + session timeout
-- **Phase:** 1 | **Status:** open | **Min gate:** G1
+- **Phase:** 1 | **Status:** done | **Min gate:** G1
 - **Depends on:** —
 - **Files:** backend/api/auth.py, frontend/src/pages/client/ForgotPassword.tsx (new), frontend/src/App.tsx
 - **Acceptance:** /client/forgot-password page with email input. Backend endpoint generates mock reset token (no real email in demo). Session tokens expire after 30 minutes of inactivity. Login page links to forgot password.
