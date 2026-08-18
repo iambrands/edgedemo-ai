@@ -234,11 +234,10 @@ _ria_router_errors = []
 _db_url = os.getenv("DATABASE_URL", "")
 _env = os.getenv("ENVIRONMENT", "development").lower()
 _db_available = bool(_db_url) and "user:pass@" not in _db_url
-# Production must not use loopback Postgres; staging/dev may use local DB on Mac Mini.
-if _env not in ("development", "staging", "test"):
-    _db_available = _db_available and "localhost" not in _db_url and "127.0.0.1" not in _db_url
+# Localhost Postgres is valid in any environment when running on Mac Mini/Studio bare-metal.
+# Only reject placeholder Railway-style URLs (user:pass@ sentinel).
 if not _db_available:
-    logger.info("No production DATABASE_URL configured — DB-dependent routers will use mock fallbacks")
+    logger.info("No usable DATABASE_URL configured — DB-dependent routers will use mock fallbacks")
 
 # Health check for frontend connectivity and Railway
 @app.get("/api/health")
