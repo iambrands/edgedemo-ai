@@ -51,6 +51,7 @@ async def submit_risk_profile(
     client.investment_timeline = result.time_horizon
     client.investment_experience = result.sophistication_level
     current_user.risk_profile_completed = True
+    current_user.onboarding_completed = True
 
     if current_user.household_id:
         household_result = await db.execute(select(Household).where(Household.id == current_user.household_id))
@@ -66,4 +67,5 @@ async def submit_risk_profile(
         "time_horizon": result.time_horizon,
         "sophistication_level": result.sophistication_level,
         "risk_profile_completed": current_user.risk_profile_completed,
+        "onboarding_completed": current_user.onboarding_completed,
     }
