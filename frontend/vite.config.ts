@@ -16,4 +16,16 @@ export default defineConfig({
       '/health': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'charts': ['recharts'],
+          'icons': ['lucide-react'],
+        },
+      },
+    },
+  },
 });

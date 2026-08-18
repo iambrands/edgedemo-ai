@@ -75,6 +75,8 @@ import {
   ClientDIYDashboard,
   ConnectAdvisor,
   ClientAccountability,
+  ClientStatements,
+  ClientUpgrade,
 } from './pages/client';
 import { AppHostGate } from './components/brand/AppHostGate';
 
@@ -183,6 +185,8 @@ export default function App() {
       <Route path="/client/dashboard" element={<AppHostGate><ClientDIYDashboard /></AppHostGate>} />
       <Route path="/client/connect-advisor" element={<AppHostGate><ConnectAdvisor /></AppHostGate>} />
       <Route path="/client/accountability" element={<AppHostGate><ClientAccountability /></AppHostGate>} />
+      <Route path="/client/statements" element={<AppHostGate><ClientStatements /></AppHostGate>} />
+      <Route path="/client/upgrade" element={<AppHostGate><ClientUpgrade /></AppHostGate>} />
 
       {/* Company */}
       <Route path="/company/about" element={<About />} />

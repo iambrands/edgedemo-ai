@@ -187,12 +187,24 @@ export default function ClientDIYDashboard() {
           {confirmMessage && <p className="mt-2 text-xs text-emerald-700">{confirmMessage}</p>}
         </form>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <AppLink
             to="/client/connect-advisor"
             className="flex-1 text-center py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
           >
             Connect an advisor
+          </AppLink>
+          <AppLink
+            to="/client/statements"
+            className="flex-1 text-center py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50"
+          >
+            Statement history
+          </AppLink>
+          <AppLink
+            to="/client/upgrade"
+            className="flex-1 text-center py-2.5 rounded-lg border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-50"
+          >
+            Upgrade plan
           </AppLink>
           <AppLink
             to="/client/accountability"

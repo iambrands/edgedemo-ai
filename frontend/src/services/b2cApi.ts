@@ -151,7 +151,38 @@ export function getB2CToken(): string | null {
   return localStorage.getItem(B2C_TOKEN_KEY);
 }
 
-async function b2cFetch<T>(path: string, options: B2CApiOptions = {}): Promise<T> {
+export function getB2CRefreshToken(): string | null {
+  return localStorage.getItem(B2C_REFRESH_TOKEN_KEY);
+}
+
+export function clearB2CTokens() {
+  localStorage.removeItem(B2C_TOKEN_KEY);
+  localStorage.removeItem(B2C_REFRESH_TOKEN_KEY);
+}
+
+let _refreshPromise: Promise<void> | null = null;
+
+async function _tryRefresh(): Promise<void> {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    const rt = getB2CRefreshToken();
+    if (!rt) throw new Error('No refresh token');
+    const res = await fetch(`${B2C_API_URL}/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: rt }),
+    });
+    if (!res.ok) {
+      clearB2CTokens();
+      throw new Error('Session expired — please log in again');
+    }
+    const data = await res.json();
+    storeB2CTokens(data);
+  })().finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
+}
+
+async function b2cFetch<T>(path: string, options: B2CApiOptions = {}, _retry = false): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -165,6 +196,15 @@ async function b2cFetch<T>(path: string, options: B2CApiOptions = {}): Promise<T
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+
+  if (response.status === 401 && !_retry && getB2CRefreshToken()) {
+    try {
+      await _tryRefresh();
+      return b2cFetch<T>(path, { ...options, token: getB2CToken() ?? undefined }, true);
+    } catch {
+      throw new Error('Session expired — please log in again');
+    }
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Request failed' }));
@@ -222,4 +262,19 @@ export const b2cApi = {
         Authorization: `Bearer ${getB2CToken()}`,
       },
     }),
+
+  startCheckout: (tier: 'starter' | 'pro' | 'premium') =>
+    b2cFetch<{ checkout_url: string; session_id: string }>('/subscription/upgrade', {
+      method: 'POST',
+      body: { tier },
+    }),
+
+  getSubscription: () =>
+    b2cFetch<{
+      tier: string;
+      active: boolean;
+      trial_end?: number | null;
+      current_period_end?: number | null;
+      cancel_at_period_end?: boolean;
+    }>('/subscription'),
 };
