@@ -244,6 +244,22 @@ async def mock_delete_goal(goal_id: str, _: str = Depends(require_mock_auth)):
     return {"status": "deleted", "goal_id": goal_id, "mock": True}
 
 
+DEMO_TAX_SUMMARY = {
+    "tax_year": 2026,
+    "short_term_gains": 2840,
+    "long_term_gains": 8120,
+    "tlh_opportunities": 2,
+    "tlh_estimated_savings": 680,
+    "projected_tax_liability": 3240,
+}
+
+
+@router.get("/tax-summary")
+async def mock_b2c_tax_summary(_: str = Depends(require_mock_auth)):
+    """Demo tax summary card data in no-DB mode."""
+    return {**DEMO_TAX_SUMMARY, "mock": True}
+
+
 @router.get("/me")
 async def mock_b2c_me(_: str = Depends(require_mock_auth)):
     """Demo profile when B2C DB routes are unavailable."""

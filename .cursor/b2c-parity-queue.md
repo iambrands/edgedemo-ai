@@ -120,7 +120,7 @@ Goal: Give users a reason to open the app every week.
 - **Resume prompt:** Implement B2C-203: update mock_b2c_dashboard to include accounts grouped by type (depository: checking + savings, investment: brokerage + 401k, credit: 2 credit cards, loan: mortgage). Update ClientDIYDashboard.tsx to render account cards grouped by asset vs liability with subtotals. Net worth = total assets - total liabilities.
 
 ### B2C-204 | Net worth chart + period selector
-- **Phase:** 2 | **Status:** open | **Min gate:** G0.5
+- **Phase:** 2 | **Status:** done | **Min gate:** G0.5
 - **Depends on:** B2C-102
 - **Files:** frontend/src/components/client/NetWorthChart.tsx (new), frontend/src/pages/client/ClientDIYDashboard.tsx
 - **Acceptance:** Full-width line chart with period selector (1M, 6M, YTD, 1Y, All). Replace sparkline with interactive chart. Hover shows exact date + value.
@@ -134,7 +134,7 @@ Goal: Give users a reason to open the app every week.
 - **Resume prompt:** Implement B2C-205: create bill_detection.py service that groups transactions by merchant name and identifies recurring patterns (weekly, monthly, annual). Add mock_b2c_bills endpoint returning 8 subscriptions (Netflix, Spotify, gym, insurance, phone, internet, cloud storage, news). Create RecurringBills.tsx component showing each bill with amount, frequency, next date, and monthly total at bottom.
 
 ### B2C-206 | DIY tax summary card
-- **Phase:** 2 | **Status:** open | **Min gate:** G0.5
+- **Phase:** 2 | **Status:** done | **Min gate:** G0.5
 - **Depends on:** —
 - **Files:** frontend/src/components/client/TaxSummaryCard.tsx (new), backend/api/mock_b2c.py
 - **Acceptance:** Card showing estimated capital gains (short-term vs long-term), tax-loss harvesting opportunities count, projected tax liability. Mock data.

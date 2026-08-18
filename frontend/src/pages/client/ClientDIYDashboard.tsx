@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import {
-  ArrowDownRight,
-  ArrowUpRight,
   BarChart3,
   Bell,
   Building2,
@@ -22,13 +13,17 @@ import {
   UserPlus,
   XCircle,
 } from 'lucide-react';
+import NetWorthChart from '../../components/client/NetWorthChart';
+import type { NetWorthDataPoint } from '../../components/client/NetWorthChart';
 import { useSearchParams } from 'react-router-dom';
 import { AppLink } from '../../components/brand/AppLink';
 import {
   b2cApi,
   type B2CDashboardResponse,
+  type B2CTaxSummary,
   type PlaidExchangeResponse,
 } from '../../services/b2cApi';
+import { TaxSummaryCard } from '../../components/client/TaxSummaryCard';
 import { StatementUploadZone } from '../../components/client/StatementUploadZone';
 import { PlaidLinkButton } from '../../components/client/PlaidLinkButton';
 import {
@@ -46,11 +41,6 @@ function formatCurrency(value: string | number): string {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function fmtMonth(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short' });
 }
 
 /* ── sub-components ───────────────────────────────────────────────────── */
@@ -78,21 +68,11 @@ function RiskBadge({ number, label }: { number: number; label: string }) {
   );
 }
 
-/* Custom recharts tooltip */
-function NetWorthTooltip({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: { date: string } }> }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md text-sm">
-      <p className="text-xs text-slate-500 mb-0.5">{payload[0]?.payload?.date}</p>
-      <p className="font-semibold text-slate-900">{formatCurrency(payload[0]?.value ?? 0)}</p>
-    </div>
-  );
-}
-
 /* ── main component ───────────────────────────────────────────────────── */
 
 export default function ClientDIYDashboard() {
   const [dashboard, setDashboard] = useState<B2CDashboardResponse | null>(null);
+  const [taxSummary, setTaxSummary] = useState<B2CTaxSummary | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [uploadSuccess, setUploadSuccess] = useState('');
@@ -114,6 +94,10 @@ export default function ClientDIYDashboard() {
   }, []);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  useEffect(() => {
+    b2cApi.getTaxSummary().then(setTaxSummary).catch(console.error);
+  }, []);
 
   // Auto-dismiss subscription banner
   useEffect(() => {
@@ -141,17 +125,10 @@ export default function ClientDIYDashboard() {
       ? feeBenchmarksToChartProps(feeBenchmarks, dashboard.total_aum)
       : null;
 
-  const chartData = (dashboard?.net_worth_history ?? []).map((p) => ({
+  const chartData: NetWorthDataPoint[] = (dashboard?.net_worth_history ?? []).map((p) => ({
     date: p.date,
-    month: fmtMonth(p.date),
     value: Number(p.value),
   }));
-
-  const firstVal = chartData[0]?.value ?? 0;
-  const lastVal = chartData[chartData.length - 1]?.value ?? 0;
-  const change = lastVal - firstVal;
-  const changePct = firstVal > 0 ? (change / firstVal) * 100 : 0;
-  const isPositive = change >= 0;
 
   return (
     <div className="space-y-5">
@@ -194,19 +171,6 @@ export default function ClientDIYDashboard() {
                   {formatCurrency(dashboard?.total_aum ?? '0')}
                 </p>
               )}
-              {!isLoading && chartData.length >= 2 && (
-                <div className={`flex items-center gap-1 mt-2 text-sm font-medium ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {isPositive
-                    ? <ArrowUpRight className="h-4 w-4 flex-shrink-0" />
-                    : <ArrowDownRight className="h-4 w-4 flex-shrink-0" />}
-                  <span>
-                    {formatCurrency(Math.abs(change))}&nbsp;
-                    <span className="font-normal text-slate-500">
-                      ({Math.abs(changePct).toFixed(1)}%) past 12 months
-                    </span>
-                  </span>
-                </div>
-              )}
             </div>
             {!isLoading && riskProfile && (
               <div className="flex-shrink-0 mt-1">
@@ -216,43 +180,14 @@ export default function ClientDIYDashboard() {
           </div>
         </div>
 
-        {/* area chart */}
+        {/* net worth chart with period selector */}
         {isLoading && (
           <div className="h-40 flex items-center justify-center">
             <div className="h-8 w-8 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
           </div>
         )}
         {!isLoading && chartData.length >= 2 && (
-          <div style={{ height: 160 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.18} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 11, fill: '#94A3B8' }}
-                  axisLine={false}
-                  tickLine={false}
-                  dy={2}
-                  padding={{ left: 12, right: 12 }}
-                />
-                <Tooltip content={<NetWorthTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#3B82F6"
-                  strokeWidth={2.5}
-                  fill="url(#nwGradient)"
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#3B82F6', strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <NetWorthChart data={chartData} height={160} />
         )}
         {!isLoading && chartData.length < 2 && (
           <div className="h-24 flex flex-col items-center justify-center gap-2 text-slate-400 pb-4">
@@ -359,6 +294,9 @@ export default function ClientDIYDashboard() {
           ) : null}
         </div>
       </div>
+
+      {/* ── tax summary ──────────────────────────────────────────────── */}
+      {taxSummary && <TaxSummaryCard data={taxSummary} />}
 
       {/* ── alerts + AI suggestions ──────────────────────────────────── */}
       <div className="grid sm:grid-cols-2 gap-4">

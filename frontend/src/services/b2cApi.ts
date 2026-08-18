@@ -134,6 +134,16 @@ export interface B2CStatement {
   filename: string;
 }
 
+export interface B2CTaxSummary {
+  tax_year: number;
+  short_term_gains: number;
+  long_term_gains: number;
+  tlh_opportunities: number;
+  tlh_estimated_savings: number;
+  projected_tax_liability: number;
+  mock?: boolean;
+}
+
 export interface B2CGoal {
   id: string;
   goal_type: string;
@@ -408,6 +418,9 @@ export const b2cApi = {
       current_period_end?: number | null;
       cancel_at_period_end?: boolean;
     }>('/subscription'),
+
+  getTaxSummary: () =>
+    b2cFetch<B2CTaxSummary>('/tax-summary'),
 
   // Goals
   getGoals: () =>
