@@ -134,6 +134,28 @@ export interface B2CStatement {
   filename: string;
 }
 
+export interface B2CGoal {
+  id: string;
+  goal_type: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  target_date: string;
+  monthly_contribution?: number | null;
+  progress_pct: number;
+  on_track: boolean;
+  notes?: string | null;
+}
+
+export interface B2CGoalCreateRequest {
+  goal_type: string;
+  name: string;
+  target_amount: number;
+  target_date: string;
+  monthly_contribution?: number;
+  notes?: string;
+}
+
 export interface AdvisorConnectRequest {
   investable_assets_range?: string;
   primary_goal?: string;
@@ -386,4 +408,17 @@ export const b2cApi = {
       current_period_end?: number | null;
       cancel_at_period_end?: boolean;
     }>('/subscription'),
+
+  // Goals
+  getGoals: () =>
+    b2cFetch<{ goals: B2CGoal[]; mock?: boolean }>('/goals'),
+
+  createGoal: (body: B2CGoalCreateRequest) =>
+    b2cFetch<B2CGoal>('/goals', { method: 'POST', body }),
+
+  deleteGoal: (goalId: string) =>
+    fetch(`${B2C_API_URL}/goals/${encodeURIComponent(goalId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${getB2CToken()}` },
+    }),
 };

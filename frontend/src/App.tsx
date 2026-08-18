@@ -97,6 +97,7 @@ const ClientAccountability = React.lazy(() => import('./pages/client/ClientAccou
 const ClientStatements = React.lazy(() => import('./pages/client/ClientStatements'));
 const ClientUpgrade = React.lazy(() => import('./pages/client/ClientUpgrade'));
 const ClientRetirementPlanner = React.lazy(() => import('./pages/client/ClientRetirementPlanner'));
+const ClientGoals = React.lazy(() => import('./pages/client/ClientGoals'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -251,8 +252,9 @@ export default function App() {
             <Route path="connect-advisor" element={<ErrorBoundary><ConnectAdvisor /></ErrorBoundary>} />
             <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
             <Route path="upgrade" element={<ErrorBoundary><ClientUpgrade /></ErrorBoundary>} />
-            <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
-            <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+              <Route path="goals" element={<ErrorBoundary><ClientGoals /></ErrorBoundary>} />
+              <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+              <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
           </Route>
 
           {/* Company */}

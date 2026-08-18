@@ -58,7 +58,7 @@ Goal: Turn the prototype into a product users don't immediately leave.
 - **Resume prompt:** Implement B2C-104: extend ClientOnboardingPage.tsx into a 5-step wizard with progress bar. Steps: connect account (PlaidLinkButton), risk quiz (3 questions), first goal (name + target + date), fee scan preview (show fee_benchmarks data), dashboard tour (highlight key sections). Add skip button and localStorage persistence so users can resume. Redirect to /client/dashboard on completion.
 
 ### B2C-105 | DIY goals page (clone portal goals)
-- **Phase:** 1 | **Status:** open | **Min gate:** G0.5
+- **Phase:** 1 | **Status:** done | **Min gate:** G0.5
 - **Depends on:** B2C-101
 - **Files:** frontend/src/pages/client/ClientGoals.tsx (new), frontend/src/App.tsx, backend/api/mock_b2c.py
 - **Acceptance:** Goals page at /client/goals with progress bars, target dates, funding status. Mock data from backend. Matches portal goals UI patterns.

@@ -172,6 +172,78 @@ DEMO_PLAID_ITEMS = [
 ]
 
 
+DEMO_GOALS = [
+    {
+        "id": "goal-demo-001",
+        "goal_type": "retirement",
+        "name": "Retire by 2040",
+        "target_amount": 1200000,
+        "current_amount": 125000,
+        "target_date": "2040-12-31",
+        "monthly_contribution": 1500,
+        "progress_pct": 10.4,
+        "on_track": True,
+        "notes": None,
+    },
+    {
+        "id": "goal-demo-002",
+        "goal_type": "emergency_fund",
+        "name": "Emergency Fund",
+        "target_amount": 24000,
+        "current_amount": 18000,
+        "target_date": "2027-06-30",
+        "monthly_contribution": 500,
+        "progress_pct": 75.0,
+        "on_track": True,
+        "notes": None,
+    },
+    {
+        "id": "goal-demo-003",
+        "goal_type": "vacation",
+        "name": "Europe Trip",
+        "target_amount": 8000,
+        "current_amount": 2400,
+        "target_date": "2027-03-31",
+        "monthly_contribution": 200,
+        "progress_pct": 30.0,
+        "on_track": False,
+        "notes": "Summer 2027 — France and Italy",
+    },
+]
+
+
+@router.get("/goals")
+async def mock_b2c_goals(_: str = Depends(require_mock_auth)):
+    """Demo goals list in no-DB mode."""
+    return {"goals": DEMO_GOALS, "mock": True}
+
+
+@router.post("/goals")
+async def mock_create_goal(body: dict, _: str = Depends(require_mock_auth)):
+    """Accept a new goal and return it with a mock ID (no persistence)."""
+    import time
+    target = float(body.get("target_amount", 0))
+    return {
+        "id": f"goal-new-{int(time.time())}",
+        "goal_type": body.get("goal_type", "custom"),
+        "name": body.get("name", "New Goal"),
+        "target_amount": target,
+        "current_amount": 0,
+        "target_date": body.get("target_date", ""),
+        "monthly_contribution": body.get("monthly_contribution"),
+        "progress_pct": 0.0,
+        "on_track": True,
+        "notes": body.get("notes"),
+        "mock": True,
+    }
+
+
+@router.delete("/goals/{goal_id}")
+async def mock_delete_goal(goal_id: str, _: str = Depends(require_mock_auth)):
+    """Accept a delete request (no-op in mock mode)."""
+    return {"status": "deleted", "goal_id": goal_id, "mock": True}
+
+
 @router.get("/me")
 async def mock_b2c_me(_: str = Depends(require_mock_auth)):
     """Demo profile when B2C DB routes are unavailable."""

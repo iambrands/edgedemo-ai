@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
+  Target,
   TrendingUp,
   UserPlus,
   Sparkles,
@@ -25,6 +26,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/client/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/client/statements', icon: FileText, label: 'Accounts' },
+  { to: '/client/goals', icon: Target, label: 'Goals' },
   { to: '/client/retirement', icon: TrendingUp, label: 'Planning' },
   { to: '/client/connect-advisor', icon: UserPlus, label: 'Connect Advisor' },
   { to: '/client/upgrade', icon: Sparkles, label: 'Upgrade' },
