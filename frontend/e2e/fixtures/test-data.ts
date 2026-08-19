@@ -59,7 +59,7 @@ export const PORTAL_PAGES: PageEntry[] = [
 ];
 
 export const B2C_PAGES: PageEntry[] = [
-  { path: '/client/dashboard',        title: 'Allocation',    kind: 'cards' },
+  { path: '/client/dashboard',        title: 'Assets',        kind: 'cards' },
   { path: '/client/statements',       title: 'Statement',     kind: 'table' },
   { path: '/client/spending',         title: 'Spending',      kind: 'cards' },
   { path: '/client/budgets',          title: 'Budgets',       kind: 'cards' },
@@ -67,7 +67,7 @@ export const B2C_PAGES: PageEntry[] = [
   { path: '/client/retirement',       title: 'Retirement',    kind: 'form' },
   { path: '/client/connect-advisor',  title: 'Connect',       kind: 'form' },
   { path: '/client/upgrade',          title: 'Plan',          kind: 'cards' },
-  { path: '/client/accountability',   title: 'Advisor',       kind: 'mixed' },
+  { path: '/client/accountability',   title: 'Settings',      kind: 'mixed' },
 ];
 
 export const PUBLIC_PAGES = [

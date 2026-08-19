@@ -960,6 +960,29 @@ export async function setupB2CApiMocks(page: Page) {
         mock: true,
       });
     }
+    if (url.includes('/b2c/insights')) {
+      return fulfillJson(route, {
+        insights: [
+          {
+            id: 'fee-savings',
+            type: 'fee_savings',
+            title: 'You could save ~$938/yr in investment fees',
+            body: 'Your estimated fee rate is above the robo-advisor average.',
+            cta_label: 'View fee analyzer',
+            cta_path: '/client/dashboard',
+            priority: 1,
+          },
+        ],
+        count: 1,
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/push/status')) {
+      return fulfillJson(route, { subscribed: false, mock: true });
+    }
+    if (url.includes('/b2c/advisors')) {
+      return fulfillJson(route, { advisors: [], mock: true });
+    }
     return fulfillJson(route, { status: 'ok', data: [], statements: [], mock: true });
   });
 }

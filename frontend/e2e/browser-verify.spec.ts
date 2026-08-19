@@ -28,7 +28,7 @@ test.describe('Live browser verification', () => {
   test('RIA login and dashboard access', async ({ page }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.getByPlaceholder(/enter your email/i).fill('leslie@iabadvisors.com');
-    await page.getByPlaceholder(/enter your password/i).fill('CreateWealth2026$');
+    await page.getByPlaceholder(/enter your password/i).fill('CreateWEalth2024$');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
     await expect(page.locator('main')).toBeVisible({ timeout: 15_000 });

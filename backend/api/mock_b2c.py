@@ -1013,7 +1013,7 @@ MOCK_INSIGHTS = [
     {
         "id": "goal-off-track",
         "type": "goal_off_track",
-        "title": "Your "Emergency Fund" goal needs attention",
+        "title": 'Your "Emergency Fund" goal needs attention',
         "body": (
             "You're 38% of the way to your emergency fund goal. "
             "Financial experts generally recommend 3–6 months of expenses. "

@@ -106,7 +106,7 @@ def _build_insights(user: User) -> list[dict]:
             insights.append({
                 "id": "goal-off-track",
                 "type": "goal_off_track",
-                "title": f"Your "{g['name']}" goal may need attention",
+                "title": f'Your "{g["name"]}" goal may need attention',
                 "body": (
                     f"You're {g['progress_pct']:.0f}% of the way to your "
                     f"{g['name'].lower()} goal. Small, consistent contributions "

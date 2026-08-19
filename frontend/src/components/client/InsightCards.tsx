@@ -141,7 +141,7 @@ export function InsightCards() {
   useEffect(() => {
     let cancelled = false;
     b2cApi.getInsights()
-      .then((res) => { if (!cancelled) setInsights(res.insights); })
+      .then((res) => { if (!cancelled) setInsights(res.insights ?? []); })
       .catch(() => { /* silently suppress — insights are non-critical */ })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
