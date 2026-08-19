@@ -260,6 +260,23 @@ export interface B2CLearningItem {
   thumbnail_color?: string;
 }
 
+export type InsightType =
+  | 'fee_savings'
+  | 'rebalance_needed'
+  | 'goal_off_track'
+  | 'budget_overspend'
+  | 'tax_opportunity';
+
+export interface B2CInsight {
+  id: string;
+  type: InsightType;
+  title: string;
+  body: string;
+  cta_label: string;
+  cta_path: string;
+  priority: number;
+}
+
 export type AdvisorSpecialty =
   | 'retirement'
   | 'tax_planning'
@@ -667,4 +684,7 @@ export const b2cApi = {
 
   getAdvisors: () =>
     b2cFetch<{ advisors: B2CAdvisorListing[]; mock?: boolean }>('/advisors'),
+
+  getInsights: () =>
+    b2cFetch<{ insights: B2CInsight[]; count: number; mock?: boolean }>('/insights'),
 };

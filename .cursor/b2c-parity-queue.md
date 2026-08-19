@@ -196,7 +196,7 @@ Goal: Build what no competitor can copy.
 Goal: Features that compound because of the advisor network.
 
 ### B2C-401 | Proactive AI insights engine
-- **Phase:** 4 | **Status:** open | **Min gate:** G1 (+ G2 guardrails)
+- **Phase:** 4 | **Status:** done | **Min gate:** G1 (+ G2 guardrails)
 - **Depends on:** B2C-201, B2C-202
 - **Files:** backend/services/insights_engine.py (new), backend/api/b2c/insights.py (new), frontend/src/components/client/InsightCards.tsx (new)
 - **Acceptance:** Backend generates contextual insights from portfolio + spending data (fee savings, rebalance alerts, goal drift, budget warnings). Frontend shows insight cards on dashboard. AI-generated text with guardrails (no specific investment advice).

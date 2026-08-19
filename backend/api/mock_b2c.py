@@ -983,6 +983,81 @@ async def mock_plaid_accounts(_: str = Depends(require_mock_auth)):
     return {"items": DEMO_PLAID_ITEMS, "mock": True, "demo_mode": True}
 
 
+MOCK_INSIGHTS = [
+    {
+        "id": "fee-savings",
+        "type": "fee_savings",
+        "title": "You could save ~$938/yr in investment fees",
+        "body": (
+            "Your estimated fee rate (0.75%) is above the robo-advisor average (0.25%). "
+            "Understanding your fee structure helps you make informed decisions about "
+            "your investment strategy."
+        ),
+        "cta_label": "View fee analyzer",
+        "cta_path": "/client/dashboard",
+        "priority": 1,
+    },
+    {
+        "id": "budget-overspend",
+        "type": "budget_overspend",
+        "title": "You're 23% over your Dining budget",
+        "body": (
+            "You've spent $246 on dining this month against a $200 limit. "
+            "Reviewing your spending categories can help you stay on track "
+            "and free up cash for your savings goals."
+        ),
+        "cta_label": "Review budgets",
+        "cta_path": "/client/budgets",
+        "priority": 2,
+    },
+    {
+        "id": "goal-off-track",
+        "type": "goal_off_track",
+        "title": "Your "Emergency Fund" goal needs attention",
+        "body": (
+            "You're 38% of the way to your emergency fund goal. "
+            "Financial experts generally recommend 3–6 months of expenses. "
+            "Small, consistent contributions can compound significantly over time."
+        ),
+        "cta_label": "Review goals",
+        "cta_path": "/client/goals",
+        "priority": 3,
+    },
+    {
+        "id": "rebalance-needed",
+        "type": "rebalance_needed",
+        "title": "Your portfolio is heavily weighted toward equities",
+        "body": (
+            "About 82% of your portfolio is in equities. "
+            "Reviewing your target allocation relative to your risk profile "
+            "and time horizon is a routine part of portfolio maintenance."
+        ),
+        "cta_label": "View allocation",
+        "cta_path": "/client/dashboard",
+        "priority": 4,
+    },
+    {
+        "id": "tax-opportunity",
+        "type": "tax_opportunity",
+        "title": "3 potential tax-loss harvesting opportunities",
+        "body": (
+            "Some positions in your portfolio may have unrealised losses that could "
+            "offset taxable gains. Tax-loss harvesting is a strategy worth discussing "
+            "with a tax professional before year-end."
+        ),
+        "cta_label": "View tax summary",
+        "cta_path": "/client/dashboard",
+        "priority": 5,
+    },
+]
+
+
+@router.get("/insights")
+async def mock_insights(_: str = Depends(require_mock_auth)):
+    """Return mock proactive insights in no-DB mode."""
+    return {"insights": MOCK_INSIGHTS, "count": len(MOCK_INSIGHTS), "mock": True}
+
+
 MOCK_ADVISORS = [
     {
         "id": "adv-001",

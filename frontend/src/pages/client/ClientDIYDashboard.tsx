@@ -33,6 +33,7 @@ import {
   FeeAnalyzerChart,
   feeBenchmarksToChartProps,
 } from '../../components/client/FeeAnalyzerChart';
+import { InsightCards } from '../../components/client/InsightCards';
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
@@ -404,6 +405,9 @@ export default function ClientDIYDashboard() {
           totalLiabilities={totalLiabilities}
         />
       )}
+
+      {/* ── proactive insights ───────────────────────────────────────── */}
+      {!isLoading && <InsightCards />}
 
       {/* ── quick actions ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">

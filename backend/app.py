@@ -698,6 +698,7 @@ if _db_available:
             from backend.api.b2c.plaid import router as b2c_plaid_router
             from backend.api.b2c.budgets import router as b2c_budgets_router
             from backend.api.b2c.household import router as b2c_household_router
+            from backend.api.b2c.insights import router as b2c_insights_router
         except ImportError:
             from api.b2c.auth import router as b2c_auth_router
             from api.b2c.onboarding import router as b2c_onboarding_router
@@ -710,6 +711,7 @@ if _db_available:
             from api.b2c.plaid import router as b2c_plaid_router
             from api.b2c.budgets import router as b2c_budgets_router
             from api.b2c.household import router as b2c_household_router
+            from api.b2c.insights import router as b2c_insights_router
         app.include_router(b2c_auth_router)
         app.include_router(b2c_onboarding_router)
         app.include_router(b2c_dashboard_router)
@@ -721,6 +723,7 @@ if _db_available:
         app.include_router(b2c_plaid_router)
         app.include_router(b2c_budgets_router)
         app.include_router(b2c_household_router)
+        app.include_router(b2c_insights_router)
         logger.info("B2C API routes mounted")
     except Exception as e:
         logger.warning("Could not mount B2C routes: %s", e)
