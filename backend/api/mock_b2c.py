@@ -1052,6 +1052,35 @@ MOCK_INSIGHTS = [
 ]
 
 
+# In-memory push subscription store for mock mode (resets on restart).
+_mock_push_subscriptions: dict[str, dict] = {}
+
+
+@router.post("/push/subscribe")
+async def mock_push_subscribe(body: dict, token: str = Depends(require_mock_auth)):
+    """Store a push subscription endpoint in mock mode."""
+    endpoint = body.get("endpoint", "")
+    if not endpoint:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="endpoint required")
+    _mock_push_subscriptions[token] = {"endpoint": endpoint, "keys": body.get("keys", {})}
+    return {"status": "subscribed", "mock": True}
+
+
+@router.delete("/push/subscribe")
+async def mock_push_unsubscribe(token: str = Depends(require_mock_auth)):
+    """Remove a push subscription in mock mode."""
+    _mock_push_subscriptions.pop(token, None)
+    return {"status": "unsubscribed", "mock": True}
+
+
+@router.get("/push/status")
+async def mock_push_status(token: str = Depends(require_mock_auth)):
+    """Return whether a push subscription exists in mock mode."""
+    subscribed = token in _mock_push_subscriptions
+    return {"subscribed": subscribed, "mock": True}
+
+
 @router.get("/insights")
 async def mock_insights(_: str = Depends(require_mock_auth)):
     """Return mock proactive insights in no-DB mode."""

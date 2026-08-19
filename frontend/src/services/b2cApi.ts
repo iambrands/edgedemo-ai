@@ -687,4 +687,20 @@ export const b2cApi = {
 
   getInsights: () =>
     b2cFetch<{ insights: B2CInsight[]; count: number; mock?: boolean }>('/insights'),
+
+  // Push notifications
+  getPushStatus: () =>
+    b2cFetch<{ subscribed: boolean; mock?: boolean }>('/push/status'),
+
+  subscribePush: (subscription: { endpoint: string; keys: Record<string, string> }) =>
+    b2cFetch<{ status: string; mock?: boolean }>('/push/subscribe', {
+      method: 'POST',
+      body: subscription,
+    }),
+
+  unsubscribePush: () =>
+    fetch(`${B2C_API_URL}/push/subscribe`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${getB2CToken()}` },
+    }).then((r) => r.json()) as Promise<{ status: string; mock?: boolean }>,
 };

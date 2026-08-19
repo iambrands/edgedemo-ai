@@ -203,7 +203,7 @@ Goal: Features that compound because of the advisor network.
 - **Resume prompt:** Implement B2C-401: create insights_engine.py that generates 3-5 contextual insights based on portfolio and spending data. Types: fee_savings, rebalance_needed, goal_off_track, budget_overspend, tax_opportunity. Create insights router with GET /api/v1/b2c/insights. Create InsightCards.tsx to render on dashboard. Add mock insights in mock_b2c.py. Queue G2 review for AI guardrails (no specific buy/sell recommendations).
 
 ### B2C-402 | Mobile PWA + push notifications
-- **Phase:** 4 | **Status:** open | **Min gate:** G1
+- **Phase:** 4 | **Status:** done | **Min gate:** G1
 - **Depends on:** B2C-101
 - **Files:** frontend/public/manifest.json (new), frontend/public/sw.js (new), frontend/src/
 - **Acceptance:** PWA manifest with Firmum branding. Service worker for offline shell. Push notification subscription for budget alerts and advisor messages. Install prompt on mobile.
