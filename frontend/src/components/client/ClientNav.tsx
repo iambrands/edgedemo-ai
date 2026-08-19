@@ -23,6 +23,9 @@ import {
   TrendingDown,
   ArrowUpDown,
   FileSpreadsheet,
+  Leaf,
+  Banknote,
+  BarChart2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -41,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/client/dashboard',      icon: LayoutDashboard, label: 'Home' },
   { to: '/client/statements',     icon: FileText,        label: 'Accounts' },
   { to: '/client/cash-flow',      icon: ArrowUpDown,     label: 'Cash Flow' },
+  { to: '/client/cash',           icon: Banknote,        label: 'Cash Management' },
   { to: '/client/spending',       icon: Receipt,         label: 'Spending' },
   { to: '/client/budgets',        icon: PiggyBank,       label: 'Budgets' },
   { to: '/client/bills',          icon: Repeat2,         label: 'Recurring Bills' },
@@ -49,6 +53,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/client/household',      icon: Users,           label: 'Household' },
   { to: '/client/learning',       icon: GraduationCap,   label: 'Learning' },
   { to: '/client/retirement',     icon: TrendingUp,      label: 'Planning' },
+  { to: '/client/rebalancing',    icon: BarChart2,       label: 'Rebalancing' },
+  { to: '/client/auto-harvest',   icon: Leaf,            label: 'Tax Harvesting' },
   { to: '/client/tax-documents',  icon: FileSpreadsheet, label: 'Tax Docs' },
   { to: '/client/advisors',       icon: Search,          label: 'Find Advisor' },
   { to: '/client/connect-advisor',icon: UserPlus,        label: 'Connect Advisor' },

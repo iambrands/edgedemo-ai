@@ -113,6 +113,9 @@ const AdvisorMarketplace = React.lazy(() => import('./pages/client/AdvisorMarket
 const ClientCashFlow = React.lazy(() => import('./pages/client/ClientCashFlow'));
 const ClientDebts = React.lazy(() => import('./pages/client/ClientDebts'));
 const ClientTaxDocuments = React.lazy(() => import('./pages/client/ClientTaxDocuments'));
+const ClientAutoHarvest = React.lazy(() => import('./pages/client/ClientAutoHarvest'));
+const ClientCashManagement = React.lazy(() => import('./pages/client/ClientCashManagement'));
+const ClientRebalancing = React.lazy(() => import('./pages/client/ClientRebalancing'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -281,6 +284,9 @@ export default function App() {
               <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route path="tax-documents" element={<ErrorBoundary><ClientTaxDocuments /></ErrorBoundary>} />
+              <Route path="auto-harvest"  element={<ErrorBoundary><ClientAutoHarvest /></ErrorBoundary>} />
+              <Route path="cash"          element={<ErrorBoundary><ClientCashManagement /></ErrorBoundary>} />
+              <Route path="rebalancing"   element={<ErrorBoundary><ClientRebalancing /></ErrorBoundary>} />
               <Route
                 path="advisor-activity"
                 element={

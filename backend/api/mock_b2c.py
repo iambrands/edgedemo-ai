@@ -1331,6 +1331,136 @@ async def mock_b2c_tax_documents(_: str = Depends(require_mock_auth)):
     return {"documents": DEMO_TAX_DOCUMENTS, "tax_year": 2025, "mock": True}
 
 
+# ── TLH Execution (Betterment parity) ───────────────────────────────────────
+
+DEMO_TLH_CANDIDATES = [
+    {
+        "id": "tlh-001", "symbol": "INTC", "name": "Intel Corporation", "shares": 85,
+        "cost_basis": 4250.0, "current_value": 2295.0, "unrealized_loss": -1955.0,
+        "wash_sale_risk": False, "replacement_symbol": "AMD", "replacement_name": "Advanced Micro Devices",
+        "estimated_tax_savings": 488.0, "account": "Fidelity Brokerage", "days_held": 312,
+    },
+    {
+        "id": "tlh-002", "symbol": "PARA", "name": "Paramount Global", "shares": 200,
+        "cost_basis": 2800.0, "current_value": 640.0, "unrealized_loss": -2160.0,
+        "wash_sale_risk": False, "replacement_symbol": "DIS", "replacement_name": "The Walt Disney Co.",
+        "estimated_tax_savings": 540.0, "account": "Fidelity Brokerage", "days_held": 198,
+    },
+    {
+        "id": "tlh-003", "symbol": "DVN", "name": "Devon Energy Corp.", "shares": 45,
+        "cost_basis": 2700.0, "current_value": 1485.0, "unrealized_loss": -1215.0,
+        "wash_sale_risk": True, "replacement_symbol": "XOM", "replacement_name": "Exxon Mobil",
+        "estimated_tax_savings": 304.0, "account": "Fidelity Brokerage", "days_held": 88,
+    },
+]
+
+
+@router.get("/tax-harvest/candidates")
+async def mock_tlh_candidates(_: str = Depends(require_mock_auth)):
+    """Demo TLH candidates in no-DB mode."""
+    total_loss = sum(c["unrealized_loss"] for c in DEMO_TLH_CANDIDATES)
+    total_savings = sum(c["estimated_tax_savings"] for c in DEMO_TLH_CANDIDATES if not c["wash_sale_risk"])
+    safe = [c for c in DEMO_TLH_CANDIDATES if not c["wash_sale_risk"]]
+    return {
+        "candidates": DEMO_TLH_CANDIDATES,
+        "total_unrealized_loss": total_loss,
+        "total_estimated_savings": total_savings,
+        "safe_to_harvest": len(safe),
+        "wash_sale_count": len([c for c in DEMO_TLH_CANDIDATES if c["wash_sale_risk"]]),
+        "mock": True,
+    }
+
+
+@router.post("/tax-harvest/execute")
+async def mock_tlh_execute(body: dict, _: str = Depends(require_mock_auth)):
+    """Simulate executing a TLH harvest in no-DB mode."""
+    candidate_ids = body.get("candidate_ids", [])
+    harvested = [c for c in DEMO_TLH_CANDIDATES if c["id"] in candidate_ids]
+    return {
+        "status": "executed",
+        "harvested_count": len(harvested),
+        "total_loss_harvested": sum(c["unrealized_loss"] for c in harvested),
+        "estimated_tax_savings": sum(c["estimated_tax_savings"] for c in harvested),
+        "message": f"Harvested {len(harvested)} position(s). Replacement securities purchased. Wash-sale window: 30 days.",
+        "mock": True,
+    }
+
+
+# ── Cash Management / HYSA (Betterment parity) ──────────────────────────────
+
+DEMO_CASH_ACCOUNTS = [
+    {"id": "cash-001", "name": "Chase Total Checking", "balance": 12450.0, "current_apy": 0.01, "account_type": "checking"},
+    {"id": "cash-002", "name": "Chase Savings",        "balance": 8200.0,  "current_apy": 0.35, "account_type": "savings"},
+    {"id": "cash-003", "name": "Vanguard Money Market", "balance": 42000.0, "current_apy": 4.85, "account_type": "money_market"},
+]
+
+DEMO_HYSA_RATES = [
+    {"bank": "Marcus by Goldman Sachs", "apy": 4.90, "min_balance": 0,    "fdic": True, "featured": False},
+    {"bank": "Ally Bank",              "apy": 4.75, "min_balance": 0,    "fdic": True, "featured": False},
+    {"bank": "SoFi High-Yield Savings","apy": 4.70, "min_balance": 0,    "fdic": True, "featured": False},
+    {"bank": "Discover Online Savings","apy": 4.60, "min_balance": 0,    "fdic": True, "featured": False},
+    {"bank": "Firmum Cash Reserve",    "apy": 5.00, "min_balance": 0,    "fdic": True, "featured": True},
+    {"bank": "Wealthfront Cash",       "apy": 5.00, "min_balance": 1.0,  "fdic": True, "featured": False},
+]
+
+
+@router.get("/cash-management")
+async def mock_cash_management(_: str = Depends(require_mock_auth)):
+    """Demo cash management + HYSA comparison in no-DB mode."""
+    total_cash = sum(a["balance"] for a in DEMO_CASH_ACCOUNTS)
+    low_yield_balance = sum(a["balance"] for a in DEMO_CASH_ACCOUNTS if a["current_apy"] < 1.0)
+    best_rate = max(r["apy"] for r in DEMO_HYSA_RATES)
+    missed_interest = round(low_yield_balance * (best_rate / 100 - 0.01), 2)
+    return {
+        "accounts": DEMO_CASH_ACCOUNTS,
+        "total_cash": total_cash,
+        "low_yield_balance": low_yield_balance,
+        "best_available_apy": best_rate,
+        "missed_annual_interest": missed_interest,
+        "hysa_rates": DEMO_HYSA_RATES,
+        "mock": True,
+    }
+
+
+# ── Portfolio Drift + Rebalancing (Betterment parity) ───────────────────────
+
+DEMO_PORTFOLIO_DRIFT = {
+    "last_rebalanced": "2026-03-15",
+    "drift_score": 7.2,
+    "bands_threshold_pct": 5.0,
+    "target_allocation": [
+        {"asset_class": "US Equity",     "target_pct": 55.0, "current_pct": 62.1, "drift_pct":  7.1, "overweight": True},
+        {"asset_class": "Int'l Equity",  "target_pct": 15.0, "current_pct": 12.3, "drift_pct": -2.7, "overweight": False},
+        {"asset_class": "Bonds",         "target_pct": 20.0, "current_pct": 16.8, "drift_pct": -3.2, "overweight": False},
+        {"asset_class": "Alternatives",  "target_pct":  5.0, "current_pct":  5.8, "drift_pct":  0.8, "overweight": True},
+        {"asset_class": "Cash",          "target_pct":  5.0, "current_pct":  3.0, "drift_pct": -2.0, "overweight": False},
+    ],
+    "suggested_trades": [
+        {"action": "SELL", "asset_class": "US Equity",    "ticker": "VTI",  "amount": 8420.0, "reason": "Overweight by 7.1% — exceeds 5% drift band"},
+        {"action": "BUY",  "asset_class": "Bonds",        "ticker": "BND",  "amount": 4200.0, "reason": "Underweight by 3.2%"},
+        {"action": "BUY",  "asset_class": "Int'l Equity", "ticker": "VXUS", "amount": 3540.0, "reason": "Underweight by 2.7%"},
+        {"action": "BUY",  "asset_class": "Cash",         "ticker": "VMFXX","amount": 680.0,  "reason": "Underweight by 2.0%"},
+    ],
+}
+
+
+@router.get("/portfolio/drift")
+async def mock_portfolio_drift(_: str = Depends(require_mock_auth)):
+    """Demo portfolio allocation drift + rebalance trades in no-DB mode."""
+    return {**DEMO_PORTFOLIO_DRIFT, "mock": True}
+
+
+@router.post("/portfolio/rebalance")
+async def mock_portfolio_rebalance(body: dict, _: str = Depends(require_mock_auth)):
+    """Simulate executing a portfolio rebalance in no-DB mode."""
+    return {
+        "status": "executed",
+        "trades_executed": len(DEMO_PORTFOLIO_DRIFT["suggested_trades"]),
+        "message": "Portfolio rebalanced to target allocation. New drift score: 0.2%.",
+        "mock": True,
+    }
+
+
 # Register new supplement routes AFTER all function definitions (avoids NameError)
 for _supp_path, _supp_endpoint, _supp_methods in [
     ("/income", mock_b2c_income, ["GET"]),
@@ -1338,5 +1468,10 @@ for _supp_path, _supp_endpoint, _supp_methods in [
     ("/notifications", mock_b2c_notifications, ["GET"]),
     ("/notifications/{notification_id}/read", mock_mark_notification_read, ["POST"]),
     ("/tax-documents", mock_b2c_tax_documents, ["GET"]),
+    ("/tax-harvest/candidates", mock_tlh_candidates, ["GET"]),
+    ("/tax-harvest/execute", mock_tlh_execute, ["POST"]),
+    ("/cash-management", mock_cash_management, ["GET"]),
+    ("/portfolio/drift", mock_portfolio_drift, ["GET"]),
+    ("/portfolio/rebalance", mock_portfolio_rebalance, ["POST"]),
 ]:
     supplement_router.add_api_route(_supp_path, _supp_endpoint, methods=_supp_methods)

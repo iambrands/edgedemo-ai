@@ -810,4 +810,91 @@ export const b2cApi = {
       tax_year: number;
       mock?: boolean;
     }>('/tax-documents'),
+
+  // TLH execution
+  getTLHCandidates: () =>
+    b2cFetch<{
+      candidates: Array<{
+        id: string;
+        symbol: string;
+        name: string;
+        shares: number;
+        cost_basis: number;
+        current_value: number;
+        unrealized_loss: number;
+        wash_sale_risk: boolean;
+        replacement_symbol: string;
+        replacement_name: string;
+        estimated_tax_savings: number;
+        account: string;
+        days_held: number;
+      }>;
+      total_unrealized_loss: number;
+      total_estimated_savings: number;
+      safe_to_harvest: number;
+      wash_sale_count: number;
+      mock?: boolean;
+    }>('/tax-harvest/candidates'),
+
+  executeTLH: (candidateIds: string[]) =>
+    b2cFetch<{
+      status: string;
+      harvested_count: number;
+      total_loss_harvested: number;
+      estimated_tax_savings: number;
+      message: string;
+      mock?: boolean;
+    }>('/tax-harvest/execute', { method: 'POST', body: { candidate_ids: candidateIds } }),
+
+  // Cash management / HYSA
+  getCashManagement: () =>
+    b2cFetch<{
+      accounts: Array<{
+        id: string;
+        name: string;
+        balance: number;
+        current_apy: number;
+        account_type: string;
+      }>;
+      total_cash: number;
+      low_yield_balance: number;
+      best_available_apy: number;
+      missed_annual_interest: number;
+      hysa_rates: Array<{
+        bank: string;
+        apy: number;
+        min_balance: number;
+        fdic: boolean;
+        featured: boolean;
+      }>;
+      mock?: boolean;
+    }>('/cash-management'),
+
+  // Portfolio drift + rebalancing
+  getPortfolioDrift: () =>
+    b2cFetch<{
+      last_rebalanced: string;
+      drift_score: number;
+      bands_threshold_pct: number;
+      target_allocation: Array<{
+        asset_class: string;
+        target_pct: number;
+        current_pct: number;
+        drift_pct: number;
+        overweight: boolean;
+      }>;
+      suggested_trades: Array<{
+        action: string;
+        asset_class: string;
+        ticker: string;
+        amount: number;
+        reason: string;
+      }>;
+      mock?: boolean;
+    }>('/portfolio/drift'),
+
+  executeRebalance: () =>
+    b2cFetch<{ status: string; trades_executed: number; message: string; mock?: boolean }>(
+      '/portfolio/rebalance', { method: 'POST', body: {} },
+    ),
 };
