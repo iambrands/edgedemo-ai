@@ -250,6 +250,43 @@ export interface B2CHouseholdCombined {
   mock?: boolean;
 }
 
+export interface B2CLearningItem {
+  id: string;
+  title: string;
+  duration: string;
+  category: 'getting_started' | 'investing_basics' | 'tax_planning' | 'working_with_advisor';
+  description: string;
+  content_type: 'video' | 'article';
+  thumbnail_color?: string;
+}
+
+export type AdvisorSpecialty =
+  | 'retirement'
+  | 'tax_planning'
+  | 'estate_planning'
+  | 'investing_basics'
+  | 'wealth_building';
+
+export type AdvisorFeeType = 'flat' | 'aum_pct';
+
+export interface B2CAdvisorListing {
+  id: string;
+  name: string;
+  title: string;
+  firm: string;
+  avatar_initial: string;
+  avatar_color: string;
+  location: string;
+  specialties: AdvisorSpecialty[];
+  fee_type: AdvisorFeeType;
+  fee_range: string;
+  min_aum: number;
+  rating: number;
+  review_count: number;
+  accepting_clients: boolean;
+  bio: string;
+}
+
 export interface B2CTransaction {
   id: string;
   date: string;       // "YYYY-MM-DD"
@@ -624,4 +661,10 @@ export const b2cApi = {
       method: 'POST',
       body: { email },
     }),
+
+  getLearningContent: () =>
+    b2cFetch<{ items: B2CLearningItem[]; mock?: boolean }>('/learning'),
+
+  getAdvisors: () =>
+    b2cFetch<{ advisors: B2CAdvisorListing[]; mock?: boolean }>('/advisors'),
 };

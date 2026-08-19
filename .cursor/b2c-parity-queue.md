@@ -210,21 +210,21 @@ Goal: Features that compound because of the advisor network.
 - **Resume prompt:** Implement B2C-402: add PWA support. Create manifest.json with Firmum name, icons, theme color (#2563EB). Create service worker for offline app shell caching. Add push notification subscription in frontend settings page. Register service worker in index.html. Test install prompt on mobile viewport.
 
 ### B2C-403 | Advisor marketplace UI
-- **Phase:** 4 | **Status:** open | **Min gate:** G0.5 (UI) + G1 (matching logic)
+- **Phase:** 4 | **Status:** done | **Min gate:** G0.5 (UI) + G1 (matching logic)
 - **Depends on:** B2C-DONE-03
 - **Files:** frontend/src/pages/client/AdvisorMarketplace.tsx (new), backend/api/mock_b2c.py
 - **Acceptance:** Browse advisors with filters (specialty, AUM range, fee structure). Advisor profile cards with ratings. Request consultation button. Mock advisor directory with 6-8 advisors.
 - **Resume prompt:** Implement B2C-403: create AdvisorMarketplace.tsx at /client/advisors. Show grid of advisor cards with name, photo placeholder, specialty tags, fee range, rating (stars), and "Request Consultation" button. Add filters: specialty (retirement, tax, estate), fee type (flat, AUM%), min AUM. Add mock_b2c_advisors endpoint with 8 sample advisors. Wire request button to existing connect-advisor flow.
 
 ### B2C-404 | Social proof / trust page
-- **Phase:** 4 | **Status:** open | **Min gate:** G0
+- **Phase:** 4 | **Status:** done | **Min gate:** G0
 - **Depends on:** —
 - **Files:** frontend/src/pages/marketing/TrustPage.tsx (new), frontend/src/App.tsx
 - **Acceptance:** Public page with security badges (256-bit encryption, SOC 2 intent, bank-level security), testimonials (3-4 mock quotes), NPS score display, press mentions section.
 - **Resume prompt:** Implement B2C-404: create TrustPage.tsx at /trust. Sections: security badges row (encryption, SOC 2, bank-level), 3 testimonial cards with quotes and attribution, NPS score display, press/media logos row. All content is static/mock. Add route in App.tsx. Link from marketing footer.
 
 ### B2C-405 | Learning center content wiring
-- **Phase:** 4 | **Status:** open | **Min gate:** G0
+- **Phase:** 4 | **Status:** done | **Min gate:** G0
 - **Depends on:** —
 - **Files:** frontend/src/pages/client/ClientLearning.tsx (new), backend/api/mock_b2c.py
 - **Acceptance:** Learning center page with video placeholder cards, article links, and FAQ accordion. Mock content. Ready for HeyGen video pipeline integration.

@@ -19,6 +19,7 @@ const Signup = React.lazy(() => import('./pages/Signup').then(m => ({ default: m
 const FeaturesPage = React.lazy(() => import('./pages/marketing/FeaturesPage').then(m => ({ default: m.FeaturesPage })));
 const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage').then(m => ({ default: m.PricingPage })));
 const UpdatesPage = React.lazy(() => import('./pages/marketing/UpdatesPage').then(m => ({ default: m.UpdatesPage })));
+const TrustPage = React.lazy(() => import('./pages/marketing/TrustPage').then(m => ({ default: m.TrustPage })));
 
 // Company
 const About = React.lazy(() => import('./pages/company/About'));
@@ -107,6 +108,8 @@ const AdvisorTransparency = React.lazy(() => import('./pages/client/AdvisorTrans
 const ClientMessages = React.lazy(() => import('./pages/client/ClientMessages'));
 const ClientDocuments = React.lazy(() => import('./pages/client/ClientDocuments'));
 const ClientHousehold = React.lazy(() => import('./pages/client/ClientHousehold'));
+const ClientLearning = React.lazy(() => import('./pages/client/ClientLearning'));
+const AdvisorMarketplace = React.lazy(() => import('./pages/client/AdvisorMarketplace'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -175,6 +178,7 @@ export default function App() {
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/updates" element={<UpdatesPage />} />
+          <Route path="/trust" element={<TrustPage />} />
           <Route path="/login" element={<AppHostGate><Login /></AppHostGate>} />
           <Route path="/signup" element={<AppHostGate><Signup /></AppHostGate>} />
           <Route path="/register" element={<Navigate to="/signup" replace />} />
@@ -262,11 +266,13 @@ export default function App() {
             <Route path="spending" element={<ErrorBoundary><ClientSpending /></ErrorBoundary>} />
             <Route path="budgets" element={<ErrorBoundary><ClientBudgets /></ErrorBoundary>} />
             <Route path="bills" element={<ErrorBoundary><ClientBills /></ErrorBoundary>} />
+            <Route path="advisors" element={<ErrorBoundary><AdvisorMarketplace /></ErrorBoundary>} />
             <Route path="connect-advisor" element={<ErrorBoundary><ConnectAdvisor /></ErrorBoundary>} />
             <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
             <Route path="upgrade" element={<ErrorBoundary><ClientUpgrade /></ErrorBoundary>} />
               <Route path="goals" element={<ErrorBoundary><ClientGoals /></ErrorBoundary>} />
               <Route path="household" element={<ErrorBoundary><ClientHousehold /></ErrorBoundary>} />
+              <Route path="learning" element={<ErrorBoundary><ClientLearning /></ErrorBoundary>} />
               <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route

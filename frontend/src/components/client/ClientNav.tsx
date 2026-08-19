@@ -18,6 +18,8 @@ import {
   Activity,
   MessageCircle,
   FolderOpen,
+  GraduationCap,
+  Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -39,7 +41,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/client/bills',          icon: Repeat2,         label: 'Recurring Bills' },
   { to: '/client/goals',          icon: Target,          label: 'Goals' },
   { to: '/client/household',      icon: Users,           label: 'Household' },
+  { to: '/client/learning',       icon: GraduationCap,   label: 'Learning' },
   { to: '/client/retirement',     icon: TrendingUp,      label: 'Planning' },
+  { to: '/client/advisors',       icon: Search,          label: 'Find Advisor' },
   { to: '/client/connect-advisor',icon: UserPlus,        label: 'Connect Advisor' },
   { to: '/client/upgrade',        icon: Sparkles,        label: 'Upgrade' },
 ];
@@ -67,9 +71,11 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
   const email = profile?.email || localStorage.getItem('firmum_b2c_email') || 'My Account';
   const initial = email.charAt(0).toUpperCase();
 
-  const navItems = NAV_ITEMS.filter(
-    (item) => !(isAdvisorLinked && item.to === '/client/connect-advisor'),
-  );
+  const navItems = NAV_ITEMS.filter((item) => {
+    // Hide "Connect Advisor" form once linked — user now has the advisor section
+    if (isAdvisorLinked && item.to === '/client/connect-advisor') return false;
+    return true;
+  });
 
   useEffect(() => {
     if (!isCollapsed && window.innerWidth < 768) {

@@ -39,6 +39,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/trust" className="text-sm text-slate-400 hover:text-white transition-colors">
+                  Trust & Security
+                </Link>
+              </li>
+              <li>
                 <Link to="/updates" className="text-sm text-slate-400 hover:text-white transition-colors">
                   Product Updates
                 </Link>

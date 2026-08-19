@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Clock, UserCheck, XCircle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { CheckCircle, Clock, UserCheck, XCircle, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { b2cApi, type AdvisorConnectionStatus } from '../../services/b2cApi';
+
+interface MarketplaceState {
+  advisorId?: string;
+  advisorName?: string;
+  advisorFirm?: string;
+}
 
 const ASSET_RANGES = [
   { value: 'under_50k', label: 'Under $50K' },
@@ -35,6 +43,8 @@ const STATUS_CONFIG: Record<string, { icon: typeof Clock; color: string; label: 
 };
 
 export default function ConnectAdvisor() {
+  const location = useLocation();
+  const fromMarketplace = location.state as MarketplaceState | null;
   const [status, setStatus] = useState<AdvisorConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -97,8 +107,36 @@ export default function ConnectAdvisor() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Connect with an advisor</h1>
-        <p className="text-sm text-slate-600 mt-1">Request a match with a Firmum-vetted advisor. Your data stays private until you approve the connection.</p>
+        {fromMarketplace?.advisorName ? (
+          <>
+            <Link
+              to="/client/advisors"
+              className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline mb-3"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to advisor directory
+            </Link>
+            <h1 className="text-2xl font-bold text-slate-900">Connect with an advisor</h1>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-4 py-2">
+              <UserCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <p className="text-sm text-blue-700">
+                Requesting to connect with{' '}
+                <span className="font-semibold">{fromMarketplace.advisorName}</span>
+                {fromMarketplace.advisorFirm && (
+                  <span className="text-blue-500"> · {fromMarketplace.advisorFirm}</span>
+                )}
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-slate-900">Connect with an advisor</h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Request a match with a Firmum-vetted advisor. Your data stays private until you approve
+              the connection.
+            </p>
+          </>
+        )}
       </div>
       {loading ? (
         <div className="flex justify-center py-12">
