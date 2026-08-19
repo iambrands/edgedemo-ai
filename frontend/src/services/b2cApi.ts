@@ -688,6 +688,22 @@ export const b2cApi = {
   getInsights: () =>
     b2cFetch<{ insights: B2CInsight[]; count: number; mock?: boolean }>('/insights'),
 
+  getAIAnalysis: () =>
+    b2cFetch<{
+      narrative: string;
+      insights: Array<{
+        type: string;
+        title: string;
+        detail: string;
+        priority: 'high' | 'medium' | 'low';
+        action_label: string;
+        action_route: string;
+      }>;
+      model: string;
+      generated_at: string;
+      cached: boolean;
+    }>('/ai/analysis'),
+
   getHoldings: () =>
     b2cFetch<{ holdings: Array<{
       symbol: string;
