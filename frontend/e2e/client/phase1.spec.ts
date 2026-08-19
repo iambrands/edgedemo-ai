@@ -31,23 +31,32 @@ test.describe('B2C Phase 1 — Client flows', () => {
     await expect(page.getByText('Moderate Growth')).toBeVisible();
   });
 
-  test('nav shell links work — Accounts, Planning, Spending, Budgets', async ({ page }) => {
+  test('nav shell links work — Accounts, Retirement, Spending, Budgets', async ({ page }) => {
     await loginAsB2CUser(page);
 
     const nav = page.locator('aside nav');
 
+    const expandGroup = async (name: string) => {
+      const btn = nav.getByRole('button', { name, exact: true });
+      if ((await btn.getAttribute('aria-expanded')) !== 'true') await btn.click();
+    };
+
+    await expandGroup('Money');
     await nav.getByRole('link', { name: 'Accounts' }).click();
     await page.waitForURL(/\/client\/statements/);
     await expect(page.getByRole('heading', { name: /Statement history/i })).toBeVisible();
 
-    await nav.getByRole('link', { name: 'Planning' }).click();
+    await expandGroup('Plan');
+    await nav.getByRole('link', { name: 'Retirement' }).click();
     await page.waitForURL(/\/client\/retirement/);
     await expect(page.getByRole('heading', { name: /Retirement planner/i })).toBeVisible();
 
+    await expandGroup('Money');
     await nav.getByRole('link', { name: 'Spending' }).click();
     await page.waitForURL(/\/client\/spending/);
     await expect(page.getByRole('heading', { name: 'Spending', exact: true })).toBeVisible();
 
+    await expandGroup('Money');
     await nav.getByRole('link', { name: 'Budgets' }).click();
     await page.waitForURL(/\/client\/budgets/);
     await expect(page.getByRole('heading', { name: 'Budgets', exact: true })).toBeVisible();

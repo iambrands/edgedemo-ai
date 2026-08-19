@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,12 +8,12 @@ import {
   PiggyBank,
   Repeat2,
   TrendingUp,
-  UserPlus,
   Users,
   Sparkles,
   Settings,
   LogOut,
   ChevronLeft,
+  ChevronDown,
   HelpCircle,
   Activity,
   MessageCircle,
@@ -26,6 +26,8 @@ import {
   Leaf,
   Banknote,
   BarChart2,
+  DollarSign,
+  LineChart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -40,36 +42,89 @@ interface NavItem {
   label: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: '/client/dashboard',      icon: LayoutDashboard, label: 'Home' },
-  { to: '/client/statements',     icon: FileText,        label: 'Accounts' },
-  { to: '/client/cash-flow',      icon: ArrowUpDown,     label: 'Cash Flow' },
-  { to: '/client/cash',           icon: Banknote,        label: 'Cash Management' },
-  { to: '/client/spending',       icon: Receipt,         label: 'Spending' },
-  { to: '/client/budgets',        icon: PiggyBank,       label: 'Budgets' },
-  { to: '/client/bills',          icon: Repeat2,         label: 'Recurring Bills' },
-  { to: '/client/debts',          icon: TrendingDown,    label: 'Debts' },
-  { to: '/client/goals',          icon: Target,          label: 'Goals' },
-  { to: '/client/household',      icon: Users,           label: 'Household' },
-  { to: '/client/learning',       icon: GraduationCap,   label: 'Learning' },
-  { to: '/client/retirement',     icon: TrendingUp,      label: 'Planning' },
-  { to: '/client/rebalancing',    icon: BarChart2,       label: 'Rebalancing' },
-  { to: '/client/auto-harvest',   icon: Leaf,            label: 'Tax Harvesting' },
-  { to: '/client/tax-documents',  icon: FileSpreadsheet, label: 'Tax Docs' },
-  { to: '/client/advisors',       icon: Search,          label: 'Find Advisor' },
-  { to: '/client/connect-advisor',icon: UserPlus,        label: 'Connect Advisor' },
-  { to: '/client/upgrade',        icon: Sparkles,        label: 'Upgrade' },
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    id: 'money',
+    label: 'Money',
+    icon: DollarSign,
+    items: [
+      { to: '/client/statements', icon: FileText,     label: 'Accounts' },
+      { to: '/client/cash-flow', icon: ArrowUpDown,   label: 'Income' },
+      { to: '/client/spending',  icon: Receipt,       label: 'Spending' },
+      { to: '/client/budgets',   icon: PiggyBank,     label: 'Budgets' },
+      { to: '/client/bills',     icon: Repeat2,       label: 'Bills' },
+      { to: '/client/debts',     icon: TrendingDown,  label: 'Debts' },
+    ],
+  },
+  {
+    id: 'investments',
+    label: 'Investments',
+    icon: LineChart,
+    items: [
+      { to: '/client/cash',         icon: Banknote,   label: 'Optimize Cash' },
+      { to: '/client/rebalancing',  icon: BarChart2,  label: 'Rebalance' },
+      { to: '/client/auto-harvest', icon: Leaf,       label: 'Tax Savings' },
+    ],
+  },
+  {
+    id: 'plan',
+    label: 'Plan',
+    icon: Target,
+    items: [
+      { to: '/client/goals',      icon: Target,      label: 'Goals' },
+      { to: '/client/retirement', icon: TrendingUp,  label: 'Retirement' },
+      { to: '/client/household',  icon: Users,       label: 'Household' },
+    ],
+  },
 ];
+
+const TAX_NAV_ITEM: NavItem = {
+  to: '/client/tax-documents',
+  icon: FileSpreadsheet,
+  label: 'Tax Documents',
+};
 
 const ADVISOR_NAV_ITEMS: NavItem[] = [
-  { to: '/client/advisor-activity', icon: Activity,      label: 'Advisor Activity' },
-  { to: '/client/documents',        icon: FolderOpen,    label: 'Documents' },
+  { to: '/client/advisor-activity', icon: Activity,      label: 'Activity' },
   { to: '/client/messages',         icon: MessageCircle, label: 'Messages' },
+  { to: '/client/documents',        icon: FolderOpen,    label: 'Documents' },
 ];
 
-const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { to: '/client/accountability', icon: Settings, label: 'Settings' },
+const FOOTER_NAV_ITEMS: NavItem[] = [
+  { to: '/client/learning',       icon: GraduationCap, label: 'Learning' },
+  { to: '/client/upgrade',        icon: Sparkles,      label: 'Upgrade' },
+  { to: '/client/accountability', icon: Settings,      label: 'Settings' },
 ];
+
+function isNavItemActive(pathname: string, to: string): boolean {
+  if (to === '/client/dashboard') return pathname === to;
+  if (to === '/client/retirement') {
+    return pathname === to || pathname === '/client/planning';
+  }
+  return pathname === to;
+}
+
+function groupHasActiveItem(pathname: string, group: NavGroup): boolean {
+  return group.items.some((item) => isNavItemActive(pathname, item.to));
+}
+
+function initialOpenGroups(pathname: string): Set<string> {
+  const initial = new Set<string>();
+  for (const group of NAV_GROUPS) {
+    if (groupHasActiveItem(pathname, group)) initial.add(group.id);
+  }
+  if (ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(pathname, item.to))) {
+    initial.add('advisor');
+  }
+  return initial;
+}
 
 interface ClientNavProps {
   isCollapsed: boolean;
@@ -84,11 +139,22 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
   const email = profile?.email || localStorage.getItem('firmum_b2c_email') || 'My Account';
   const initial = email.charAt(0).toUpperCase();
 
-  const navItems = NAV_ITEMS.filter((item) => {
-    // Hide "Connect Advisor" form once linked — user now has the advisor section
-    if (isAdvisorLinked && item.to === '/client/connect-advisor') return false;
-    return true;
-  });
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() =>
+    initialOpenGroups(location.pathname),
+  );
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      for (const group of NAV_GROUPS) {
+        if (groupHasActiveItem(location.pathname, group)) next.add(group.id);
+      }
+      if (ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(location.pathname, item.to))) {
+        next.add('advisor');
+      }
+      return next;
+    });
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!isCollapsed && window.innerWidth < 768) {
@@ -97,9 +163,99 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  const toggleGroup = (id: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleLogout = () => {
     clearB2CTokens();
     navigate('/client/signup');
+  };
+
+  const navLinkClass = (isActive: boolean, variant: 'primary' | 'sub' | 'footer' = 'primary') =>
+    clsx(
+      'flex items-center gap-3 rounded-lg transition-all duration-150',
+      variant === 'sub' ? 'px-3 py-2 text-sm' : 'px-3 py-2.5',
+      isActive
+        ? variant === 'sub'
+          ? 'bg-white/20 text-white font-medium'
+          : 'bg-white/15 text-white shadow-sm'
+        : variant === 'footer'
+          ? 'text-blue-200 hover:bg-white/10 hover:text-white'
+          : variant === 'sub'
+            ? 'text-blue-100/80 hover:bg-white/5 hover:text-white'
+            : 'text-blue-100 hover:bg-white/10 hover:text-white',
+    );
+
+  const renderNavItem = (item: NavItem, variant: 'primary' | 'sub' | 'footer' = 'primary') => {
+    const Icon = item.icon;
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.to === '/client/dashboard'}
+        className={({ isActive }) => navLinkClass(isActive, variant)}
+      >
+        <Icon size={variant === 'sub' ? 15 : 18} className="flex-shrink-0" />
+        {!isCollapsed && (
+          <span className={variant === 'sub' ? undefined : 'text-sm font-medium'}>{item.label}</span>
+        )}
+      </NavLink>
+    );
+  };
+
+  const renderCollapsibleGroup = (group: NavGroup) => {
+    const isOpen = openGroups.has(group.id);
+    const hasActiveSub = groupHasActiveItem(location.pathname, group);
+    const GroupIcon = group.icon;
+
+    return (
+      <div key={group.id} className="mb-0.5">
+        <button
+          type="button"
+          onClick={() => {
+            if (isCollapsed) {
+              onToggle();
+              setOpenGroups((prev) => new Set([...prev, group.id]));
+            } else {
+              toggleGroup(group.id);
+            }
+          }}
+          aria-expanded={isOpen}
+          className={clsx(
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
+            hasActiveSub && !isOpen
+              ? 'bg-white/15 text-white'
+              : 'text-blue-100 hover:bg-white/10 hover:text-white',
+          )}
+        >
+          <GroupIcon size={18} className="flex-shrink-0" />
+          {!isCollapsed && (
+            <>
+              <span className="text-sm font-medium flex-1 text-left">{group.label}</span>
+              <ChevronDown
+                size={14}
+                className={clsx(
+                  'transition-transform duration-200 text-blue-300',
+                  isOpen && 'rotate-180',
+                )}
+              />
+            </>
+          )}
+        </button>
+
+        {!isCollapsed && isOpen && (
+          <div className="mt-0.5 ml-3 border-l border-white/10 pl-3 space-y-0.5">
+            {group.items.map((item) => renderNavItem(item, 'sub'))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -143,73 +299,76 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
 
         {/* Main nav */}
         <nav className="flex-1 overflow-y-auto py-3 sidebar-scroll">
-          <div className="px-3 space-y-0.5">
-            {navItems.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/client/dashboard'}
-                className={({ isActive }) =>
-                  clsx(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
-                    isActive
-                      ? 'bg-white/15 text-white shadow-sm'
-                      : 'text-blue-100 hover:bg-white/10 hover:text-white',
-                  )
-                }
-              >
-                <Icon size={18} className="flex-shrink-0" />
-                {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
-              </NavLink>
-            ))}
+          {/* Home — always visible */}
+          <div className="px-3 mb-1">
+            {renderNavItem({ to: '/client/dashboard', icon: LayoutDashboard, label: 'Home' })}
           </div>
 
-          {isAdvisorLinked && (
-            <div className="px-3 mt-4 pt-4 border-t border-white/10 space-y-0.5">
-              {!isCollapsed && (
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-blue-300/80">
-                  Your advisor
-                </p>
-              )}
-              {ADVISOR_NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) =>
-                    clsx(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
-                      isActive
-                        ? 'bg-white/15 text-white shadow-sm'
-                        : 'text-blue-100 hover:bg-white/10 hover:text-white',
-                    )
-                  }
-                >
-                  <Icon size={18} className="flex-shrink-0" />
-                  {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
-                </NavLink>
-              ))}
+          {/* Grouped sections */}
+          <div className="px-3 space-y-0.5">
+            {NAV_GROUPS.map(renderCollapsibleGroup)}
+          </div>
+
+          {/* Tax — standalone (single item, no collapse needed) */}
+          <div className="px-3 mt-1">
+            {renderNavItem(TAX_NAV_ITEM)}
+          </div>
+
+          {/* Find an advisor — only when not linked */}
+          {!isAdvisorLinked && (
+            <div className="px-3 mt-1">
+              {renderNavItem({ to: '/client/advisors', icon: Search, label: 'Find an Advisor' })}
             </div>
           )}
 
-          {/* Bottom links */}
-          <div className="px-3 mt-4 pt-4 border-t border-white/10 space-y-0.5">
-            {BOTTOM_NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  clsx(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
-                    isActive
-                      ? 'bg-white/15 text-white'
-                      : 'text-blue-200 hover:bg-white/10 hover:text-white',
-                  )
-                }
+          {/* Your advisor — collapsible when linked */}
+          {isAdvisorLinked && (
+            <div className="px-3 mt-4 pt-4 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCollapsed) {
+                    onToggle();
+                    setOpenGroups((prev) => new Set([...prev, 'advisor']));
+                  } else {
+                    toggleGroup('advisor');
+                  }
+                }}
+                aria-expanded={openGroups.has('advisor')}
+                className={clsx(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
+                  ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(location.pathname, item.to))
+                    && !openGroups.has('advisor')
+                    ? 'bg-white/15 text-white'
+                    : 'text-blue-100 hover:bg-white/10 hover:text-white',
+                )}
               >
-                <Icon size={18} className="flex-shrink-0" />
-                {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
-              </NavLink>
-            ))}
+                <Users size={18} className="flex-shrink-0" />
+                {!isCollapsed && (
+                  <>
+                    <span className="text-sm font-medium flex-1 text-left">Your Advisor</span>
+                    <ChevronDown
+                      size={14}
+                      className={clsx(
+                        'transition-transform duration-200 text-blue-300',
+                        openGroups.has('advisor') && 'rotate-180',
+                      )}
+                    />
+                  </>
+                )}
+              </button>
+
+              {!isCollapsed && openGroups.has('advisor') && (
+                <div className="mt-0.5 ml-3 border-l border-white/10 pl-3 space-y-0.5">
+                  {ADVISOR_NAV_ITEMS.map((item) => renderNavItem(item, 'sub'))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Footer links */}
+          <div className="px-3 mt-4 pt-4 border-t border-white/10 space-y-0.5">
+            {FOOTER_NAV_ITEMS.map((item) => renderNavItem(item, 'footer'))}
             <a
               href="/client/help"
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-blue-200 hover:bg-white/10 hover:text-white transition-all duration-150"
