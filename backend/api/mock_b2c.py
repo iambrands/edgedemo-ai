@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
@@ -1372,8 +1372,12 @@ async def mock_tlh_candidates(_: str = Depends(require_mock_auth)):
 
 
 @router.post("/tax-harvest/execute")
-async def mock_tlh_execute(body: dict, _: str = Depends(require_mock_auth)):
+async def mock_tlh_execute(request: Request, _: str = Depends(require_mock_auth)):
     """Simulate executing a TLH harvest in no-DB mode."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
     candidate_ids = body.get("candidate_ids", [])
     harvested = [c for c in DEMO_TLH_CANDIDATES if c["id"] in candidate_ids]
     return {
@@ -1451,7 +1455,7 @@ async def mock_portfolio_drift(_: str = Depends(require_mock_auth)):
 
 
 @router.post("/portfolio/rebalance")
-async def mock_portfolio_rebalance(body: dict, _: str = Depends(require_mock_auth)):
+async def mock_portfolio_rebalance(_: str = Depends(require_mock_auth)):
     """Simulate executing a portfolio rebalance in no-DB mode."""
     return {
         "status": "executed",
