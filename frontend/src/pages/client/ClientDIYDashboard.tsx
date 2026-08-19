@@ -24,6 +24,7 @@ import {
   type B2CDashboardAccount,
   type B2CDashboardResponse,
   type B2CTaxSummary,
+  type B2CGoal,
   type PlaidExchangeResponse,
 } from '../../services/b2cApi';
 import { TaxSummaryCard } from '../../components/client/TaxSummaryCard';
@@ -34,6 +35,12 @@ import {
   feeBenchmarksToChartProps,
 } from '../../components/client/FeeAnalyzerChart';
 import { InsightCards } from '../../components/client/InsightCards';
+import { AllocationDonut } from '../../components/client/AllocationDonut';
+import { KPIStrip } from '../../components/client/KPIStrip';
+import { AINarrativeBanner } from '../../components/client/AINarrativeBanner';
+import { GoalRings } from '../../components/client/GoalRings';
+import { HoldingsTable } from '../../components/client/HoldingsTable';
+import { AnimatedNumber } from '../../components/client/AnimatedNumber';
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
@@ -256,6 +263,7 @@ function AccountBreakdown({
 export default function ClientDIYDashboard() {
   const [dashboard, setDashboard] = useState<B2CDashboardResponse | null>(null);
   const [taxSummary, setTaxSummary] = useState<B2CTaxSummary | null>(null);
+  const [goals, setGoals] = useState<B2CGoal[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [uploadSuccess, setUploadSuccess] = useState('');
@@ -280,6 +288,7 @@ export default function ClientDIYDashboard() {
 
   useEffect(() => {
     b2cApi.getTaxSummary().then(setTaxSummary).catch(console.error);
+    b2cApi.getGoals().then((res) => setGoals(res.goals)).catch(console.error);
   }, []);
 
   // Auto-dismiss subscription banner
@@ -323,6 +332,19 @@ export default function ClientDIYDashboard() {
     : sumAccounts(liabilityAccounts);
   const netWorth = totalAssets - totalLiabilities;
 
+  const nwFirst = chartData[0]?.value ?? 0;
+  const nwLast = chartData[chartData.length - 1]?.value ?? 0;
+  const netWorthChange = nwLast - nwFirst;
+  const netWorthChangePct = nwFirst > 0 ? (netWorthChange / nwFirst) * 100 : 0;
+
+  const investedTotal = accounts
+    .filter((a) => inferAccountCategory(a) === 'investment')
+    .reduce((s, a) => s + accountValue(a), 0);
+  const cashTotal = accounts
+    .filter((a) => inferAccountCategory(a) === 'depository')
+    .reduce((s, a) => s + accountValue(a), 0);
+  const annualFees = feeSummary ? Number(feeSummary.annual_cost) : undefined;
+
   return (
     <div className="space-y-5">
 
@@ -361,14 +383,27 @@ export default function ClientDIYDashboard() {
                 <div className="mt-2 h-12 w-48 rounded-lg bg-slate-100 animate-pulse" />
               ) : (
                 <>
-                  <p className="mt-1 text-5xl font-extrabold text-slate-900 tabular-nums tracking-tight leading-none">
-                    {formatCurrency(dashboard?.total_aum ?? netWorth)}
-                  </p>
+                  <AnimatedNumber
+                    value={Number(dashboard?.total_aum ?? netWorth)}
+                    duration={900}
+                    formatter={(v) =>
+                      new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        maximumFractionDigits: 0,
+                      }).format(v)
+                    }
+                    className="mt-1 text-5xl font-extrabold text-slate-900 tabular-nums tracking-tight leading-none block"
+                  />
                   {accounts.length > 0 && (
                     <p className="mt-2 text-xs text-slate-500 tabular-nums">
                       {formatCurrency(totalAssets)} assets − {formatCurrency(totalLiabilities)} liabilities
                     </p>
                   )}
+                  <p className="mt-1 text-[10px] text-slate-400 flex items-center gap-1">
+                    <Shield className="h-2.5 w-2.5" />
+                    Synced {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · Read-only access
+                  </p>
                 </>
               )}
             </div>
@@ -397,6 +432,55 @@ export default function ClientDIYDashboard() {
         )}
       </div>
 
+      {/* ── KPI metric strip ─────────────────────────────────────────── */}
+      {!isLoading && accounts.length > 0 && (
+        <KPIStrip
+          totalInvested={investedTotal}
+          cashReserves={cashTotal}
+          annualFees={annualFees}
+          netWorthChange={netWorthChange}
+          netWorthChangePct={netWorthChangePct}
+        />
+      )}
+
+      {/* ── AI narrative summary ──────────────────────────────────────── */}
+      {!isLoading && dashboard && (
+        <AINarrativeBanner
+          dashboard={dashboard}
+          taxSummary={taxSummary}
+          goals={goals}
+          netWorthChange={netWorthChange}
+          netWorthChangePct={netWorthChangePct}
+        />
+      )}
+
+      {/* ── proactive insights ───────────────────────────────────────── */}
+      {!isLoading && <InsightCards />}
+
+      {/* ── allocation donut + goal rings ─────────────────────────────── */}
+      {!isLoading && (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {dashboard?.allocation.length ? (
+            <AllocationDonut
+              allocation={dashboard.allocation}
+              totalAum={Number(dashboard.total_aum)}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                <h2 className="font-semibold text-slate-900 text-sm">Allocation</h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Upload a statement to see your asset mix.</p>
+            </div>
+          )}
+          <GoalRings />
+        </div>
+      )}
+
+      {/* ── holdings table ────────────────────────────────────────────── */}
+      {!isLoading && <HoldingsTable />}
+
       {/* ── account breakdown by type ────────────────────────────────── */}
       {!isLoading && accounts.length > 0 && (
         <AccountBreakdown
@@ -405,9 +489,6 @@ export default function ClientDIYDashboard() {
           totalLiabilities={totalLiabilities}
         />
       )}
-
-      {/* ── proactive insights ───────────────────────────────────────── */}
-      {!isLoading && <InsightCards />}
 
       {/* ── quick actions ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
@@ -428,106 +509,55 @@ export default function ClientDIYDashboard() {
         </AppLink>
       </div>
 
-      {/* ── allocation + fee analyzer ────────────────────────────────── */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
-            <h2 className="font-semibold text-slate-900 text-sm">Allocation</h2>
-          </div>
-          {dashboard?.allocation.length ? (
-            <div className="space-y-2.5">
-              {dashboard.allocation.map((item) => {
-                const pct = Number(item.pct);
-                return (
-                  <div key={item.asset_class}>
-                    <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span>{item.asset_class}</span>
-                      <span className="font-medium">{pct.toFixed(1)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-blue-500"
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500 mt-1">Upload a statement to see your asset mix.</p>
-          )}
+      {/* ── fee analyzer ─────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Receipt className="h-5 w-5 text-blue-600" />
+          <h2 className="font-semibold text-slate-900 text-sm">Fee analyzer</h2>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Receipt className="h-5 w-5 text-blue-600" />
-            <h2 className="font-semibold text-slate-900 text-sm">Fee analyzer</h2>
+        <p className="text-xs text-slate-500 mb-4">
+          {feeSummary
+            ? `${formatCurrency(feeSummary.annual_cost)}/yr estimated${feeSummary.effective_fee_rate_pct
+                ? ` (${Number(feeSummary.effective_fee_rate_pct).toFixed(2)}% effective)`
+                : ''} — you could save ${formatCurrency(feeSummary.potential_savings || '0')}/yr vs a traditional 1% advisor.`
+            : 'Fee analysis appears after accounts are linked.'}
+        </p>
+        {feeChartProps ? (
+          <FeeAnalyzerChart {...feeChartProps} />
+        ) : feeBenchmarks.length > 0 ? (
+          <div className="space-y-1.5">
+            {feeBenchmarks.map((b) => (
+              <div key={b.label} className="flex justify-between text-xs text-slate-600">
+                <span>{b.label}</span>
+                <span>{Number(b.rate_pct).toFixed(2)}% · {formatCurrency(b.annual_cost_at_aum)}</span>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-slate-500 mb-4">
-            {feeSummary
-              ? `${formatCurrency(feeSummary.annual_cost)}/yr estimated${feeSummary.effective_fee_rate_pct
-                  ? ` (${Number(feeSummary.effective_fee_rate_pct).toFixed(2)}% effective)`
-                  : ''}`
-              : 'Fee analysis appears after accounts are linked.'}
-          </p>
-          {feeChartProps ? (
-            <FeeAnalyzerChart {...feeChartProps} />
-          ) : feeBenchmarks.length > 0 ? (
-            <div className="space-y-1.5">
-              {feeBenchmarks.map((b) => (
-                <div key={b.label} className="flex justify-between text-xs text-slate-600">
-                  <span>{b.label}</span>
-                  <span>{Number(b.rate_pct).toFixed(2)}% · {formatCurrency(b.annual_cost_at_aum)}</span>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
 
       {/* ── tax summary ──────────────────────────────────────────────── */}
       {taxSummary && <TaxSummaryCard data={taxSummary} />}
 
-      {/* ── alerts + AI suggestions ──────────────────────────────────── */}
-      <div className="grid sm:grid-cols-2 gap-4">
+      {/* ── alerts ─────────────────────────────────────────────────────── */}
+      {dashboard?.alerts && dashboard.alerts.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 p-5">
           <div className="flex items-center gap-2 mb-3">
             <Bell className="h-5 w-5 text-blue-600" />
             <h2 className="font-semibold text-slate-900 text-sm">Alerts</h2>
           </div>
           <div className="space-y-2">
-            {dashboard?.alerts.length ? (
-              dashboard.alerts.map((alert) => (
-                <p
-                  key={`${alert.type}-${alert.action}`}
-                  className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600"
-                >
-                  {alert.message}
-                </p>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500">No active alerts yet.</p>
-            )}
+            {dashboard.alerts.map((alert) => (
+              <p
+                key={`${alert.type}-${alert.action}`}
+                className="rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600"
+              >
+                {alert.message}
+              </p>
+            ))}
           </div>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-5 w-5 text-blue-600" />
-            <h2 className="font-semibold text-slate-900 text-sm">AI insights</h2>
-          </div>
-          <p className="text-xs text-slate-500">
-            {dashboard
-              ? `${dashboard.ai_chat_remaining} AI chats remaining on ${dashboard.subscription_tier} plan.`
-              : 'Personalized insights — not investment advice.'}
-          </p>
-          <p className="text-xs text-slate-400 mt-2">
-            Ask the AI assistant (bottom-right) anything about your portfolio.
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* ── retirement planner CTA ───────────────────────────────────── */}
       <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -583,9 +613,15 @@ export default function ClientDIYDashboard() {
       </div>
 
       {/* ── compliance footnote ──────────────────────────────────────── */}
-      <div className="flex items-center gap-2 text-xs text-slate-400">
+      <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
         <Shield className="h-3.5 w-3.5 flex-shrink-0" />
-        Fee benchmarks compare your portfolio to industry averages — not personalized investment advice.
+        <span>Fee benchmarks compare your portfolio to industry averages — not personalized investment advice.</span>
+        <span className="text-slate-300">·</span>
+        <span className="flex items-center gap-1">
+          <Shield className="h-3 w-3" />Bank-level 256-bit encryption
+        </span>
+        <span className="text-slate-300">·</span>
+        <span>Read-only Plaid connection</span>
       </div>
 
     </div>

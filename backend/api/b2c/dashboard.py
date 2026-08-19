@@ -9,6 +9,8 @@ from backend.api.b2c.schemas import DashboardResponse
 from backend.api.dependencies import get_current_user, get_db
 from backend.models.user import User
 from backend.services.b2c_dashboard import B2CDashboardService
+from backend.services.b2c_demo import is_demo_user
+from backend.services.b2c_demo_persona import dashboard_response_models
 
 logger = logging.getLogger(__name__)
 
@@ -21,5 +23,7 @@ async def get_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     """Aggregated portfolio view for B2C user."""
+    if is_demo_user(current_user):
+        return dashboard_response_models()
     svc = B2CDashboardService(db)
     return await svc.get_dashboard(current_user)

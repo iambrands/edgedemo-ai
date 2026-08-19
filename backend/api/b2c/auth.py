@@ -19,6 +19,13 @@ from backend.services.auth_service import (
     RegisterRequest,
     TokenResponse,
 )
+from backend.services.b2c_demo import (
+    DEMO_EMAIL,
+    issue_demo_tokens,
+    is_demo_email,
+    is_demo_user,
+    verify_demo_password,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +71,17 @@ async def get_me(
     db: AsyncSession = Depends(get_db),
 ):
     """Current B2C user profile and connection status."""
+    if is_demo_user(current_user):
+        return MeResponse(
+            id=str(current_user.id),
+            email=current_user.email,
+            user_type=current_user.user_type,
+            subscription_tier=current_user.subscription_tier,
+            onboarding_completed=True,
+            risk_profile_completed=True,
+            management_mode="diy",
+            advisor_connection_status="none",
+        )
     if current_user.advisor_id:
         mode = "advisor_linked"
         conn_status = "active"
@@ -96,6 +114,11 @@ async def get_me(
 @router.post("/register", response_model=TokenResponse)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """Register new B2C user. Returns tokens (auto-login)."""
+    if is_demo_email(req.email):
+        raise HTTPException(
+            status_code=400,
+            detail="This email is reserved for the demo account. Use login instead.",
+        )
     if len(req.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     try:
@@ -110,6 +133,10 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Login and get JWT tokens."""
+    if is_demo_email(req.email):
+        if not verify_demo_password(req.password):
+            raise HTTPException(status_code=401, detail="Invalid email or password") from None
+        return issue_demo_tokens()
     try:
         auth = AuthService(db)
         return await auth.login(req)

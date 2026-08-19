@@ -1,17 +1,26 @@
 """Mock B2C endpoints when DATABASE_URL is not configured."""
 
 import os
+import time
+import uuid
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
     from backend.services.b2c_onboarding import OnboardingService, RISK_QUESTIONS
+    from backend.services import b2c_demo_persona as persona
+    from backend.services.portfolio_csv_parser import parse_portfolio_file
 except ImportError:
     from services.b2c_onboarding import OnboardingService, RISK_QUESTIONS
+    from services import b2c_demo_persona as persona
+    from services.portfolio_csv_parser import parse_portfolio_file
 
 router = APIRouter(prefix="/api/v1/b2c", tags=["b2c-mock"])
 _security = HTTPBearer(auto_error=False)
+
+_MOCK_PARSED_STATEMENTS: dict[str, dict] = {}
 
 
 def require_mock_auth(
@@ -22,167 +31,28 @@ def require_mock_auth(
         raise HTTPException(status_code=401, detail="Not authenticated")
     return credentials.credentials
 
-MOCK_ME = {
-    "id": "00000000-0000-4000-8000-000000000001",
-    "email": "demo.client@firmum.ai",
-    "user_type": "b2c_retail",
-    "subscription_tier": "free",
-    "onboarding_completed": False,
-    "risk_profile_completed": True,
-    "management_mode": "diy",
-    "advisor_connection_status": "none",
-    "mock": True,
-    "demo_mode": True,
-}
+MOCK_ME = persona.MOCK_ME
+MOCK_ME_ADVISOR = persona.MOCK_ME_ADVISOR
+DEMO_TOTAL_AUM = persona.DEMO_TOTAL_AUM
+DEMO_ACCOUNTS = persona.DEMO_ACCOUNTS
+DEMO_TOTAL_ASSETS = persona.DEMO_TOTAL_ASSETS
+DEMO_TOTAL_LIABILITIES = persona.DEMO_TOTAL_LIABILITIES
+DEMO_ALLOCATION = persona.DEMO_ALLOCATION
+DEMO_FEE_IMPACT = persona.DEMO_FEE_IMPACT
+DEMO_FEE_BENCHMARKS = persona.DEMO_FEE_BENCHMARKS
+DEMO_RISK_PROFILE = persona.DEMO_RISK_PROFILE
+DEMO_NET_WORTH_HISTORY = persona.DEMO_NET_WORTH_HISTORY
+DEMO_DASHBOARD_ALERTS = persona.DEMO_DASHBOARD_ALERTS
+DEMO_GOALS = persona.DEMO_GOALS
+DEMO_TAX_SUMMARY = persona.DEMO_TAX_SUMMARY
+DEMO_BILLS = persona.DEMO_BILLS
+DEMO_HOUSEHOLD_MEMBERS = persona.DEMO_HOUSEHOLD_MEMBERS
+DEMO_JOINT_GOALS = persona.DEMO_JOINT_GOALS
+DEMO_ADVISOR = persona.DEMO_ADVISOR
+DEMO_ADVISOR_FEES = persona.DEMO_ADVISOR_FEES
 
 # Set MOCK_B2C_ADVISOR_MODE=true in env to demo advisor-linked shell nav
 _MOCK_ADVISOR_MODE = os.getenv("MOCK_B2C_ADVISOR_MODE", "").lower() in ("1", "true", "yes")
-
-MOCK_ME_ADVISOR = {
-    **MOCK_ME,
-    "management_mode": "advisor_linked",
-    "advisor_connection_status": "active",
-    "onboarding_completed": True,
-}
-
-# Realistic first-run dashboard — avoids $0 empty state for new DIY users in no-DB mode.
-DEMO_TOTAL_AUM = "125000"
-
-DEMO_ACCOUNTS = [
-    # Depository (assets)
-    {
-        "id": "acc-demo-001",
-        "custodian": "Chase",
-        "account_type": "Checking",
-        "account_category": "depository",
-        "is_liability": False,
-        "total_value": "12450",
-        "last_statement_date": "2026-07-31",
-    },
-    {
-        "id": "acc-demo-004",
-        "custodian": "Ally Bank",
-        "account_type": "Savings",
-        "account_category": "depository",
-        "is_liability": False,
-        "total_value": "22550",
-        "last_statement_date": "2026-07-31",
-    },
-    # Investment (assets)
-    {
-        "id": "acc-demo-002",
-        "custodian": "Fidelity",
-        "account_type": "Brokerage",
-        "account_category": "investment",
-        "is_liability": False,
-        "total_value": "78320",
-        "last_statement_date": "2026-07-31",
-    },
-    {
-        "id": "acc-demo-003",
-        "custodian": "Vanguard",
-        "account_type": "401(k)",
-        "account_category": "investment",
-        "is_liability": False,
-        "total_value": "51680",
-        "last_statement_date": "2026-07-31",
-    },
-    # Credit cards (liabilities)
-    {
-        "id": "acc-demo-005",
-        "custodian": "Chase",
-        "account_type": "Sapphire Reserve",
-        "account_category": "credit",
-        "is_liability": True,
-        "total_value": "3400",
-        "last_statement_date": "2026-07-31",
-    },
-    {
-        "id": "acc-demo-006",
-        "custodian": "American Express",
-        "account_type": "Gold Card",
-        "account_category": "credit",
-        "is_liability": True,
-        "total_value": "1600",
-        "last_statement_date": "2026-07-31",
-    },
-    # Loans (liabilities)
-    {
-        "id": "acc-demo-007",
-        "custodian": "Wells Fargo",
-        "account_type": "Mortgage",
-        "account_category": "loan",
-        "is_liability": True,
-        "total_value": "35000",
-        "last_statement_date": "2026-07-31",
-    },
-]
-
-DEMO_TOTAL_ASSETS = "165000"
-DEMO_TOTAL_LIABILITIES = "40000"
-
-DEMO_ALLOCATION = [
-    {"asset_class": "US Equity", "pct": "55.0", "value": "68750"},
-    {"asset_class": "International Equity", "pct": "15.0", "value": "18750"},
-    {"asset_class": "Fixed Income", "pct": "20.0", "value": "25000"},
-    {"asset_class": "Cash & Equivalents", "pct": "10.0", "value": "12500"},
-]
-
-DEMO_FEE_IMPACT = {
-    "annual_cost": "812",
-    "ten_year_impact": "10150",
-    "thirty_year_impact": "42000",
-    "potential_savings": "438",
-    "highest_fee_account": "Fidelity Brokerage",
-    "highest_fee_rate": "0.65",
-    "effective_fee_rate_pct": "0.65",
-}
-
-DEMO_FEE_BENCHMARKS = [
-    {"label": "Your portfolio (estimated)", "rate_pct": "0.65", "annual_cost_at_aum": "812"},
-    {"label": "Robo-advisor average", "rate_pct": "0.25", "annual_cost_at_aum": "312"},
-    {"label": "Traditional advisor average", "rate_pct": "1.00", "annual_cost_at_aum": "1250"},
-]
-
-DEMO_RISK_PROFILE = {
-    "risk_number": 62,
-    "risk_tolerance": "moderate",
-    "label": "Moderate growth",
-}
-
-DEMO_NET_WORTH_HISTORY = [
-    {"date": "2025-08-31", "value": "105200"},
-    {"date": "2025-09-30", "value": "107800"},
-    {"date": "2025-10-31", "value": "110400"},
-    {"date": "2025-11-30", "value": "112900"},
-    {"date": "2025-12-31", "value": "115600"},
-    {"date": "2026-01-31", "value": "117200"},
-    {"date": "2026-02-28", "value": "118900"},
-    {"date": "2026-03-31", "value": "120100"},
-    {"date": "2026-04-30", "value": "121400"},
-    {"date": "2026-05-31", "value": "122600"},
-    {"date": "2026-06-30", "value": "123800"},
-    {"date": "2026-07-31", "value": "125000"},
-]
-
-DEMO_DASHBOARD_ALERTS = [
-    {
-        "type": "fee_savings",
-        "severity": "info",
-        "message": "You could save about $438/yr vs a traditional 1% advisor fee at your current balance.",
-        "action": "view_fee_analyzer",
-        "gated": False,
-        "upgrade_tier": None,
-    },
-    {
-        "type": "goal",
-        "severity": "info",
-        "message": "Set your first goal to track progress toward retirement or a major purchase.",
-        "action": "set_goal",
-        "gated": False,
-        "upgrade_tier": None,
-    },
-]
 
 DEMO_PLAID_ITEMS = [
     {
@@ -229,46 +99,6 @@ DEMO_PLAID_ITEMS = [
                 "balance": 34230.0,
             },
         ],
-    },
-]
-
-
-DEMO_GOALS = [
-    {
-        "id": "goal-demo-001",
-        "goal_type": "retirement",
-        "name": "Retire by 2040",
-        "target_amount": 1200000,
-        "current_amount": 125000,
-        "target_date": "2040-12-31",
-        "monthly_contribution": 1500,
-        "progress_pct": 10.4,
-        "on_track": True,
-        "notes": None,
-    },
-    {
-        "id": "goal-demo-002",
-        "goal_type": "emergency_fund",
-        "name": "Emergency Fund",
-        "target_amount": 24000,
-        "current_amount": 18000,
-        "target_date": "2027-06-30",
-        "monthly_contribution": 500,
-        "progress_pct": 75.0,
-        "on_track": True,
-        "notes": None,
-    },
-    {
-        "id": "goal-demo-003",
-        "goal_type": "vacation",
-        "name": "Europe Trip",
-        "target_amount": 8000,
-        "current_amount": 2400,
-        "target_date": "2027-03-31",
-        "monthly_contribution": 200,
-        "progress_pct": 30.0,
-        "on_track": False,
-        "notes": "Summer 2027 — France and Italy",
     },
 ]
 
@@ -425,36 +255,7 @@ async def mock_set_budget(body: dict, _: str = Depends(require_mock_auth)):
     }
 
 
-DEMO_TAX_SUMMARY = {
-    "tax_year": 2026,
-    "short_term_gains": 2840,
-    "long_term_gains": 8120,
-    "tlh_opportunities": 2,
-    "tlh_estimated_savings": 680,
-    "projected_tax_liability": 3240,
-}
-
-
-DEMO_BILLS = [
-    {"merchant": "AT&T Wireless",    "category": "utilities",    "amount":  85.00, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":  85.00},
-    {"merchant": "Austin Energy",    "category": "utilities",    "amount": 142.30, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent": 142.30},
-    {"merchant": "Internet Service", "category": "utilities",    "amount":  69.99, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":  69.99},
-    {"merchant": "Planet Fitness",   "category": "health",       "amount":  24.99, "frequency": "monthly",  "next_expected_date": "2026-09-13", "monthly_equivalent":  24.99},
-    {"merchant": "Netflix",          "category": "entertainment","amount":  22.99, "frequency": "monthly",  "next_expected_date": "2026-09-12", "monthly_equivalent":  22.99},
-    {"merchant": "Amazon Prime",     "category": "entertainment","amount":  14.99, "frequency": "monthly",  "next_expected_date": "2026-09-10", "monthly_equivalent":  14.99},
-    {"merchant": "Xbox Game Pass",   "category": "entertainment","amount":  14.99, "frequency": "monthly",  "next_expected_date": "2026-09-05", "monthly_equivalent":  14.99},
-    {"merchant": "Spotify",          "category": "entertainment","amount":  10.99, "frequency": "monthly",  "next_expected_date": "2026-09-11", "monthly_equivalent":  10.99},
-    {"merchant": "Google One Storage","category": "utilities",   "amount":   2.99, "frequency": "monthly",  "next_expected_date": "2026-09-01", "monthly_equivalent":   2.99},
-]
-
-
 # ── Advisor-linked client features (B2C-302/303/304) ───────────────────────
-
-DEMO_ADVISOR = {
-    "name": "Leslie Wilson, CFP",
-    "firm": "IAB Advisors, Inc.",
-    "email": "leslie@iabadvisors.com",
-}
 
 DEMO_ADVISOR_ACTIVITY = [
     {
@@ -493,16 +294,6 @@ DEMO_ADVISOR_ACTIVITY = [
         "description": "Shifted 2% from international equity to US small-cap value per IPS glide path.",
     },
 ]
-
-DEMO_ADVISOR_FEES = {
-    "fee_rate_pct": 0.75,
-    "aum_basis": 125000,
-    "annual_fee_estimate": 937.50,
-    "ytd_fees_paid": 468.75,
-    "billing_period": "Quarterly",
-    "next_billing_date": "2026-10-01",
-    "last_billed_date": "2026-07-01",
-}
 
 DEMO_ADVISOR_PERFORMANCE = {
     "benchmark_name": "S&P 500",
@@ -706,42 +497,6 @@ async def mock_upload_advisor_document(body: dict, _: str = Depends(require_mock
 
 _mock_household_invites: list[str] = []
 
-DEMO_HOUSEHOLD_MEMBERS = [
-    {
-        "id": "member-001",
-        "name": "Alex Morgan",
-        "email": "demo.client@firmum.ai",
-        "role": "owner",
-        "net_worth": 125000,
-    },
-    {
-        "id": "member-002",
-        "name": "Jordan Morgan",
-        "email": "jordan.morgan@example.com",
-        "role": "partner",
-        "net_worth": 87000,
-    },
-]
-
-DEMO_JOINT_GOALS = [
-    {
-        "id": "hgoal-001",
-        "name": "Joint Retirement Fund",
-        "target_amount": 2000000,
-        "current_amount": 212000,
-        "progress_pct": 10.6,
-        "target_date": "2045-12-31",
-    },
-    {
-        "id": "hgoal-002",
-        "name": "Vacation Home Down Payment",
-        "target_amount": 150000,
-        "current_amount": 42000,
-        "progress_pct": 28.0,
-        "target_date": "2029-06-30",
-    },
-]
-
 
 @router.get("/household/members")
 async def mock_household_members(_: str = Depends(require_mock_auth)):
@@ -817,7 +572,7 @@ async def mock_b2c_register():
         "token_type": "bearer",
         "expires_in": 3600,
         "user_id": MOCK_ME["id"],
-        "subscription_tier": "free",
+        "subscription_tier": "pro",
         "mock": True,
     }
 
@@ -854,33 +609,117 @@ async def mock_submit_risk_profile(body: dict, _: str = Depends(require_mock_aut
 @router.get("/dashboard")
 async def mock_b2c_dashboard(_: str = Depends(require_mock_auth)):
     """Demo DIY dashboard payload when B2C DB routes are unavailable."""
+    return persona.dashboard_payload()
+
+
+@router.get("/holdings")
+async def mock_b2c_holdings(_: str = Depends(require_mock_auth)):
+    """Demo holdings from parsed Schwab CSV with simulated gain/loss."""
+    import random
+    rng = random.Random(42)
+    holdings = persona.get_demo_holdings()
+    enriched = []
+    for h in holdings:
+        gain_pct = None
+        if h.get("asset_class") == "Cash & Equivalents":
+            gain_pct = 0.0
+        elif h.get("security_type", "").lower() in ("fixed income",):
+            gain_pct = round(rng.uniform(-2.0, 5.0), 1)
+        else:
+            if h.get("symbol") in ("AAPL", "GOOGL", "AMZN", "MSFT", "NOW", "LLY"):
+                gain_pct = round(rng.uniform(80.0, 350.0), 1)
+            elif h.get("symbol") in ("DOW", "KMB", "KO"):
+                gain_pct = round(rng.uniform(5.0, 40.0), 1)
+            else:
+                gain_pct = round(rng.uniform(-8.0, 200.0), 1)
+        enriched.append({**h, "gain_pct": gain_pct})
+    return {"holdings": enriched, "count": len(enriched), "mock": True}
+
+
+@router.get("/statements")
+async def mock_list_statements(_: str = Depends(require_mock_auth)):
+    return {"statements": persona.DEMO_STATEMENTS, "mock": True}
+
+
+@router.post("/statements/upload")
+async def mock_upload_statement(
+    file: UploadFile = File(...),
+    _: str = Depends(require_mock_auth),
+):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+    filename_lower = file.filename.lower()
+    if not filename_lower.endswith((".pdf", ".csv", ".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Supported formats: PDF, CSV, or Excel")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large (20 MB max)")
+
+    stmt_id = f"stmt-{str(uuid.uuid4())[:8]}"
+    if filename_lower.endswith((".csv", ".xlsx", ".xls")):
+        parsed = parse_portfolio_file(file_bytes, file.filename)
+        positions = [
+            {
+                "ticker": h.get("symbol", "UNKNOWN"),
+                "name": h.get("description", ""),
+                "quantity": h.get("quantity") or 0,
+                "value": h.get("market_value", 0),
+                "confidence": 0.98,
+            }
+            for h in parsed["holdings"]
+        ]
+        _MOCK_PARSED_STATEMENTS[stmt_id] = {
+            "id": stmt_id,
+            "filename": file.filename,
+            "custodian": parsed["custodian"],
+            "parsed": f"{parsed['position_count']} positions imported from spreadsheet",
+            "confidence": "98%",
+            "status": "parsed",
+            "positions": positions,
+            "totalValue": parsed["total_value"],
+        }
+        return {"id": stmt_id, "filename": file.filename, "status": "parsed", "estimated_seconds": 0}
+
+    _MOCK_PARSED_STATEMENTS[stmt_id] = {
+        "id": stmt_id,
+        "filename": file.filename,
+        "custodian": "Detecting...",
+        "parsed": "Processing...",
+        "confidence": "0%",
+        "status": "parsing",
+        "positions": [],
+    }
+    return {"id": stmt_id, "filename": file.filename, "status": "parsing", "estimated_seconds": 10}
+
+
+@router.get("/statements/{statement_id}/status")
+async def mock_statement_status(statement_id: str, _: str = Depends(require_mock_auth)):
+    stmt = _MOCK_PARSED_STATEMENTS.get(statement_id)
+    if not stmt:
+        raise HTTPException(status_code=404, detail="Statement not found")
     return {
-        "total_aum": DEMO_TOTAL_AUM,
-        "total_assets": DEMO_TOTAL_ASSETS,
-        "total_liabilities": DEMO_TOTAL_LIABILITIES,
-        "accounts": DEMO_ACCOUNTS,
-        "allocation": DEMO_ALLOCATION,
-        "fee_impact_summary": DEMO_FEE_IMPACT,
-        "fee_benchmarks": DEMO_FEE_BENCHMARKS,
-        "net_worth_history": DEMO_NET_WORTH_HISTORY,
-        "risk_profile": DEMO_RISK_PROFILE,
-        "alerts": DEMO_DASHBOARD_ALERTS,
-        "ai_chat_remaining": 10,
-        "subscription_tier": "free",
-        "mock": True,
-        "demo_mode": True,
+        "id": stmt["id"],
+        "filename": stmt["filename"],
+        "status": stmt.get("status", "parsing"),
+        "custodian": stmt.get("custodian", "Detecting..."),
+        "parsed": stmt.get("parsed", "Processing..."),
+        "confidence": stmt.get("confidence", "0%"),
+        "position_count": len(stmt.get("positions", [])),
+        "total_value": stmt.get("totalValue"),
     }
 
 
 @router.post("/statements/{statement_id}/confirm")
 async def mock_confirm_statement(statement_id: str, _: str = Depends(require_mock_auth)):
     """Demo statement confirmation in no-DB mode."""
+    holdings = persona.get_demo_holdings()
     return {
         "status": "confirmed",
         "statementId": statement_id,
-        "positionsCreated": 0,
+        "positionsCreated": len(holdings),
         "persistedStatementId": None,
-        "persistedAccountId": None,
+        "persistedAccountId": "acc-demo-schwab-001",
         "mock": True,
     }
 
@@ -888,14 +727,15 @@ async def mock_confirm_statement(statement_id: str, _: str = Depends(require_moc
 @router.post("/planning/retirement")
 async def mock_retirement_plan(_: dict, __: str = Depends(require_mock_auth)):
     """Demo Monte Carlo response when B2C DB routes are unavailable."""
-    years = 45
-    path = [100000 + i * 8000 for i in range(years + 1)]
+    years = 30
+    start = 4_700_000
+    path = [start + i * 45_000 for i in range(years + 1)]
     return {
-        "success_rate": 78.5,
+        "success_rate": 92.5,
         "simulations": 1000,
-        "median_ending_balance": 850000,
-        "p10_ending": 420000,
-        "p90_ending": 1400000,
+        "median_ending_balance": 6_800_000,
+        "p10_ending": 4_200_000,
+        "p90_ending": 9_500_000,
         "percentile_paths": {
             "p10": path,
             "p25": path,
@@ -985,69 +825,52 @@ async def mock_plaid_accounts(_: str = Depends(require_mock_auth)):
 
 MOCK_INSIGHTS = [
     {
-        "id": "fee-savings",
-        "type": "fee_savings",
-        "title": "You could save ~$938/yr in investment fees",
+        "id": "retirement-track",
+        "type": "goal_off_track",
+        "title": "On track to retire in ~3 years",
         "body": (
-            "Your estimated fee rate (0.75%) is above the robo-advisor average (0.25%). "
-            "Understanding your fee structure helps you make informed decisions about "
-            "your investment strategy."
+            "With $4.7M invested and $300K in cash, your portfolio is 94% of your "
+            "$5M retirement target. Review your withdrawal glide path before 2028."
         ),
-        "cta_label": "View fee analyzer",
-        "cta_path": "/client/dashboard",
+        "cta_label": "View retirement plan",
+        "cta_path": "/client/planning",
         "priority": 1,
     },
     {
-        "id": "budget-overspend",
-        "type": "budget_overspend",
-        "title": "You're 23% over your Dining budget",
+        "id": "fee-savings",
+        "type": "fee_savings",
+        "title": "You could save ~$12,500/yr in investment fees",
         "body": (
-            "You've spent $246 on dining this month against a $200 limit. "
-            "Reviewing your spending categories can help you stay on track "
-            "and free up cash for your savings goals."
+            "Your estimated fee rate (0.50%) vs a traditional 1% advisor on $4.7M "
+            "could free significant cash for retirement spending."
         ),
-        "cta_label": "Review budgets",
-        "cta_path": "/client/budgets",
+        "cta_label": "View fee analyzer",
+        "cta_path": "/client/dashboard",
         "priority": 2,
-    },
-    {
-        "id": "goal-off-track",
-        "type": "goal_off_track",
-        "title": 'Your "Emergency Fund" goal needs attention',
-        "body": (
-            "You're 38% of the way to your emergency fund goal. "
-            "Financial experts generally recommend 3–6 months of expenses. "
-            "Small, consistent contributions can compound significantly over time."
-        ),
-        "cta_label": "Review goals",
-        "cta_path": "/client/goals",
-        "priority": 3,
     },
     {
         "id": "rebalance-needed",
         "type": "rebalance_needed",
-        "title": "Your portfolio is heavily weighted toward equities",
+        "title": "US equity is 4% above your growth target",
         "body": (
-            "About 82% of your portfolio is in equities. "
-            "Reviewing your target allocation relative to your risk profile "
-            "and time horizon is a routine part of portfolio maintenance."
+            "Your Schwab portfolio is overweight US equities ahead of retirement. "
+            "Consider trimming winners and adding to fixed income."
         ),
-        "cta_label": "View allocation",
+        "cta_label": "Review allocation",
         "cta_path": "/client/dashboard",
-        "priority": 4,
+        "priority": 3,
     },
     {
         "id": "tax-opportunity",
         "type": "tax_opportunity",
-        "title": "3 potential tax-loss harvesting opportunities",
+        "title": "4 tax-loss harvesting opportunities identified",
         "body": (
-            "Some positions in your portfolio may have unrealised losses that could "
-            "offset taxable gains. Tax-loss harvesting is a strategy worth discussing "
-            "with a tax professional before year-end."
+            "Estimated tax savings of $12,400 available from harvesting losses "
+            "in your taxable brokerage before year-end."
         ),
         "cta_label": "View tax summary",
-        "cta_path": "/client/dashboard",
-        "priority": 5,
+        "cta_path": "/client/tax",
+        "priority": 4,
     },
 ]
 
@@ -1340,3 +1163,27 @@ async def mock_planning_tiers():
             },
         })
     return {"tiers": out, "mock": True}
+
+
+# Routes only present in mock — mounted alongside real B2C when DATABASE_URL is set.
+supplement_router = APIRouter(prefix="/api/v1/b2c", tags=["b2c-demo-supplement"])
+
+for _path, _endpoint, _methods in [
+    ("/goals", mock_b2c_goals, ["GET"]),
+    ("/goals", mock_create_goal, ["POST"]),
+    ("/goals/{goal_id}", mock_delete_goal, ["DELETE"]),
+    ("/bills", mock_b2c_bills, ["GET"]),
+    ("/tax-summary", mock_b2c_tax_summary, ["GET"]),
+    ("/learning", mock_learning, ["GET"]),
+    ("/advisors", mock_advisors, ["GET"]),
+    ("/push/subscribe", mock_push_subscribe, ["POST"]),
+    ("/push/subscribe", mock_push_unsubscribe, ["DELETE"]),
+    ("/push/status", mock_push_status, ["GET"]),
+    ("/advisor/transparency", mock_advisor_transparency, ["GET"]),
+    ("/advisor/messages", mock_advisor_messages, ["GET"]),
+    ("/advisor/messages", mock_send_advisor_message, ["POST"]),
+    ("/advisor/documents", mock_advisor_documents, ["GET"]),
+    ("/advisor/documents/upload", mock_upload_advisor_document, ["POST"]),
+    ("/plaid/transactions", mock_b2c_transactions, ["GET"]),
+]:
+    supplement_router.add_api_route(_path, _endpoint, methods=_methods)

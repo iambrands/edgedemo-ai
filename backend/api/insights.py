@@ -178,18 +178,9 @@ def _build_insights(user: User) -> list[dict]:
 async def get_insights(current_user: User = Depends(get_current_user)):
     """Return 3–5 contextual insights for the authenticated B2C user."""
     from fastapi import HTTPException
-    from backend.services.b2c_demo import is_demo_user
-
     user_type = str(getattr(current_user, "user_type", "") or "")
     if not user_type.startswith("b2c_"):
         raise HTTPException(status_code=404, detail="Not found")
-
-    if is_demo_user(current_user):
-        try:
-            from backend.api.mock_b2c import MOCK_INSIGHTS
-        except ImportError:
-            from api.mock_b2c import MOCK_INSIGHTS
-        return {"insights": MOCK_INSIGHTS, "count": len(MOCK_INSIGHTS)}
 
     insights = _build_insights(current_user)
 

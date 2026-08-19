@@ -16,6 +16,9 @@ from backend.models.account import Account
 from backend.models.client import Client
 from backend.models.statement import Statement
 from backend.models.user import User
+from backend.services.b2c_demo import is_demo_user
+from backend.services.b2c_demo_persona import DEMO_STATEMENTS, get_demo_holdings
+from backend.services.portfolio_csv_parser import parse_portfolio_file
 from backend.services.statement_persistence import StatementPersistenceService
 
 logger = logging.getLogger(__name__)
@@ -39,6 +42,9 @@ async def list_statements(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """List all confirmed statements for the authenticated B2C user."""
+    if is_demo_user(current_user):
+        return {"statements": DEMO_STATEMENTS}
+
     if not current_user.household_id:
         return {"statements": []}
 
@@ -89,13 +95,17 @@ async def upload_statement(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload a PDF statement for parsing. PDF only, 20 MB max."""
+    """Upload a PDF or CSV/XLSX positions export for parsing. 20 MB max."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
     filename_lower = (file.filename or "").lower()
-    if not filename_lower.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    allowed = filename_lower.endswith((".pdf", ".csv", ".xlsx", ".xls"))
+    if not allowed:
+        raise HTTPException(
+            status_code=400,
+            detail="Supported formats: PDF, CSV, or Excel (.xlsx/.xls)",
+        )
 
     file_bytes = await file.read()
     if len(file_bytes) > 20 * 1024 * 1024:
@@ -104,6 +114,46 @@ async def upload_statement(
         raise HTTPException(status_code=400, detail="File is empty")
 
     stmt_id = f"stmt-{str(uuid.uuid4())[:8]}"
+
+    if filename_lower.endswith((".csv", ".xlsx", ".xls")):
+        try:
+            parsed = parse_portfolio_file(file_bytes, file.filename)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        positions = [
+            {
+                "ticker": h.get("symbol", "UNKNOWN"),
+                "name": h.get("description", ""),
+                "quantity": h.get("quantity") or 0,
+                "value": h.get("market_value", 0),
+                "confidence": 0.98,
+            }
+            for h in parsed["holdings"]
+        ]
+        PARSED_STATEMENTS[stmt_id] = {
+            "id": stmt_id,
+            "filename": file.filename,
+            "custodian": parsed["custodian"],
+            "parsed": f"{parsed['position_count']} positions imported from spreadsheet",
+            "confidence": "98%",
+            "date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "status": "parsed",
+            "householdId": str(current_user.household_id) if current_user.household_id else None,
+            "uploadedByUserId": str(current_user.id),
+            "uploadedByRole": "b2c",
+            "positions": positions,
+            "totalValue": parsed["total_value"],
+        }
+        logger.info("B2C CSV upload parsed: %s (%d positions)", stmt_id, len(positions))
+        return {
+            "id": stmt_id,
+            "filename": file.filename,
+            "status": "parsed",
+            "message": "Spreadsheet parsed successfully.",
+            "estimated_seconds": 0,
+        }
+
     PARSED_STATEMENTS[stmt_id] = {
         "id": stmt_id,
         "filename": file.filename,
@@ -164,6 +214,17 @@ async def confirm_statement(
     db: AsyncSession = Depends(get_db),
 ):
     """Confirm parsed statement and persist it for the authenticated B2C user."""
+    if is_demo_user(current_user):
+        holdings = get_demo_holdings()
+        return {
+            "status": "confirmed",
+            "statementId": statement_id,
+            "positionsCreated": len(holdings),
+            "persistedStatementId": None,
+            "persistedAccountId": "acc-demo-schwab-001",
+            "message": f"{len(holdings)} positions confirmed and saved (demo mode)",
+        }
+
     user_type = str(getattr(current_user, "user_type", "") or "")
     if user_type and not user_type.startswith("b2c_"):
         # Scope guard: hide endpoint behavior from non-B2C identities.

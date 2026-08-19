@@ -688,6 +688,19 @@ export const b2cApi = {
   getInsights: () =>
     b2cFetch<{ insights: B2CInsight[]; count: number; mock?: boolean }>('/insights'),
 
+  getHoldings: () =>
+    b2cFetch<{ holdings: Array<{
+      symbol: string;
+      description: string;
+      quantity: number | null;
+      price: number | null;
+      market_value: number;
+      security_type: string;
+      asset_class: string;
+      gain_pct?: number;
+      cost_basis?: number;
+    }>; count: number; mock?: boolean }>('/holdings'),
+
   // Push notifications
   getPushStatus: () =>
     b2cFetch<{ subscribed: boolean; mock?: boolean }>('/push/status'),

@@ -28,43 +28,13 @@ def _require_b2c_user(user: User) -> None:
 
 
 def _demo_members() -> list[dict]:
-    return [
-        {
-            "id": "member-001",
-            "name": "Alex Morgan",
-            "email": "demo.client@firmum.ai",
-            "role": "owner",
-            "net_worth": 125000,
-        },
-        {
-            "id": "member-002",
-            "name": "Jordan Morgan",
-            "email": "jordan.morgan@example.com",
-            "role": "partner",
-            "net_worth": 87000,
-        },
-    ]
+    from backend.services.b2c_demo_persona import DEMO_HOUSEHOLD_MEMBERS
+    return DEMO_HOUSEHOLD_MEMBERS
 
 
 def _demo_joint_goals() -> list[dict]:
-    return [
-        {
-            "id": "hgoal-001",
-            "name": "Joint Retirement Fund",
-            "target_amount": 2000000,
-            "current_amount": 212000,
-            "progress_pct": 10.6,
-            "target_date": "2045-12-31",
-        },
-        {
-            "id": "hgoal-002",
-            "name": "Vacation Home Down Payment",
-            "target_amount": 150000,
-            "current_amount": 42000,
-            "progress_pct": 28.0,
-            "target_date": "2029-06-30",
-        },
-    ]
+    from backend.services.b2c_demo_persona import DEMO_JOINT_GOALS
+    return DEMO_JOINT_GOALS
 
 
 @router.get("/members")

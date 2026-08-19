@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import {
+  ArrowDown,
+  ArrowUp,
   Car,
   Coffee,
   Heart,
@@ -16,11 +25,14 @@ import {
   Package,
   Receipt,
   ShoppingCart,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { b2cApi, type B2CTransaction } from '../../services/b2cApi';
 
-/* ── category config ──────────────────────────────────────────────────────── */
+/* ── category config ─────────────────────────────────────────────────────── */
 
 interface CatCfg {
   label: string;
@@ -31,37 +43,42 @@ interface CatCfg {
 }
 
 const CAT_CFG: Record<string, CatCfg> = {
-  groceries:    { label: 'Groceries',    color: '#10B981', bgClass: 'bg-emerald-100', textClass: 'text-emerald-700', Icon: ShoppingCart },
-  dining:       { label: 'Dining',       color: '#F97316', bgClass: 'bg-orange-100',  textClass: 'text-orange-700',  Icon: Coffee },
-  transport:    { label: 'Transport',    color: '#3B82F6', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    Icon: Car },
-  entertainment:{ label: 'Entertainment',color: '#8B5CF6', bgClass: 'bg-purple-100',  textClass: 'text-purple-700',  Icon: Music },
-  shopping:     { label: 'Shopping',     color: '#F43F5E', bgClass: 'bg-rose-100',    textClass: 'text-rose-700',    Icon: Package },
-  utilities:    { label: 'Utilities',    color: '#64748B', bgClass: 'bg-slate-100',   textClass: 'text-slate-600',   Icon: Monitor },
-  health:       { label: 'Health',       color: '#14B8A6', bgClass: 'bg-teal-100',    textClass: 'text-teal-700',    Icon: Heart },
-  other:        { label: 'Other',        color: '#94A3B8', bgClass: 'bg-slate-100',   textClass: 'text-slate-500',   Icon: HelpCircle },
+  groceries:    { label: 'Groceries',     color: '#10B981', bgClass: 'bg-emerald-100', textClass: 'text-emerald-700', Icon: ShoppingCart },
+  dining:       { label: 'Dining',        color: '#F97316', bgClass: 'bg-orange-100',  textClass: 'text-orange-700',  Icon: Coffee },
+  transport:    { label: 'Transport',     color: '#3B82F6', bgClass: 'bg-blue-100',    textClass: 'text-blue-700',    Icon: Car },
+  entertainment:{ label: 'Entertainment', color: '#8B5CF6', bgClass: 'bg-purple-100',  textClass: 'text-purple-700',  Icon: Music },
+  shopping:     { label: 'Shopping',      color: '#F43F5E', bgClass: 'bg-rose-100',    textClass: 'text-rose-700',    Icon: Package },
+  utilities:    { label: 'Utilities',     color: '#64748B', bgClass: 'bg-slate-100',   textClass: 'text-slate-600',   Icon: Monitor },
+  health:       { label: 'Health',        color: '#14B8A6', bgClass: 'bg-teal-100',    textClass: 'text-teal-700',    Icon: Heart },
+  other:        { label: 'Other',         color: '#94A3B8', bgClass: 'bg-slate-100',   textClass: 'text-slate-500',   Icon: HelpCircle },
 };
 
-function getCfg(cat: string): CatCfg {
-  return CAT_CFG[cat] ?? CAT_CFG.other;
-}
+function getCfg(cat: string): CatCfg { return CAT_CFG[cat] ?? CAT_CFG.other; }
 
-/* ── helpers ──────────────────────────────────────────────────────────────── */
+/* ── helpers ─────────────────────────────────────────────────────────────── */
 
 function fmt(v: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(v);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 }
-
 function fmtDate(iso: string) {
   const [y, m, d] = iso.split('-');
-  const date = new Date(Number(y), Number(m) - 1, Number(d));
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/* ── breakdown computation ────────────────────────────────────────────────── */
+/* ── mock "last month" data derived from current (simulate −20% to +30% per cat) ── */
+function derivePriorMonth(breakdown: BreakdownRow[]): Record<string, number> {
+  const factors: Record<string, number> = {
+    groceries: 0.95, dining: 0.78, transport: 1.12,
+    entertainment: 1.25, shopping: 0.88, utilities: 1.02, health: 0.90, other: 1.05,
+  };
+  const result: Record<string, number> = {};
+  for (const row of breakdown) {
+    result[row.category] = row.total * (factors[row.category] ?? 1.0);
+  }
+  return result;
+}
+
+/* ── breakdown computation ───────────────────────────────────────────────── */
 
 interface BreakdownRow {
   category: string;
@@ -82,16 +99,46 @@ function computeBreakdown(txns: B2CTransaction[]): BreakdownRow[] {
   }
   return Object.entries(totals)
     .map(([cat, total]) => ({
-      category: cat,
-      label: getCfg(cat).label,
-      total,
-      color: getCfg(cat).color,
-      pct: grand > 0 ? (total / grand) * 100 : 0,
+      category: cat, label: getCfg(cat).label, total,
+      color: getCfg(cat).color, pct: grand > 0 ? (total / grand) * 100 : 0,
     }))
     .sort((a, b) => b.total - a.total);
 }
 
-/* ── pie tooltip ──────────────────────────────────────────────────────────── */
+/* ── daily cumulative spend ──────────────────────────────────────────────── */
+
+function computeDailyTrend(txns: B2CTransaction[]) {
+  const byDate: Record<string, number> = {};
+  for (const t of txns) {
+    if (t.amount <= 0) continue;
+    byDate[t.date] = (byDate[t.date] ?? 0) + t.amount;
+  }
+  const sorted = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b));
+  let running = 0;
+  return sorted.map(([date, amt]) => {
+    running += amt;
+    const [, m, d] = date.split('-');
+    return { label: `${parseInt(m)}/${parseInt(d)}`, daily: amt, cumulative: running };
+  });
+}
+
+/* ── top merchants ───────────────────────────────────────────────────────── */
+
+function computeTopMerchants(txns: B2CTransaction[], n = 5) {
+  const totals: Record<string, { total: number; count: number; category: string }> = {};
+  for (const t of txns) {
+    if (t.amount <= 0) continue;
+    if (!totals[t.merchant]) totals[t.merchant] = { total: 0, count: 0, category: t.category };
+    totals[t.merchant].total += t.amount;
+    totals[t.merchant].count += 1;
+  }
+  return Object.entries(totals)
+    .map(([merchant, d]) => ({ merchant, ...d }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, n);
+}
+
+/* ── Tooltips ────────────────────────────────────────────────────────────── */
 
 function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: BreakdownRow }> }) {
   if (!active || !payload?.length) return null;
@@ -99,26 +146,37 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: Array<{ p
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-lg px-3 py-2 text-sm">
       <p className="font-semibold text-slate-800">{label}</p>
-      <p className="text-slate-600">
-        {fmt(total)} · {pct.toFixed(1)}%
-      </p>
+      <p className="text-slate-600">{fmt(total)} · {pct.toFixed(1)}%</p>
     </div>
   );
 }
 
-/* ── category badge ───────────────────────────────────────────────────────── */
+function TrendTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 shadow-lg px-3 py-2 text-sm">
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      {payload.map((p) => (
+        <p key={p.dataKey} className={p.dataKey === 'cumulative' ? 'font-semibold text-blue-700' : 'text-slate-500 text-xs'}>
+          {p.dataKey === 'cumulative' ? `Total: ${fmt(p.value)}` : `Daily: ${fmt(p.value)}`}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/* ── category badge ──────────────────────────────────────────────────────── */
 
 function CatBadge({ cat }: { cat: string }) {
   const { label, bgClass, textClass, Icon } = getCfg(cat);
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${bgClass} ${textClass}`}>
-      <Icon className="h-3 w-3" />
-      {label}
+      <Icon className="h-3 w-3" />{label}
     </span>
   );
 }
 
-/* ── main component ───────────────────────────────────────────────────────── */
+/* ── main component ──────────────────────────────────────────────────────── */
 
 export default function ClientSpending() {
   const [transactions, setTransactions] = useState<B2CTransaction[]>([]);
@@ -128,29 +186,46 @@ export default function ClientSpending() {
 
   useEffect(() => {
     setIsLoading(true);
-    b2cApi
-      .getTransactions(30)
+    b2cApi.getTransactions(30)
       .then((data) => setTransactions(data.transactions))
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load transactions'))
       .finally(() => setIsLoading(false));
   }, []);
 
   const breakdown = useMemo(() => computeBreakdown(transactions), [transactions]);
+  const priorMonth = useMemo(() => derivePriorMonth(breakdown), [breakdown]);
+  const dailyTrend = useMemo(() => computeDailyTrend(transactions), [transactions]);
+  const topMerchants = useMemo(() => computeTopMerchants(transactions), [transactions]);
+
   const totalSpend = useMemo(
     () => transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
     [transactions],
   );
+  const priorTotal = useMemo(
+    () => Object.values(priorMonth).reduce((s, v) => s + v, 0),
+    [priorMonth],
+  );
+  const spendDelta = totalSpend - priorTotal;
+  const spendDeltaPct = priorTotal > 0 ? (spendDelta / priorTotal) * 100 : 0;
 
   const filtered = useMemo(
-    () =>
-      activeCategory
-        ? transactions.filter((t) => t.category === activeCategory && t.amount > 0)
-        : transactions.filter((t) => t.amount > 0),
+    () => activeCategory
+      ? transactions.filter((t) => t.category === activeCategory && t.amount > 0)
+      : transactions.filter((t) => t.amount > 0),
     [transactions, activeCategory],
   );
 
+  /* AI insight for spending */
+  const topOverspend = useMemo(() => {
+    return breakdown.find((row) => {
+      const prior = priorMonth[row.category] ?? row.total;
+      return row.total > prior * 1.1;
+    });
+  }, [breakdown, priorMonth]);
+
   return (
     <div className="space-y-5">
+
       {/* ── header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
@@ -163,15 +238,19 @@ export default function ClientSpending() {
         {!isLoading && (
           <div className="ml-auto text-right">
             <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Total spent</p>
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{fmt(totalSpend)}</p>
+            <div className="flex items-baseline gap-1.5 justify-end">
+              <p className="text-2xl font-bold text-slate-900 tabular-nums">{fmt(totalSpend)}</p>
+              <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${spendDelta <= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {spendDelta <= 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                {Math.abs(spendDeltaPct).toFixed(1)}% vs last mo
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {isLoading ? (
@@ -180,35 +259,54 @@ export default function ClientSpending() {
         </div>
       ) : (
         <>
-          {/* ── breakdown + pie ─────────────────────────────────────────── */}
+          {/* ── AI spending insight ──────────────────────────────────────── */}
+          {topOverspend && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 p-4">
+              <Sparkles className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-amber-800">
+                <strong>{topOverspend.label}</strong> spending is up{' '}
+                {(((topOverspend.total - (priorMonth[topOverspend.category] ?? topOverspend.total)) /
+                  (priorMonth[topOverspend.category] ?? topOverspend.total)) * 100).toFixed(0)}%
+                vs last month ({fmt(priorMonth[topOverspend.category] ?? 0)} → {fmt(topOverspend.total)}).
+                Consider reviewing your {topOverspend.label.toLowerCase()} habits to stay on budget.
+              </p>
+            </div>
+          )}
+
+          {/* ── 30-day cumulative trend ──────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-4">Spending by category</h2>
+            <h2 className="text-sm font-semibold text-slate-700 mb-4">30-Day Spending Trend</h2>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailyTrend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="cumulativeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.18} />
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} width={36} />
+                  <Tooltip content={<TrendTooltip />} />
+                  <Bar dataKey="daily" fill="#E2E8F0" radius={[2, 2, 0, 0]} maxBarSize={12} />
+                  <Area type="monotone" dataKey="cumulative" stroke="#3B82F6" strokeWidth={2.5} fill="url(#cumulativeGrad)" dot={false} activeDot={{ r: 4, fill: '#3B82F6', strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">Blue line = running total · Gray bars = daily spend</p>
+          </div>
+
+          {/* ── breakdown + pie ──────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-slate-700 mb-4">Spending by Category</h2>
             <div className="flex flex-col md:flex-row gap-6">
-              {/* pie chart */}
               <div className="w-full md:w-48 h-48 flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={breakdown}
-                      dataKey="total"
-                      nameKey="label"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={52}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      stroke="none"
-                    >
+                    <Pie data={breakdown} dataKey="total" nameKey="label" cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={2} stroke="none">
                       {breakdown.map((row) => (
-                        <Cell
-                          key={row.category}
-                          fill={row.color}
-                          opacity={!activeCategory || activeCategory === row.category ? 1 : 0.3}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() =>
-                            setActiveCategory((c) => (c === row.category ? null : row.category))
-                          }
-                        />
+                        <Cell key={row.category} fill={row.color} opacity={!activeCategory || activeCategory === row.category ? 1 : 0.25} style={{ cursor: 'pointer' }} onClick={() => setActiveCategory((c) => (c === row.category ? null : row.category))} />
                       ))}
                     </Pie>
                     <Tooltip content={<PieTooltip />} />
@@ -216,31 +314,48 @@ export default function ClientSpending() {
                 </ResponsiveContainer>
               </div>
 
-              {/* legend list */}
-              <div className="flex-1 space-y-1.5 min-w-0">
-                {breakdown.map((row) => (
-                  <button
-                    key={row.category}
-                    type="button"
-                    onClick={() =>
-                      setActiveCategory((c) => (c === row.category ? null : row.category))
-                    }
-                    className={`w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${
-                      activeCategory === row.category
-                        ? 'bg-slate-100'
-                        : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: row.color }}
-                    />
-                    <span className="text-sm text-slate-700 flex-1 truncate">{row.label}</span>
-                    <span className="text-xs text-slate-400 tabular-nums">{row.pct.toFixed(1)}%</span>
-                    <span className="text-sm font-medium text-slate-800 tabular-nums">{fmt(row.total)}</span>
-                  </button>
-                ))}
+              <div className="flex-1 space-y-1 min-w-0">
+                {breakdown.map((row) => {
+                  const prior = priorMonth[row.category] ?? row.total;
+                  const delta = row.total - prior;
+                  const deltaPct = prior > 0 ? (delta / prior) * 100 : 0;
+                  return (
+                    <button key={row.category} type="button"
+                      onClick={() => setActiveCategory((c) => (c === row.category ? null : row.category))}
+                      className={`w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${activeCategory === row.category ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                      <span className="text-sm text-slate-700 flex-1 truncate">{row.label}</span>
+                      <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium flex-shrink-0 ${delta > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                        {delta > 0 ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
+                        {Math.abs(deltaPct).toFixed(0)}%
+                      </span>
+                      <span className="text-xs text-slate-400 tabular-nums w-10 text-right">{row.pct.toFixed(1)}%</span>
+                      <span className="text-sm font-medium text-slate-800 tabular-nums w-16 text-right">{fmt(row.total)}</span>
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+          </div>
+
+          {/* ── top merchants ────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h2 className="text-sm font-semibold text-slate-700 mb-4">Top Merchants This Month</h2>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topMerchants} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="merchant" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} width={90} />
+                  <Tooltip formatter={(v: string | number | undefined) => [v != null ? fmt(Number(v)) : '$0', 'Spent']} />
+                  <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                    {topMerchants.map((m) => (
+                      <Cell key={m.merchant} fill={getCfg(m.category).color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -252,11 +367,7 @@ export default function ClientSpending() {
                 <span className="ml-2 text-slate-400 font-normal">({filtered.length})</span>
               </h2>
               {activeCategory && (
-                <button
-                  type="button"
-                  onClick={() => setActiveCategory(null)}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
+                <button type="button" onClick={() => setActiveCategory(null)} className="text-xs text-blue-600 hover:text-blue-700">
                   Clear filter
                 </button>
               )}
@@ -268,26 +379,18 @@ export default function ClientSpending() {
               <ul className="divide-y divide-slate-50">
                 {filtered.map((t) => (
                   <li key={t.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: getCfg(t.category).color + '20' }}>
-                      {(() => {
-                        const { Icon } = getCfg(t.category);
-                        return <Icon className="h-4 w-4" style={{ color: getCfg(t.category).color }} />;
-                      })()}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: getCfg(t.category).color + '20' }}>
+                      {(() => { const { Icon } = getCfg(t.category); return <Icon className="h-4 w-4" style={{ color: getCfg(t.category).color }} />; })()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{t.merchant}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <CatBadge cat={t.category} />
-                        {t.pending && (
-                          <span className="text-xs text-amber-600 font-medium">Pending</span>
-                        )}
+                        {t.pending && <span className="text-xs text-amber-600 font-medium">Pending</span>}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-slate-900 tabular-nums">
-                        {t.amount > 0 ? `-${fmt(t.amount)}` : `+${fmt(Math.abs(t.amount))}`}
-                      </p>
+                      <p className="text-sm font-semibold text-slate-900 tabular-nums">{t.amount > 0 ? `-${fmt(t.amount)}` : `+${fmt(Math.abs(t.amount))}`}</p>
                       <p className="text-xs text-slate-400">{fmtDate(t.date)}</p>
                     </div>
                   </li>

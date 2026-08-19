@@ -4,6 +4,9 @@ import { Clock } from 'lucide-react';
 import { ClientPageShell } from './ClientPageShell';
 import { b2cApi, storeB2CTokens } from '../../services/b2cApi';
 
+const DEMO_CLIENT_EMAIL = 'demo.client@firmum.ai';
+const DEMO_CLIENT_PASSWORD = 'FirmumDemo2026!';
+
 /** After login, redirect to onboarding if the user hasn't completed it yet. */
 async function resolvePostLoginRoute(): Promise<string> {
   try {
@@ -99,6 +102,26 @@ export default function ClientRegister() {
             Sign in
           </button>
         </div>
+
+        {!isRegister && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 space-y-2">
+            <p className="font-medium">Premier demo account ($5M net worth)</p>
+            <p className="text-blue-800 text-xs">
+              Pre-retiree profile with Schwab portfolio, $300K cash, moderate growth risk — all pages seeded.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail(DEMO_CLIENT_EMAIL);
+                setPassword(DEMO_CLIENT_PASSWORD);
+                setError('');
+              }}
+              className="text-xs font-medium text-blue-700 hover:underline"
+            >
+              Use demo credentials
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

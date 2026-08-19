@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models import get_session_factory
 from backend.models.user import User
 from backend.services.auth_service import AuthService
+from backend.services.b2c_demo import build_demo_user, is_demo_token_sub
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,9 @@ async def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
+
+    if is_demo_token_sub(payload.sub):
+        return build_demo_user()
 
     result = await db.execute(select(User).where(User.id == UUID(payload.sub)))
     user = result.scalar_one_or_none()

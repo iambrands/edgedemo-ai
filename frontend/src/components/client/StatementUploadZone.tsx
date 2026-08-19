@@ -1,7 +1,8 @@
 /**
- * Drag-and-drop PDF statement uploader for B2C users.
+ * Drag-and-drop statement uploader for B2C users.
  * Uploads to POST /api/v1/b2c/statements/upload, polls for parse status,
  * then allows the user to confirm the parsed statement.
+ * Supports PDF statements and CSV/Excel position exports (Schwab, Fidelity, etc.).
  */
 import { useCallback, useRef, useState } from 'react';
 import { CheckCircle, FileText, Loader2, Upload, XCircle } from 'lucide-react';
@@ -24,7 +25,16 @@ interface StatementUploadZoneProps {
   onConfirmed?: (statementId: string, positionsCreated: number) => void;
 }
 
+const ACCEPTED_EXTENSIONS = ['.pdf', '.csv', '.xlsx', '.xls'];
+const ACCEPTED_MIME =
+  '.pdf,application/pdf,.csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xls,application/vnd.ms-excel';
+
 const B2C_API = '/api/v1/b2c/statements';
+
+function isAcceptedFile(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
 
 function authHeaders(): HeadersInit {
   const tok = getB2CToken();
@@ -67,8 +77,8 @@ export function StatementUploadZone({ onConfirmed }: StatementUploadZoneProps) {
   };
 
   const handleFile = useCallback(async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are supported.');
+    if (!isAcceptedFile(file)) {
+      setError('Supported formats: PDF, CSV, or Excel (.xlsx/.xls).');
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
@@ -77,7 +87,7 @@ export function StatementUploadZone({ onConfirmed }: StatementUploadZoneProps) {
     }
 
     setError('');
-    setStage('uploading');
+      setStage('uploading');
 
     try {
       const form = new FormData();
@@ -92,6 +102,17 @@ export function StatementUploadZone({ onConfirmed }: StatementUploadZoneProps) {
         throw new Error((err as { detail?: string }).detail ?? `Upload failed: ${uploadRes.status}`);
       }
       const upload = await uploadRes.json();
+
+      if (upload.status === 'parsed') {
+        const parsedRes = await fetch(`${B2C_API}/${upload.id}/status`, {
+          headers: authHeaders(),
+        });
+        if (!parsedRes.ok) throw new Error(`Status check failed: ${parsedRes.status}`);
+        const parsed: ParsedResult = await parsedRes.json();
+        setResult(parsed);
+        setStage('review');
+        return;
+      }
 
       setStage('parsing');
       const parsed = await pollStatus(upload.id);
@@ -250,15 +271,15 @@ export function StatementUploadZone({ onConfirmed }: StatementUploadZoneProps) {
       <input
         ref={fileRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept={ACCEPTED_MIME}
         onChange={onFileChange}
         className="hidden"
       />
       <Upload className={`mx-auto h-8 w-8 mb-2 ${isDragging ? 'text-blue-600' : 'text-slate-400'}`} />
       <p className="text-sm font-medium text-slate-700">
-        {isDragging ? 'Drop your PDF here' : 'Drag & drop a statement PDF'}
+        {isDragging ? 'Drop your file here' : 'Drag & drop a statement PDF or positions CSV'}
       </p>
-      <p className="text-xs text-slate-400 mt-1">or click to browse · PDF only · 20 MB max</p>
+      <p className="text-xs text-slate-400 mt-1">or click to browse · PDF, CSV, Excel · 20 MB max</p>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
