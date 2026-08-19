@@ -59,15 +59,23 @@ export interface B2CRiskProfileResponse {
   risk_profile_completed: boolean;
 }
 
+export type B2CAccountCategory = 'depository' | 'investment' | 'credit' | 'loan';
+
+export interface B2CDashboardAccount {
+  id: string;
+  custodian: string;
+  account_type: string;
+  total_value: string;
+  account_category?: B2CAccountCategory;
+  is_liability?: boolean;
+  last_statement_date?: string | null;
+}
+
 export interface B2CDashboardResponse {
   total_aum: string;
-  accounts: Array<{
-    id: string;
-    custodian: string;
-    account_type: string;
-    total_value: string;
-    last_statement_date?: string | null;
-  }>;
+  total_assets?: string;
+  total_liabilities?: string;
+  accounts: B2CDashboardAccount[];
   allocation: Array<{
     asset_class: string;
     pct: string;
@@ -150,6 +158,96 @@ export interface B2CBudget {
   current_spend: number;
   pct: number;
   status: 'ok' | 'warning' | 'over';
+}
+
+export interface B2CAdvisorInfo {
+  name: string;
+  firm: string;
+  email: string;
+}
+
+export interface B2CAdvisorActivityItem {
+  id: string;
+  date: string;
+  type: string;
+  title: string;
+  description: string;
+}
+
+export interface B2CAdvisorFees {
+  fee_rate_pct: number;
+  aum_basis: number;
+  annual_fee_estimate: number;
+  ytd_fees_paid: number;
+  billing_period: string;
+  next_billing_date: string;
+  last_billed_date: string;
+}
+
+export interface B2CAdvisorPerformancePoint {
+  date: string;
+  portfolio: number;
+  benchmark: number;
+}
+
+export interface B2CAdvisorPerformance {
+  benchmark_name: string;
+  portfolio_return_ytd: number;
+  benchmark_return_ytd: number;
+  portfolio_return_1y: number;
+  benchmark_return_1y: number;
+  time_series: B2CAdvisorPerformancePoint[];
+}
+
+export interface B2CAdvisorTransparency {
+  advisor: B2CAdvisorInfo;
+  activity: B2CAdvisorActivityItem[];
+  fees: B2CAdvisorFees;
+  performance: B2CAdvisorPerformance;
+  mock?: boolean;
+}
+
+export interface B2CAdvisorMessage {
+  id: string;
+  sender: 'client' | 'advisor';
+  sender_name: string;
+  body: string;
+  timestamp: string;
+}
+
+export interface B2CAdvisorDocument {
+  id: string;
+  title: string;
+  type: string;
+  shared_date: string;
+  size_bytes: number;
+  is_read: boolean;
+  shared_by: string;
+}
+
+export interface B2CHouseholdMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  net_worth: number;
+}
+
+export interface B2CJointGoal {
+  id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  progress_pct: number;
+  target_date: string;
+}
+
+export interface B2CHouseholdCombined {
+  combined_net_worth: number;
+  member_count: number;
+  members: Array<{ name: string; net_worth: number }>;
+  joint_goals: B2CJointGoal[];
+  mock?: boolean;
 }
 
 export interface B2CTransaction {
@@ -486,5 +584,44 @@ export const b2cApi = {
     b2cFetch<B2CBudget>('/budgets', {
       method: 'POST',
       body: { category, monthly_limit },
+    }),
+
+  // Advisor-linked features
+  getAdvisorTransparency: () =>
+    b2cFetch<B2CAdvisorTransparency>('/advisor/transparency'),
+
+  getAdvisorMessages: () =>
+    b2cFetch<{ advisor: B2CAdvisorInfo; messages: B2CAdvisorMessage[]; mock?: boolean }>(
+      '/advisor/messages',
+    ),
+
+  sendAdvisorMessage: (body: string) =>
+    b2cFetch<B2CAdvisorMessage>('/advisor/messages', {
+      method: 'POST',
+      body: { body },
+    }),
+
+  getAdvisorDocuments: () =>
+    b2cFetch<{ documents: B2CAdvisorDocument[]; mock?: boolean }>('/advisor/documents'),
+
+  uploadAdvisorDocument: (filename: string, sizeBytes: number) =>
+    b2cFetch<B2CAdvisorDocument>('/advisor/documents/upload', {
+      method: 'POST',
+      body: { filename, size_bytes: sizeBytes },
+    }),
+
+  // Household sharing
+  getHouseholdMembers: () =>
+    b2cFetch<{ members: B2CHouseholdMember[]; pending_invites: string[]; mock?: boolean }>(
+      '/household/members',
+    ),
+
+  getHouseholdCombinedNetWorth: () =>
+    b2cFetch<B2CHouseholdCombined>('/household/combined-net-worth'),
+
+  inviteHouseholdMember: (email: string) =>
+    b2cFetch<{ status: string; email: string }>('/household/invite', {
+      method: 'POST',
+      body: { email },
     }),
 };

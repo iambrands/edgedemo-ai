@@ -1,5 +1,7 @@
 """Mock B2C endpoints when DATABASE_URL is not configured."""
 
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -33,21 +35,46 @@ MOCK_ME = {
     "demo_mode": True,
 }
 
+# Set MOCK_B2C_ADVISOR_MODE=true in env to demo advisor-linked shell nav
+_MOCK_ADVISOR_MODE = os.getenv("MOCK_B2C_ADVISOR_MODE", "").lower() in ("1", "true", "yes")
+
+MOCK_ME_ADVISOR = {
+    **MOCK_ME,
+    "management_mode": "advisor_linked",
+    "advisor_connection_status": "active",
+    "onboarding_completed": True,
+}
+
 # Realistic first-run dashboard — avoids $0 empty state for new DIY users in no-DB mode.
 DEMO_TOTAL_AUM = "125000"
 
 DEMO_ACCOUNTS = [
+    # Depository (assets)
     {
         "id": "acc-demo-001",
         "custodian": "Chase",
         "account_type": "Checking",
+        "account_category": "depository",
+        "is_liability": False,
         "total_value": "12450",
         "last_statement_date": "2026-07-31",
     },
     {
+        "id": "acc-demo-004",
+        "custodian": "Ally Bank",
+        "account_type": "Savings",
+        "account_category": "depository",
+        "is_liability": False,
+        "total_value": "22550",
+        "last_statement_date": "2026-07-31",
+    },
+    # Investment (assets)
+    {
         "id": "acc-demo-002",
         "custodian": "Fidelity",
         "account_type": "Brokerage",
+        "account_category": "investment",
+        "is_liability": False,
         "total_value": "78320",
         "last_statement_date": "2026-07-31",
     },
@@ -55,10 +82,44 @@ DEMO_ACCOUNTS = [
         "id": "acc-demo-003",
         "custodian": "Vanguard",
         "account_type": "401(k)",
-        "total_value": "34230",
+        "account_category": "investment",
+        "is_liability": False,
+        "total_value": "51680",
+        "last_statement_date": "2026-07-31",
+    },
+    # Credit cards (liabilities)
+    {
+        "id": "acc-demo-005",
+        "custodian": "Chase",
+        "account_type": "Sapphire Reserve",
+        "account_category": "credit",
+        "is_liability": True,
+        "total_value": "3400",
+        "last_statement_date": "2026-07-31",
+    },
+    {
+        "id": "acc-demo-006",
+        "custodian": "American Express",
+        "account_type": "Gold Card",
+        "account_category": "credit",
+        "is_liability": True,
+        "total_value": "1600",
+        "last_statement_date": "2026-07-31",
+    },
+    # Loans (liabilities)
+    {
+        "id": "acc-demo-007",
+        "custodian": "Wells Fargo",
+        "account_type": "Mortgage",
+        "account_category": "loan",
+        "is_liability": True,
+        "total_value": "35000",
         "last_statement_date": "2026-07-31",
     },
 ]
+
+DEMO_TOTAL_ASSETS = "165000"
+DEMO_TOTAL_LIABILITIES = "40000"
 
 DEMO_ALLOCATION = [
     {"asset_class": "US Equity", "pct": "55.0", "value": "68750"},
@@ -387,6 +448,336 @@ DEMO_BILLS = [
 ]
 
 
+# ── Advisor-linked client features (B2C-302/303/304) ───────────────────────
+
+DEMO_ADVISOR = {
+    "name": "Leslie Wilson, CFP",
+    "firm": "IAB Advisors, Inc.",
+    "email": "leslie@iabadvisors.com",
+}
+
+DEMO_ADVISOR_ACTIVITY = [
+    {
+        "id": "act-001",
+        "date": "2026-08-12",
+        "type": "rebalance",
+        "title": "Portfolio rebalance",
+        "description": "Reduced large-cap equity overweight by 3% and added to intermediate bonds.",
+    },
+    {
+        "id": "act-002",
+        "date": "2026-08-05",
+        "type": "trade",
+        "title": "Tax-loss harvest",
+        "description": "Sold VTI lot at a loss and repurchased VOO after wash-sale window — estimated $680 tax savings.",
+    },
+    {
+        "id": "act-003",
+        "date": "2026-07-28",
+        "type": "review",
+        "title": "Quarterly review completed",
+        "description": "Reviewed Q2 performance, updated retirement projection, and confirmed IPS allocation targets.",
+    },
+    {
+        "id": "act-004",
+        "date": "2026-07-15",
+        "type": "trade",
+        "title": "Dividend reinvestment",
+        "description": "Reinvested $842 in qualified dividends across taxable brokerage account.",
+    },
+    {
+        "id": "act-005",
+        "date": "2026-06-30",
+        "type": "rebalance",
+        "title": "401(k) allocation update",
+        "description": "Shifted 2% from international equity to US small-cap value per IPS glide path.",
+    },
+]
+
+DEMO_ADVISOR_FEES = {
+    "fee_rate_pct": 0.75,
+    "aum_basis": 125000,
+    "annual_fee_estimate": 937.50,
+    "ytd_fees_paid": 468.75,
+    "billing_period": "Quarterly",
+    "next_billing_date": "2026-10-01",
+    "last_billed_date": "2026-07-01",
+}
+
+DEMO_ADVISOR_PERFORMANCE = {
+    "benchmark_name": "S&P 500",
+    "portfolio_return_ytd": 8.4,
+    "benchmark_return_ytd": 7.1,
+    "portfolio_return_1y": 12.6,
+    "benchmark_return_1y": 11.2,
+    "time_series": [
+        {"date": "2025-09-30", "portfolio": 100.0, "benchmark": 100.0},
+        {"date": "2025-10-31", "portfolio": 101.2, "benchmark": 100.8},
+        {"date": "2025-11-30", "portfolio": 103.5, "benchmark": 102.1},
+        {"date": "2025-12-31", "portfolio": 104.8, "benchmark": 103.4},
+        {"date": "2026-01-31", "portfolio": 105.6, "benchmark": 104.0},
+        {"date": "2026-02-28", "portfolio": 106.9, "benchmark": 104.8},
+        {"date": "2026-03-31", "portfolio": 107.4, "benchmark": 105.2},
+        {"date": "2026-04-30", "portfolio": 108.8, "benchmark": 106.1},
+        {"date": "2026-05-31", "portfolio": 110.2, "benchmark": 107.0},
+        {"date": "2026-06-30", "portfolio": 111.5, "benchmark": 107.8},
+        {"date": "2026-07-31", "portfolio": 112.1, "benchmark": 108.5},
+        {"date": "2026-08-15", "portfolio": 112.6, "benchmark": 108.9},
+    ],
+}
+
+DEMO_ADVISOR_MESSAGES = [
+    {
+        "id": "msg-001",
+        "sender": "advisor",
+        "sender_name": "Leslie Wilson, CFP",
+        "body": "Hi! Your Q2 quarterly review is complete. I've posted the report in your document vault and made a few rebalancing recommendations.",
+        "timestamp": "2026-08-10T09:15:00Z",
+    },
+    {
+        "id": "msg-002",
+        "sender": "client",
+        "sender_name": "You",
+        "body": "Thanks Leslie — I saw the rebalance notification. Can you explain the bond duration change?",
+        "timestamp": "2026-08-10T14:22:00Z",
+    },
+    {
+        "id": "msg-003",
+        "sender": "advisor",
+        "sender_name": "Leslie Wilson, CFP",
+        "body": "Absolutely. We extended duration slightly to capture higher yields while keeping overall portfolio risk within your IPS target. Happy to walk through it on our next call.",
+        "timestamp": "2026-08-11T10:05:00Z",
+    },
+    {
+        "id": "msg-004",
+        "sender": "advisor",
+        "sender_name": "Leslie Wilson, CFP",
+        "body": "Also — I identified a tax-loss harvesting opportunity in your taxable account. Estimated savings of ~$680 if we execute before month-end.",
+        "timestamp": "2026-08-12T08:30:00Z",
+    },
+    {
+        "id": "msg-005",
+        "sender": "client",
+        "sender_name": "You",
+        "body": "That sounds good. Please proceed with the TLH trade if it aligns with our long-term plan.",
+        "timestamp": "2026-08-12T16:45:00Z",
+    },
+    {
+        "id": "msg-006",
+        "sender": "advisor",
+        "sender_name": "Leslie Wilson, CFP",
+        "body": "Done — trade executed today. You'll see it reflected in your activity log. Quarterly fee of $234.38 will be debited on Oct 1.",
+        "timestamp": "2026-08-13T11:00:00Z",
+    },
+]
+
+DEMO_ADVISOR_DOCUMENTS = [
+    {
+        "id": "doc-001",
+        "title": "Q2 2026 Quarterly Performance Report",
+        "type": "report",
+        "shared_date": "2026-07-15",
+        "size_bytes": 245760,
+        "is_read": True,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+    {
+        "id": "doc-002",
+        "title": "2025 Tax Summary — Form 1099 Composite",
+        "type": "tax",
+        "shared_date": "2026-02-10",
+        "size_bytes": 184320,
+        "is_read": True,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+    {
+        "id": "doc-003",
+        "title": "Financial Plan — Retirement Projection 2026",
+        "type": "plan",
+        "shared_date": "2026-05-20",
+        "size_bytes": 512000,
+        "is_read": False,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+    {
+        "id": "doc-004",
+        "title": "Investment Policy Statement (IPS)",
+        "type": "agreement",
+        "shared_date": "2025-11-01",
+        "size_bytes": 98304,
+        "is_read": True,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+    {
+        "id": "doc-005",
+        "title": "ADV Part 2A — Firm Brochure",
+        "type": "agreement",
+        "shared_date": "2025-11-01",
+        "size_bytes": 327680,
+        "is_read": True,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+    {
+        "id": "doc-006",
+        "title": "Fee Schedule & Billing Disclosure",
+        "type": "agreement",
+        "shared_date": "2025-11-01",
+        "size_bytes": 65536,
+        "is_read": True,
+        "shared_by": "Leslie Wilson, CFP",
+    },
+]
+
+
+def _require_advisor_linked_mode() -> None:
+    """Return 404 when advisor features are requested in DIY demo mode."""
+    if not _MOCK_ADVISOR_MODE:
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+@router.get("/advisor/transparency")
+async def mock_advisor_transparency(_: str = Depends(require_mock_auth)):
+    """Advisor activity, fees, and performance vs benchmark (advisor-linked only)."""
+    _require_advisor_linked_mode()
+    return {
+        "advisor": DEMO_ADVISOR,
+        "activity": DEMO_ADVISOR_ACTIVITY,
+        "fees": DEMO_ADVISOR_FEES,
+        "performance": DEMO_ADVISOR_PERFORMANCE,
+        "mock": True,
+    }
+
+
+@router.get("/advisor/messages")
+async def mock_advisor_messages(_: str = Depends(require_mock_auth)):
+    """Message thread with connected advisor."""
+    _require_advisor_linked_mode()
+    return {
+        "advisor": DEMO_ADVISOR,
+        "messages": DEMO_ADVISOR_MESSAGES,
+        "mock": True,
+    }
+
+
+@router.post("/advisor/messages")
+async def mock_send_advisor_message(body: dict, _: str = Depends(require_mock_auth)):
+    """Accept a client message (demo — no persistence)."""
+    _require_advisor_linked_mode()
+    import time
+    text = str(body.get("body", "")).strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Message body required")
+    return {
+        "id": f"msg-new-{int(time.time())}",
+        "sender": "client",
+        "sender_name": "You",
+        "body": text,
+        "timestamp": "2026-08-18T12:00:00Z",
+        "mock": True,
+    }
+
+
+@router.get("/advisor/documents")
+async def mock_advisor_documents(_: str = Depends(require_mock_auth)):
+    """Documents shared by advisor."""
+    _require_advisor_linked_mode()
+    return {"documents": DEMO_ADVISOR_DOCUMENTS, "mock": True}
+
+
+@router.post("/advisor/documents/upload")
+async def mock_upload_advisor_document(body: dict, _: str = Depends(require_mock_auth)):
+    """Accept client document upload metadata (demo — no file storage)."""
+    _require_advisor_linked_mode()
+    import time
+    name = str(body.get("filename", "uploaded-document.pdf")).strip()
+    return {
+        "id": f"doc-upload-{int(time.time())}",
+        "title": name,
+        "type": "client_upload",
+        "shared_date": "2026-08-18",
+        "size_bytes": int(body.get("size_bytes", 0)),
+        "is_read": True,
+        "shared_by": "You",
+        "mock": True,
+    }
+
+
+# ── Household sharing (B2C-305) ─────────────────────────────────────────────
+
+_mock_household_invites: list[str] = []
+
+DEMO_HOUSEHOLD_MEMBERS = [
+    {
+        "id": "member-001",
+        "name": "Alex Morgan",
+        "email": "demo.client@firmum.ai",
+        "role": "owner",
+        "net_worth": 125000,
+    },
+    {
+        "id": "member-002",
+        "name": "Jordan Morgan",
+        "email": "jordan.morgan@example.com",
+        "role": "partner",
+        "net_worth": 87000,
+    },
+]
+
+DEMO_JOINT_GOALS = [
+    {
+        "id": "hgoal-001",
+        "name": "Joint Retirement Fund",
+        "target_amount": 2000000,
+        "current_amount": 212000,
+        "progress_pct": 10.6,
+        "target_date": "2045-12-31",
+    },
+    {
+        "id": "hgoal-002",
+        "name": "Vacation Home Down Payment",
+        "target_amount": 150000,
+        "current_amount": 42000,
+        "progress_pct": 28.0,
+        "target_date": "2029-06-30",
+    },
+]
+
+
+@router.get("/household/members")
+async def mock_household_members(_: str = Depends(require_mock_auth)):
+    return {
+        "members": DEMO_HOUSEHOLD_MEMBERS,
+        "pending_invites": list(_mock_household_invites),
+        "mock": True,
+    }
+
+
+@router.get("/household/combined-net-worth")
+async def mock_household_combined(_: str = Depends(require_mock_auth)):
+    combined = sum(m["net_worth"] for m in DEMO_HOUSEHOLD_MEMBERS)
+    return {
+        "combined_net_worth": combined,
+        "member_count": len(DEMO_HOUSEHOLD_MEMBERS),
+        "members": [
+            {"name": m["name"], "net_worth": m["net_worth"]} for m in DEMO_HOUSEHOLD_MEMBERS
+        ],
+        "joint_goals": DEMO_JOINT_GOALS,
+        "mock": True,
+    }
+
+
+@router.post("/household/invite")
+async def mock_household_invite(body: dict, _: str = Depends(require_mock_auth)):
+    email = str(body.get("email", "")).lower().strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    if email == "demo.client@firmum.ai":
+        raise HTTPException(status_code=400, detail="Cannot invite yourself")
+    if email not in _mock_household_invites:
+        _mock_household_invites.append(email)
+    return {"status": "invited", "email": email, "mock": True}
+
+
 @router.get("/bills")
 async def mock_b2c_bills(_: str = Depends(require_mock_auth)):
     """Demo recurring bills (subscriptions) in no-DB mode."""
@@ -403,7 +794,7 @@ async def mock_b2c_tax_summary(_: str = Depends(require_mock_auth)):
 @router.get("/me")
 async def mock_b2c_me(_: str = Depends(require_mock_auth)):
     """Demo profile when B2C DB routes are unavailable."""
-    return MOCK_ME
+    return MOCK_ME_ADVISOR if _MOCK_ADVISOR_MODE else MOCK_ME
 
 
 @router.post("/forgot-password")
@@ -465,6 +856,8 @@ async def mock_b2c_dashboard(_: str = Depends(require_mock_auth)):
     """Demo DIY dashboard payload when B2C DB routes are unavailable."""
     return {
         "total_aum": DEMO_TOTAL_AUM,
+        "total_assets": DEMO_TOTAL_ASSETS,
+        "total_liabilities": DEMO_TOTAL_LIABILITIES,
         "accounts": DEMO_ACCOUNTS,
         "allocation": DEMO_ALLOCATION,
         "fee_impact_summary": DEMO_FEE_IMPACT,

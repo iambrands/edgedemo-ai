@@ -9,16 +9,21 @@ import {
   Repeat2,
   TrendingUp,
   UserPlus,
+  Users,
   Sparkles,
   Settings,
   LogOut,
   ChevronLeft,
   HelpCircle,
+  Activity,
+  MessageCircle,
+  FolderOpen,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Logo } from '../brand/Logo';
 import { clearB2CTokens } from '../../services/b2cApi';
+import { useClientProfile } from '../../contexts/ClientProfileContext';
 
 interface NavItem {
   to: string;
@@ -33,9 +38,16 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/client/budgets',        icon: PiggyBank,       label: 'Budgets' },
   { to: '/client/bills',          icon: Repeat2,         label: 'Recurring Bills' },
   { to: '/client/goals',          icon: Target,          label: 'Goals' },
+  { to: '/client/household',      icon: Users,           label: 'Household' },
   { to: '/client/retirement',     icon: TrendingUp,      label: 'Planning' },
   { to: '/client/connect-advisor',icon: UserPlus,        label: 'Connect Advisor' },
   { to: '/client/upgrade',        icon: Sparkles,        label: 'Upgrade' },
+];
+
+const ADVISOR_NAV_ITEMS: NavItem[] = [
+  { to: '/client/advisor-activity', icon: Activity,      label: 'Advisor Activity' },
+  { to: '/client/documents',        icon: FolderOpen,    label: 'Documents' },
+  { to: '/client/messages',         icon: MessageCircle, label: 'Messages' },
 ];
 
 const BOTTOM_NAV_ITEMS: NavItem[] = [
@@ -50,9 +62,14 @@ interface ClientNavProps {
 export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdvisorLinked, profile } = useClientProfile();
 
-  const email = localStorage.getItem('firmum_b2c_email') || 'My Account';
+  const email = profile?.email || localStorage.getItem('firmum_b2c_email') || 'My Account';
   const initial = email.charAt(0).toUpperCase();
+
+  const navItems = NAV_ITEMS.filter(
+    (item) => !(isAdvisorLinked && item.to === '/client/connect-advisor'),
+  );
 
   useEffect(() => {
     if (!isCollapsed && window.innerWidth < 768) {
@@ -105,7 +122,7 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
         {/* Main nav */}
         <nav className="flex-1 overflow-y-auto py-3 sidebar-scroll">
           <div className="px-3 space-y-0.5">
-            {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+            {navItems.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -124,6 +141,33 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
               </NavLink>
             ))}
           </div>
+
+          {isAdvisorLinked && (
+            <div className="px-3 mt-4 pt-4 border-t border-white/10 space-y-0.5">
+              {!isCollapsed && (
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-blue-300/80">
+                  Your advisor
+                </p>
+              )}
+              {ADVISOR_NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    clsx(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
+                      isActive
+                        ? 'bg-white/15 text-white shadow-sm'
+                        : 'text-blue-100 hover:bg-white/10 hover:text-white',
+                    )
+                  }
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {!isCollapsed && <span className="text-sm font-medium">{label}</span>}
+                </NavLink>
+              ))}
+            </div>
+          )}
 
           {/* Bottom links */}
           <div className="px-3 mt-4 pt-4 border-t border-white/10 space-y-0.5">

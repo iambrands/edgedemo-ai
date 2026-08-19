@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   CheckCircle,
+  CreditCard,
   Landmark,
   Link2,
   Receipt,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   TrendingUp,
   UserPlus,
+  Wallet,
   XCircle,
 } from 'lucide-react';
 import NetWorthChart from '../../components/client/NetWorthChart';
@@ -19,6 +21,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AppLink } from '../../components/brand/AppLink';
 import {
   b2cApi,
+  type B2CDashboardAccount,
   type B2CDashboardResponse,
   type B2CTaxSummary,
   type PlaidExchangeResponse,
@@ -43,11 +46,65 @@ function formatCurrency(value: string | number): string {
   }).format(amount);
 }
 
+type AccountGroupKey = 'depository' | 'investment' | 'credit' | 'loan';
+
+const ACCOUNT_GROUP_LABELS: Record<AccountGroupKey, string> = {
+  depository: 'Cash & banking',
+  investment: 'Investments',
+  credit: 'Credit cards',
+  loan: 'Loans',
+};
+
+function inferAccountCategory(acc: B2CDashboardAccount): AccountGroupKey {
+  if (acc.account_category) return acc.account_category;
+  if (acc.is_liability) {
+    const t = acc.account_type.toLowerCase();
+    if (t.includes('credit') || t.includes('card')) return 'credit';
+    return 'loan';
+  }
+  const t = acc.account_type.toLowerCase();
+  if (t.includes('checking') || t.includes('saving') || t.includes('cash')) return 'depository';
+  if (t.includes('credit') || t.includes('card')) return 'credit';
+  if (t.includes('mortgage') || t.includes('loan')) return 'loan';
+  return 'investment';
+}
+
+function isLiabilityAccount(acc: B2CDashboardAccount): boolean {
+  if (acc.is_liability != null) return acc.is_liability;
+  const cat = inferAccountCategory(acc);
+  return cat === 'credit' || cat === 'loan';
+}
+
+function accountValue(acc: B2CDashboardAccount): number {
+  const n = Number(acc.total_value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function groupAccounts(accounts: B2CDashboardAccount[]) {
+  const groups: Record<AccountGroupKey, B2CDashboardAccount[]> = {
+    depository: [],
+    investment: [],
+    credit: [],
+    loan: [],
+  };
+  for (const acc of accounts) {
+    groups[inferAccountCategory(acc)].push(acc);
+  }
+  return groups;
+}
+
+function sumAccounts(accounts: B2CDashboardAccount[]): number {
+  return accounts.reduce((sum, acc) => sum + accountValue(acc), 0);
+}
+
 /* ── sub-components ───────────────────────────────────────────────────── */
 
-function AccountTypeIcon({ type }: { type: string }) {
+function AccountTypeIcon({ type, category }: { type: string; category?: AccountGroupKey }) {
   const t = type.toLowerCase();
-  if (t.includes('checking') || t.includes('saving') || t.includes('depository') || t.includes('cash')) {
+  const cat = category ?? inferAccountCategory({ id: '', custodian: '', account_type: type, total_value: '0' });
+  if (cat === 'credit') return <CreditCard className="h-4 w-4" />;
+  if (cat === 'loan') return <Landmark className="h-4 w-4" />;
+  if (cat === 'depository' || t.includes('checking') || t.includes('saving') || t.includes('cash')) {
     return <Building2 className="h-4 w-4" />;
   }
   if (t.includes('401') || t.includes('ira') || t.includes('pension') || t.includes('retirement')) {
@@ -65,6 +122,131 @@ function RiskBadge({ number, label }: { number: number; label: string }) {
       <Shield className="h-3 w-3 flex-shrink-0" />
       {label} · {number}
     </span>
+  );
+}
+
+function AccountRow({ acc }: { acc: B2CDashboardAccount }) {
+  const category = inferAccountCategory(acc);
+  const liability = isLiabilityAccount(acc);
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <div
+        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+          liability ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'
+        }`}
+      >
+        <AccountTypeIcon type={acc.account_type} category={category} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-900 truncate">{acc.custodian}</p>
+        <p className="text-xs text-slate-500 truncate">{acc.account_type}</p>
+      </div>
+      <p className={`text-sm font-bold tabular-nums flex-shrink-0 ${liability ? 'text-rose-700' : 'text-slate-900'}`}>
+        {liability ? '−' : ''}{formatCurrency(acc.total_value)}
+      </p>
+    </div>
+  );
+}
+
+function AccountGroupSection({
+  title,
+  icon: Icon,
+  groups,
+  groupKeys,
+  totalLabel,
+  totalAmount,
+  tone,
+}: {
+  title: string;
+  icon: typeof Wallet;
+  groups: Record<AccountGroupKey, B2CDashboardAccount[]>;
+  groupKeys: AccountGroupKey[];
+  totalLabel: string;
+  totalAmount: number;
+  tone: 'asset' | 'liability';
+}) {
+  const visibleGroups = groupKeys.filter((key) => groups[key].length > 0);
+  if (visibleGroups.length === 0) return null;
+
+  const borderCls = tone === 'asset' ? 'border-emerald-100' : 'border-rose-100';
+  const headerCls = tone === 'asset' ? 'text-emerald-800' : 'text-rose-800';
+  const totalCls = tone === 'asset' ? 'text-emerald-700' : 'text-rose-700';
+
+  return (
+    <div className={`bg-white rounded-xl border ${borderCls} p-5 space-y-4`}>
+      <div className="flex items-center gap-2">
+        <Icon className={`h-5 w-5 ${headerCls}`} />
+        <h2 className={`font-semibold text-sm ${headerCls}`}>{title}</h2>
+      </div>
+
+      {visibleGroups.map((key) => {
+        const items = groups[key];
+        const subtotal = sumAccounts(items);
+        return (
+          <div key={key}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {ACCOUNT_GROUP_LABELS[key]}
+              </p>
+              <p className="text-xs font-medium text-slate-600 tabular-nums">
+                {tone === 'liability' ? '−' : ''}{formatCurrency(subtotal)}
+              </p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {items.map((acc) => (
+                <AccountRow key={acc.id} acc={acc} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className={`flex items-center justify-between pt-3 border-t border-slate-100 text-sm font-semibold ${totalCls}`}>
+        <span>{totalLabel}</span>
+        <span className="tabular-nums">
+          {tone === 'liability' ? '−' : ''}{formatCurrency(totalAmount)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AccountBreakdown({
+  accounts,
+  totalAssets,
+  totalLiabilities,
+}: {
+  accounts: B2CDashboardAccount[];
+  totalAssets: number;
+  totalLiabilities: number;
+}) {
+  const groups = groupAccounts(accounts);
+  const assetAccounts = accounts.filter((acc) => !isLiabilityAccount(acc));
+  const liabilityAccounts = accounts.filter((acc) => isLiabilityAccount(acc));
+  const computedAssets = sumAccounts(assetAccounts);
+  const computedLiabilities = sumAccounts(liabilityAccounts);
+
+  return (
+    <div className="space-y-4">
+      <AccountGroupSection
+        title="Assets"
+        icon={Wallet}
+        groups={groups}
+        groupKeys={['depository', 'investment']}
+        totalLabel="Total assets"
+        totalAmount={totalAssets || computedAssets}
+        tone="asset"
+      />
+      <AccountGroupSection
+        title="Liabilities"
+        icon={CreditCard}
+        groups={groups}
+        groupKeys={['credit', 'loan']}
+        totalLabel="Total liabilities"
+        totalAmount={totalLiabilities || computedLiabilities}
+        tone="liability"
+      />
+    </div>
   );
 }
 
@@ -130,6 +312,16 @@ export default function ClientDIYDashboard() {
     value: Number(p.value),
   }));
 
+  const assetAccounts = accounts.filter((acc) => !isLiabilityAccount(acc));
+  const liabilityAccounts = accounts.filter((acc) => isLiabilityAccount(acc));
+  const totalAssets = dashboard?.total_assets
+    ? Number(dashboard.total_assets)
+    : sumAccounts(assetAccounts);
+  const totalLiabilities = dashboard?.total_liabilities
+    ? Number(dashboard.total_liabilities)
+    : sumAccounts(liabilityAccounts);
+  const netWorth = totalAssets - totalLiabilities;
+
   return (
     <div className="space-y-5">
 
@@ -167,9 +359,16 @@ export default function ClientDIYDashboard() {
               {isLoading ? (
                 <div className="mt-2 h-12 w-48 rounded-lg bg-slate-100 animate-pulse" />
               ) : (
-                <p className="mt-1 text-5xl font-extrabold text-slate-900 tabular-nums tracking-tight leading-none">
-                  {formatCurrency(dashboard?.total_aum ?? '0')}
-                </p>
+                <>
+                  <p className="mt-1 text-5xl font-extrabold text-slate-900 tabular-nums tracking-tight leading-none">
+                    {formatCurrency(dashboard?.total_aum ?? netWorth)}
+                  </p>
+                  {accounts.length > 0 && (
+                    <p className="mt-2 text-xs text-slate-500 tabular-nums">
+                      {formatCurrency(totalAssets)} assets − {formatCurrency(totalLiabilities)} liabilities
+                    </p>
+                  )}
+                </>
               )}
             </div>
             {!isLoading && riskProfile && (
@@ -197,24 +396,13 @@ export default function ClientDIYDashboard() {
         )}
       </div>
 
-      {/* ── account summary cards ────────────────────────────────────── */}
+      {/* ── account breakdown by type ────────────────────────────────── */}
       {!isLoading && accounts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {accounts.map((acc) => (
-            <div key={acc.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600">
-                <AccountTypeIcon type={acc.account_type} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-900 truncate">{acc.custodian}</p>
-                <p className="text-xs text-slate-500 truncate">{acc.account_type}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-sm font-bold text-slate-900 tabular-nums">{formatCurrency(acc.total_value)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <AccountBreakdown
+          accounts={accounts}
+          totalAssets={totalAssets}
+          totalLiabilities={totalLiabilities}
+        />
       )}
 
       {/* ── quick actions ────────────────────────────────────────────── */}

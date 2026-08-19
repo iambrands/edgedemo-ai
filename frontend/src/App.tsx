@@ -4,6 +4,7 @@ import { AppHostGate } from './components/brand/AppHostGate';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import PortalLayout from './components/portal/PortalLayout';
 import ClientLayout from './components/client/ClientLayout';
+import ClientAdvisorGuard from './components/client/ClientAdvisorGuard';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
 
@@ -102,6 +103,10 @@ const ForgotPassword = React.lazy(() => import('./pages/client/ForgotPassword'))
 const ClientSpending = React.lazy(() => import('./pages/client/ClientSpending'));
 const ClientBudgets = React.lazy(() => import('./pages/client/ClientBudgets'));
 const ClientBills = React.lazy(() => import('./pages/client/ClientBills'));
+const AdvisorTransparency = React.lazy(() => import('./pages/client/AdvisorTransparency'));
+const ClientMessages = React.lazy(() => import('./pages/client/ClientMessages'));
+const ClientDocuments = React.lazy(() => import('./pages/client/ClientDocuments'));
+const ClientHousehold = React.lazy(() => import('./pages/client/ClientHousehold'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -261,8 +266,33 @@ export default function App() {
             <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
             <Route path="upgrade" element={<ErrorBoundary><ClientUpgrade /></ErrorBoundary>} />
               <Route path="goals" element={<ErrorBoundary><ClientGoals /></ErrorBoundary>} />
+              <Route path="household" element={<ErrorBoundary><ClientHousehold /></ErrorBoundary>} />
               <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+              <Route
+                path="advisor-activity"
+                element={
+                  <ErrorBoundary>
+                    <ClientAdvisorGuard><AdvisorTransparency /></ClientAdvisorGuard>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="messages"
+                element={
+                  <ErrorBoundary>
+                    <ClientAdvisorGuard><ClientMessages /></ClientAdvisorGuard>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="documents"
+                element={
+                  <ErrorBoundary>
+                    <ClientAdvisorGuard><ClientDocuments /></ClientAdvisorGuard>
+                  </ErrorBoundary>
+                }
+              />
           </Route>
 
           {/* Company */}
