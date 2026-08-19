@@ -116,6 +116,7 @@ const ClientTaxDocuments = React.lazy(() => import('./pages/client/ClientTaxDocu
 const ClientAutoHarvest = React.lazy(() => import('./pages/client/ClientAutoHarvest'));
 const ClientCashManagement = React.lazy(() => import('./pages/client/ClientCashManagement'));
 const ClientRebalancing = React.lazy(() => import('./pages/client/ClientRebalancing'));
+const ClientInvestments = React.lazy(() => import('./pages/client/ClientInvestments'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -287,6 +288,7 @@ export default function App() {
               <Route path="auto-harvest"  element={<ErrorBoundary><ClientAutoHarvest /></ErrorBoundary>} />
               <Route path="cash"          element={<ErrorBoundary><ClientCashManagement /></ErrorBoundary>} />
               <Route path="rebalancing"   element={<ErrorBoundary><ClientRebalancing /></ErrorBoundary>} />
+              <Route path="investments"   element={<ErrorBoundary><ClientInvestments /></ErrorBoundary>} />
               <Route
                 path="advisor-activity"
                 element={

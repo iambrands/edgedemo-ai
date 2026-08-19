@@ -92,4 +92,30 @@ test.describe('B2C Phase 1 — Client flows', () => {
     await expect(page.getByRole('heading', { name: 'Emergency Fund' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Europe Trip' })).toBeVisible();
   });
+
+  test('investments hub shows THETARA and Bullara cards', async ({ page }) => {
+    await loginAsB2CUser(page);
+
+    const nav = page.locator('aside nav');
+    const expandGroup = async (name: string) => {
+      const btn = nav.getByRole('button', { name, exact: true });
+      if ((await btn.getAttribute('aria-expanded')) !== 'true') await btn.click();
+    };
+
+    await expandGroup('Investments');
+    await nav.getByRole('link', { name: 'Overview' }).click();
+    await page.waitForURL(/\/client\/investments/);
+
+    await expect(page.getByRole('heading', { name: 'Investments', exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'THETARA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bullara' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Open THETARA/i })).toHaveAttribute('target', '_blank');
+    await expect(page.getByRole('link', { name: /Open Bullara/i })).toHaveAttribute('target', '_blank');
+
+    // External nav links should open in new tabs
+    const thetaraNavLink = nav.getByRole('link', { name: 'THETARA Options' });
+    await expect(thetaraNavLink).toHaveAttribute('target', '_blank');
+    const bullaraNavLink = nav.getByRole('link', { name: 'Bullara Stocks' });
+    await expect(bullaraNavLink).toHaveAttribute('target', '_blank');
+  });
 });
