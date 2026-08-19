@@ -28,7 +28,6 @@ import {
   BarChart2,
   DollarSign,
   LineChart,
-  ExternalLink,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -36,12 +35,9 @@ import { Logo } from '../brand/Logo';
 import { clearB2CTokens } from '../../services/b2cApi';
 import { useClientProfile } from '../../contexts/ClientProfileContext';
 import NotificationCenter from './NotificationCenter';
-import { THETARA_URL, BULLARA_URL } from '../../constants/siblingPlatforms';
 
 interface NavItem {
-  to?: string;
-  href?: string;
-  external?: boolean;
+  to: string;
   icon: LucideIcon;
   label: string;
 }
@@ -76,8 +72,6 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/client/cash',         icon: Banknote,   label: 'Optimize Cash' },
       { to: '/client/rebalancing',  icon: BarChart2,  label: 'Rebalance' },
       { to: '/client/auto-harvest', icon: Leaf,       label: 'Tax Savings' },
-      { href: THETARA_URL, external: true, icon: Activity, label: 'THETARA Options' },
-      { href: BULLARA_URL, external: true, icon: TrendingUp, label: 'Bullara Stocks' },
     ],
   },
   {
@@ -119,7 +113,7 @@ function isNavItemActive(pathname: string, to: string): boolean {
 }
 
 function groupHasActiveItem(pathname: string, group: NavGroup): boolean {
-  return group.items.some((item) => item.to != null && isNavItemActive(pathname, item.to));
+  return group.items.some((item) => isNavItemActive(pathname, item.to));
 }
 
 function initialOpenGroups(pathname: string): Set<string> {
@@ -127,7 +121,7 @@ function initialOpenGroups(pathname: string): Set<string> {
   for (const group of NAV_GROUPS) {
     if (groupHasActiveItem(pathname, group)) initial.add(group.id);
   }
-  if (ADVISOR_NAV_ITEMS.some((item) => item.to != null && isNavItemActive(pathname, item.to))) {
+  if (ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(pathname, item.to))) {
     initial.add('advisor');
   }
   return initial;
@@ -156,7 +150,7 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
       for (const group of NAV_GROUPS) {
         if (groupHasActiveItem(location.pathname, group)) next.add(group.id);
       }
-      if (ADVISOR_NAV_ITEMS.some((item) => item.to != null && isNavItemActive(location.pathname, item.to))) {
+      if (ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(location.pathname, item.to))) {
         next.add('advisor');
       }
       return next;
@@ -201,29 +195,10 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
 
   const renderNavItem = (item: NavItem, variant: 'primary' | 'sub' | 'footer' = 'primary') => {
     const Icon = item.icon;
-
-    if (item.external && item.href) {
-      return (
-        <a
-          key={item.href}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={navLinkClass(false, variant)}
-        >
-          <Icon size={variant === 'sub' ? 15 : 18} className="flex-shrink-0" />
-          {!isCollapsed && (
-            <span className={clsx('flex-1', variant === 'sub' ? undefined : 'text-sm font-medium')}>{item.label}</span>
-          )}
-          {!isCollapsed && <ExternalLink size={12} className="opacity-50 flex-shrink-0" />}
-        </a>
-      );
-    }
-
     return (
       <NavLink
         key={item.to}
-        to={item.to!}
+        to={item.to}
         end={item.to === '/client/dashboard'}
         className={({ isActive }) => navLinkClass(isActive, variant)}
       >
@@ -363,7 +338,7 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
                 aria-expanded={openGroups.has('advisor')}
                 className={clsx(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
-                  ADVISOR_NAV_ITEMS.some((item) => item.to != null && isNavItemActive(location.pathname, item.to))
+                  ADVISOR_NAV_ITEMS.some((item) => isNavItemActive(location.pathname, item.to))
                     && !openGroups.has('advisor')
                     ? 'bg-white/15 text-white'
                     : 'text-blue-100 hover:bg-white/10 hover:text-white',

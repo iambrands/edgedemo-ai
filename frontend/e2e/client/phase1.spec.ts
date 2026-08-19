@@ -106,16 +106,15 @@ test.describe('B2C Phase 1 — Client flows', () => {
     await nav.getByRole('link', { name: 'Overview' }).click();
     await page.waitForURL(/\/client\/investments/);
 
-    await expect(page.getByRole('heading', { name: 'Investments', exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Investments Overview', exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Trading Platforms' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'THETARA' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Bullara' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Open THETARA/i })).toHaveAttribute('target', '_blank');
     await expect(page.getByRole('link', { name: /Open Bullara/i })).toHaveAttribute('target', '_blank');
 
-    // External nav links should open in new tabs
-    const thetaraNavLink = nav.getByRole('link', { name: 'THETARA Options' });
-    await expect(thetaraNavLink).toHaveAttribute('target', '_blank');
-    const bullaraNavLink = nav.getByRole('link', { name: 'Bullara Stocks' });
-    await expect(bullaraNavLink).toHaveAttribute('target', '_blank');
+    // Trading platforms should not appear as raw sidebar links
+    await expect(nav.getByRole('link', { name: 'THETARA Options' })).toHaveCount(0);
+    await expect(nav.getByRole('link', { name: 'Bullara Stocks' })).toHaveCount(0);
   });
 });

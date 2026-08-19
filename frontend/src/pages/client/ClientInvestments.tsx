@@ -61,15 +61,21 @@ export default function ClientInvestments() {
           <LineChart className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Investments</h1>
-          <p className="text-xs text-slate-500">
-            Firmum optimizes your wealth plan. THETARA and Bullara handle active trading — all from IAB Advisors.
+          <h1 className="text-lg font-bold text-slate-900">Investments Overview</h1>
+          <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
+            Your hub for wealth optimization and active trading. Use Firmum tools below to optimize
+            cash, rebalance, and harvest tax losses — or open THETARA and Bullara when you're ready to trade.
           </p>
         </div>
       </div>
 
-      {/* Platform cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Trading platforms */}
+      <div>
+        <h2 className="text-sm font-semibold text-slate-900 mb-1">Trading Platforms</h2>
+        <p className="text-xs text-slate-500 mb-3">
+          Separate IAB Advisors apps for options and stocks. Each opens in a new tab — sign in with your own account.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
         {PLATFORMS.map((p) => {
           const Icon = p.icon;
           return (
@@ -114,6 +120,7 @@ export default function ClientInvestments() {
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Wealth tools row */}
