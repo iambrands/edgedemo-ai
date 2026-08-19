@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calculator, Info, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { Calculator, Info, Shield, Sparkles, Target, TrendingUp, TrendingDown } from 'lucide-react';
 import { AppLink } from '../../components/brand/AppLink';
 import {
   b2cApi,
@@ -25,6 +25,174 @@ const DEFAULT_INPUTS: B2CRetirementPlanRequest = {
   years_in_retirement: 25,
   annual_spending: 60000,
 };
+
+/* ── Social Security estimator ───────────────────────────────────────── */
+
+function estimateSsBenefit(annualIncome: number, yearsWorked: number, claimAge: number): number {
+  // Simplified AIME approximation based on 35 highest-earning years
+  const aime = (annualIncome / 12) * Math.min(yearsWorked, 35) / 35;
+  // Apply bend points (2025 approximation)
+  const bp1 = 1174, bp2 = 7078;
+  let pia = 0;
+  if (aime <= bp1) pia = aime * 0.9;
+  else if (aime <= bp2) pia = bp1 * 0.9 + (aime - bp1) * 0.32;
+  else pia = bp1 * 0.9 + (bp2 - bp1) * 0.32 + (aime - bp2) * 0.15;
+  // Adjust for claim age relative to FRA of 67
+  const monthsEarly = Math.max(0, (67 - claimAge) * 12);
+  const monthsLate = Math.max(0, (claimAge - 67) * 12);
+  if (monthsEarly > 0) {
+    const reduction = monthsEarly <= 36 ? monthsEarly * (5 / 9 / 100) : (36 * (5 / 9 / 100)) + ((monthsEarly - 36) * (5 / 12 / 100));
+    pia = pia * (1 - reduction);
+  } else {
+    pia = pia * (1 + monthsLate * (8 / 12 / 100));
+  }
+  return Math.round(pia);
+}
+
+function SocialSecurityEstimator() {
+  const [income, setIncome] = useState(114000);
+  const [yearsWorked, setYearsWorked] = useState(28);
+  const [claimAge, setClaimAge] = useState(67);
+
+  const benefitAt62 = estimateSsBenefit(income, yearsWorked, 62);
+  const benefitAtFra = estimateSsBenefit(income, yearsWorked, 67);
+  const benefitAt70 = estimateSsBenefit(income, yearsWorked, 70);
+  const current = estimateSsBenefit(income, yearsWorked, claimAge);
+  const lifetimediff70vs62 = (benefitAt70 - benefitAt62) * 12 * 20; // 20-yr horizon
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+      <div className="flex items-center gap-2">
+        <Shield className="h-5 w-5 text-emerald-600" />
+        <h2 className="font-semibold text-slate-900">Social Security Estimator</h2>
+        <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Educational estimate</span>
+      </div>
+
+      <div className="grid sm:grid-cols-3 gap-x-8 gap-y-4">
+        <SliderField label="Annual income (current)" value={income} min={20000} max={300000} step={5000}
+          formatValue={(v) => formatCurrency(v)} onChange={setIncome} />
+        <SliderField label="Years of work history" value={yearsWorked} min={1} max={40} step={1}
+          formatValue={(v) => `${v} yrs`} onChange={setYearsWorked} />
+        <SliderField label="Claim age" value={claimAge} min={62} max={70} step={1}
+          formatValue={(v) => `Age ${v}`} onChange={setClaimAge} />
+      </div>
+
+      {/* Benefit comparison row */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { age: 62, label: 'Age 62 (early)', benefit: benefitAt62, tone: 'text-amber-600 bg-amber-50' },
+          { age: 67, label: 'Age 67 (FRA)', benefit: benefitAtFra, tone: 'text-blue-600 bg-blue-50' },
+          { age: 70, label: 'Age 70 (max)', benefit: benefitAt70, tone: 'text-emerald-600 bg-emerald-50' },
+        ].map(({ age, label, benefit, tone }) => (
+          <div key={age} className={`rounded-xl p-3 text-center ${tone.split(' ')[1]} border border-slate-100`}>
+            <p className={`text-sm font-bold tabular-nums ${tone.split(' ')[0]}`}>
+              {formatCurrency(benefit)}<span className="text-xs font-normal text-slate-500">/mo</span>
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
+            {age === claimAge && (
+              <span className="inline-block mt-1 text-[9px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full">Your selection</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 flex gap-3">
+        <Info className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-slate-600">
+          At age {claimAge} you'd receive an estimated <strong>{formatCurrency(current)}/month</strong>.
+          Delaying from 62 to 70 would increase your monthly benefit by {formatCurrency(benefitAt70 - benefitAt62)} — 
+          worth roughly <strong>{formatCurrency(lifetimediff70vs62)}</strong> extra over 20 years.
+          This is an educational estimate. Create a my Social Security account at ssa.gov for your personalized projection.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Withdrawal / decumulation planner ───────────────────────────────── */
+
+function WithdrawalPlanner() {
+  const [portfolio, setPortfolio] = useState(1200000);
+  const [ssMonthly, setSsMonthly] = useState(2800);
+  const [annualSpend, setAnnualSpend] = useState(80000);
+  const [strategy, setStrategy] = useState<'four_pct' | 'dynamic' | 'floor'>('four_pct');
+
+  const ssAnnual = ssMonthly * 12;
+  const portfolioNeed = Math.max(0, annualSpend - ssAnnual);
+  const withdrawalRate = portfolio > 0 ? (portfolioNeed / portfolio) * 100 : 0;
+
+  const safeYears4pct = portfolioNeed <= 0 ? 999 : Math.floor(Math.log(1 + portfolio * 0.04 / portfolioNeed) / Math.log(1.04));
+  const yearsFunded = strategy === 'four_pct' ? safeYears4pct : strategy === 'dynamic' ? Math.floor(portfolio / (portfolioNeed || 1)) : 30;
+
+  const statusColor = withdrawalRate <= 4 ? 'text-emerald-600' : withdrawalRate <= 5.5 ? 'text-amber-600' : 'text-rose-600';
+  const statusLabel = withdrawalRate <= 4 ? 'Sustainable' : withdrawalRate <= 5.5 ? 'Elevated risk' : 'High risk';
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+      <div className="flex items-center gap-2">
+        <TrendingDown className="h-5 w-5 text-rose-600" />
+        <h2 className="font-semibold text-slate-900">Withdrawal / Decumulation Planner</h2>
+        <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Educational</span>
+      </div>
+
+      {/* Strategy selector */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { key: 'four_pct', label: '4% Rule' },
+          { key: 'dynamic', label: 'Dynamic Spending' },
+          { key: 'floor', label: 'Floor & Upside' },
+        ].map(({ key, label }) => (
+          <button key={key} type="button"
+            onClick={() => setStrategy(key as typeof strategy)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${strategy === key ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid sm:grid-cols-3 gap-x-8 gap-y-4">
+        <SliderField label="Retirement portfolio" value={portfolio} min={100000} max={5000000} step={50000}
+          formatValue={(v) => formatCurrency(v)} onChange={setPortfolio} />
+        <SliderField label="Social Security (monthly)" value={ssMonthly} min={0} max={4000} step={100}
+          formatValue={(v) => `${formatCurrency(v)}/mo`} onChange={setSsMonthly} />
+        <SliderField label="Annual spending goal" value={annualSpend} min={20000} max={300000} step={5000}
+          formatValue={(v) => formatCurrency(v)} onChange={setAnnualSpend} />
+      </div>
+
+      {/* Result strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl bg-slate-50 p-3 text-center">
+          <p className={`text-xl font-bold tabular-nums ${statusColor}`}>{withdrawalRate.toFixed(1)}%</p>
+          <p className="text-[10px] text-slate-500">Withdrawal rate</p>
+          <p className={`text-[10px] font-semibold mt-0.5 ${statusColor}`}>{statusLabel}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 text-center">
+          <p className="text-xl font-bold text-slate-900 tabular-nums">{formatCurrency(portfolioNeed)}</p>
+          <p className="text-[10px] text-slate-500">Portfolio draw / year</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 text-center">
+          <p className="text-xl font-bold text-slate-900 tabular-nums">{formatCurrency(ssAnnual)}</p>
+          <p className="text-[10px] text-slate-500">SS covers / year</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 text-center">
+          <p className={`text-xl font-bold tabular-nums ${yearsFunded >= 30 ? 'text-emerald-600' : yearsFunded >= 20 ? 'text-amber-600' : 'text-rose-600'}`}>
+            {yearsFunded >= 60 ? '60+' : yearsFunded} yrs
+          </p>
+          <p className="text-[10px] text-slate-500">Portfolio funded for</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 flex gap-3">
+        <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-slate-600">
+          {strategy === 'four_pct' && <>The classic <strong>4% rule</strong> suggests withdrawing 4% of your portfolio in year 1, then adjusting for inflation. Your current rate is {withdrawalRate.toFixed(1)}% — {withdrawalRate <= 4 ? 'within the safe zone' : 'above the guideline, which increases sequence-of-returns risk'}.</>}
+          {strategy === 'dynamic' && <>The <strong>dynamic spending</strong> strategy adjusts withdrawals based on portfolio performance — spending more in good years, less in bad ones. This reduces depletion risk but requires spending flexibility.</>}
+          {strategy === 'floor' && <>The <strong>floor & upside</strong> strategy covers essential expenses (floor) with guaranteed income (SS + annuities) and uses the portfolio only for discretionary spending — maximizing security while preserving growth.</>}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 interface SliderFieldProps {
   label: string;
@@ -283,6 +451,12 @@ export default function ClientRetirementPlanner() {
           <p className="text-xs text-slate-400 leading-relaxed">{result.disclaimer}</p>
         </div>
       )}
+
+      {/* Social Security Estimator */}
+      <SocialSecurityEstimator />
+
+      {/* Withdrawal / Decumulation Planner */}
+      <WithdrawalPlanner />
     </div>
   );
 }

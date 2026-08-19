@@ -1,0 +1,1 @@
+import{j as o}from"./query-vendor-73c8cntc.js";import{L as i}from"./react-vendor-WhINBsan.js";import{j as n}from"./index-CGEyVa4K.js";function f({to:s,...r}){const t=n(s);return t.startsWith("http")?o.jsx("a",{href:t,...r}):o.jsx(i,{to:t,...r})}export{f as A};

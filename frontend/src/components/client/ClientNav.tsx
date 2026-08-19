@@ -20,12 +20,16 @@ import {
   FolderOpen,
   GraduationCap,
   Search,
+  TrendingDown,
+  ArrowUpDown,
+  FileSpreadsheet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Logo } from '../brand/Logo';
 import { clearB2CTokens } from '../../services/b2cApi';
 import { useClientProfile } from '../../contexts/ClientProfileContext';
+import NotificationCenter from './NotificationCenter';
 
 interface NavItem {
   to: string;
@@ -36,13 +40,16 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/client/dashboard',      icon: LayoutDashboard, label: 'Home' },
   { to: '/client/statements',     icon: FileText,        label: 'Accounts' },
+  { to: '/client/cash-flow',      icon: ArrowUpDown,     label: 'Cash Flow' },
   { to: '/client/spending',       icon: Receipt,         label: 'Spending' },
   { to: '/client/budgets',        icon: PiggyBank,       label: 'Budgets' },
   { to: '/client/bills',          icon: Repeat2,         label: 'Recurring Bills' },
+  { to: '/client/debts',          icon: TrendingDown,    label: 'Debts' },
   { to: '/client/goals',          icon: Target,          label: 'Goals' },
   { to: '/client/household',      icon: Users,           label: 'Household' },
   { to: '/client/learning',       icon: GraduationCap,   label: 'Learning' },
   { to: '/client/retirement',     icon: TrendingUp,      label: 'Planning' },
+  { to: '/client/tax-documents',  icon: FileSpreadsheet, label: 'Tax Docs' },
   { to: '/client/advisors',       icon: Search,          label: 'Find Advisor' },
   { to: '/client/connect-advisor',icon: UserPlus,        label: 'Connect Advisor' },
   { to: '/client/upgrade',        icon: Sparkles,        label: 'Upgrade' },
@@ -105,24 +112,27 @@ export default function ClientNav({ isCollapsed, onToggle }: ClientNavProps) {
           isCollapsed ? '-translate-x-full md:translate-x-0 md:w-16' : 'translate-x-0',
         )}
       >
-        {/* Logo + collapse button */}
+        {/* Logo + collapse button + notification bell */}
         <div className="h-16 flex items-center justify-between px-3 border-b border-white/10">
           {!isCollapsed ? (
             <Logo variant="dark" size="sm" to="/client/dashboard" />
           ) : (
             <Logo variant="dark" iconOnly size="sm" to="/client/dashboard" className="mx-auto" />
           )}
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label="Collapse sidebar"
-            className={clsx(
-              'p-1.5 rounded-lg hover:bg-white/10 text-blue-200 transition-colors',
-              isCollapsed && 'hidden',
-            )}
-          >
-            <ChevronLeft size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            {!isCollapsed && <NotificationCenter />}
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label="Collapse sidebar"
+              className={clsx(
+                'p-1.5 rounded-lg hover:bg-white/10 text-blue-200 transition-colors',
+                isCollapsed && 'hidden',
+              )}
+            >
+              <ChevronLeft size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Main nav */}

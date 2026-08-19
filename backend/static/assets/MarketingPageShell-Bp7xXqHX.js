@@ -1,0 +1,1 @@
+import{j as e}from"./query-vendor-73c8cntc.js";import{M as r}from"./MarketingNav-YPXFnQMp.js";import{F as a}from"./Footer-CuiWz5t1.js";function m({children:s}){return e.jsxs("div",{className:"min-h-screen bg-white flex flex-col",children:[e.jsx(r,{}),e.jsx("main",{className:"flex-1 pt-16",children:s}),e.jsx(a,{})]})}export{m as M};

@@ -10,6 +10,8 @@ import {
   ShoppingCart,
   Sparkles,
   Target,
+  ToggleLeft,
+  ToggleRight,
   X,
   Zap,
 } from 'lucide-react';
@@ -37,11 +39,6 @@ function getCfg(cat: string): CatCfg {
 
 function fmt(v: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
-}
-function barColor(status: B2CBudget['status']) {
-  if (status === 'over') return 'bg-red-500';
-  if (status === 'warning') return 'bg-amber-500';
-  return 'bg-emerald-500';
 }
 function statusLabel(status: B2CBudget['status']) {
   if (status === 'over') return { text: 'Over budget', cls: 'text-red-600 bg-red-50 border-red-200' };
@@ -109,16 +106,30 @@ function SetBudgetModal({ budget, onSave, onClose }: { budget: B2CBudget; onSave
 
 /* ── Budget card ─────────────────────────────────────────────────────── */
 
-function BudgetCard({ budget, monthPacePct, onEdit }: { budget: B2CBudget; monthPacePct: number; onEdit: (b: B2CBudget) => void }) {
+function BudgetCard({
+  budget,
+  monthPacePct,
+  onEdit,
+  rollover,
+  onToggleRollover,
+  rolloverBalance,
+}: {
+  budget: B2CBudget;
+  monthPacePct: number;
+  onEdit: (b: B2CBudget) => void;
+  rollover: boolean;
+  onToggleRollover: (cat: string) => void;
+  rolloverBalance: number;
+}) {
   const { Icon, iconBg, iconColor } = getCfg(budget.category);
-  const bar = barColor(budget.status);
+  const effectiveLimit = budget.monthly_limit + (rollover ? rolloverBalance : 0);
   const sl = statusLabel(budget.status);
-  const barWidth = Math.min(budget.pct, 100);
+  const barWidth = Math.min((budget.current_spend / effectiveLimit) * 100, 100);
+  const barCls = budget.current_spend > effectiveLimit ? 'bg-red-500' : barWidth >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
 
-  /* projected month-end spend */
   const projectedMonthEnd = monthPacePct > 0 ? (budget.current_spend / (monthPacePct / 100)) : budget.current_spend;
-  const projectedOverrun = projectedMonthEnd - budget.monthly_limit;
-  const isPacingOver = projectedOverrun > 0 && budget.status !== 'over';
+  const projectedOverrun = projectedMonthEnd - effectiveLimit;
+  const isPacingOver = projectedOverrun > 0 && budget.current_spend <= effectiveLimit;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
@@ -133,23 +144,23 @@ function BudgetCard({ budget, monthPacePct, onEdit }: { budget: B2CBudget; month
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-600 tabular-nums font-medium">{fmt(budget.current_spend)}</span>
-          <span className="text-slate-400 tabular-nums">of {fmt(budget.monthly_limit)}</span>
+          <span className="text-slate-400 tabular-nums">
+            of {fmt(effectiveLimit)}
+            {rollover && rolloverBalance > 0 && (
+              <span className="ml-1 text-emerald-600 font-medium">(+{fmt(rolloverBalance)} rollover)</span>
+            )}
+          </span>
         </div>
         <div className="relative h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${bar}`} style={{ width: `${Math.max(barWidth, budget.current_spend > 0 ? 3 : 0)}%` }} />
-          {/* Pace marker */}
+          <div className={`h-full rounded-full transition-all ${barCls}`} style={{ width: `${Math.max(barWidth, budget.current_spend > 0 ? 3 : 0)}%` }} />
           <div className="absolute top-0 bottom-0 w-0.5 bg-slate-400/60" style={{ left: `${Math.min(monthPacePct, 100)}%` }} />
         </div>
         <div className="flex justify-between text-[10px] text-slate-400">
-          <span>{budget.pct.toFixed(0)}% used</span>
-          <span className="flex items-center gap-0.5">
-            <Zap className="w-2.5 h-2.5" />
-            {Math.round(monthPacePct)}% through month
-          </span>
+          <span>{((budget.current_spend / effectiveLimit) * 100).toFixed(0)}% used</span>
+          <span className="flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" />{Math.round(monthPacePct)}% through month</span>
         </div>
       </div>
 
-      {/* Projection callout */}
       {isPacingOver && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-start gap-2">
           <Sparkles className="h-3 w-3 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -160,10 +171,29 @@ function BudgetCard({ budget, monthPacePct, onEdit }: { budget: B2CBudget; month
         </div>
       )}
 
-      <button type="button" onClick={() => onEdit(budget)}
-        className="w-full py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors">
-        Set budget
-      </button>
+      {/* Rollover toggle */}
+      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+        <div>
+          <button type="button" onClick={() => onToggleRollover(budget.category)}
+            className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 transition-colors">
+            {rollover
+              ? <ToggleRight size={16} className="text-emerald-500" />
+              : <ToggleLeft size={16} className="text-slate-400" />}
+            <span className={rollover ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
+              {rollover ? 'Rollover on' : 'Rollover off'}
+            </span>
+          </button>
+          {rollover && (
+            <p className="text-[10px] text-slate-400 ml-5 mt-0.5">
+              Unused budget carries to next month
+            </p>
+          )}
+        </div>
+        <button type="button" onClick={() => onEdit(budget)}
+          className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors">
+          Set limit
+        </button>
+      </div>
     </div>
   );
 }
@@ -175,6 +205,11 @@ export default function ClientBudgets() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<B2CBudget | null>(null);
+  // rolloverSettings: category → boolean (is rollover enabled)
+  const [rolloverSettings, setRolloverSettings] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('firmum_rollover_settings') ?? '{}'); }
+    catch { return {}; }
+  });
 
   const monthPacePct = getMonthPacePct();
 
@@ -191,11 +226,27 @@ export default function ClientBudgets() {
     setBudgets((prev) => prev.map((b) => (b.category === category ? updated : b)));
   };
 
+  const toggleRollover = (category: string) => {
+    setRolloverSettings((prev) => {
+      const next = { ...prev, [category]: !prev[category] };
+      localStorage.setItem('firmum_rollover_settings', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  /* simulate a 10% rollover balance from last month for demo */
+  const getRolloverBalance = (budget: B2CBudget): number => {
+    if (!rolloverSettings[budget.category]) return 0;
+    const unused = Math.max(0, budget.monthly_limit - budget.current_spend * 0.85);
+    return Math.round(unused * 0.1 * 100) / 100;
+  };
+
   const overCount = budgets.filter((b) => b.status === 'over').length;
   const onTrackCount = budgets.filter((b) => b.status === 'ok').length;
   const totalSpend = budgets.reduce((s, b) => s + b.current_spend, 0);
   const totalLimit = budgets.reduce((s, b) => s + b.monthly_limit, 0);
   const overallPct = totalLimit > 0 ? (totalSpend / totalLimit) * 100 : 0;
+  const rolloverCount = Object.values(rolloverSettings).filter(Boolean).length;
 
   return (
     <div className="space-y-5">
@@ -204,7 +255,7 @@ export default function ClientBudgets() {
         <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0"><Target className="h-5 w-5 text-white" /></div>
         <div>
           <h1 className="text-lg font-bold text-slate-900">Budgets</h1>
-          <p className="text-xs text-slate-500">Monthly limits · {Math.round(monthPacePct)}% through {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+          <p className="text-xs text-slate-500">Monthly limits · {Math.round(monthPacePct)}% through {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}{rolloverCount > 0 ? ` · ${rolloverCount} rollover${rolloverCount > 1 ? 's' : ''} active` : ''}</p>
         </div>
       </div>
 
@@ -239,10 +290,28 @@ export default function ClientBudgets() {
             </div>
           </div>
 
+          {/* rollover info banner */}
+          {rolloverCount === 0 && (
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex gap-2">
+              <ToggleLeft size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-emerald-700">
+                <strong>Tip:</strong> Enable <em>Rollover</em> on any budget to carry unused amounts into next month — great for irregular spending like clothing or travel.
+              </p>
+            </div>
+          )}
+
           {/* ── budget cards grid ─────────────────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {budgets.map((b) => (
-              <BudgetCard key={b.category} budget={b} monthPacePct={monthPacePct} onEdit={setEditing} />
+              <BudgetCard
+                key={b.category}
+                budget={b}
+                monthPacePct={monthPacePct}
+                onEdit={setEditing}
+                rollover={rolloverSettings[b.category] ?? false}
+                onToggleRollover={toggleRollover}
+                rolloverBalance={getRolloverBalance(b)}
+              />
             ))}
           </div>
 

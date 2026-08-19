@@ -42,12 +42,13 @@ function monthsUntil(dateStr: string): number {
 interface GoalTypeCfg { icon: LucideIcon; label: string; iconCls: string; barColor: string; }
 
 const GOAL_TYPE_CONFIG: Record<string, GoalTypeCfg> = {
-  retirement:     { icon: Landmark,      label: 'Retirement',     iconCls: 'bg-blue-50 text-blue-600',    barColor: 'bg-blue-500' },
-  education:      { icon: GraduationCap, label: 'Education',      iconCls: 'bg-purple-50 text-purple-600', barColor: 'bg-purple-500' },
-  home_purchase:  { icon: Home,          label: 'Home Purchase',  iconCls: 'bg-emerald-50 text-emerald-600', barColor: 'bg-emerald-500' },
-  emergency_fund: { icon: ShieldCheck,   label: 'Emergency Fund', iconCls: 'bg-amber-50 text-amber-600',  barColor: 'bg-amber-500' },
-  vacation:       { icon: Plane,         label: 'Travel',         iconCls: 'bg-cyan-50 text-cyan-600',    barColor: 'bg-cyan-500' },
-  custom:         { icon: Star,          label: 'Custom',         iconCls: 'bg-slate-50 text-slate-500',  barColor: 'bg-slate-400' },
+  retirement:     { icon: Landmark,      label: 'Retirement',          iconCls: 'bg-blue-50 text-blue-600',    barColor: 'bg-blue-500' },
+  education:      { icon: GraduationCap, label: 'Education',           iconCls: 'bg-purple-50 text-purple-600', barColor: 'bg-purple-500' },
+  college_529:    { icon: GraduationCap, label: '529 College Savings', iconCls: 'bg-indigo-50 text-indigo-600', barColor: 'bg-indigo-500' },
+  home_purchase:  { icon: Home,          label: 'Home Purchase',       iconCls: 'bg-emerald-50 text-emerald-600', barColor: 'bg-emerald-500' },
+  emergency_fund: { icon: ShieldCheck,   label: 'Emergency Fund',      iconCls: 'bg-amber-50 text-amber-600',  barColor: 'bg-amber-500' },
+  vacation:       { icon: Plane,         label: 'Travel',              iconCls: 'bg-cyan-50 text-cyan-600',    barColor: 'bg-cyan-500' },
+  custom:         { icon: Star,          label: 'Custom',              iconCls: 'bg-slate-50 text-slate-500',  barColor: 'bg-slate-400' },
 };
 function getCfg(type: string): GoalTypeCfg { return GOAL_TYPE_CONFIG[type] ?? GOAL_TYPE_CONFIG.custom; }
 

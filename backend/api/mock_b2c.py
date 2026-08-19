@@ -1187,3 +1187,146 @@ for _path, _endpoint, _methods in [
     ("/plaid/transactions", mock_b2c_transactions, ["GET"]),
 ]:
     supplement_router.add_api_route(_path, _endpoint, methods=_methods)
+
+
+# ── Income / Cash Flow ──────────────────────────────────────────────────────
+
+DEMO_INCOME = [
+    {"id": "inc-001", "source": "Primary Salary",       "category": "salary",    "monthly_amount": 9500.0,  "ytd_amount": 95000.0, "frequency": "bi-weekly",  "account": "Chase Checking",    "last_received": "2026-08-01"},
+    {"id": "inc-002", "source": "Freelance Consulting",  "category": "freelance", "monthly_amount": 1200.0,  "ytd_amount": 8400.0,  "frequency": "irregular",  "account": "Chase Checking",    "last_received": "2026-07-28"},
+    {"id": "inc-003", "source": "Dividend Income",       "category": "dividends", "monthly_amount": 320.0,   "ytd_amount": 2880.0,  "frequency": "quarterly",  "account": "Fidelity Brokerage","last_received": "2026-07-15"},
+    {"id": "inc-004", "source": "Interest Income",       "category": "interest",  "monthly_amount": 85.0,    "ytd_amount": 680.0,   "frequency": "monthly",    "account": "Chase Savings",     "last_received": "2026-08-01"},
+    {"id": "inc-005", "source": "Rental Income",         "category": "rental",    "monthly_amount": 1100.0,  "ytd_amount": 9900.0,  "frequency": "monthly",    "account": "Chase Checking",    "last_received": "2026-08-01"},
+]
+
+DEMO_MONTHLY_CASH_FLOW = [
+    {"month": "Jan 26", "income": 10580, "expenses": 7820, "savings": 2760},
+    {"month": "Feb 26", "income": 10580, "expenses": 9100, "savings": 1480},
+    {"month": "Mar 26", "income": 10580, "expenses": 8400, "savings": 2180},
+    {"month": "Apr 26", "income": 12580, "expenses": 8900, "savings": 3680},
+    {"month": "May 26", "income": 12205, "expenses": 7600, "savings": 4605},
+    {"month": "Jun 26", "income": 14205, "expenses": 10200, "savings": 4005},
+    {"month": "Jul 26", "income": 12205, "expenses": 8800, "savings": 3405},
+    {"month": "Aug 26", "income": 12205, "expenses": 6840, "savings": 5365},
+]
+
+
+@router.get("/income")
+async def mock_b2c_income(_: str = Depends(require_mock_auth)):
+    """Demo income sources and monthly cash flow history."""
+    total_monthly = sum(s["monthly_amount"] for s in DEMO_INCOME)
+    total_ytd = sum(s["ytd_amount"] for s in DEMO_INCOME)
+    return {
+        "sources": DEMO_INCOME,
+        "total_monthly": total_monthly,
+        "total_ytd": total_ytd,
+        "monthly_history": DEMO_MONTHLY_CASH_FLOW,
+        "mock": True,
+    }
+
+
+# ── Debts / Liabilities ─────────────────────────────────────────────────────
+
+DEMO_DEBTS = [
+    {
+        "id": "debt-001", "name": "Home Mortgage", "category": "mortgage",
+        "lender": "Wells Fargo", "original_balance": 450000.0, "current_balance": 387500.0,
+        "monthly_payment": 2240.0, "interest_rate": 3.75, "maturity_date": "2048-06-01",
+    },
+    {
+        "id": "debt-002", "name": "Auto Loan — 2023 Honda CR-V", "category": "auto",
+        "lender": "Honda Financial", "original_balance": 38000.0, "current_balance": 22100.0,
+        "monthly_payment": 585.0, "interest_rate": 4.9, "maturity_date": "2028-03-01",
+    },
+    {
+        "id": "debt-003", "name": "Chase Sapphire Credit Card", "category": "credit_card",
+        "lender": "Chase", "original_balance": None, "current_balance": 3400.0,
+        "monthly_payment": 150.0, "interest_rate": 21.99, "maturity_date": None,
+    },
+    {
+        "id": "debt-004", "name": "Student Loan", "category": "student_loan",
+        "lender": "Navient", "original_balance": 42000.0, "current_balance": 8200.0,
+        "monthly_payment": 320.0, "interest_rate": 5.5, "maturity_date": "2028-01-01",
+    },
+]
+
+
+@router.get("/debts")
+async def mock_b2c_debts(_: str = Depends(require_mock_auth)):
+    """Demo debt / liability list in no-DB mode."""
+    total = sum(d["current_balance"] for d in DEMO_DEBTS)
+    monthly_total = sum(d["monthly_payment"] for d in DEMO_DEBTS)
+    return {"debts": DEMO_DEBTS, "total_balance": total, "total_monthly_payment": monthly_total, "mock": True}
+
+
+# ── Notifications ───────────────────────────────────────────────────────────
+
+DEMO_NOTIFICATIONS = [
+    {"id": "notif-001", "type": "budget",       "severity": "warning", "title": "Dining budget 87% used",               "body": "You've spent $348 of your $400 dining budget with 12 days left in the month.",                                   "action_label": "Review budgets",  "action_route": "/client/budgets",       "timestamp": "2026-08-19T09:15:00Z", "read": False},
+    {"id": "notif-002", "type": "opportunity",  "severity": "success", "title": "TLH opportunity: ~$2,300 in losses",    "body": "INTC and PARA have unrealized losses that could offset capital gains and reduce your 2026 tax bill by ~$460.",     "action_label": "View tax summary", "action_route": "/client/tax-summary",  "timestamp": "2026-08-18T14:30:00Z", "read": False},
+    {"id": "notif-003", "type": "rebalance",    "severity": "info",    "title": "Portfolio drift detected",              "body": "US equities are 7% over your target allocation of 60%. Consider rebalancing to reduce concentration risk.",         "action_label": "View allocation",  "action_route": "/client/dashboard",    "timestamp": "2026-08-17T08:00:00Z", "read": False},
+    {"id": "notif-004", "type": "goal",         "severity": "success", "title": "Emergency fund on track",               "body": "Great progress! At your current savings rate you'll reach your $25,000 emergency fund goal in about 4 months.",   "action_label": "View goals",       "action_route": "/client/goals",        "timestamp": "2026-08-15T10:00:00Z", "read": True},
+    {"id": "notif-005", "type": "bill",         "severity": "info",    "title": "4 bills due in the next 7 days",        "body": "Netflix ($16), Spotify ($10), GEICO ($185), and Costco membership ($65) are due soon — total $276.",              "action_label": "View bills",       "action_route": "/client/bills",        "timestamp": "2026-08-14T08:00:00Z", "read": True},
+    {"id": "notif-006", "type": "income",       "severity": "info",    "title": "Paycheck deposited: $4,615",            "body": "Your bi-weekly paycheck from your primary employer was deposited to Chase Checking.",                              "action_label": "View cash flow",   "action_route": "/client/cash-flow",   "timestamp": "2026-08-08T06:00:00Z", "read": True},
+]
+
+
+@router.get("/notifications")
+async def mock_b2c_notifications(_: str = Depends(require_mock_auth)):
+    """Demo proactive notifications in no-DB mode."""
+    unread = sum(1 for n in DEMO_NOTIFICATIONS if not n["read"])
+    return {"notifications": DEMO_NOTIFICATIONS, "unread_count": unread, "mock": True}
+
+
+@router.post("/notifications/{notification_id}/read")
+async def mock_mark_notification_read(notification_id: str, _: str = Depends(require_mock_auth)):
+    """Mark notification as read (mock — no persistence)."""
+    return {"id": notification_id, "read": True, "mock": True}
+
+
+# ── Tax Documents ───────────────────────────────────────────────────────────
+
+DEMO_TAX_DOCUMENTS = [
+    {
+        "id": "taxdoc-001", "type": "1099-DIV", "tax_year": 2025, "custodian": "Fidelity",
+        "description": "Dividends and Distributions",
+        "fields": {"Total ordinary dividends": "$2,840", "Qualified dividends": "$2,120", "Capital gain distributions": "$180"},
+        "available_date": "2026-01-31", "status": "available",
+    },
+    {
+        "id": "taxdoc-002", "type": "1099-B", "tax_year": 2025, "custodian": "Fidelity",
+        "description": "Proceeds From Broker Transactions",
+        "fields": {"Short-term proceeds": "$8,400", "Short-term cost basis": "$7,100", "Long-term proceeds": "$22,300", "Long-term cost basis": "$14,200"},
+        "available_date": "2026-02-15", "status": "available",
+    },
+    {
+        "id": "taxdoc-003", "type": "1099-INT", "tax_year": 2025, "custodian": "Chase",
+        "description": "Interest Income",
+        "fields": {"Interest income": "$680", "Early withdrawal penalty": "$0"},
+        "available_date": "2026-01-31", "status": "available",
+    },
+    {
+        "id": "taxdoc-004", "type": "1099-DIV", "tax_year": 2025, "custodian": "Vanguard",
+        "description": "Dividends from 401(k) Mutual Funds",
+        "fields": {"Total ordinary dividends": "$1,240", "Qualified dividends": "$980", "Capital gain distributions": "$0"},
+        "available_date": "2026-01-31", "status": "available",
+    },
+    {
+        "id": "taxdoc-005", "type": "5498", "tax_year": 2025, "custodian": "Vanguard",
+        "description": "IRA Contribution Information",
+        "fields": {"IRA contributions": "$7,000", "Rollover contributions": "$0", "Fair market value (Dec 31)": "$48,200"},
+        "available_date": "2026-05-31", "status": "available",
+    },
+    {
+        "id": "taxdoc-006", "type": "W-2", "tax_year": 2025, "custodian": "Employer",
+        "description": "Wages, Tips, Other Compensation",
+        "fields": {"Wages, tips, other comp.": "$114,000", "Federal income tax withheld": "$22,800", "Social Security wages": "$114,000"},
+        "available_date": "2026-01-31", "status": "available",
+    },
+]
+
+
+@router.get("/tax-documents")
+async def mock_b2c_tax_documents(_: str = Depends(require_mock_auth)):
+    """Demo tax document list in no-DB mode."""
+    return {"documents": DEMO_TAX_DOCUMENTS, "tax_year": 2025, "mock": True}

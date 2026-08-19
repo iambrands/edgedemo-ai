@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import { clsx } from 'clsx';
 import ClientNav from './ClientNav';
 import AIChatWidget from '../chat/AIChatWidget';
+import NotificationCenter from './NotificationCenter';
 import { clearB2CTokens, getB2CToken } from '../../services/b2cApi';
 import { ClientProfileProvider } from '../../contexts/ClientProfileContext';
 
@@ -66,8 +67,8 @@ export default function ClientLayout() {
             isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64',
           )}
         >
-          {/* Mobile top bar — hamburger only */}
-          <header className="h-12 bg-white border-b border-slate-200 flex items-center px-4 sticky top-0 z-30 md:hidden">
+          {/* Mobile top bar — hamburger + notification bell */}
+          <header className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-30 md:hidden">
             <button
               type="button"
               aria-label="Open menu"
@@ -76,6 +77,9 @@ export default function ClientLayout() {
             >
               <Menu size={20} />
             </button>
+            <div className="[&_button]:text-slate-500 [&_button]:hover:bg-slate-100">
+              <NotificationCenter />
+            </div>
           </header>
 
           <main className="p-6 max-w-5xl mx-auto">

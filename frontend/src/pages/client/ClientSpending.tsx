@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   Area,
   AreaChart,
@@ -18,6 +18,7 @@ import {
   ArrowUp,
   Car,
   Coffee,
+  Download,
   Heart,
   HelpCircle,
   Monitor,
@@ -176,6 +177,68 @@ function CatBadge({ cat }: { cat: string }) {
   );
 }
 
+/* ── category picker dropdown ────────────────────────────────────────────── */
+
+function CatPicker({ current, onSelect }: { current: string; onSelect: (cat: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const categories = Object.keys(CAT_CFG);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen((p) => !p)}
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border border-transparent hover:border-slate-300 transition-colors"
+        style={{ background: getCfg(current).bgClass.replace('bg-', ''), color: 'inherit' }}
+      >
+        <CatBadge cat={current} />
+        <span className="text-[9px] text-slate-400 ml-0.5">▾</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-7 z-20 bg-white rounded-xl border border-slate-200 shadow-lg p-1 w-40 space-y-0.5">
+          {categories.map((cat) => {
+            const { label, bgClass, textClass, Icon } = getCfg(cat);
+            return (
+              <button key={cat} type="button"
+                onClick={() => { onSelect(cat); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-slate-50 transition-colors ${cat === current ? 'bg-slate-50 font-semibold' : ''}`}
+              >
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${bgClass}`}><Icon className={`h-3 w-3 ${textClass}`} /></span>
+                <span className="text-slate-700">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── CSV export ──────────────────────────────────────────────────────────── */
+
+function downloadTransactionsCSV(txns: B2CTransaction[], catOverrides: Record<string, string>) {
+  const header = 'Date,Merchant,Category,Amount,Account,Pending\n';
+  const rows = txns.map((t) => {
+    const cat = catOverrides[t.id] ?? t.category;
+    return `"${t.date}","${t.merchant}","${cat}",${t.amount},"${t.account}",${t.pending}`;
+  }).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'transactions.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /* ── main component ──────────────────────────────────────────────────────── */
 
 export default function ClientSpending() {
@@ -183,6 +246,11 @@ export default function ClientSpending() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  // category overrides: txn id → category
+  const [catOverrides, setCatOverrides] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('firmum_cat_overrides') ?? '{}'); }
+    catch { return {}; }
+  });
 
   useEffect(() => {
     setIsLoading(true);
@@ -192,10 +260,24 @@ export default function ClientSpending() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const breakdown = useMemo(() => computeBreakdown(transactions), [transactions]);
+  const setCatOverride = (txnId: string, cat: string) => {
+    setCatOverrides((prev) => {
+      const next = { ...prev, [txnId]: cat };
+      localStorage.setItem('firmum_cat_overrides', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // Apply overrides to transactions before computing derived data
+  const txnsWithOverrides = useMemo(
+    () => transactions.map((t) => ({ ...t, category: catOverrides[t.id] ?? t.category })),
+    [transactions, catOverrides],
+  );
+
+  const breakdown = useMemo(() => computeBreakdown(txnsWithOverrides), [txnsWithOverrides]);
   const priorMonth = useMemo(() => derivePriorMonth(breakdown), [breakdown]);
-  const dailyTrend = useMemo(() => computeDailyTrend(transactions), [transactions]);
-  const topMerchants = useMemo(() => computeTopMerchants(transactions), [transactions]);
+  const dailyTrend = useMemo(() => computeDailyTrend(txnsWithOverrides), [txnsWithOverrides]);
+  const topMerchants = useMemo(() => computeTopMerchants(txnsWithOverrides), [txnsWithOverrides]);
 
   const totalSpend = useMemo(
     () => transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
@@ -210,9 +292,9 @@ export default function ClientSpending() {
 
   const filtered = useMemo(
     () => activeCategory
-      ? transactions.filter((t) => t.category === activeCategory && t.amount > 0)
-      : transactions.filter((t) => t.amount > 0),
-    [transactions, activeCategory],
+      ? txnsWithOverrides.filter((t) => t.category === activeCategory && t.amount > 0)
+      : txnsWithOverrides.filter((t) => t.amount > 0),
+    [txnsWithOverrides, activeCategory],
   );
 
   /* AI insight for spending */
@@ -366,11 +448,21 @@ export default function ClientSpending() {
                 {activeCategory ? getCfg(activeCategory).label : 'All transactions'}
                 <span className="ml-2 text-slate-400 font-normal">({filtered.length})</span>
               </h2>
-              {activeCategory && (
-                <button type="button" onClick={() => setActiveCategory(null)} className="text-xs text-blue-600 hover:text-blue-700">
-                  Clear filter
+              <div className="flex items-center gap-2">
+                {activeCategory && (
+                  <button type="button" onClick={() => setActiveCategory(null)} className="text-xs text-blue-600 hover:text-blue-700">
+                    Clear filter
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => downloadTransactionsCSV(filtered, catOverrides)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Download size={12} />
+                  CSV
                 </button>
-              )}
+              </div>
             </div>
 
             {filtered.length === 0 ? (
@@ -385,7 +477,8 @@ export default function ClientSpending() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{t.merchant}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <CatBadge cat={t.category} />
+                        <CatPicker current={t.category} onSelect={(cat) => setCatOverride(t.id, cat)} />
+                        {catOverrides[t.id] && <span className="text-[9px] text-blue-500 font-medium">edited</span>}
                         {t.pending && <span className="text-xs text-amber-600 font-medium">Pending</span>}
                       </div>
                     </div>

@@ -110,6 +110,9 @@ const ClientDocuments = React.lazy(() => import('./pages/client/ClientDocuments'
 const ClientHousehold = React.lazy(() => import('./pages/client/ClientHousehold'));
 const ClientLearning = React.lazy(() => import('./pages/client/ClientLearning'));
 const AdvisorMarketplace = React.lazy(() => import('./pages/client/AdvisorMarketplace'));
+const ClientCashFlow = React.lazy(() => import('./pages/client/ClientCashFlow'));
+const ClientDebts = React.lazy(() => import('./pages/client/ClientDebts'));
+const ClientTaxDocuments = React.lazy(() => import('./pages/client/ClientTaxDocuments'));
 
 // Client portal
 const PortalLogin = React.lazy(() => import('./pages/portal/PortalLogin'));
@@ -263,9 +266,11 @@ export default function App() {
             <Route index element={<Navigate to="/client/dashboard" replace />} />
             <Route path="dashboard" element={<ErrorBoundary><ClientDIYDashboard /></ErrorBoundary>} />
             <Route path="statements" element={<ErrorBoundary><ClientStatements /></ErrorBoundary>} />
+            <Route path="cash-flow" element={<ErrorBoundary><ClientCashFlow /></ErrorBoundary>} />
             <Route path="spending" element={<ErrorBoundary><ClientSpending /></ErrorBoundary>} />
             <Route path="budgets" element={<ErrorBoundary><ClientBudgets /></ErrorBoundary>} />
             <Route path="bills" element={<ErrorBoundary><ClientBills /></ErrorBoundary>} />
+            <Route path="debts" element={<ErrorBoundary><ClientDebts /></ErrorBoundary>} />
             <Route path="advisors" element={<ErrorBoundary><AdvisorMarketplace /></ErrorBoundary>} />
             <Route path="connect-advisor" element={<ErrorBoundary><ConnectAdvisor /></ErrorBoundary>} />
             <Route path="accountability" element={<ErrorBoundary><ClientAccountability /></ErrorBoundary>} />
@@ -275,6 +280,7 @@ export default function App() {
               <Route path="learning" element={<ErrorBoundary><ClientLearning /></ErrorBoundary>} />
               <Route path="retirement" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
               <Route path="planning" element={<ErrorBoundary><ClientRetirementPlanner /></ErrorBoundary>} />
+              <Route path="tax-documents" element={<ErrorBoundary><ClientTaxDocuments /></ErrorBoundary>} />
               <Route
                 path="advisor-activity"
                 element={

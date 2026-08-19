@@ -732,4 +732,82 @@ export const b2cApi = {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${getB2CToken()}` },
     }).then((r) => r.json()) as Promise<{ status: string; mock?: boolean }>,
+
+  // Income / Cash Flow
+  getIncome: () =>
+    b2cFetch<{
+      sources: Array<{
+        id: string;
+        source: string;
+        category: string;
+        monthly_amount: number;
+        ytd_amount: number;
+        frequency: string;
+        account: string;
+        last_received: string;
+      }>;
+      total_monthly: number;
+      total_ytd: number;
+      monthly_history: Array<{ month: string; income: number; expenses: number; savings: number }>;
+      mock?: boolean;
+    }>('/income'),
+
+  // Debts / liabilities
+  getDebts: () =>
+    b2cFetch<{
+      debts: Array<{
+        id: string;
+        name: string;
+        category: string;
+        lender: string;
+        original_balance: number | null;
+        current_balance: number;
+        monthly_payment: number;
+        interest_rate: number;
+        maturity_date: string | null;
+      }>;
+      total_balance: number;
+      total_monthly_payment: number;
+      mock?: boolean;
+    }>('/debts'),
+
+  // Notifications
+  getNotifications: () =>
+    b2cFetch<{
+      notifications: Array<{
+        id: string;
+        type: string;
+        severity: string;
+        title: string;
+        body: string;
+        action_label: string;
+        action_route: string;
+        timestamp: string;
+        read: boolean;
+      }>;
+      unread_count: number;
+      mock?: boolean;
+    }>('/notifications'),
+
+  markNotificationRead: (id: string) =>
+    b2cFetch<{ id: string; read: boolean; mock?: boolean }>(`/notifications/${encodeURIComponent(id)}/read`, {
+      method: 'POST',
+    }),
+
+  // Tax documents
+  getTaxDocuments: () =>
+    b2cFetch<{
+      documents: Array<{
+        id: string;
+        type: string;
+        tax_year: number;
+        custodian: string;
+        description: string;
+        fields: Record<string, string>;
+        available_date: string;
+        status: string;
+      }>;
+      tax_year: number;
+      mock?: boolean;
+    }>('/tax-documents'),
 };
