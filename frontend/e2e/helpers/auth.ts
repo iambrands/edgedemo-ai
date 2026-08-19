@@ -980,6 +980,75 @@ export async function setupB2CApiMocks(page: Page) {
     if (url.includes('/b2c/push/status')) {
       return fulfillJson(route, { subscribed: false, mock: true });
     }
+    if (url.includes('/b2c/holdings')) {
+      return fulfillJson(route, {
+        holdings: [
+          {
+            symbol: 'AAPL',
+            description: 'Apple Inc',
+            quantity: 120,
+            price: 195.5,
+            market_value: 23460,
+            security_type: 'Equity',
+            asset_class: 'US Equity',
+            gain_pct: 142.3,
+          },
+          {
+            symbol: 'VTI',
+            description: 'Vanguard Total Stock Market ETF',
+            quantity: 85,
+            price: 248.2,
+            market_value: 21097,
+            security_type: 'ETF',
+            asset_class: 'US Equity',
+            gain_pct: 68.4,
+          },
+          {
+            symbol: 'BND',
+            description: 'Vanguard Total Bond Market ETF',
+            quantity: 200,
+            price: 72.4,
+            market_value: 14480,
+            security_type: 'ETF',
+            asset_class: 'Fixed Income',
+            gain_pct: 4.2,
+          },
+        ],
+        count: 3,
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/notifications')) {
+      if (method === 'POST') {
+        return fulfillJson(route, { status: 'read', mock: true });
+      }
+      return fulfillJson(route, {
+        notifications: [
+          {
+            id: 'n1',
+            type: 'budget',
+            severity: 'warning',
+            title: 'Groceries budget exceeded',
+            body: 'You spent $620 against a $500 monthly limit.',
+            action_label: 'Review budgets',
+            action_route: '/client/budgets',
+            timestamp: new Date(Date.now() - 3600000).toISOString(),
+            read: false,
+          },
+        ],
+        unread_count: 1,
+        mock: true,
+      });
+    }
+    if (url.includes('/b2c/ai/analysis')) {
+      return fulfillJson(route, {
+        narrative: 'Your net worth grew steadily over the past year. Fee optimization and tax-loss harvesting remain your highest-impact levers.',
+        insights: [],
+        model: 'gpt-4o-mini',
+        generated_at: new Date().toISOString(),
+        cached: false,
+      });
+    }
     if (url.includes('/b2c/advisors')) {
       return fulfillJson(route, { advisors: [], mock: true });
     }

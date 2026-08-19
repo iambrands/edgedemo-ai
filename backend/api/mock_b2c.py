@@ -1185,6 +1185,7 @@ for _path, _endpoint, _methods in [
     ("/advisor/documents", mock_advisor_documents, ["GET"]),
     ("/advisor/documents/upload", mock_upload_advisor_document, ["POST"]),
     ("/plaid/transactions", mock_b2c_transactions, ["GET"]),
+    ("/holdings", mock_b2c_holdings, ["GET"]),
 ]:
     supplement_router.add_api_route(_path, _endpoint, methods=_methods)
 

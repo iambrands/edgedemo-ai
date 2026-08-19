@@ -51,8 +51,8 @@ export default function NotificationCenter() {
   useEffect(() => {
     b2cApi.getNotifications()
       .then((data) => {
-        setNotifications(data.notifications);
-        setUnread(data.unread_count);
+        setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        setUnread(typeof data.unread_count === 'number' ? data.unread_count : 0);
       })
       .catch(() => {/* silent */});
   }, []);

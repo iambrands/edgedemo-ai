@@ -59,7 +59,8 @@ export const PORTAL_PAGES: PageEntry[] = [
 ];
 
 export const B2C_PAGES: PageEntry[] = [
-  { path: '/client/dashboard',        title: 'Assets',        kind: 'cards' },
+  { path: '/client/dashboard',        title: 'Insights',      kind: 'cards' },
+  { path: '/client/investments',      title: 'Investments',   kind: 'cards' },
   { path: '/client/statements',       title: 'Statement',     kind: 'table' },
   { path: '/client/spending',         title: 'Spending',      kind: 'cards' },
   { path: '/client/budgets',          title: 'Budgets',       kind: 'cards' },

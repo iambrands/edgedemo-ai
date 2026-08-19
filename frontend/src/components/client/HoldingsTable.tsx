@@ -74,7 +74,7 @@ export function HoldingsTable() {
   useEffect(() => {
     b2cApi
       .getHoldings()
-      .then((res) => setHoldings(res.holdings))
+      .then((res) => setHoldings(Array.isArray(res.holdings) ? res.holdings : []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
